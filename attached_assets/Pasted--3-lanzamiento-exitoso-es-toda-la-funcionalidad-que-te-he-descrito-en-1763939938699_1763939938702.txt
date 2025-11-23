@@ -1,0 +1,198 @@
+
+################
+##########3
+lanzamiento exitoso, es toda la funcionalidad que te he descrito en el chat, super administtrador – administrador – web principal – app movil  ).
+
+●   Prioridad Alta: 
+Publicidad, (super admin en donde se administrara la publicidad SITIO WEB PRINCIPAL en dnde se visualizara toda la publicidad y del sitio web principal ).
+Radio Online (lista play de mp3 sera un selector de audio para que reproduzca audio de url radio online y lista mp3 )., 
+Taxi (igual al indriver o uber etc etc: con opcion a cambiar la funcionalidad de conductor o de pasajero).
+Delivery Básico (integrado a los locales de servicios donde estan en la seccion de servicios con logos redondos saldria una Ventana emergente donde se habilitara una lista de pedido para el delivery uno basico en esta primera etapa, el cual el administrador del local una vez listo el pedido podra solicitor el servicio de delivery para que un taxista en su app salga que hay un pedido un delivery que attender similar cuando una psajero solicita un taxi ). 
+y Botón de Pánico. (en todo momento estara habilitado asi este en pantalla oscura o bloqueado el cual presionando se reconfirmara el peiddo de auxilio o de un accidente y esto se notificara en el chat en los grupos infinitos creados por el super administrador  por ejemplo grupo: asoc villa la union entpnces Habra un administrador de esa asociacion que integrara a varios participantes para ese grupo… I asi mismo Tambien derivara este socoroo a entidades que atenderan el pedido ).
+●	Estrategia de Chat: En lugar de desarrollar un "WhatsApp" desde cero (que tomaría meses), integraremos chat en tiempo real solo para Servicios Activos (Pasajero-Conductor) y enlaces directos a grupos de WhatsApp para la comunidad. (es esencial el chat integrado a la app para crear grupos y generar conversaciones internas para enviar mensajes de auxilios a su grupos o entidades que corresponda y asi mismo estaran integrado al boton de panico ).  
+●	INTEGRACION DE PAGOS Y SALDOS cartera virtual metodos de pagos y transsaccion por cuentas bancarias yape plin paypal u otros.
+	(cada usuario tendra su cartera digital necesario y casi obligatorio por ejemplo para ser conductor de taxi debe tener un saldo para recibir solicitudes de taxi de parte del pasajero el cual se descontara un monto que sera fijo o en porcentaje esto lo indicara el super administrador elm onto…… e incluso el pasajero hacer el pago del servicio otro ejemplo al hacer su publicidad para su publicacion este usuario se le descontara un monto o porcentaje de acuerdo lo que fije el super administrador……. si quiere colocar publicidad en cualquieras de las franjas del slider o logos redondoes esto se descontara de su saldo de acuerdo a su publicacion por fecha he incluso cuando comparte ubnapublicacion esta se descontara digamos 0.30 soles 0.20 sera para el sitio web y el otro 0.10 centinmos sera para el usuario que ha compafrtido a sus redes sociales  ). 
+	Otro ejemplo en los logos de servicios cuando hagan clic en cualquier logo saldra una Ventana emergente que ahora inicialmente saldra informacion que proporciona por el usuario o administrador del logo del servicio que incluira una carta de pedidos simple en esta priemra etapa con una lista de pedidos y por cada pedido que haga un usuario se descontara del saldo del adminisgtrador del local del servicio)
+	
+	En el servicio del chat para que cada usuario tenga habilitado el servicio de chat se descontara de su saldo un monto o porcentaje asignado por el super admin o de manera grupal se hara el pago…. O para que no se le descuente de su saldo con solo compartir la publicidad del carrusel principal o actividadees o eventos o servicios en sus redes sociales estos ya no se descontaran si tienen compartido, como favoritos, comentarios,    
+
+#####################
+##################################3
+###########################################
+
+desarrollo web para realizar un sistema igual al indriver con delivery ademas tendra una seccion de publicidad y chat comunitario igual al whatsaap agregando unas funcionalidades como sincronizar con el boton de panico y esta asu vez con las funcionalidades de socorro y atencion tanto para superadministrador como a los administradores que esta se requiera, habra un sistema de super administrador y administradores  usuarios  locales de servicios segun su rol... esto como una 1 etapa 
+
+como segunda etapa: agregar nuevas funcionalidades: buses, en el panel adminnistrador de servicios completar las funcionalidades como restaurant (que pueda manejar stock reservas, pedidos mas dinamicos etc etc propias de un negocios) servicios de mudanzas, servicios de talleres, servicios de
+
+Calculadora con tipos de moneda actualizable internamente o por terceros cambio de moneda.
+
+app version para autos tamaño tablet (donde se distribuira la pantalla una parte con google maps para enviar o atender pedidor o rutas de taxi o rutas de buses disponibles, 
+y otros funcionalidades necesarias para implementar
+
+
+DESARROLLO WEB
+###############################################
+
+El desarrollo web y app para dispositivos celulares funcional con arquitectura escalable para continuar el desarrollo  de las otras nuevas funcionalidades en el futuro que estarian pendientes.
+
+
+1.- DESARROLLO WEB PRINCIPAL Y APLICATIVO PARA DISPOSITIVOS MOVILES (tacnafm.com) luego cambiar a otro nombre.
+
+	1.1. ESTARAN desarrollado o divididos en varias secciones barra de (((ENCABEZADO)))) donde estara el logo, nombre y el submenu desplegable, selector de audio, sesion, (el logo y (nombre - opcional) podra subir el super administrador.  
+	1.2.- ((((carrusel)))) emision de logos que el super administrador ingresara la informacion y sus detalles. podfra administrarlas como [[modificar]], (es cambiar el aviso total con sus datos de url, para mantener el orden de ubicacion de su publicacion), [[eliminar]] elimina todo el registro de un aviso, y cede el orden de publicación al siguiente aviso), [[pausa - play]] cuando se visualiza el boton en pausa esto indicara que la publicidad no se vera en la web y la imagen en el panel super administrador la imagene estara visualizando en tonos grises, cuando se da clic nuecvamente esta se pondra en play, que indica que se visualizara normalmente el aviso de acuerdo al cronograma establecido de su fecha de inicio y fecha final  al culminar la fecha este aviso se pondr a atomaticamente en pausa, para renovar su públicacion, [[gps]] esta se abrira una ventana emergente hacia google mpas para ubicacar la direccion  con los datos de gps, para que algun cliente oueda ubicar la direccion y hacer la ruta de llegada mediante gps al local, .............  y tambien la opcion de agregar mas de manera infinita.... de ahi es cuando se le asigna el periodo de publicacion iniciio y final, al finalizar saldra una alerta de renovacion  o solicitud de apertura este mensaje saldra en el panel de su per administrador y del administrador del servicio o local para que pueda renovar el servicio de publicidad agregando o abonando el saldo  el costo de publicidad ya pactada. (tambien se agregara url las que sean necesaria de parte del super y del administrador url de redes sociales y los botones pequeños que se visualizara es en la parte inferior derecho de la imagen publicada logos pequeños como gps y los de redes sociales, que al dar clic a la imagen esta pausara el carrusel infinito y otro clic sera para ver el contenido de esa imagen como es ubicacion gps descripcion redes sociales)
+estas mismas funcionalidaes seran para el carrusel perincipal y la galeria de servicios. 1.3, 1.4.
+
+	1.3.- ((((CARRUSEL PRINCIPAL))))) emision de publicidad de actividades que el super administrador ingresara la informacion y sus detalles.
+	1.4.- ((((SERVICIOS)))))) emision de logos circulares de locales comerciales que ofrecen servicios que estaran registrados por categorias (restaurante, cevicheria, polleria, antocuheria, farmacia, libreria, tecnico, taller, etc etc.) el cual se pausara el slider cuando el muose es colocado delante del logo y al dar el clic saldra una ventana emergente donde se desplegara los sercicios que ofrece, y al seleccionaer un servicios o varios esta se notificara al administrador del local comercial indicando que hay un sercicio por atender. para que el usuario pueda pedir un servicio por ejemplo un menu que esta el valor de 10 soles... este tipo de servicio lo tendra habilitado siempre en cuando tenga el saldo igual a mas del costo.... (estos logos el super administrador es que que enviara mediante su plataforma que logos o mas podran visualizarce y si tienen algun contenido por ejemplo promociones, servicios especiales, gps, ubicacion, url de redes sociales etc etc).
+	1.5.- (((FRANJA DE TITULOS))) esto se visualizara siempre en cuando el super administrador en su plataforma haya registrado alguna frase de emrgencia, o un titulo general, (caso de emergencia)
+	1.6.- (((MODULO DE AUDIO)))) SERA un selector de radio online y play list de mp3 (audio predeterminado ser a tacnafm.apo) el super administrador colocara las url de las radio online que disponga y asi mismo subira los archivos  mp3 de a una o varios archivos mp3 el cual podra editar luego para colocar el orden de reproduccion eliminar  o subir mas archivos mp3.
+	1.7.- ((((SECCION DE EVENTOS CALENDARIZADO))) publicacion de notas de prensa, de actividades que el administrador de cualquier nstitución  en su panel haga las publicaciones. y que esta se incluya en su calendar de google.  (((((((((segunda etapa))))))))))
+	1.8.- (((((SECCION DE AVISOS SOCIALES))))))) COMO personas desaparecidas, perdidas de perritos, etcetc que cada usuario tendra una opcion en su aplicativo celular o en su PC... esta opcion se habilitara cuando este logeado o inicie sesion...... (((((((((segunda etapa))))))))))
+	1.9.- ((((DESCRIPCION EN CARTILLAS SOBRE EL SITIO WEB))))))))))) en el panel de super administrador en una seccion podra ingresar informacion sobre el sitio web como cartillas por ejemplo  Seguridad 24/7, Chat de apoyo, App movil, Seguimiento GPS, Red Comunitaria, Alertas inmediatas, el cual podra ingresar y agregar mas descripciones de las funcionalidades que tiene el sitio web.
+	1.10.- (((((PIE DE PAGINA)))))) asi mismo en el panel del super administrador podra ingresar los damos tanto modificar como agregar mas informacion.
+aaaa) descripcion del sitio web o Aviiso Importante 
+bbbb) formulario de SUGERENCIAS.- que cualquier usuario odra enviar comentarios o sugerencia al cofreo institucional y a otro emial de google (esta capacidad el super administrador podra colocar o midificar o ahgregar a que emial se enviara una copia) 
+cccccc) Enlaces ahi se visualizara iconos de: inicio (que lo desplazara hacia arriba) boton de chat, geolocalizacion,   audio, taxi, buses, etc etc ultimo habra un boton de LIBRO DE RECLAMACION (que se implementara en la segunda etapa)
+ddddd)) siguenos  ( que se visualizara imagenes de iconos de las diferentes redes sociales o sitios web (en el panel del super administrador tendra esa funcionalidad de agregar las redes sociales pegando la url de cada red social y esta se activara en la seccion de pie de pagina o en todo caso tendra el icono en tono gris  si no cuenta con la url)
+eeeee) informacion del sitio: que sera la direccion oficina, localidad, año, telefono, imail del sitio, etc etc que el super administrador tendra esa opcion de colocar para que se actualice en la presnetacion.
+
+
+ 
+
+
+SUPER ADMINISTRADOR
+###########################################################
+
+Administrado por un super administrador que controlara las difusión de publicidad e informacion de actividades asi como tambien a los administradores (admin) creara personal de apoyo (super admin - cartera) (super admin - operaciones) (super admin - supervisores) etc etc que crea conveniente el superadministrador.
+
+El super administrador tendra el trabajo de aministrar en 5 pantallas de apoyo (Excritorio expandible)
+Pantalla 1 super administrador: Dashboard donde saldra informe de todoas las actividades en resumen con cuadros estadisticos y nuemeros totales de actividades y resumenes
+PANTALLA 2 CHAT: el superadministrador podra visualizar todas las actividades del chat para su verificacion de cada sistema o pedido de auxilio en osa grupos de chat y grupos d eparsonas o grupos de asociaciones de chat.
+PANTALLA 3 NOTIFICACIONES donde se visualizara todas las actividades desde en el momento del boton de panico hasta su atencion y solucion al problema un cuadro resumen de las actividades que se podra visualizar  por dia mes y año y periodos intervalos desde hasta mediante un calendario. igual para tipos de emergencia (cuadro estadisticos)
+PANTALLA 4 GEOLOCALIZACION donde se monitorea todas las actividades en el plano de google maps donde saldran las alertas ubicadas en el mapa y el super administrador podra visualizar o corroborar su atencion oportuna en el punto de alerta con un clic de deslizara una ventana de opciones como atender segun prioridad, atebncion urgente, derivar a entidades que puedan atender de manera inmediata, enviar apoyo, etc etc.
+Abra opciones de visualizaciones como de emergencia (atendiads por atender etc etc) taxi (donde se visualizara las unidades de taxi y estaran identificadas en colores segun sean en grupos o empresas (estan tendran su panel administrador independiente) y otra opcion donde seleccionara por un grupo A para ver donde se encuentran las unidades del grupo A y seleccionar por ejemplo el grupo B igual donde se podra visualizar las inidades del grupo B etc etc. 
+
+de igual manera el recorrido de las unidades de buses segun la seleccion por grupo o empresas (esto se desarrollara en la segunda etapa)
+
+PANTALLA 5 google maps: donde se visulizara solo las activiaddes del google maps y que esta se copia la imagen a una pantalla mas grande como por ejemplo a una TV.
+
+
+EN LA PANTALLA 1 ESTARA DIVIDIDA EN VARIOS SECTORES por ejemplo: 
+
+1.1 PUBLICIDAD que estara ubicada debajo del encabezado una barra horizontal con estas opciones que se encunetra en el sitio WEB principal.al agregra nueva publicacion de todas esta informacion publicidad se podra administrar su inicio y termino en la web al culminar su emision esta quedara suspendido automaticamente hasta su nueva renovacion de publicidad ingresando nuevamente las fecha de su periodo de emision en la web.
+1.2 RADIO ONLINE LISTAS MP3: el super administrador tendra una opcion donde colocara las url de las radios online y poxra modificar borra eliminar o pausar la emision de la radio online asi como tambiend agregar nuevas redios.
+el super administrador tbm podra crear listas mp3... las listas y radios podra modificar eliminar editar, suspender su emision etc etc 
+
+1.3 PANEL DE USUARIOS Y ADMINISTRADORES donde se podra administrara todos los usuarios tipo de usuarios, grupos de taxis grupos de personas etc etc  donde se podra eliminar, modificar, suspender al usuario de este sistema. o bloquear.
+DE igual manera se podra administrar a los administraodres de segundo nivel como por ejemplo admin, grupos de chat, grupos asociaciones, grupos de taxi, servicios de axilios, empresas, servicios, negocios etc etc etc. tendran un panel de administracion especifico para su rubro pero un su capacidad minima luego en II etapa se habilitara tosas las funcionalidades de cada rubro y cada negocios de manera independiente. 
+
+verificacion o asignaciones de diferentes roles por ejemplo asignar a una usuario como administrador de segundo nivel, asi mismo tambien puede ser taxista, si cuenta con un a movil para el servicio, y tambien puede ser personal de serenazgo o policia etc etc. un usuario podra tener varias roles administrativos segun sea el caso. 
+por ejepmplo el serenazgo que tendra su panel administrativo el cual podra asignar o agregar un nuevo personal colocando a un usuario en su grupo como serenazgo. este rol automaticamente se feflejara en su panel de susuario y a la vez puede ser taxistas pofreciendo servicio de taxi y delivery otros
+
+1.4. CARTERA Y SALDOS 
+EL SUPERAMDINISTRADOR PODRA COLOCAR CUANTO SERA EL PORCENTAJE O MONTO DIRECTO QUE DESCONTARA de su saldo el monto por pubñicidad, ingreso de articulos nuevos, y tros serviicos que ofrece el sitio web.
+reporte de saldos de cada usuario, y la aprobacion y verificacion de ingresos nuevos por saldos, por publcidad, etc etc.
+ingreso de nuemeros de cuentas, interbancarias, paypal, plin, yape, y otros que sean posible las transacciones online.
+tipos de monedas
+
+1.5. ENCUESTAS Y IMAGENES POPUP (publi)
+administracion de encuestas el cual se hara preguntas estas puede ser 2 a mas preguntas se podra subir una imagen a la encuesta (y se podra visualiza rlos resultados de manera inmediata  sobre las encuentes que esta estara en el panel del administrador super
+
+igual maneja por medio de ventana popup se visualizara imagenes o videos de ´publicidad directa, habra una segundos de publicidad obligatoria luego pasado los segundos permitidos esta se podra omitir (similar a las pubñlicidad de youtube)
+ambos tipos de publlcidad como encuestas y puvlicidad tendra un inicio de final de publicado al termino de la fecha esta se suspendera automaticamente  y luego se podra renovar  e ingresar nueva fecha para su publicidad.
+
+1.6. SERVICIOS (MUDANZAS, ALQUILERES ETC ETC)
+
+1.7. EVENTOS CON AGENDA  1.7.- ((((SECCION DE EVENTOS CALENDARIZADO))) PUBLICAR eventos candalerizado que manualmente se colocara la fecha y hora del evento por el super administrador
+
+1.8. AVISOS DE EMERGENCIA (servicio a la comunidad)  1.8.- (((((SECCION DE AVISOS SOCIALES)))))))
+
+1.9. SERVICIO DE TAXI todas las funcionalidades para solicitar o brindar servicio de taxi similar e igual que indriver uber etc etc. agregando estas funcionalidades en la creacion de grupos d etrabajo y estos grupos tengan un jefe de grupo que seria un admin y los integrantes de un grupo pueda identificarse con un color o logo de nombre de su grupo.
+
+1.10. SERVICIO DE BUSES
+
+1.11. SERVICIO DE CAMBIO DE MONEDA 
+1.12. CONFIGURACION: en esta seccion se podra cambiar el logo nombre del sitio web, y toda la informacion de pie de pagina se podra incluir desde aqui tanto en su modificacion etc etc.... donde se seleccionara modo de pantalla oscuro y blanco o colores personalizados,,, y otrs relacionados a la configuracion (tipo de monedas, 
+
+
+
+
+user
+
+super admin (podra asignar funciones a usuarios con su numero DNI de su personal)
+	operador
+	supervisor
+	registro
+	saldos
+	marketing
+
+administrador (podra asignar funciones a usuarios con su numero DNI de su personal)
+	propietario de local (restaurant, grupos de taxi, servicios, grupos de chat, 
+	operador
+	supervisor
+	registros saldos
+	etc etc
+
+usuarios
+	podran solicitar tener las funcionalidades como ser taxistas - usuario, tner local para ofrecer algun productos de servicio, roles que cumplan como (socorrer auxilios, como bomberos, dirigentes, policias, serenazgo, etc etc...) y el super administrador podra refistrarños aprobando la solicitud o en adelante podria quitar esas funcionalidade o roles asi mismo un administrador como  por ejemplo dirigente, podra agregar a varios usuarios a su grupo de chat para el boton de panico, otro el administrador de bomberos podra agregar a sus compañeros quienes son bomberos que estaran pendienta ante un llamado de socorro. y asi otros grupos o servicios podran ahgregar su personal 
+
+REGISTRO DE USUARIO:
+
+basico una estrella
+####################
+alias
+Email
+contraseña
+
+servicio chat (dos estrellas)
+###############################
+nombres:
+apellidos:
+foto:
+DNI numero: imagen:[[de frente]] [[posterior]] (fecha de caducidad)
+numero celular:
+
+Ubicacion (tres estrellas)
+#############################
+Pais:
+Departamento:
+Dsitrito:
+Sector:
+
+direccion (Cuatro estrellas)
+##################################
+Direccion:
+Mza Lote - numero:
+Avenida - Calle:
+GPS:
+
+venta de marketplace (cinco estrellas)
+#######################################
+nombre del local - empresa:
+Duireccion del local:
+ubicacion GPS del local:
+numero de RUC:
+
+
+Conductor Taxi - Bus - Delivery - mudanzas 
+###################################
+brevette	:  imagen:[[de frente]] [[posterior]] (fecha de inicio - caducidad)
+soat:		:  imagen:[[de frente]] [[posterior]] (fecha de inicio - caducidad)
+Revision tecnica:  imagen:[[de frente]] [[posterior]] (fecha de inicio - caducidad)
+credencial cond :  imagen:[[de frente]] [[posterior]] (fecha de inicio - caducidad)
+credencial taxi :  imagen:[[de frente]] [[posterior]] (fecha de inicio - caducidad)
+
+
+
+Registro y autenticación de usuarios con número de teléfono usando Replit Auth
+Interfaz de chat en tiempo real estilo WhatsApp para mensajería comunitaria
+Botón de pánico prominente que envía alertas de emergencia a la comunidad
+Sistema de alertas de auxilio con notificaciones push y ubicación geográfica
+Panel web de super administrador para gestión global del sistema
+Panel de administradores de segundo nivel para gestión de comunidades específicas
+Base de datos PostgreSQL para usuarios, mensajes, alertas y configuraciones
+Funcionalidad para compartir alertas en redes sociales (WhatsApp, Facebook, Twitter)
+Lista de contactos y comunidades con estado de usuarios (en línea/offline)
+Diseño responsive similar a WhatsApp con colores de emergencia para botón de pánico
+
+
