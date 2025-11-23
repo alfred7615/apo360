@@ -26,7 +26,7 @@
   --popover: 270 6% 94%;
   --popover-foreground: 270 6% 12%;
   --popover-border: 270 6% 90%;
-  --primary: 280 65% 45%;
+  --primary: 280 65% 55%;
   --primary-foreground: 0 0% 100%;
   --secondary: 270 8% 88%;
   --secondary-foreground: 270 8% 15%;
@@ -34,8 +34,12 @@
   --muted-foreground: 270 6% 35%;
   --accent: 330 70% 92%;
   --accent-foreground: 330 60% 25%;
-  --destructive: 0 72% 45%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
   --input: 270 10% 75%;
   --ring: 280 65% 55%;
   --chart-1: 280 70% 42%;
@@ -43,7 +47,7 @@
   --chart-3: 200 65% 38%;
   --chart-4: 45 80% 45%;
   --chart-5: 150 60% 35%;
-  --font-sans: Open Sans, sans-serif;
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem;
@@ -110,7 +114,7 @@
   --popover: 270 8% 14%;
   --popover-foreground: 270 5% 93%;
   --popover-border: 270 7% 17%;
-  --primary: 280 70% 52%;
+  --primary: 280 70% 58%;
   --primary-foreground: 0 0% 100%;
   --secondary: 270 10% 20%;
   --secondary-foreground: 270 5% 95%;
@@ -118,8 +122,12 @@
   --muted-foreground: 270 5% 65%;
   --accent: 330 55% 18%;
   --accent-foreground: 330 80% 92%;
-  --destructive: 0 75% 48%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
+  --success: 142 76% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 60%;
+  --warning-foreground: 0 0% 100%;
   --input: 270 12% 28%;
   --ring: 280 70% 58%;
   --chart-1: 280 75% 65%;
@@ -196,6 +204,21 @@
  * need to be distinguished from eachother visually.
  */
 @layer utilities {
+  /* Animación de pulso para botón de pánico */
+  @keyframes panic-pulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+    }
+  }
+
+  .animate-panic-pulse {
+    animation: panic-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
 
   /* Hide ugly search cancel button in Chrome until we can style it properly */
   input[type="search"]::-webkit-search-cancel-button {
