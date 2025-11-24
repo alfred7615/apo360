@@ -23,6 +23,10 @@ import {
   registroDireccion,
   registroMarketplace,
   credencialesConductor,
+  eventos,
+  avisosEmergencia,
+  tiposMoneda,
+  tasasCambio,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -71,6 +75,14 @@ import {
   type InsertRegistroMarketplace,
   type CredencialesConductor,
   type InsertCredencialesConductor,
+  type Evento,
+  type InsertEvento,
+  type AvisoEmergencia,
+  type InsertAvisoEmergencia,
+  type TipoMoneda,
+  type InsertTipoMoneda,
+  type TasaCambio,
+  type InsertTasaCambio,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -899,6 +911,176 @@ export class DatabaseStorage implements IStorage {
       .where(eq(credencialesConductor.usuarioId, usuarioId))
       .returning();
     return actualizado || undefined;
+  }
+
+  // ============================================================
+  // EVENTOS CALENDARIZADOS
+  // ============================================================
+  async getAllEventos(): Promise<Evento[]> {
+    return await db.select().from(eventos).orderBy(desc(eventos.fechaInicio));
+  }
+
+  async getEventosActivos(): Promise<Evento[]> {
+    return await db.select().from(eventos).where(eq(eventos.activo, true)).orderBy(desc(eventos.fechaInicio));
+  }
+
+  async getEventoById(id: string): Promise<Evento | undefined> {
+    const [evento] = await db.select().from(eventos).where(eq(eventos.id, id));
+    return evento;
+  }
+
+  async createEvento(data: InsertEvento): Promise<Evento> {
+    const [evento] = await db.insert(eventos).values(data).returning();
+    return evento;
+  }
+
+  async updateEvento(id: string, data: Partial<InsertEvento>): Promise<Evento | undefined> {
+    const [actualizado] = await db
+      .update(eventos)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(eventos.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteEvento(id: string): Promise<void> {
+    await db.delete(eventos).where(eq(eventos.id, id));
+  }
+
+  // ============================================================
+  // AVISOS DE EMERGENCIA
+  // ============================================================
+  async getAllAvisosEmergencia(): Promise<AvisoEmergencia[]> {
+    return await db.select().from(avisosEmergencia).orderBy(desc(avisosEmergencia.fechaInicio));
+  }
+
+  async getAvisosEmergenciaActivos(): Promise<AvisoEmergencia[]> {
+    return await db.select().from(avisosEmergencia).where(eq(avisosEmergencia.activo, true)).orderBy(desc(avisosEmergencia.fechaInicio));
+  }
+
+  async getAvisoEmergenciaById(id: string): Promise<AvisoEmergencia | undefined> {
+    const [aviso] = await db.select().from(avisosEmergencia).where(eq(avisosEmergencia.id, id));
+    return aviso;
+  }
+
+  async createAvisoEmergencia(data: InsertAvisoEmergencia): Promise<AvisoEmergencia> {
+    const [aviso] = await db.insert(avisosEmergencia).values(data).returning();
+    return aviso;
+  }
+
+  async updateAvisoEmergencia(id: string, data: Partial<InsertAvisoEmergencia>): Promise<AvisoEmergencia | undefined> {
+    const [actualizado] = await db
+      .update(avisosEmergencia)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(avisosEmergencia.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteAvisoEmergencia(id: string): Promise<void> {
+    await db.delete(avisosEmergencia).where(eq(avisosEmergencia.id, id));
+  }
+
+  // ============================================================
+  // TIPOS DE MONEDA Y TASAS DE CAMBIO
+  // ============================================================
+  async getAllTiposMoneda(): Promise<TipoMoneda[]> {
+    return await db.select().from(tiposMoneda).orderBy(tiposMoneda.nombre);
+  }
+
+  async getTiposMonedaActivos(): Promise<TipoMoneda[]> {
+    return await db.select().from(tiposMoneda).where(eq(tiposMoneda.activo, true)).orderBy(tiposMoneda.nombre);
+  }
+
+  async getTipoMonedaById(id: string): Promise<TipoMoneda | undefined> {
+    const [tipo] = await db.select().from(tiposMoneda).where(eq(tiposMoneda.id, id));
+    return tipo;
+  }
+
+  async createTipoMoneda(data: InsertTipoMoneda): Promise<TipoMoneda> {
+    const [tipo] = await db.insert(tiposMoneda).values(data).returning();
+    return tipo;
+  }
+
+  async updateTipoMoneda(id: string, data: Partial<InsertTipoMoneda>): Promise<TipoMoneda | undefined> {
+    const [actualizado] = await db
+      .update(tiposMoneda)
+      .set(data)
+      .where(eq(tiposMoneda.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteTipoMoneda(id: string): Promise<void> {
+    await db.delete(tiposMoneda).where(eq(tiposMoneda.id, id));
+  }
+
+  async getAllTasasCambio(): Promise<TasaCambio[]> {
+    return await db.select().from(tasasCambio).orderBy(desc(tasasCambio.fechaActualizacion));
+  }
+
+  async getTasaCambioByMonedas(origenId: string, destinoId: string): Promise<TasaCambio | undefined> {
+    const [tasa] = await db
+      .select()
+      .from(tasasCambio)
+      .where(
+        and(
+          eq(tasasCambio.monedaOrigenId, origenId),
+          eq(tasasCambio.monedaDestinoId, destinoId)
+        )
+      );
+    return tasa;
+  }
+
+  async createTasaCambio(data: InsertTasaCambio): Promise<TasaCambio> {
+    const [tasa] = await db.insert(tasasCambio).values(data).returning();
+    return tasa;
+  }
+
+  async updateTasaCambio(id: string, data: Partial<InsertTasaCambio>): Promise<TasaCambio | undefined> {
+    const [actualizado] = await db
+      .update(tasasCambio)
+      .set({
+        ...data,
+        fechaActualizacion: new Date(),
+      })
+      .where(eq(tasasCambio.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteTasaCambio(id: string): Promise<void> {
+    await db.delete(tasasCambio).where(eq(tasasCambio.id, id));
+  }
+
+  // ============================================================
+  // CONFIGURACIÓN DEL SITIO
+  // ============================================================
+  async getConfiguracionByClave(clave: string): Promise<ConfiguracionSitio | undefined> {
+    const [config] = await db.select().from(configuracionSitio).where(eq(configuracionSitio.clave, clave));
+    return config;
+  }
+
+  async getAllConfiguraciones(): Promise<ConfiguracionSitio[]> {
+    return await db.select().from(configuracionSitio).orderBy(configuracionSitio.categoria, configuracionSitio.clave);
+  }
+
+  async updateConfiguracion(clave: string, valor: string): Promise<ConfiguracionSitio | undefined> {
+    const [actualizado] = await db
+      .update(configuracionSitio)
+      .set({
+        valor,
+        updatedAt: new Date(),
+      })
+      .where(eq(configuracionSitio.clave, clave))
+      .returning();
+    return actualizado;
   }
 }
 
