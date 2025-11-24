@@ -37,7 +37,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      res.json(user);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      const authUser = {
+        id: user.id,
+        nombre: user.firstName && user.lastName 
+          ? `${user.firstName} ${user.lastName}`.trim()
+          : user.firstName || user.lastName || 'Usuario',
+        email: user.email || '',
+        rol: user.rol,
+        rolesSuperAdmin: user.rol === 'super_admin',
+        telefono: user.telefono || undefined,
+        ubicacionLatitud: user.latitud || undefined,
+        ubicacionLongitud: user.longitud || undefined,
+        modoTaxi: user.modoTaxi === 'conductor',
+        activo: user.estado === 'activo',
+      };
+      
+      res.json(authUser);
     } catch (error) {
       console.error("Error al obtener usuario:", error);
       res.status(500).json({ message: "Error al obtener usuario" });

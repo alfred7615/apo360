@@ -212,6 +212,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUsuario(usuarioData: Partial<InsertUsuario> & { id: string }): Promise<Usuario> {
+    const existingByEmail = usuarioData.email 
+      ? await db.select().from(usuarios).where(eq(usuarios.email, usuarioData.email)).limit(1)
+      : [];
+    
+    if (existingByEmail.length > 0) {
+      const [updated] = await db
+        .update(usuarios)
+        .set(usuarioData)
+        .where(eq(usuarios.email, usuarioData.email!))
+        .returning();
+      return updated;
+    }
+    
     const [usuario] = await db
       .insert(usuarios)
       .values(usuarioData)

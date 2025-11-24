@@ -3,6 +3,17 @@
 ## Overview
 SEG-APO is a comprehensive community security platform designed for Tacna, Peru. It integrates real-time messaging, ride-hailing (taxi), delivery services, local advertising, and an emergency panic button system. Its core purpose is to enhance community safety, connectivity, and local commerce. The project aims to become a vital tool for community interaction and emergency response, providing a robust platform for local services and security.
 
+## Recent Changes (November 24, 2025)
+### Sistema de Carruseles de Publicidad Completado
+- **Helpers Utilitarios**: Creado `publicidadUtils.ts` con funciones `isPublicidadActiva()` para filtrado por estado y fechas, y `filtrarPublicidadesActivas()` para ordenamiento y filtrado completo.
+- **Componente CarruselPublicidad**: 
+  - Soporta 3 tipos: `carrusel_logos` (logos horizontales), `carrusel_principal` (actividades/eventos), `logos_servicios` (servicios locales)
+  - Grid responsive: 5 columnas (≥1280px), 3 columnas (tablet), 2 columnas (mobile)
+  - Carrusel infinito con autoplay configurable y controles manuales
+  - Filtrado automático por tipo, estado activo, y rango de fechas
+- **Integración**: Carruseles integrados en Landing y Home con títulos descriptivos y spacing adecuado.
+- **Type Safety**: Correcciones en home.tsx para usar propiedades correctas de AuthUser (nombre, rol, activo) y tipado correcto de emergencias con `Emergencia[]`.
+
 ## User Preferences
 **User Preferences:**
 - **Codebase changes:** All changes to the codebase, including new features, bug fixes, or refactoring, must prioritize the Spanish language for variable names, function names, comments, UI texts, error messages, and database schema elements.
