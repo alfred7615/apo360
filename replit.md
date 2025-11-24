@@ -4,6 +4,35 @@
 SEG-APO is a comprehensive community security platform designed for Tacna, Peru. It integrates real-time messaging, ride-hailing (taxi), delivery services, local advertising, and an emergency panic button system. Its core purpose is to enhance community safety, connectivity, and local commerce. The project aims to become a vital tool for community interaction and emergency response, providing a robust platform for local services and security.
 
 ## Recent Changes (November 24, 2025)
+### Panel de Administración: Radio Online y Archivos MP3 (November 24, 2025)
+- **Nuevas Secciones de Administración**:
+  - **Radio Online** (`client/src/components/admin/radios-online-section.tsx`):
+    * CRUD completo: Create, Read, Update, Delete, Toggle Estado
+    * Formularios controlados con React Hook Form usando patrón `form.watch()` + `form.setValue()`
+    * Campos: nombre*, url*, descripcion, logoUrl (con ImageUpload), orden, estado
+    * Estados: "activo" | "pausado"
+    * Lista ordenada con badges visuales de estado
+    * Integración con endpoints `/api/radios-online`
+  
+  - **Archivos MP3** (`client/src/components/admin/archivos-mp3-section.tsx`):
+    * CRUD completo: Create, Read, Update, Delete, Toggle Estado
+    * Formularios controlados (mismo patrón que Radio Online)
+    * Campos: titulo*, archivoUrl*, categoria, duracion, orden, estado
+    * Categorías: Música, Jingles, Publicidad, Promocionales, Noticias, Otros
+    * Display de duración formateada (MM:SS)
+    * Lista ordenada con badges de estado y categoría
+    * Integración con endpoints `/api/archivos-mp3`
+
+- **Patrón de Formularios Controlados**:
+  - Solución al problema de formularios no controlados en edición
+  - Pattern: `value={form.watch("campo")} onChange={e => form.setValue("campo", e.value)}`
+  - Garantiza que `form.reset()` funcione correctamente al editar
+  - Previene pérdida de datos al actualizar registros existentes
+
+- **Corrección de Bug apiRequest**:
+  - Arreglado orden de parámetros: `apiRequest(method, url, data)` en lugar de `apiRequest(url, method, data)`
+  - Aplicado en `publicidad-section.tsx`
+
 ### Panel de Publicidad Completo con GPS y Caducidad Visual
 - **Schema Ampliado** (`shared/schema.ts`):
   - Campos de redes sociales: facebook, instagram, whatsapp, tiktok, twitter, youtube, linkedin
