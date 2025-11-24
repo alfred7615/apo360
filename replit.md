@@ -93,6 +93,13 @@ SEG-APO is a comprehensive community security platform designed for Tacna, Peru.
   
 - **Integración**: Carruseles integrados en Landing y Home con títulos descriptivos y spacing adecuado.
 - **Type Safety**: Correcciones en home.tsx para usar propiedades correctas de AuthUser (nombre, rol, activo) y tipado correcto de emergencias con `Emergencia[]`.
+- **Testing E2E Verificado** (November 24, 2025):
+  - ✅ Pausa en hover: Carrusel se detiene al pasar mouse, se reanuda al quitarlo
+  - ✅ Grid responsive: 2 columnas móvil, escalando hasta 5 columnas desktop
+  - ✅ Caducidad visual: Overlay gris y badge "Caducada" funcionando
+  - ✅ GPS: Botones de ubicación solo visibles con coordenadas válidas
+  - ✅ Formulario completo: Todos los campos GPS, redes sociales, y ImageUpload integrados
+  - ✅ Autoplay: Intervalos de 3s (logos) y 5s (principal) funcionando correctamente
 
 ## User Preferences
 **User Preferences:**
