@@ -46,6 +46,17 @@ SEG-APO es una plataforma integral de seguridad comunitaria que combina funciona
 - Controles de reproducción, volumen y navegación
 - Selector entre modo radio y modo MP3
 
+#### Radios Online Configuradas
+1. **Radio TacnaFM.apo** - https://mediastreamm.com/8158/
+2. **Radio La Juvenil** - https://mediastreamm.com:7089
+
+#### Listas MP3 por Categoría
+- Rock Moderna: `/assets/mp3/lista 1`
+- Cumbia: `/assets/mp3/lista 2`
+- Éxitos Variado: `/assets/mp3/lista 3`
+- Mix Variado: `/assets/mp3/lista 4`
+- Romántica: `/assets/mp3/lista 5`
+
 ### 7. Panel de Super Administrador (5 Pantallas)
 - **Dashboard**: Estadísticas, cuadros y resúmenes de actividades
 - **Chat**: Monitoreo de todas las conversaciones comunitarias
@@ -173,6 +184,12 @@ seg-apo/
 - `SESSION_SECRET`: Secreto para sesiones (generado automáticamente)
 - `REPL_ID`: ID del Repl (generado automáticamente)
 - `ISSUER_URL`: URL del proveedor OIDC (Replit Auth)
+
+### Credenciales SMTP (para formulario de sugerencias)
+- `SMTP_HOST`: smtp.gmail.com
+- `SMTP_PORT`: 587
+- `SMTP_USER`: aapomayta15@gmail.com
+- `SMTP_PASSWORD`: Contraseña de aplicación (almacenada como secreto)
 
 ### Comandos
 
