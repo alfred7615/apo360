@@ -563,10 +563,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       
-      // Verificar que completó nivel 1
-      const nivel = await storage.getNivelRegistro(userId);
-      if (nivel < 1) {
-        return res.status(400).json({ message: "Debe completar el nivel 1 primero" });
+      // Verificar que completó nivel 1 exactamente (verificar existencia de registro_basico)
+      const registroBasico = await storage.getRegistroBasico(userId);
+      if (!registroBasico) {
+        return res.status(400).json({ message: "Debe completar el nivel 1 (registro básico) primero" });
       }
       
       const data = insertRegistroChatSchema.parse({
@@ -611,10 +611,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       
-      // Verificar que completó nivel 2
-      const nivel = await storage.getNivelRegistro(userId);
-      if (nivel < 2) {
-        return res.status(400).json({ message: "Debe completar el nivel 2 primero" });
+      // Verificar que completó nivel 2 exactamente (verificar existencia de registro_chat)
+      const registroChat = await storage.getRegistroChat(userId);
+      if (!registroChat) {
+        return res.status(400).json({ message: "Debe completar el nivel 2 (registro chat) primero" });
       }
       
       const data = insertRegistroUbicacionSchema.parse({
@@ -659,10 +659,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       
-      // Verificar que completó nivel 3
-      const nivel = await storage.getNivelRegistro(userId);
-      if (nivel < 3) {
-        return res.status(400).json({ message: "Debe completar el nivel 3 primero" });
+      // Verificar que completó nivel 3 exactamente (verificar existencia de registro_ubicacion)
+      const registroUbicacion = await storage.getRegistroUbicacion(userId);
+      if (!registroUbicacion) {
+        return res.status(400).json({ message: "Debe completar el nivel 3 (registro ubicación) primero" });
       }
       
       const data = insertRegistroDireccionSchema.parse({
@@ -707,10 +707,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       
-      // Verificar que completó nivel 4
-      const nivel = await storage.getNivelRegistro(userId);
-      if (nivel < 4) {
-        return res.status(400).json({ message: "Debe completar el nivel 4 primero" });
+      // Verificar que completó nivel 4 exactamente (verificar existencia de registro_direccion)
+      const registroDireccion = await storage.getRegistroDireccion(userId);
+      if (!registroDireccion) {
+        return res.status(400).json({ message: "Debe completar el nivel 4 (registro dirección) primero" });
       }
       
       const data = insertRegistroMarketplaceSchema.parse({
