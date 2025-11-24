@@ -301,55 +301,61 @@ async function seed() {
     console.log("📻 Creando radios online...");
     await db.insert(radiosOnline).values([
       {
-        nombre: "Radio Uno Tacna",
-        url: "https://stream.radiouno.pe/tacna",
-        descripcion: "La radio de Tacna",
-        logoUrl: "https://placehold.co/100x100/8B5CF6/FFFFFF/png?text=R1",
+        nombre: "Radio TacnaFM.apo",
+        url: "https://mediastreamm.com/8158/",
+        descripcion: "La radio oficial de TacnaFM",
+        logoUrl: "https://placehold.co/100x100/8B5CF6/FFFFFF/png?text=TacnaFM",
         orden: 1,
         estado: "activo",
       },
       {
-        nombre: "Radio Líder",
-        url: "https://stream.radiolider.pe/stream",
-        descripcion: "Música y noticias",
-        logoUrl: "https://placehold.co/100x100/EC4899/FFFFFF/png?text=RL",
+        nombre: "Radio La Juvenil",
+        url: "https://mediastreamm.com:7089",
+        descripcion: "Música juvenil y entretenimiento",
+        logoUrl: "https://placehold.co/100x100/EC4899/FFFFFF/png?text=Juvenil",
         orden: 2,
-        estado: "activo",
-      },
-      {
-        nombre: "RPP Tacna",
-        url: "https://streaming.rpp.pe/tacna",
-        descripcion: "Noticias al instante",
-        logoUrl: "https://placehold.co/100x100/F59E0B/FFFFFF/png?text=RPP",
-        orden: 3,
         estado: "activo",
       },
     ]);
 
     // ============================================================
-    // ARCHIVOS MP3
+    // ARCHIVOS MP3 (Playlists por categoría)
     // ============================================================
-    console.log("🎵 Creando archivos MP3...");
+    console.log("🎵 Creando listas de reproducción MP3...");
     await db.insert(archivosMp3).values([
       {
-        titulo: "Himno de Tacna",
-        archivoUrl: "/audio/himno-tacna.mp3",
-        duracion: 180,
+        titulo: "Rock Moderna",
+        archivoUrl: "/assets/mp3/lista 1",
+        duracion: 0,
         orden: 1,
         estado: "activo",
       },
       {
-        titulo: "Mensaje de Bienvenida SEG-APO",
-        archivoUrl: "/audio/bienvenida.mp3",
-        duracion: 45,
+        titulo: "Cumbia",
+        archivoUrl: "/assets/mp3/lista 2",
+        duracion: 0,
         orden: 2,
         estado: "activo",
       },
       {
-        titulo: "Instrucciones de Emergencia",
-        archivoUrl: "/audio/emergencia.mp3",
-        duracion: 120,
+        titulo: "Éxitos Variado",
+        archivoUrl: "/assets/mp3/lista 3",
+        duracion: 0,
         orden: 3,
+        estado: "activo",
+      },
+      {
+        titulo: "Mix Variado",
+        archivoUrl: "/assets/mp3/lista 4",
+        duracion: 0,
+        orden: 4,
+        estado: "activo",
+      },
+      {
+        titulo: "Romántica",
+        archivoUrl: "/assets/mp3/lista 5",
+        duracion: 0,
+        orden: 5,
         estado: "activo",
       },
     ]);
@@ -362,8 +368,8 @@ async function seed() {
     console.log("- 5 servicios locales");
     console.log("- 5 productos de delivery");
     console.log("- 4 grupos de chat");
-    console.log("- 3 radios online");
-    console.log("- 3 archivos MP3");
+    console.log("- 2 radios online (TacnaFM.apo, La Juvenil)");
+    console.log("- 5 listas MP3 (Rock, Cumbia, Éxitos, Mix, Romántica)");
 
   } catch (error) {
     console.error("❌ Error durante el seed:", error);
