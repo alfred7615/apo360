@@ -38,6 +38,7 @@ import { z } from "zod";
 import { Plus, Pencil, Trash2, Pause, Play, ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { ImageUpload } from "@/components/ImageUpload";
 
 type Publicidad = {
   id: string;
@@ -336,13 +337,16 @@ export default function PublicidadSection() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="imagenUrl">URL de Imagen</Label>
-                <Input
-                  id="imagenUrl"
-                  {...form.register("imagenUrl")}
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  data-testid="input-imagen-url"
+                <Label htmlFor="imagenUrl">Imagen de Publicidad</Label>
+                <ImageUpload
+                  value={form.watch("imagenUrl") || ""}
+                  onChange={(url) => form.setValue("imagenUrl", url || "")}
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  endpoint="publicidad"
                 />
+                {form.formState.errors.imagenUrl && (
+                  <p className="text-sm text-destructive">{form.formState.errors.imagenUrl.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">

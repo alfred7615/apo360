@@ -4,6 +4,36 @@
 SEG-APO is a comprehensive community security platform designed for Tacna, Peru. It integrates real-time messaging, ride-hailing (taxi), delivery services, local advertising, and an emergency panic button system. Its core purpose is to enhance community safety, connectivity, and local commerce. The project aims to become a vital tool for community interaction and emergency response, providing a robust platform for local services and security.
 
 ## Recent Changes (November 24, 2025)
+### Sistema Completo de Upload de Imágenes
+- **Backend Upload System** (`server/uploadConfigByEndpoint.ts`, `server/routes.ts`):
+  - Función `createUploadMiddleware(folder, fieldName)` para configuración por endpoint
+  - 4 endpoints protegidos con autenticación + rol super_admin:
+    * `/api/upload/publicidad` → carpeta 'carrusel', campo 'imagen'
+    * `/api/upload/galeria` → carpeta 'galeria', campo 'imagen'
+    * `/api/upload/servicios` → carpeta 'servicios', campo 'imagen'
+    * `/api/upload/documentos` → carpeta 'documentos', campo 'documento'
+  - Validación MIME automática (JPG, PNG, WEBP)
+  - Tamaño máximo: 5MB por archivo
+  - Generación correcta de URLs públicas: `/assets/{carpeta}/{archivo}`
+  - Función `deleteFile()` para eliminación segura de archivos
+  
+- **Middleware de Seguridad** (`server/authMiddleware.ts`):
+  - `requireSuperAdmin` verifica rol desde base de datos usando `storage.getUser()`
+  - Previene privilege spoofing
+  - Manejo robusto de errores con códigos HTTP apropiados
+
+- **Componente Frontend** (`client/src/components/ImageUpload.tsx`):
+  - Reutilizable con detección automática de campo según endpoint
+  - Preview de imagen con sincronización inteligente (no sobrescribe durante upload)
+  - Props: `endpoint`, `fileField`, `maxSize`, `acceptedFormats`
+  - Validación de tipo y tamaño en cliente
+  - Manejo de errores con mensajes descriptivos
+  - Integrado en panel de administración de publicidad
+
+- **Estructura de Archivos**:
+  - Carpetas creadas en `public/assets/`: carrusel, galeria, servicios, documentos
+  - Express static middleware para servir archivos desde `/assets`
+
 ### Sistema de Carruseles de Publicidad Completado
 - **Helpers Utilitarios**: Creado `publicidadUtils.ts` con funciones `isPublicidadActiva()` para filtrado por estado y fechas, y `filtrarPublicidadesActivas()` para ordenamiento y filtrado completo.
 - **Componente CarruselPublicidad**: 

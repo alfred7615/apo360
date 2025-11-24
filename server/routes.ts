@@ -4,7 +4,8 @@ import express from "express";
 import path from "path";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { upload, getPublicUrl } from "./uploadConfig";
+import { createUploadMiddleware, getPublicUrl } from "./uploadConfigByEndpoint";
+import { requireSuperAdmin } from "./authMiddleware";
 import { 
   insertPublicidadSchema, 
   insertServicioSchema, 
@@ -40,7 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // RUTAS DE UPLOAD DE ARCHIVOS
   // ============================================================
 
-  app.post('/api/upload/publicidad', isAuthenticated, upload.single('imagen'), async (req, res) => {
+  app.post('/api/upload/publicidad', isAuthenticated, requireSuperAdmin, createUploadMiddleware('carrusel', 'imagen'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
@@ -59,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/upload/galeria', isAuthenticated, upload.single('imagen'), async (req, res) => {
+  app.post('/api/upload/galeria', isAuthenticated, requireSuperAdmin, createUploadMiddleware('galeria', 'imagen'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
@@ -78,7 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/upload/servicios', isAuthenticated, upload.single('imagen'), async (req, res) => {
+  app.post('/api/upload/servicios', isAuthenticated, requireSuperAdmin, createUploadMiddleware('servicios', 'imagen'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
@@ -97,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/upload/documentos', isAuthenticated, upload.single('documento'), async (req, res) => {
+  app.post('/api/upload/documentos', isAuthenticated, requireSuperAdmin, createUploadMiddleware('documentos', 'documento'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
