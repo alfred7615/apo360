@@ -4,11 +4,11 @@ import { AlertCircle, LayoutDashboard, MessageSquare, MapPin, Users as UsersIcon
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
-import DashboardScreen from "./admin/dashboard-screen";
-import ChatMonitorScreen from "./admin/chat-monitor-screen";
-import NotificationsScreen from "./admin/notifications-screen";
-import GeolocationScreen from "./admin/geolocation-screen";
-import MapsScreen from "./admin/maps-screen";
+import DashboardScreen from "@/pages/admin/dashboard-screen";
+import ChatMonitorScreen from "@/pages/admin/chat-monitor-screen";
+import NotificationsScreen from "@/pages/admin/notifications-screen";
+import GeolocationScreen from "@/pages/admin/geolocation-screen";
+import MapsScreen from "@/pages/admin/maps-screen";
 
 type AdminScreen = "dashboard" | "chat" | "notifications" | "geolocation" | "maps";
 
