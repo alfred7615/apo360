@@ -17,6 +17,12 @@ import {
   configuracionSaldos,
   encuestas,
   popupsPublicitarios,
+  registroBasico,
+  registroChat,
+  registroUbicacion,
+  registroDireccion,
+  registroMarketplace,
+  credencialesConductor,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -53,6 +59,18 @@ import {
   type InsertPopupPublicitario,
   type MiembroGrupo,
   type InsertMiembroGrupo,
+  type RegistroBasico,
+  type InsertRegistroBasico,
+  type RegistroChat,
+  type InsertRegistroChat,
+  type RegistroUbicacion,
+  type InsertRegistroUbicacion,
+  type RegistroDireccion,
+  type InsertRegistroDireccion,
+  type RegistroMarketplace,
+  type InsertRegistroMarketplace,
+  type CredencialesConductor,
+  type InsertCredencialesConductor,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -149,6 +167,26 @@ export interface IStorage {
   createPopup(data: InsertPopupPublicitario): Promise<PopupPublicitario>;
   updatePopup(id: string, data: Partial<InsertPopupPublicitario>): Promise<PopupPublicitario | undefined>;
   deletePopup(id: string): Promise<void>;
+  
+  // Sistema de Registro por Niveles (5 estrellas)
+  getNivelRegistro(usuarioId: string): Promise<number>;
+  getRegistroBasico(usuarioId: string): Promise<RegistroBasico | undefined>;
+  createRegistroBasico(data: InsertRegistroBasico): Promise<RegistroBasico>;
+  getRegistroChat(usuarioId: string): Promise<RegistroChat | undefined>;
+  createRegistroChat(data: InsertRegistroChat): Promise<RegistroChat>;
+  updateRegistroChat(usuarioId: string, data: Partial<InsertRegistroChat>): Promise<RegistroChat | undefined>;
+  getRegistroUbicacion(usuarioId: string): Promise<RegistroUbicacion | undefined>;
+  createRegistroUbicacion(data: InsertRegistroUbicacion): Promise<RegistroUbicacion>;
+  updateRegistroUbicacion(usuarioId: string, data: Partial<InsertRegistroUbicacion>): Promise<RegistroUbicacion | undefined>;
+  getRegistroDireccion(usuarioId: string): Promise<RegistroDireccion | undefined>;
+  createRegistroDireccion(data: InsertRegistroDireccion): Promise<RegistroDireccion>;
+  updateRegistroDireccion(usuarioId: string, data: Partial<InsertRegistroDireccion>): Promise<RegistroDireccion | undefined>;
+  getRegistroMarketplace(usuarioId: string): Promise<RegistroMarketplace | undefined>;
+  createRegistroMarketplace(data: InsertRegistroMarketplace): Promise<RegistroMarketplace>;
+  updateRegistroMarketplace(usuarioId: string, data: Partial<InsertRegistroMarketplace>): Promise<RegistroMarketplace | undefined>;
+  getCredencialesConductor(usuarioId: string): Promise<CredencialesConductor | undefined>;
+  createCredencialesConductor(data: InsertCredencialesConductor): Promise<CredencialesConductor>;
+  updateCredencialesConductor(usuarioId: string, data: Partial<InsertCredencialesConductor>): Promise<CredencialesConductor | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -722,6 +760,145 @@ export class DatabaseStorage implements IStorage {
   async getAllGruposConMiembrosLegacy(): Promise<GrupoChat[]> {
     // Obtener todos los grupos con sus miembros JSON legacy
     return await db.select().from(gruposChat);
+  }
+
+  // ============================================================
+  // SISTEMA DE REGISTRO POR NIVELES (5 ESTRELLAS)
+  // ============================================================
+
+  async getNivelRegistro(usuarioId: string): Promise<number> {
+    // Verificar qué niveles ha completado el usuario
+    // NOTA: credenciales_conductor NO es parte del nivel core (son credenciales opcionales independientes)
+    const [basico] = await db.select().from(registroBasico).where(eq(registroBasico.usuarioId, usuarioId));
+    if (!basico) return 0; // No ha completado nivel 1
+    
+    const [chat] = await db.select().from(registroChat).where(eq(registroChat.usuarioId, usuarioId));
+    if (!chat) return 1; // Completó nivel 1, falta nivel 2
+    
+    const [ubicacion] = await db.select().from(registroUbicacion).where(eq(registroUbicacion.usuarioId, usuarioId));
+    if (!ubicacion) return 2; // Completó nivel 2, falta nivel 3
+    
+    const [direccion] = await db.select().from(registroDireccion).where(eq(registroDireccion.usuarioId, usuarioId));
+    if (!direccion) return 3; // Completó nivel 3, falta nivel 4
+    
+    const [marketplace] = await db.select().from(registroMarketplace).where(eq(registroMarketplace.usuarioId, usuarioId));
+    if (!marketplace) return 4; // Completó nivel 4, falta nivel 5
+    
+    return 5; // Completó todos los niveles (1-5)
+  }
+
+  // NIVEL 1: Registro Básico
+  async getRegistroBasico(usuarioId: string): Promise<RegistroBasico | undefined> {
+    const [registro] = await db.select().from(registroBasico).where(eq(registroBasico.usuarioId, usuarioId));
+    return registro || undefined;
+  }
+
+  async createRegistroBasico(data: InsertRegistroBasico): Promise<RegistroBasico> {
+    const [registro] = await db.insert(registroBasico).values(data).returning();
+    return registro;
+  }
+
+  // NIVEL 2: Servicio Chat
+  async getRegistroChat(usuarioId: string): Promise<RegistroChat | undefined> {
+    const [registro] = await db.select().from(registroChat).where(eq(registroChat.usuarioId, usuarioId));
+    return registro || undefined;
+  }
+
+  async createRegistroChat(data: InsertRegistroChat): Promise<RegistroChat> {
+    const [registro] = await db.insert(registroChat).values(data).returning();
+    return registro;
+  }
+
+  async updateRegistroChat(usuarioId: string, data: Partial<InsertRegistroChat>): Promise<RegistroChat | undefined> {
+    const [actualizado] = await db
+      .update(registroChat)
+      .set(data)
+      .where(eq(registroChat.usuarioId, usuarioId))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  // NIVEL 3: Ubicación
+  async getRegistroUbicacion(usuarioId: string): Promise<RegistroUbicacion | undefined> {
+    const [registro] = await db.select().from(registroUbicacion).where(eq(registroUbicacion.usuarioId, usuarioId));
+    return registro || undefined;
+  }
+
+  async createRegistroUbicacion(data: InsertRegistroUbicacion): Promise<RegistroUbicacion> {
+    const [registro] = await db.insert(registroUbicacion).values(data).returning();
+    return registro;
+  }
+
+  async updateRegistroUbicacion(usuarioId: string, data: Partial<InsertRegistroUbicacion>): Promise<RegistroUbicacion | undefined> {
+    const [actualizado] = await db
+      .update(registroUbicacion)
+      .set(data)
+      .where(eq(registroUbicacion.usuarioId, usuarioId))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  // NIVEL 4: Dirección
+  async getRegistroDireccion(usuarioId: string): Promise<RegistroDireccion | undefined> {
+    const [registro] = await db.select().from(registroDireccion).where(eq(registroDireccion.usuarioId, usuarioId));
+    return registro || undefined;
+  }
+
+  async createRegistroDireccion(data: InsertRegistroDireccion): Promise<RegistroDireccion> {
+    const [registro] = await db.insert(registroDireccion).values(data).returning();
+    return registro;
+  }
+
+  async updateRegistroDireccion(usuarioId: string, data: Partial<InsertRegistroDireccion>): Promise<RegistroDireccion | undefined> {
+    const [actualizado] = await db
+      .update(registroDireccion)
+      .set(data)
+      .where(eq(registroDireccion.usuarioId, usuarioId))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  // NIVEL 5: Marketplace
+  async getRegistroMarketplace(usuarioId: string): Promise<RegistroMarketplace | undefined> {
+    const [registro] = await db.select().from(registroMarketplace).where(eq(registroMarketplace.usuarioId, usuarioId));
+    return registro || undefined;
+  }
+
+  async createRegistroMarketplace(data: InsertRegistroMarketplace): Promise<RegistroMarketplace> {
+    const [registro] = await db.insert(registroMarketplace).values(data).returning();
+    return registro;
+  }
+
+  async updateRegistroMarketplace(usuarioId: string, data: Partial<InsertRegistroMarketplace>): Promise<RegistroMarketplace | undefined> {
+    const [actualizado] = await db
+      .update(registroMarketplace)
+      .set(data)
+      .where(eq(registroMarketplace.usuarioId, usuarioId))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  // CREDENCIALES DE CONDUCTOR
+  async getCredencialesConductor(usuarioId: string): Promise<CredencialesConductor | undefined> {
+    const [credenciales] = await db.select().from(credencialesConductor).where(eq(credencialesConductor.usuarioId, usuarioId));
+    return credenciales || undefined;
+  }
+
+  async createCredencialesConductor(data: InsertCredencialesConductor): Promise<CredencialesConductor> {
+    const [credenciales] = await db.insert(credencialesConductor).values(data).returning();
+    return credenciales;
+  }
+
+  async updateCredencialesConductor(usuarioId: string, data: Partial<InsertCredencialesConductor>): Promise<CredencialesConductor | undefined> {
+    const [actualizado] = await db
+      .update(credencialesConductor)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(credencialesConductor.usuarioId, usuarioId))
+      .returning();
+    return actualizado || undefined;
   }
 }
 

@@ -378,3 +378,138 @@ export type UsuarioRol = typeof usuarioRoles.$inferSelect;
 export const insertAdministradorSchema = createInsertSchema(administradores).omit({ id: true, createdAt: true });
 export type InsertAdministrador = z.infer<typeof insertAdministradorSchema>;
 export type Administrador = typeof administradores.$inferSelect;
+
+// ============================================================
+// SISTEMA DE REGISTRO POR NIVELES (5 ESTRELLAS)
+// ============================================================
+
+// NIVEL 1: Básico (1 estrella)
+// Nota: password se maneja en el sistema de autenticación principal, no aquí
+export const registroBasico = pgTable("registro_basico", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().unique().references(() => usuarios.id),
+  alias: varchar("alias").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRegistroBasicoSchema = createInsertSchema(registroBasico).omit({ id: true, createdAt: true });
+export type InsertRegistroBasico = z.infer<typeof insertRegistroBasicoSchema>;
+export type RegistroBasico = typeof registroBasico.$inferSelect;
+
+// NIVEL 2: Servicio Chat (2 estrellas)
+export const registroChat = pgTable("registro_chat", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().unique().references(() => usuarios.id),
+  nombres: varchar("nombres").notNull(),
+  apellidos: varchar("apellidos").notNull(),
+  foto: varchar("foto"),
+  dniNumero: varchar("dni_numero", { length: 20 }).notNull(),
+  dniFrenteUrl: varchar("dni_frente_url").notNull(),
+  dniPosteriorUrl: varchar("dni_posterior_url").notNull(),
+  dniFechaCaducidad: date("dni_fecha_caducidad").notNull(),
+  numeroCelular: varchar("numero_celular", { length: 20 }).notNull(),
+  verificado: boolean("verificado").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRegistroChatSchema = createInsertSchema(registroChat).omit({ id: true, createdAt: true });
+export type InsertRegistroChat = z.infer<typeof insertRegistroChatSchema>;
+export type RegistroChat = typeof registroChat.$inferSelect;
+
+// NIVEL 3: Ubicación (3 estrellas)
+export const registroUbicacion = pgTable("registro_ubicacion", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().unique().references(() => usuarios.id),
+  pais: varchar("pais").notNull(),
+  departamento: varchar("departamento").notNull(),
+  distrito: varchar("distrito").notNull(),
+  sector: varchar("sector").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRegistroUbicacionSchema = createInsertSchema(registroUbicacion).omit({ id: true, createdAt: true });
+export type InsertRegistroUbicacion = z.infer<typeof insertRegistroUbicacionSchema>;
+export type RegistroUbicacion = typeof registroUbicacion.$inferSelect;
+
+// NIVEL 4: Dirección (4 estrellas)
+export const registroDireccion = pgTable("registro_direccion", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().unique().references(() => usuarios.id),
+  direccion: text("direccion").notNull(),
+  mzaLoteNumero: varchar("mza_lote_numero"),
+  avenidaCalle: varchar("avenida_calle"),
+  gpsLatitud: real("gps_latitud").notNull(),
+  gpsLongitud: real("gps_longitud").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRegistroDireccionSchema = createInsertSchema(registroDireccion).omit({ id: true, createdAt: true });
+export type InsertRegistroDireccion = z.infer<typeof insertRegistroDireccionSchema>;
+export type RegistroDireccion = typeof registroDireccion.$inferSelect;
+
+// NIVEL 5: Marketplace/Venta (5 estrellas)
+export const registroMarketplace = pgTable("registro_marketplace", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().unique().references(() => usuarios.id),
+  nombreLocal: varchar("nombre_local").notNull(),
+  direccionLocal: text("direccion_local").notNull(),
+  gpsLocalLatitud: real("gps_local_latitud").notNull(),
+  gpsLocalLongitud: real("gps_local_longitud").notNull(),
+  numeroRuc: varchar("numero_ruc", { length: 20 }).notNull(),
+  verificado: boolean("verificado").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRegistroMarketplaceSchema = createInsertSchema(registroMarketplace).omit({ id: true, createdAt: true });
+export type InsertRegistroMarketplace = z.infer<typeof insertRegistroMarketplaceSchema>;
+export type RegistroMarketplace = typeof registroMarketplace.$inferSelect;
+
+// CREDENCIALES DE CONDUCTOR (Taxi/Bus/Delivery/Mudanzas)
+export const credencialesConductor = pgTable("credenciales_conductor", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().unique().references(() => usuarios.id),
+  
+  // Brevete
+  brevetteNumero: varchar("brevette_numero"),
+  brevetteFrenteUrl: varchar("brevette_frente_url"),
+  brevettePosteriorUrl: varchar("brevette_posterior_url"),
+  brevetteFechaInicio: date("brevette_fecha_inicio"),
+  brevetteFechaCaducidad: date("brevette_fecha_caducidad"),
+  
+  // SOAT
+  soatNumero: varchar("soat_numero"),
+  soatFrenteUrl: varchar("soat_frente_url"),
+  soatPosteriorUrl: varchar("soat_posterior_url"),
+  soatFechaInicio: date("soat_fecha_inicio"),
+  soatFechaCaducidad: date("soat_fecha_caducidad"),
+  
+  // Revisión Técnica
+  revisionTecnicaNumero: varchar("revision_tecnica_numero"),
+  revisionTecnicaFrenteUrl: varchar("revision_tecnica_frente_url"),
+  revisionTecnicaPosteriorUrl: varchar("revision_tecnica_posterior_url"),
+  revisionTecnicaFechaInicio: date("revision_tecnica_fecha_inicio"),
+  revisionTecnicaFechaCaducidad: date("revision_tecnica_fecha_caducidad"),
+  
+  // Credencial Conductor
+  credencialConductorNumero: varchar("credencial_conductor_numero"),
+  credencialConductorFrenteUrl: varchar("credencial_conductor_frente_url"),
+  credencialConductorPosteriorUrl: varchar("credencial_conductor_posterior_url"),
+  credencialConductorFechaInicio: date("credencial_conductor_fecha_inicio"),
+  credencialConductorFechaCaducidad: date("credencial_conductor_fecha_caducidad"),
+  
+  // Credencial Taxi
+  credencialTaxiNumero: varchar("credencial_taxi_numero"),
+  credencialTaxiFrenteUrl: varchar("credencial_taxi_frente_url"),
+  credencialTaxiPosteriorUrl: varchar("credencial_taxi_posterior_url"),
+  credencialTaxiFechaInicio: date("credencial_taxi_fecha_inicio"),
+  credencialTaxiFechaCaducidad: date("credencial_taxi_fecha_caducidad"),
+  
+  verificado: boolean("verificado").default(false),
+  tipoServicio: varchar("tipo_servicio", { length: 50 }), // "taxi", "bus", "delivery", "mudanzas"
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCredencialesConductorSchema = createInsertSchema(credencialesConductor).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCredencialesConductor = z.infer<typeof insertCredencialesConductorSchema>;
+export type CredencialesConductor = typeof credencialesConductor.$inferSelect;

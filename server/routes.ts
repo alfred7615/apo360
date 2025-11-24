@@ -2,7 +2,24 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertPublicidadSchema, insertServicioSchema, insertProductoDeliverySchema, insertGrupoChatSchema, insertMensajeSchema, insertEmergenciaSchema, insertViajeTaxiSchema, insertPedidoDeliverySchema, insertRadioOnlineSchema, insertArchivoMp3Schema } from "@shared/schema";
+import { 
+  insertPublicidadSchema, 
+  insertServicioSchema, 
+  insertProductoDeliverySchema, 
+  insertGrupoChatSchema, 
+  insertMensajeSchema, 
+  insertEmergenciaSchema, 
+  insertViajeTaxiSchema, 
+  insertPedidoDeliverySchema, 
+  insertRadioOnlineSchema, 
+  insertArchivoMp3Schema,
+  insertRegistroBasicoSchema,
+  insertRegistroChatSchema,
+  insertRegistroUbicacionSchema,
+  insertRegistroDireccionSchema,
+  insertRegistroMarketplaceSchema,
+  insertCredencialesConductorSchema,
+} from "@shared/schema";
 import { registerAdminRoutes } from "./routes-admin";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -484,6 +501,282 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ Error en backfill:', error);
       res.status(500).json({ message: 'Error en backfill' });
+    }
+  });
+
+  // ============================================================
+  // SISTEMA DE REGISTRO POR NIVELES (5 ESTRELLAS)
+  // ============================================================
+
+  // Obtener nivel actual del usuario
+  app.get('/api/registro/nivel', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const nivel = await storage.getNivelRegistro(userId);
+      res.json({ nivel });
+    } catch (error) {
+      console.error("Error al obtener nivel de registro:", error);
+      res.status(500).json({ message: "Error al obtener nivel de registro" });
+    }
+  });
+
+  // NIVEL 1: Registro Básico
+  app.get('/api/registro/basico', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const registro = await storage.getRegistroBasico(userId);
+      res.json(registro || {});
+    } catch (error) {
+      console.error("Error al obtener registro básico:", error);
+      res.status(500).json({ message: "Error al obtener registro básico" });
+    }
+  });
+
+  app.post('/api/registro/basico', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const data = insertRegistroBasicoSchema.parse({
+        ...req.body,
+        usuarioId: userId,
+      });
+      const registro = await storage.createRegistroBasico(data);
+      res.json(registro);
+    } catch (error: any) {
+      console.error("Error al crear registro básico:", error);
+      res.status(400).json({ message: error.message || "Error al crear registro básico" });
+    }
+  });
+
+  // NIVEL 2: Servicio Chat
+  app.get('/api/registro/chat', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const registro = await storage.getRegistroChat(userId);
+      res.json(registro || {});
+    } catch (error) {
+      console.error("Error al obtener registro chat:", error);
+      res.status(500).json({ message: "Error al obtener registro chat" });
+    }
+  });
+
+  app.post('/api/registro/chat', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Verificar que completó nivel 1
+      const nivel = await storage.getNivelRegistro(userId);
+      if (nivel < 1) {
+        return res.status(400).json({ message: "Debe completar el nivel 1 primero" });
+      }
+      
+      const data = insertRegistroChatSchema.parse({
+        ...req.body,
+        usuarioId: userId,
+      });
+      const registro = await storage.createRegistroChat(data);
+      res.json(registro);
+    } catch (error: any) {
+      console.error("Error al crear registro chat:", error);
+      res.status(400).json({ message: error.message || "Error al crear registro chat" });
+    }
+  });
+
+  app.patch('/api/registro/chat', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const registro = await storage.updateRegistroChat(userId, req.body);
+      if (!registro) {
+        return res.status(404).json({ message: "Registro no encontrado" });
+      }
+      res.json(registro);
+    } catch (error) {
+      console.error("Error al actualizar registro chat:", error);
+      res.status(500).json({ message: "Error al actualizar registro chat" });
+    }
+  });
+
+  // NIVEL 3: Ubicación
+  app.get('/api/registro/ubicacion', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const registro = await storage.getRegistroUbicacion(userId);
+      res.json(registro || {});
+    } catch (error) {
+      console.error("Error al obtener registro ubicación:", error);
+      res.status(500).json({ message: "Error al obtener registro ubicación" });
+    }
+  });
+
+  app.post('/api/registro/ubicacion', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Verificar que completó nivel 2
+      const nivel = await storage.getNivelRegistro(userId);
+      if (nivel < 2) {
+        return res.status(400).json({ message: "Debe completar el nivel 2 primero" });
+      }
+      
+      const data = insertRegistroUbicacionSchema.parse({
+        ...req.body,
+        usuarioId: userId,
+      });
+      const registro = await storage.createRegistroUbicacion(data);
+      res.json(registro);
+    } catch (error: any) {
+      console.error("Error al crear registro ubicación:", error);
+      res.status(400).json({ message: error.message || "Error al crear registro ubicación" });
+    }
+  });
+
+  app.patch('/api/registro/ubicacion', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const registro = await storage.updateRegistroUbicacion(userId, req.body);
+      if (!registro) {
+        return res.status(404).json({ message: "Registro no encontrado" });
+      }
+      res.json(registro);
+    } catch (error) {
+      console.error("Error al actualizar registro ubicación:", error);
+      res.status(500).json({ message: "Error al actualizar registro ubicación" });
+    }
+  });
+
+  // NIVEL 4: Dirección
+  app.get('/api/registro/direccion', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const registro = await storage.getRegistroDireccion(userId);
+      res.json(registro || {});
+    } catch (error) {
+      console.error("Error al obtener registro dirección:", error);
+      res.status(500).json({ message: "Error al obtener registro dirección" });
+    }
+  });
+
+  app.post('/api/registro/direccion', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Verificar que completó nivel 3
+      const nivel = await storage.getNivelRegistro(userId);
+      if (nivel < 3) {
+        return res.status(400).json({ message: "Debe completar el nivel 3 primero" });
+      }
+      
+      const data = insertRegistroDireccionSchema.parse({
+        ...req.body,
+        usuarioId: userId,
+      });
+      const registro = await storage.createRegistroDireccion(data);
+      res.json(registro);
+    } catch (error: any) {
+      console.error("Error al crear registro dirección:", error);
+      res.status(400).json({ message: error.message || "Error al crear registro dirección" });
+    }
+  });
+
+  app.patch('/api/registro/direccion', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const registro = await storage.updateRegistroDireccion(userId, req.body);
+      if (!registro) {
+        return res.status(404).json({ message: "Registro no encontrado" });
+      }
+      res.json(registro);
+    } catch (error) {
+      console.error("Error al actualizar registro dirección:", error);
+      res.status(500).json({ message: "Error al actualizar registro dirección" });
+    }
+  });
+
+  // NIVEL 5: Marketplace
+  app.get('/api/registro/marketplace', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const registro = await storage.getRegistroMarketplace(userId);
+      res.json(registro || {});
+    } catch (error) {
+      console.error("Error al obtener registro marketplace:", error);
+      res.status(500).json({ message: "Error al obtener registro marketplace" });
+    }
+  });
+
+  app.post('/api/registro/marketplace', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Verificar que completó nivel 4
+      const nivel = await storage.getNivelRegistro(userId);
+      if (nivel < 4) {
+        return res.status(400).json({ message: "Debe completar el nivel 4 primero" });
+      }
+      
+      const data = insertRegistroMarketplaceSchema.parse({
+        ...req.body,
+        usuarioId: userId,
+      });
+      const registro = await storage.createRegistroMarketplace(data);
+      res.json(registro);
+    } catch (error: any) {
+      console.error("Error al crear registro marketplace:", error);
+      res.status(400).json({ message: error.message || "Error al crear registro marketplace" });
+    }
+  });
+
+  app.patch('/api/registro/marketplace', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const registro = await storage.updateRegistroMarketplace(userId, req.body);
+      if (!registro) {
+        return res.status(404).json({ message: "Registro no encontrado" });
+      }
+      res.json(registro);
+    } catch (error) {
+      console.error("Error al actualizar registro marketplace:", error);
+      res.status(500).json({ message: "Error al actualizar registro marketplace" });
+    }
+  });
+
+  // CREDENCIALES DE CONDUCTOR
+  app.get('/api/registro/credenciales-conductor', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const credenciales = await storage.getCredencialesConductor(userId);
+      res.json(credenciales || {});
+    } catch (error) {
+      console.error("Error al obtener credenciales conductor:", error);
+      res.status(500).json({ message: "Error al obtener credenciales conductor" });
+    }
+  });
+
+  app.post('/api/registro/credenciales-conductor', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const data = insertCredencialesConductorSchema.parse({
+        ...req.body,
+        usuarioId: userId,
+      });
+      const credenciales = await storage.createCredencialesConductor(data);
+      res.json(credenciales);
+    } catch (error: any) {
+      console.error("Error al crear credenciales conductor:", error);
+      res.status(400).json({ message: error.message || "Error al crear credenciales conductor" });
+    }
+  });
+
+  app.patch('/api/registro/credenciales-conductor', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const credenciales = await storage.updateCredencialesConductor(userId, req.body);
+      if (!credenciales) {
+        return res.status(404).json({ message: "Credenciales no encontradas" });
+      }
+      res.json(credenciales);
+    } catch (error) {
+      console.error("Error al actualizar credenciales conductor:", error);
+      res.status(500).json({ message: "Error al actualizar credenciales conductor" });
     }
   });
 
