@@ -262,9 +262,75 @@ npm run db:push --force
 - Notificaciones y alertas
 - Base de datos (nombres de columnas y tablas en español)
 
+## ESPECIFICACIÓN COMPLETA DEL PROYECTO
+
+### Sistema de Cartera y Saldos - Transacciones Configurables
+
+El Super Administrador puede configurar porcentajes o montos fijos para:
+- **Publicidad**: Descuento al crear publicidad en carrusel o logos
+- **Taxi Conductor**: Descuento/comisión al aceptar viaje
+- **Taxi Pasajero**: Descuento al solicitar taxi
+- **Delivery**: Comisión del local al hacer pedido
+- **Chat Grupal**: Suscripción mensual para acceder a grupos
+- **Bonificación Social**: +0.10 soles si comparten publicidad en redes sociales
+
+**EXCEPCIÓN**: Si usuario comparte publicidad en redes (favoritos, comentarios, compartir), NO se le cobra el servicio de chat ese mes.
+
+---
+
+### Panel Super Administrador - 5 Pantallas Principales
+
+#### Pantalla 1: Dashboard Principal (5 Sectores)
+
+**1.1 - PUBLICIDAD**
+- Crear: título, descripción, imagen, enlace, tipo (carrusel_logos, carrusel_principal, popup)
+- Fecha inicio y fin (automatiza estado a "finalizado" después)
+- Pausar/reanudar/editar/eliminar publicidades
+- Renovación: ingresar nuevas fechas para reactivar
+
+**1.2 - RADIO ONLINE Y LISTAS MP3**
+- Radios: agregar URL, modificar, eliminar, pausar/reanudar, reordenar
+- Listas MP3: crear por categoría (Rock, Cumbia, Éxitos, Mix, Romántica)
+- Archivos: agregar a lista, modificar, eliminar, pausar/reanudar, reordenar
+
+**1.3 - USUARIOS Y ADMINISTRADORES**
+- Usuarios: listar, modificar, suspender, bloquear, eliminar
+- Roles múltiples: un usuario puede ser taxi + serenazgo + admin
+- Admins Nivel 2: crear para grupos de chat, taxi, servicios, empresas
+- Asignar permisos específicos por rol y referencia
+
+**1.4 - CARTERA Y SALDOS**
+- Configurar: porcentaje/monto fijo por tipo de transacción
+- Reportes: ver saldo de usuario, historial, filtrar por tipo
+- Métodos de pago: bancario, PayPal, Plin, Yape
+- Tipos de moneda: PEN, USD, EUR
+
+**1.5 - ENCUESTAS Y POPUPS**
+- Encuestas: 2+ preguntas, subir imagen, ver resultados en tiempo real
+- Popups: imagen/video, duración configurable, botón omitir (tipo YouTube)
+
+#### Pantalla 2: Chat y Notificaciones
+- Monitoreo de conversaciones por grupo
+- Timeline de notificaciones (fecha/tipo/filtros)
+
+#### Pantalla 3: Geolocalización
+- Mapa Google Maps con emergencias (atendidas/por atender)
+- Taxis por grupo (A, B, C, etc.) en colores
+- Filtro por grupo/empresa
+
+#### Pantalla 4: Visualización por Grupos
+- Unidades de taxi por grupo seleccionado
+- Datos clasificados por color según grupo
+
+#### Pantalla 5: Google Maps Ampliado
+- Pantalla grande (TV/Monitor)
+- Todas las actividades del mapa
+
+---
+
 ## Estado Actual del Desarrollo
 
-### ✅ Completado (Fase 1 - Frontend)
+### ✅ Completado (Fase 1 - Frontend + Backend Base)
 - Sistema de diseño configurado (colores, tipografía, espaciado)
 - Esquema completo de base de datos en Drizzle ORM
 - Componentes principales:

@@ -10,6 +10,7 @@ import PiePagina from "@/components/PiePagina";
 import Landing from "@/pages/landing";
 import Home from "@/pages/home";
 import Chat from "@/pages/chat";
+import AdminPanel from "@/pages/admin-panel";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -23,6 +24,7 @@ function Router() {
         <>
           <Route path="/" component={Home} />
           <Route path="/chat" component={Chat} />
+          <Route path="/admin" component={AdminPanel} />
           {/* Más rutas para usuarios autenticados */}
         </>
       )}
