@@ -16,6 +16,7 @@ import {
   Truck,
   Bus
 } from "lucide-react";
+import PublicidadSection from "@/components/admin/publicidad-section";
 
 const dashboardSections = [
   {
@@ -126,8 +127,10 @@ export default function DashboardScreen() {
         </p>
       </div>
 
+      <PublicidadSection />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {dashboardSections.map((section) => (
+        {dashboardSections.filter(s => s.id !== "publicidad").map((section) => (
           <Card key={section.id} className="hover-elevate" data-testid={`card-${section.id}`}>
             <CardHeader className="space-y-1">
               <div className="flex items-center justify-between">
