@@ -33,6 +33,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isPublicidadCaducada, getGoogleMapsUrl } from "@/lib/publicidadUtils";
 
 type Publicidad = {
@@ -86,6 +87,7 @@ export default function PublicidadSection() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPublicidad, setEditingPublicidad] = useState<Publicidad | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeTab, setActiveTab] = useState<string>('carrusel_logos');
 
   const { data: publicidades = [], isLoading } = useQuery<Publicidad[]>({
     queryKey: ["/api/publicidad"],
@@ -326,16 +328,18 @@ export default function PublicidadSection() {
                 Nueva Publicidad
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingPublicidad ? "Editar Publicidad" : "Nueva Publicidad"}
-                </DialogTitle>
-                <DialogDescription>
-                  Complete los datos de la publicidad incluyendo redes sociales
-                </DialogDescription>
-              </DialogHeader>
-              <ScrollArea className="flex-1 pr-4">
+            <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+              <div className="p-6 pb-0">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingPublicidad ? "Editar Publicidad" : "Nueva Publicidad"}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Complete los datos de la publicidad incluyendo redes sociales
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+              <ScrollArea className="flex-1 px-6 py-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 120px)' }}>
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                   {/* Información Básica */}
                   <div className="space-y-4">
@@ -375,10 +379,11 @@ export default function PublicidadSection() {
                             <SelectValue placeholder="Seleccionar tipo" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="carrusel_logos">Carrusel Logos</SelectItem>
-                            <SelectItem value="carrusel_principal">Carrusel Principal</SelectItem>
-                            <SelectItem value="logos_servicios">Logos Servicios</SelectItem>
-                            <SelectItem value="popup">Popup</SelectItem>
+                            <SelectItem value="carrusel_logos">1. Carrusel Logos</SelectItem>
+                            <SelectItem value="carrusel_principal">2. Slider Principal</SelectItem>
+                            <SelectItem value="logos_servicios">3. Logos de Servicios</SelectItem>
+                            <SelectItem value="popup_emergencia">4. Popup Avisos Emergencia</SelectItem>
+                            <SelectItem value="encuestas_apoyo">5. Encuestas/Apoyo/Avisos</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -654,9 +659,37 @@ export default function PublicidadSection() {
           <p className="text-muted-foreground text-center py-8">
             No hay publicidades registradas. Crea la primera publicidad.
           </p>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {publicidades.map((pub) => {
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-5 mb-6">
+              <TabsTrigger value="carrusel_logos" data-testid="tab-carrusel-logos">
+                Carrusel ({publicidades.filter(p => p.tipo === 'carrusel_logos').length})
+              </TabsTrigger>
+              <TabsTrigger value="carrusel_principal" data-testid="tab-slider-principal">
+                Slider ({publicidades.filter(p => p.tipo === 'carrusel_principal').length})
+              </TabsTrigger>
+              <TabsTrigger value="logos_servicios" data-testid="tab-logos-servicios">
+                Logos ({publicidades.filter(p => p.tipo === 'logos_servicios').length})
+              </TabsTrigger>
+              <TabsTrigger value="popup_emergencia" data-testid="tab-popup">
+                Popup ({publicidades.filter(p => p.tipo === 'popup_emergencia').length})
+              </TabsTrigger>
+              <TabsTrigger value="encuestas_apoyo" data-testid="tab-encuestas">
+                Encuestas ({publicidades.filter(p => p.tipo === 'encuestas_apoyo').length})
+              </TabsTrigger>
+            </TabsList>
+            
+            {['carrusel_logos', 'carrusel_principal', 'logos_servicios', 'popup_emergencia', 'encuestas_apoyo'].map((tipo) => {
+              const publicidadesFiltradas = publicidades.filter(p => p.tipo === tipo);
+              return (
+                <TabsContent key={tipo} value={tipo} className="mt-0">
+                  {publicidadesFiltradas.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">
+                      No hay publicidades de este tipo. Crea la primera.
+                    </p>
+                  ) : viewMode === 'grid' ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                      {publicidadesFiltradas.map((pub) => {
               const caducada = isPublicidadCaducada(pub);
               return (
               <Card key={pub.id} className="overflow-hidden hover-elevate" data-testid={`card-publicidad-${pub.id}`}>

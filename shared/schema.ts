@@ -81,7 +81,7 @@ export const publicidad = pgTable("publicidad", {
   id: varchar("id").primaryKey(),
   titulo: varchar("titulo"),
   descripcion: text("descripcion"),
-  tipo: varchar("tipo"), // "carrusel_logos", "carrusel_principal", "logos_servicios"
+  tipo: varchar("tipo"), // "carrusel_logos", "carrusel_principal", "logos_servicios", "popup_emergencia", "encuestas_apoyo"
   imagenUrl: varchar("imagen_url"),
   enlaceUrl: varchar("enlace_url"),
   fechaInicio: timestamp("fecha_inicio"),
