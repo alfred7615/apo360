@@ -1,0 +1,80 @@
+SUPER ADMINISTRADOR
+###########################################################
+
+Administrado por un super administrador que controlara las difusión de publicidad e informacion de actividades asi como tambien a los administradores (admin) creara personal de apoyo (super admin - cartera) (super admin - operaciones) (super admin - supervisores) etc etc que crea conveniente el superadministrador.
+
+El super administrador tendra el trabajo de aministrar en 5 pantallas de apoyo (Excritorio expandible)
+Pantalla 1 super administrador: Dashboard donde saldra informe de todoas las actividades en resumen con cuadros estadisticos y nuemeros totales de actividades y resumenes
+PANTALLA 2 CHAT: el superadministrador podra visualizar todas las actividades del chat para su verificacion de cada sistema o pedido de auxilio en osa grupos de chat y grupos d eparsonas o grupos de asociaciones de chat.
+PANTALLA 3 NOTIFICACIONES donde se visualizara todas las actividades desde en el momento del boton de panico hasta su atencion y solucion al problema un cuadro resumen de las actividades que se podra visualizar  por dia mes y año y periodos intervalos desde hasta mediante un calendario. igual para tipos de emergencia (cuadro estadisticos)
+PANTALLA 4 GEOLOCALIZACION donde se monitorea todas las actividades en el plano de google maps donde saldran las alertas ubicadas en el mapa y el super administrador podra visualizar o corroborar su atencion oportuna en el punto de alerta con un clic de deslizara una ventana de opciones como atender segun prioridad, atebncion urgente, derivar a entidades que puedan atender de manera inmediata, enviar apoyo, etc etc.
+Abra opciones de visualizaciones como de emergencia (atendiads por atender etc etc) taxi (donde se visualizara las unidades de taxi y estaran identificadas en colores segun sean en grupos o empresas (estan tendran su panel administrador independiente) y otra opcion donde seleccionara por un grupo A para ver donde se encuentran las unidades del grupo A y seleccionar por ejemplo el grupo B igual donde se podra visualizar las inidades del grupo B etc etc. 
+
+de igual manera el recorrido de las unidades de buses segun la seleccion por grupo o empresas (esto se desarrollara en la segunda etapa)
+
+PANTALLA 5 google maps: donde se visulizara solo las activiaddes del google maps y que esta se copia la imagen a una pantalla mas grande como por ejemplo a una TV.
+
+
+EN LA PANTALLA 1 ESTARA DIVIDIDA EN VARIOS SECTORES por ejemplo: 
+
+1.1 PUBLICIDAD que estara ubicada debajo del encabezado una barra horizontal con estas opciones que se encunetra en el sitio WEB principal.al agregra nueva publicacion de todas esta informacion publicidad se podra administrar su inicio y termino en la web al culminar su emision esta quedara suspendido automaticamente hasta su nueva renovacion de publicidad ingresando nuevamente las fecha de su periodo de emision en la web.
+cuando el super administrador agregue una publicidad se guardaran en esatas carpetas tanto para disco local y en el hosting del sitio web
+/public_html/assets/img/carrusel
+/public_html/assets/img/galeria
+/public_html/assets/img/servicios
+
+F:\VARIOS\proyectos\SEGAPO2025\00 WEB\assets\img\carrusel
+F:\VARIOS\proyectos\SEGAPO2025\00 WEB\assets\img\galeria
+F:\VARIOS\proyectos\SEGAPO2025\00 WEB\assets\img\servicios
+
+datos paera recibir los comentarios o sugerencias 
+Host:     smtp.gmail.com
+Puerto:   587
+Email:    aapomayta15@gmail.com
+Password: frog svje eiih jfga (contraseña de aplicación)
+TLS:      Habilitado (STARTTLS)
+
+1.2 RADIO ONLINE LISTAS MP3: el super administrador tendra una opcion donde colocara las url de las radios online y poxra modificar borra eliminar o pausar la emision de la radio online asi como tambiend agregar nuevas redios.
+el super administrador tbm podra crear listas mp3... las listas y radios podra modificar eliminar editar, suspender su emision etc etc 
+esto es para considerar la radio on line y los selectores de listas mp3 que tambien seran editables en el super administrador web
+TITULO:  Radio TacnaFM.apo
+https://mediastreamm.com/8158/; ) o codigo <iframe src="https://mediastreamm.com/cp/widgets/player/single/?p=8158" height="110" width="100%" scrolling="no" style="border:none;"></iframe>
+
+TITULO:  Radio La Juvenil
+https://mediastreamm.com:7089     <iframe src="https://mediastreamm.com/cp/widgets/player/single/?p=8180" height="110" width="100%" scrolling="no" style="border:none;"></iframe>
+
+TITULO:  Rock moderna
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 1
+/public_html/assets/mp3/lista 1
+TITULO:  Cumbia
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 2
+/public_html/assets/mp3/lista 2
+TITULO:  Exitos Variado
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 3
+/public_html/assets/mp3/lista 3
+TITULO:  Mix Variado
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 4
+/public_html/assets/mp3/lista 4
+TITULO:  Romantica
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 5
+/public_html/assets/mp3/lista 5
+
+1.3 PANEL DE USUARIOS Y ADMINISTRADORES donde se podra administrara todos los usuarios tipo de usuarios, grupos de taxis grupos de personas etc etc  donde se podra eliminar, modificar, suspender al usuario de este sistema. o bloquear.
+user
+
+super admin (podra asignar funciones a usuarios con su numero DNI de su personal)
+	operador
+	supervisor
+	registro
+	saldos
+	marketing
+
+administrador (podra asignar funciones a usuarios con su numero DNI de su personal)
+	propietario de local (restaurant, grupos de taxi, servicios, grupos de chat, 
+	operador
+	supervisor
+	registros saldos
+	etc etc
+
+usuarios
+	podran solicitar tener las funcionalidades como ser taxistas - usuario, tner local para ofrecer algun productos de servicio, roles que cumplan como (socorrer auxilios, como bomberos, dirigentes, policias, serenazgo, etc etc...) y el super administrador podra refistrarños aprobando la solicitud o en adelante podria quitar esas funcionalidade o roles asi mismo un administrador como  por ejemplo dirigente, podra agregar a varios usuarios a su grupo de chat para el boton de panico, otro el administrador de bomberos podra agregar a sus compañeros quienes son bomberos que estaran pendienta ante un llamado de socorro. y asi otros grupos o servicios podran ahgregar su personal 

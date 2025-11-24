@@ -1,7 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import express from "express";
+import path from "path";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { upload, getPublicUrl } from "./uploadConfig";
 import { 
   insertPublicidadSchema, 
   insertServicioSchema, 
@@ -26,8 +29,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configurar autenticación
   await setupAuth(app);
 
+  // Servir archivos estáticos
+  const publicPath = path.join(process.cwd(), 'public');
+  app.use('/assets', express.static(path.join(publicPath, 'assets')));
+
   // Registrar rutas de administración
   registerAdminRoutes(app);
+
+  // ============================================================
+  // RUTAS DE UPLOAD DE ARCHIVOS
+  // ============================================================
+
+  app.post('/api/upload/publicidad', isAuthenticated, upload.single('imagen'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
+      }
+
+      const url = getPublicUrl(req.file.path);
+      res.json({ 
+        url, 
+        path: req.file.path,
+        filename: req.file.filename,
+        size: req.file.size,
+      });
+    } catch (error: any) {
+      console.error('Error al subir imagen de publicidad:', error);
+      res.status(500).json({ message: error.message || 'Error al subir imagen' });
+    }
+  });
+
+  app.post('/api/upload/galeria', isAuthenticated, upload.single('imagen'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
+      }
+
+      const url = getPublicUrl(req.file.path);
+      res.json({ 
+        url, 
+        path: req.file.path,
+        filename: req.file.filename,
+        size: req.file.size,
+      });
+    } catch (error: any) {
+      console.error('Error al subir imagen de galería:', error);
+      res.status(500).json({ message: error.message || 'Error al subir imagen' });
+    }
+  });
+
+  app.post('/api/upload/servicios', isAuthenticated, upload.single('imagen'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
+      }
+
+      const url = getPublicUrl(req.file.path);
+      res.json({ 
+        url, 
+        path: req.file.path,
+        filename: req.file.filename,
+        size: req.file.size,
+      });
+    } catch (error: any) {
+      console.error('Error al subir imagen de servicios:', error);
+      res.status(500).json({ message: error.message || 'Error al subir imagen' });
+    }
+  });
+
+  app.post('/api/upload/documentos', isAuthenticated, upload.single('documento'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
+      }
+
+      const url = getPublicUrl(req.file.path);
+      res.json({ 
+        url, 
+        path: req.file.path,
+        filename: req.file.filename,
+        size: req.file.size,
+        tipo: req.body.tipoDocumento || 'general',
+      });
+    } catch (error: any) {
+      console.error('Error al subir documento:', error);
+      res.status(500).json({ message: error.message || 'Error al subir documento' });
+    }
+  });
 
   // ============================================================
   // RUTAS DE AUTENTICACIÓN
