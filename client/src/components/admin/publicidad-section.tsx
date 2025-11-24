@@ -128,7 +128,7 @@ export default function PublicidadSection() {
       const apiData = convertFormDataToApi(data);
       console.log('🚀 Converted apiData:', apiData);
       console.log('🚀 Sending POST /api/publicidad');
-      const result = await apiRequest("/api/publicidad", "POST", apiData);
+      const result = await apiRequest("POST", "/api/publicidad", apiData);
       console.log('✅ POST /api/publicidad success:', result);
       return result;
     },
@@ -157,7 +157,7 @@ export default function PublicidadSection() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<FormData> }) => {
       const apiData = convertFormDataToApi(data as FormData);
-      return await apiRequest(`/api/publicidad/${id}`, "PATCH", apiData);
+      return await apiRequest("PATCH", `/api/publicidad/${id}`, apiData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/publicidad"] });
@@ -180,7 +180,7 @@ export default function PublicidadSection() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/publicidad/${id}`, "DELETE");
+      return await apiRequest("DELETE", `/api/publicidad/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/publicidad"] });
@@ -202,7 +202,7 @@ export default function PublicidadSection() {
     mutationFn: async ({ id, estado }: { id: string; estado: string | null }) => {
       const currentEstado = estado || "activo";
       const nuevoEstado = currentEstado === "activo" ? "pausado" : "activo";
-      return await apiRequest(`/api/publicidad/${id}`, "PATCH", { estado: nuevoEstado });
+      return await apiRequest("PATCH", `/api/publicidad/${id}`, { estado: nuevoEstado });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/publicidad"] });
