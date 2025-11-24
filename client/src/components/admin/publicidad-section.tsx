@@ -64,11 +64,14 @@ type Publicidad = {
 };
 
 const formSchema = insertPublicidadSchema
-  .omit({ fechaInicio: true, fechaFin: true, fechaCaducidad: true })
+  .omit({ id: true, fechaInicio: true, fechaFin: true, fechaCaducidad: true, orden: true, latitud: true, longitud: true })
   .extend({
     fechaInicio: z.string().optional(),
     fechaFin: z.string().optional(),
     fechaCaducidad: z.string().optional(),
+    orden: z.preprocess((v) => v === "" || v === null || v === undefined ? 0 : Number(v), z.number().min(0)),
+    latitud: z.preprocess((v) => v === "" || v === null || v === undefined ? undefined : Number(v), z.number().optional()),
+    longitud: z.preprocess((v) => v === "" || v === null || v === undefined ? undefined : Number(v), z.number().optional()),
   });
 
 type FormData = z.infer<typeof formSchema>;
@@ -121,10 +124,16 @@ export default function PublicidadSection() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      console.log('🚀 createMutation.mutationFn called with FormData:', data);
       const apiData = convertFormDataToApi(data);
-      return await apiRequest("/api/publicidad", "POST", apiData);
+      console.log('🚀 Converted apiData:', apiData);
+      console.log('🚀 Sending POST /api/publicidad');
+      const result = await apiRequest("/api/publicidad", "POST", apiData);
+      console.log('✅ POST /api/publicidad success:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('✅ createMutation.onSuccess called with:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/publicidad"] });
       toast({
         title: "Publicidad creada",
@@ -134,8 +143,11 @@ export default function PublicidadSection() {
       form.reset();
     },
     onError: (error: any) => {
+      console.error('❌ createMutation.onError called:', error);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Full error:', JSON.stringify(error, null, 2));
       toast({
-        title: "Error",
+        title: "Error al crear publicidad",
         description: error.message || "No se pudo crear la publicidad.",
         variant: "destructive",
       });
@@ -209,9 +221,14 @@ export default function PublicidadSection() {
   });
 
   const handleSubmit = (data: FormData) => {
+    console.log('📝 handleSubmit called with data:', data);
+    console.log('📝 Form errors:', form.formState.errors);
+    
     if (editingPublicidad) {
+      console.log('✏️ Updating publicidad:', editingPublicidad.id);
       updateMutation.mutate({ id: editingPublicidad.id, data });
     } else {
+      console.log('➕ Creating new publicidad');
       createMutation.mutate(data);
     }
   };
@@ -339,8 +356,22 @@ export default function PublicidadSection() {
                   </DialogDescription>
                 </DialogHeader>
               </div>
-              <ScrollArea className="flex-1 px-6 py-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 120px)' }}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              <form 
+                onSubmit={form.handleSubmit(
+                  handleSubmit,
+                  (errors) => {
+                    console.error('❌ Form validation errors:', errors);
+                    toast({
+                      title: "Error de validación",
+                      description: "Por favor verifica los campos del formulario: " + Object.keys(errors).join(", "),
+                      variant: "destructive",
+                    });
+                  }
+                )}
+                className="flex flex-col flex-1 overflow-hidden"
+              >
+                <ScrollArea className="flex-1 px-6 py-4" style={{ maxHeight: 'calc(90vh - 180px)' }}>
+                  <div className="space-y-6">
                   {/* Información Básica */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Información Básica</h3>
@@ -393,7 +424,7 @@ export default function PublicidadSection() {
                         <Input
                           id="orden"
                           type="number"
-                          {...form.register("orden", { valueAsNumber: true })}
+                          {...form.register("orden")}
                           placeholder="0"
                           data-testid="input-orden"
                         />
@@ -495,7 +526,7 @@ export default function PublicidadSection() {
                           id="latitud"
                           type="number"
                           step="any"
-                          {...form.register("latitud", { valueAsNumber: true })}
+                          {...form.register("latitud")}
                           placeholder="-18.0000"
                           data-testid="input-latitud"
                         />
@@ -507,7 +538,7 @@ export default function PublicidadSection() {
                           id="longitud"
                           type="number"
                           step="any"
-                          {...form.register("longitud", { valueAsNumber: true })}
+                          {...form.register("longitud")}
                           placeholder="-70.0000"
                           data-testid="input-longitud"
                         />
@@ -624,30 +655,31 @@ export default function PublicidadSection() {
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex justify-end gap-2 pt-4 sticky bottom-0 bg-background border-t mt-6 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setIsDialogOpen(false);
-                        setEditingPublicidad(null);
-                        form.reset();
-                      }}
-                      data-testid="button-cancelar"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={createMutation.isPending || updateMutation.isPending}
-                      data-testid="button-guardar"
-                    >
-                      {editingPublicidad ? "Actualizar" : "Crear"}
-                    </Button>
                   </div>
-                </form>
-              </ScrollArea>
+                </ScrollArea>
+                
+                <div className="flex justify-end gap-2 p-6 border-t bg-background">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsDialogOpen(false);
+                      setEditingPublicidad(null);
+                      form.reset();
+                    }}
+                    data-testid="button-cancelar"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                    data-testid="button-guardar-publicidad"
+                  >
+                    {editingPublicidad ? "Actualizar" : "Crear"}
+                  </Button>
+                </div>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
