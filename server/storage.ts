@@ -4,6 +4,7 @@ import {
   servicios,
   productosDelivery,
   gruposChat,
+  miembrosGrupo,
   mensajes,
   emergencias,
   viajeTaxi,
@@ -50,6 +51,8 @@ import {
   type InsertEncuesta,
   type PopupPublicitario,
   type InsertPopupPublicitario,
+  type MiembroGrupo,
+  type InsertMiembroGrupo,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -81,9 +84,11 @@ export interface IStorage {
   getGruposPorUsuario(usuarioId: string): Promise<GrupoChat[]>;
   getGrupo(id: string): Promise<GrupoChat | undefined>;
   createGrupo(grupo: GrupoChatInsert): Promise<GrupoChat>;
-  agregarMiembroGrupo(data: { grupoId: string; usuarioId: string; rol: string }): Promise<void>;
+  agregarMiembroGrupo(data: { grupoId: string; usuarioId: string; rol: string }): Promise<MiembroGrupo>;
+  verificarMiembroGrupo(grupoId: string, usuarioId: string): Promise<boolean>;
   getMensajesPorGrupo(grupoId: string): Promise<Mensaje[]>;
   createMensaje(mensaje: MensajeInsert): Promise<Mensaje>;
+  getAllGruposConMiembrosLegacy(): Promise<GrupoChat[]>;
   
   // Operaciones de emergencias
   getEmergencias(): Promise<Emergencia[]>;
@@ -255,10 +260,23 @@ export class DatabaseStorage implements IStorage {
   // ============================================================
   
   async getGruposPorUsuario(usuarioId: string): Promise<GrupoChat[]> {
-    // Los miembros están almacenados como JSON array en gruposChat.miembros
-    const grupos = await db.select().from(gruposChat).orderBy(desc(gruposChat.createdAt));
-    // Filtrar grupos donde el usuario es miembro
-    return grupos.filter(g => g.miembros?.includes(usuarioId));
+    // Obtener grupos usando la tabla normalizada miembros_grupo
+    const gruposConMiembros = await db
+      .select({
+        id: gruposChat.id,
+        nombre: gruposChat.nombre,
+        tipo: gruposChat.tipo,
+        miembros: gruposChat.miembros,
+        creadorId: gruposChat.creadorId,
+        createdAt: gruposChat.createdAt,
+        updatedAt: gruposChat.updatedAt,
+      })
+      .from(gruposChat)
+      .innerJoin(miembrosGrupo, eq(gruposChat.id, miembrosGrupo.grupoId))
+      .where(eq(miembrosGrupo.usuarioId, usuarioId))
+      .orderBy(desc(gruposChat.createdAt));
+    
+    return gruposConMiembros;
   }
 
   async getGrupo(id: string): Promise<GrupoChat | undefined> {
@@ -271,13 +289,53 @@ export class DatabaseStorage implements IStorage {
       .insert(gruposChat)
       .values(grupoData)
       .returning();
+    
+    // Agregar automáticamente al creador como miembro con rol admin
+    await this.agregarMiembroGrupo({
+      grupoId: grupo.id,
+      usuarioId: grupoData.creadorId,
+      rol: "admin",
+    });
+    
     return grupo;
   }
 
-  async agregarMiembroGrupo(data: { grupoId: string; usuarioId: string; rol: string }): Promise<void> {
-    // Nota: Esta tabla no existe aún, se creará cuando se necesite
-    // Por ahora es un stub para que routes.ts funcione
-    console.log('agregarMiembroGrupo llamado:', data);
+  async agregarMiembroGrupo(data: { grupoId: string; usuarioId: string; rol: string }): Promise<MiembroGrupo> {
+    const [miembro] = await db
+      .insert(miembrosGrupo)
+      .values(data)
+      .onConflictDoNothing({
+        target: [miembrosGrupo.grupoId, miembrosGrupo.usuarioId],
+      })
+      .returning();
+    
+    // Si el miembro ya existía, obtenerlo
+    if (!miembro) {
+      const [existing] = await db
+        .select()
+        .from(miembrosGrupo)
+        .where(and(
+          eq(miembrosGrupo.grupoId, data.grupoId),
+          eq(miembrosGrupo.usuarioId, data.usuarioId)
+        ))
+        .limit(1);
+      return existing;
+    }
+    
+    return miembro;
+  }
+
+  async verificarMiembroGrupo(grupoId: string, usuarioId: string): Promise<boolean> {
+    const miembro = await db
+      .select()
+      .from(miembrosGrupo)
+      .where(and(
+        eq(miembrosGrupo.grupoId, grupoId),
+        eq(miembrosGrupo.usuarioId, usuarioId)
+      ))
+      .limit(1);
+    
+    return miembro.length > 0;
   }
 
   async getMensajesPorGrupo(grupoId: string): Promise<Mensaje[]> {
@@ -655,6 +713,15 @@ export class DatabaseStorage implements IStorage {
 
   async deleteArchivoMp3(id: string): Promise<void> {
     await db.delete(archivosMp3).where(eq(archivosMp3.id, id));
+  }
+
+  // ============================================================
+  // UTILIDADES PARA MIGRACIÓN
+  // ============================================================
+
+  async getAllGruposConMiembrosLegacy(): Promise<GrupoChat[]> {
+    // Obtener todos los grupos con sus miembros JSON legacy
+    return await db.select().from(gruposChat);
   }
 }
 

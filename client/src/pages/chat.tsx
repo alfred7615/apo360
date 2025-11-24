@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Search, MoreVertical, Users, MessageCircle, Plus, ArrowLeft } from "lucide-react";
+import { Send, Search, MoreVertical, Users, MessageCircle, Plus, ArrowLeft, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 interface GrupoChat {
   id: string;
@@ -78,6 +79,18 @@ export default function Chat() {
     enabled: !!grupoSeleccionado && !!user,
   });
 
+  // WebSocket para mensajes en tiempo real (autenticado con sesión)
+  const { isConnected, sendMessage: sendWebSocketMessage } = useWebSocket({
+    grupoId: grupoSeleccionado || "",
+    onMessage: (nuevoMensaje: any) => {
+      console.log('💬 Nuevo mensaje recibido por WebSocket');
+      // React Query invalidará el cache automáticamente
+    },
+    onError: (error) => {
+      console.error('Error WebSocket:', error);
+    },
+  });
+
   const enviarMensajeMutation = useMutation({
     mutationFn: async (datos: any) => {
       return await apiRequest("POST", "/api/chat/mensajes", datos);
@@ -121,6 +134,16 @@ export default function Chat() {
     e.preventDefault();
     if (!mensajeNuevo.trim() || !grupoSeleccionado) return;
 
+    // Intentar enviar por WebSocket primero
+    if (isConnected && grupoSeleccionado) {
+      const success = sendWebSocketMessage(mensajeNuevo.trim());
+      if (success) {
+        setMensajeNuevo("");
+        return;
+      }
+    }
+
+    // Fallback a API REST si WebSocket falla
     enviarMensajeMutation.mutate({
       grupoId: grupoSeleccionado,
       contenido: mensajeNuevo.trim(),
@@ -259,7 +282,16 @@ export default function Chat() {
             
             <div className="flex-1">
               <p className="font-semibold" data-testid="text-chat-name">{grupoActual.nombre}</p>
-              <p className="text-xs text-muted-foreground capitalize">{grupoActual.tipo}</p>
+              <p className="text-xs text-muted-foreground capitalize">
+                {isConnected ? (
+                  <span className="text-green-600 dark:text-green-400">● En línea</span>
+                ) : (
+                  <span className="text-red-600 dark:text-red-400 flex items-center gap-1">
+                    <WifiOff className="w-3 h-3" />
+                    Desconectado
+                  </span>
+                )}
+              </p>
             </div>
             
             <DropdownMenu>

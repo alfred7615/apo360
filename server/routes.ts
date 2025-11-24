@@ -1,6 +1,5 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertPublicidadSchema, insertServicioSchema, insertProductoDeliverySchema, insertGrupoChatSchema, insertMensajeSchema, insertEmergenciaSchema, insertViajeTaxiSchema, insertPedidoDeliverySchema, insertRadioOnlineSchema, insertArchivoMp3Schema } from "@shared/schema";
@@ -431,36 +430,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // MIGRACIÓN DE DATOS: Backfill miembros_grupo
+  // ============================================================
+  
+  app.post('/api/admin/backfill-miembros', isAuthenticated, async (req: any, res) => {
+    try {
+      // Solo super_admin puede ejecutar backfill
+      const userId = req.user.claims.sub;
+      const roles = await storage.getUserRoles(userId);
+      
+      if (!roles.includes('super_admin')) {
+        return res.status(403).json({ message: 'Acceso denegado' });
+      }
+
+      console.log('🔄 Iniciando backfill de miembros_grupo...');
+      
+      // Obtener todos los grupos con miembros JSON legacy
+      const grupos = await storage.getAllGruposConMiembrosLegacy();
+      let migrados = 0;
+      let errores = 0;
+      
+      for (const grupo of grupos) {
+        try {
+          // Migrar miembros del JSON a la tabla normalizada
+          if (grupo.miembros && Array.isArray(grupo.miembros)) {
+            for (const usuarioId of grupo.miembros) {
+              try {
+                await storage.agregarMiembroGrupo({
+                  grupoId: grupo.id,
+                  usuarioId: usuarioId as string,
+                  rol: usuarioId === grupo.creadorId ? 'admin' : 'miembro',
+                });
+                migrados++;
+              } catch (error) {
+                console.error(`Error al agregar miembro ${usuarioId} al grupo ${grupo.id}:`, error);
+                errores++;
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error al procesar grupo ${grupo.id}:`, error);
+          errores++;
+        }
+      }
+
+      console.log(`✅ Backfill completado: ${migrados} miembros migrados, ${errores} errores`);
+      res.json({
+        success: true,
+        migrados,
+        errores,
+        message: `Backfill completado: ${migrados} miembros migrados`,
+      });
+    } catch (error) {
+      console.error('❌ Error en backfill:', error);
+      res.status(500).json({ message: 'Error en backfill' });
+    }
+  });
+
+  // ============================================================
   // CONFIGURACIÓN DE WEBSOCKET
   // ============================================================
 
   const httpServer = createServer(app);
   
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-
-  wss.on('connection', (ws: WebSocket) => {
-    console.log('Nuevo cliente WebSocket conectado');
-
-    ws.on('message', (message: string) => {
-      try {
-        const data = JSON.parse(message.toString());
-        console.log('Mensaje WebSocket recibido:', data);
-
-        // Reenviar mensaje a todos los clientes conectados
-        wss.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(data));
-          }
-        });
-      } catch (error) {
-        console.error('Error al procesar mensaje WebSocket:', error);
-      }
-    });
-
-    ws.on('close', () => {
-      console.log('Cliente WebSocket desconectado');
-    });
-  });
+  // Configurar WebSocket con rooms y persistencia
+  const { setupWebSocket } = await import('./websocket');
+  setupWebSocket(httpServer);
 
   return httpServer;
 }

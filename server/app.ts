@@ -69,6 +69,40 @@ export default async function runApp(
 ) {
   const server = await registerRoutes(app);
 
+  // Backfill automático de miembros_grupo (migración one-time)
+  try {
+    const { storage } = await import('./storage');
+    log('🔄 Verificando migración de miembros_grupo...');
+    
+    const grupos = await storage.getAllGruposConMiembrosLegacy();
+    let migrados = 0;
+    
+    for (const grupo of grupos) {
+      if (grupo.miembros && Array.isArray(grupo.miembros) && grupo.miembros.length > 0) {
+        for (const usuarioId of grupo.miembros) {
+          try {
+            await storage.agregarMiembroGrupo({
+              grupoId: grupo.id,
+              usuarioId: usuarioId as string,
+              rol: usuarioId === grupo.creadorId ? 'admin' : 'miembro',
+            });
+            migrados++;
+          } catch (error) {
+            // onConflictDoNothing ya maneja duplicados silenciosamente
+          }
+        }
+      }
+    }
+    
+    if (migrados > 0) {
+      log(`✅ Migración completada: ${migrados} miembros migrados a tabla normalizada`);
+    } else {
+      log('✅ Tabla miembros_grupo ya está sincronizada');
+    }
+  } catch (error) {
+    log(`⚠️ Error en migración automática (se ignorará): ${error}`);
+  }
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";

@@ -1,4 +1,4 @@
-import { pgTable, varchar, serial, text, integer, decimal, real, boolean, timestamp, json, date, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, varchar, serial, text, integer, decimal, real, boolean, timestamp, json, date, pgEnum, unique } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -191,6 +191,24 @@ export const gruposChat = pgTable("grupos_chat", {
 export const insertGrupoChatSchema = createInsertSchema(gruposChat).omit({ id: true, createdAt: true });
 export type GrupoChatInsert = z.infer<typeof insertGrupoChatSchema>;
 export type GrupoChat = typeof gruposChat.$inferSelect;
+
+// ============================================================
+// MIEMBROS DE GRUPOS
+// ============================================================
+export const miembrosGrupo = pgTable("miembros_grupo", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  grupoId: varchar("grupo_id").notNull().references(() => gruposChat.id),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  rol: varchar("rol", { length: 50 }).default("miembro"), // miembro, admin
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  // UNIQUE constraint para prevenir duplicados
+  uniqueMember: unique().on(table.grupoId, table.usuarioId),
+}));
+
+export const insertMiembroGrupoSchema = createInsertSchema(miembrosGrupo).omit({ id: true, createdAt: true });
+export type InsertMiembroGrupo = z.infer<typeof insertMiembroGrupoSchema>;
+export type MiembroGrupo = typeof miembrosGrupo.$inferSelect;
 
 // ============================================================
 // MENSAJES
