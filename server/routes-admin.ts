@@ -361,4 +361,332 @@ export function registerAdminRoutes(app: Express) {
       res.status(500).json({ message: 'Error al eliminar popup' });
     }
   });
+
+  // ============================================================
+  // EVENTOS CALENDARIZADOS
+  // ============================================================
+
+  app.get('/api/eventos', async (req, res) => {
+    try {
+      const eventos = await storage.getAllEventos();
+      res.json(eventos);
+    } catch (error) {
+      console.error('Error al obtener eventos:', error);
+      res.status(500).json({ message: 'Error al obtener eventos' });
+    }
+  });
+
+  app.get('/api/eventos/activos', async (req, res) => {
+    try {
+      const eventos = await storage.getEventosActivos();
+      res.json(eventos);
+    } catch (error) {
+      console.error('Error al obtener eventos activos:', error);
+      res.status(500).json({ message: 'Error al obtener eventos activos' });
+    }
+  });
+
+  app.get('/api/eventos/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const evento = await storage.getEventoById(id);
+      if (!evento) {
+        return res.status(404).json({ message: 'Evento no encontrado' });
+      }
+      res.json(evento);
+    } catch (error) {
+      console.error('Error al obtener evento:', error);
+      res.status(500).json({ message: 'Error al obtener evento' });
+    }
+  });
+
+  app.post('/api/eventos', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const evento = await storage.createEvento(req.body);
+      res.json(evento);
+    } catch (error: any) {
+      console.error('Error al crear evento:', error);
+      res.status(400).json({ message: error.message || 'Error al crear evento' });
+    }
+  });
+
+  app.put('/api/eventos/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const evento = await storage.updateEvento(id, req.body);
+      if (!evento) {
+        return res.status(404).json({ message: 'Evento no encontrado' });
+      }
+      res.json(evento);
+    } catch (error: any) {
+      console.error('Error al actualizar evento:', error);
+      res.status(400).json({ message: error.message || 'Error al actualizar evento' });
+    }
+  });
+
+  app.delete('/api/eventos/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteEvento(id);
+      res.json({ message: 'Evento eliminado' });
+    } catch (error) {
+      console.error('Error al eliminar evento:', error);
+      res.status(500).json({ message: 'Error al eliminar evento' });
+    }
+  });
+
+  // ============================================================
+  // AVISOS DE EMERGENCIA
+  // ============================================================
+
+  app.get('/api/avisos-emergencia', async (req, res) => {
+    try {
+      const avisos = await storage.getAllAvisosEmergencia();
+      res.json(avisos);
+    } catch (error) {
+      console.error('Error al obtener avisos:', error);
+      res.status(500).json({ message: 'Error al obtener avisos' });
+    }
+  });
+
+  app.get('/api/avisos-emergencia/activos', async (req, res) => {
+    try {
+      const avisos = await storage.getAvisosEmergenciaActivos();
+      res.json(avisos);
+    } catch (error) {
+      console.error('Error al obtener avisos activos:', error);
+      res.status(500).json({ message: 'Error al obtener avisos activos' });
+    }
+  });
+
+  app.get('/api/avisos-emergencia/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const aviso = await storage.getAvisoEmergenciaById(id);
+      if (!aviso) {
+        return res.status(404).json({ message: 'Aviso no encontrado' });
+      }
+      res.json(aviso);
+    } catch (error) {
+      console.error('Error al obtener aviso:', error);
+      res.status(500).json({ message: 'Error al obtener aviso' });
+    }
+  });
+
+  app.post('/api/avisos-emergencia', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const aviso = await storage.createAvisoEmergencia(req.body);
+      res.json(aviso);
+    } catch (error: any) {
+      console.error('Error al crear aviso:', error);
+      res.status(400).json({ message: error.message || 'Error al crear aviso' });
+    }
+  });
+
+  app.put('/api/avisos-emergencia/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const aviso = await storage.updateAvisoEmergencia(id, req.body);
+      if (!aviso) {
+        return res.status(404).json({ message: 'Aviso no encontrado' });
+      }
+      res.json(aviso);
+    } catch (error: any) {
+      console.error('Error al actualizar aviso:', error);
+      res.status(400).json({ message: error.message || 'Error al actualizar aviso' });
+    }
+  });
+
+  app.delete('/api/avisos-emergencia/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteAvisoEmergencia(id);
+      res.json({ message: 'Aviso eliminado' });
+    } catch (error) {
+      console.error('Error al eliminar aviso:', error);
+      res.status(500).json({ message: 'Error al eliminar aviso' });
+    }
+  });
+
+  // ============================================================
+  // TIPOS DE MONEDA
+  // ============================================================
+
+  app.get('/api/tipos-moneda', async (req, res) => {
+    try {
+      const tipos = await storage.getAllTiposMoneda();
+      res.json(tipos);
+    } catch (error) {
+      console.error('Error al obtener tipos de moneda:', error);
+      res.status(500).json({ message: 'Error al obtener tipos de moneda' });
+    }
+  });
+
+  app.get('/api/tipos-moneda/activos', async (req, res) => {
+    try {
+      const tipos = await storage.getTiposMonedaActivos();
+      res.json(tipos);
+    } catch (error) {
+      console.error('Error al obtener tipos activos:', error);
+      res.status(500).json({ message: 'Error al obtener tipos activos' });
+    }
+  });
+
+  app.get('/api/tipos-moneda/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const tipo = await storage.getTipoMonedaById(id);
+      if (!tipo) {
+        return res.status(404).json({ message: 'Tipo de moneda no encontrado' });
+      }
+      res.json(tipo);
+    } catch (error) {
+      console.error('Error al obtener tipo de moneda:', error);
+      res.status(500).json({ message: 'Error al obtener tipo de moneda' });
+    }
+  });
+
+  app.post('/api/tipos-moneda', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const tipo = await storage.createTipoMoneda(req.body);
+      res.json(tipo);
+    } catch (error: any) {
+      console.error('Error al crear tipo de moneda:', error);
+      res.status(400).json({ message: error.message || 'Error al crear tipo de moneda' });
+    }
+  });
+
+  app.put('/api/tipos-moneda/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const tipo = await storage.updateTipoMoneda(id, req.body);
+      if (!tipo) {
+        return res.status(404).json({ message: 'Tipo de moneda no encontrado' });
+      }
+      res.json(tipo);
+    } catch (error: any) {
+      console.error('Error al actualizar tipo de moneda:', error);
+      res.status(400).json({ message: error.message || 'Error al actualizar tipo de moneda' });
+    }
+  });
+
+  app.delete('/api/tipos-moneda/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteTipoMoneda(id);
+      res.json({ message: 'Tipo de moneda eliminado' });
+    } catch (error) {
+      console.error('Error al eliminar tipo de moneda:', error);
+      res.status(500).json({ message: 'Error al eliminar tipo de moneda' });
+    }
+  });
+
+  // ============================================================
+  // TASAS DE CAMBIO
+  // ============================================================
+
+  app.get('/api/tasas-cambio', async (req, res) => {
+    try {
+      const tasas = await storage.getAllTasasCambio();
+      res.json(tasas);
+    } catch (error) {
+      console.error('Error al obtener tasas de cambio:', error);
+      res.status(500).json({ message: 'Error al obtener tasas de cambio' });
+    }
+  });
+
+  app.get('/api/tasas-cambio/:origenId/:destinoId', async (req, res) => {
+    try {
+      const { origenId, destinoId } = req.params;
+      const tasa = await storage.getTasaCambioByMonedas(origenId, destinoId);
+      if (!tasa) {
+        return res.status(404).json({ message: 'Tasa de cambio no encontrada' });
+      }
+      res.json(tasa);
+    } catch (error) {
+      console.error('Error al obtener tasa de cambio:', error);
+      res.status(500).json({ message: 'Error al obtener tasa de cambio' });
+    }
+  });
+
+  app.post('/api/tasas-cambio', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const tasa = await storage.createTasaCambio(req.body);
+      res.json(tasa);
+    } catch (error: any) {
+      console.error('Error al crear tasa de cambio:', error);
+      res.status(400).json({ message: error.message || 'Error al crear tasa de cambio' });
+    }
+  });
+
+  app.put('/api/tasas-cambio/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const tasa = await storage.updateTasaCambio(id, req.body);
+      if (!tasa) {
+        return res.status(404).json({ message: 'Tasa de cambio no encontrada' });
+      }
+      res.json(tasa);
+    } catch (error: any) {
+      console.error('Error al actualizar tasa de cambio:', error);
+      res.status(400).json({ message: error.message || 'Error al actualizar tasa de cambio' });
+    }
+  });
+
+  app.delete('/api/tasas-cambio/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteTasaCambio(id);
+      res.json({ message: 'Tasa de cambio eliminada' });
+    } catch (error) {
+      console.error('Error al eliminar tasa de cambio:', error);
+      res.status(500).json({ message: 'Error al eliminar tasa de cambio' });
+    }
+  });
+
+  // ============================================================
+  // CONFIGURACIÓN DEL SITIO
+  // ============================================================
+
+  app.get('/api/configuracion', async (req, res) => {
+    try {
+      const configuraciones = await storage.getAllConfiguraciones();
+      res.json(configuraciones);
+    } catch (error) {
+      console.error('Error al obtener configuraciones:', error);
+      res.status(500).json({ message: 'Error al obtener configuraciones' });
+    }
+  });
+
+  app.get('/api/configuracion/:clave', async (req, res) => {
+    try {
+      const { clave } = req.params;
+      const config = await storage.getConfiguracionByClave(clave);
+      if (!config) {
+        return res.status(404).json({ message: 'Configuración no encontrada' });
+      }
+      res.json(config);
+    } catch (error) {
+      console.error('Error al obtener configuración:', error);
+      res.status(500).json({ message: 'Error al obtener configuración' });
+    }
+  });
+
+  app.put('/api/configuracion/:clave', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { clave } = req.params;
+      const { valor } = req.body;
+      if (!valor) {
+        return res.status(400).json({ message: 'Valor requerido' });
+      }
+      const config = await storage.updateConfiguracion(clave, valor);
+      if (!config) {
+        return res.status(404).json({ message: 'Configuración no encontrada' });
+      }
+      res.json(config);
+    } catch (error: any) {
+      console.error('Error al actualizar configuración:', error);
+      res.status(400).json({ message: error.message || 'Error al actualizar configuración' });
+    }
+  });
 }
