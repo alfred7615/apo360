@@ -4,27 +4,31 @@
 SEG-APO is a comprehensive community security platform designed for Tacna, Peru. It integrates real-time messaging, ride-hailing (taxi), delivery services, local advertising, and an emergency panic button system. Its core purpose is to enhance community safety, connectivity, and local commerce. The project aims to become a vital tool for community interaction and emergency response, providing a robust platform for local services and security.
 
 ## Recent Changes (November 24, 2025)
-### Panel de Publicidad Mejorado con Vista de Galería
+### Panel de Publicidad Completo con GPS y Caducidad Visual
 - **Schema Ampliado** (`shared/schema.ts`):
-  - Agregados campos de redes sociales: facebook, instagram, whatsapp, tiktok, twitter, youtube, linkedin
-  - Agregado campo `fechaCaducidad` para control de vigencia de publicidades
-  - Todos los campos opcionales para máxima flexibilidad
+  - Campos de redes sociales: facebook, instagram, whatsapp, tiktok, twitter, youtube, linkedin
+  - Campo `fechaCaducidad` para control de vigencia de publicidades
+  - **Campos GPS**: `latitud` (real), `longitud` (real), `direccion` (text) para ubicación del local
+  - Tipo `logos_servicios` agregado (total 3 tipos: carrusel_logos, carrusel_principal, logos_servicios)
 
-- **Vista de Galería en 5 Columnas** (`client/src/components/admin/publicidad-section.tsx`):
+- **Vista de Galería Responsive** (`client/src/components/admin/publicidad-section.tsx`):
   - Modo de visualización dual: Galería (5 columnas) y Lista
-  - Grid responsive: 5 columnas (XL), 4 columnas (LG), 3 columnas (MD), 2 columnas (SM)
-  - Cards con miniaturas de imágenes en aspecto cuadrado
+  - Grid móvil: **2 columnas en SM/móvil**, 3 columnas (MD), 4 columnas (LG), 5 columnas (XL)
+  - **Imágenes flexibles**: `object-contain` con aspect-ratio cuadrado que se adapta a la orientación natural de la imagen (horizontal, vertical, cuadrada)
+  - **Overlay gris con badge "Caducada"**: cuando `fechaCaducidad < fecha actual`
+  - **Botón GPS**: enlace directo a Google Maps cuando tiene coordenadas GPS
   - Preview de imagen con placeholder cuando no hay imagen
   - Badges de estado y tipo visibles en cada card
   - Iconos de redes sociales disponibles en miniaturas
-  - Fecha de caducidad visible en cada card
+  - Fecha de caducidad visible (roja cuando está caducada)
   - Acciones rápidas (pausar/activar, editar, eliminar) en cada card
 
 - **Formulario Completo de Publicidad**:
-  - Sección "Información Básica": título, descripción, tipo, orden, estado
+  - Sección "Información Básica": título, descripción, tipo (3 opciones), orden, estado
   - Sección "Imagen de Publicidad": componente ImageUpload integrado
   - Sección "Enlaces": URL de enlace opcional
   - Sección "Fechas de Vigencia": fecha inicio, fecha fin, fecha caducidad
+  - **Sección "Ubicación GPS"**: latitud, longitud, dirección del local
   - Sección "Redes Sociales": 7 redes sociales con iconos coloridos
     * Facebook (azul), Instagram (rosa), WhatsApp (verde)
     * TikTok, Twitter/X (celeste), YouTube (rojo), LinkedIn (azul oscuro)
@@ -32,10 +36,14 @@ SEG-APO is a comprehensive community security platform designed for Tacna, Peru.
   - Validación de formulario con Zod
 
 - **Vista de Lista Mejorada**:
-  - Cards horizontales con thumbnail a la izquierda
+  - Cards horizontales con thumbnail a la izquierda (object-contain)
+  - **Overlay gris en thumbnail** cuando está caducada
+  - Badge "Caducada" visible cuando aplica
+  - **Enlace GPS** ("Ver ubicación") que abre Google Maps
   - Información completa visible: título, descripción, fechas, redes sociales
   - Enlaces de redes sociales clickeables con iconos
   - WhatsApp genera automáticamente enlace wa.me
+  - Fecha de caducidad en rojo cuando está vencida
 
 ### Sistema Completo de Upload de Imágenes
 - **Backend Upload System** (`server/uploadConfigByEndpoint.ts`, `server/routes.ts`):
@@ -67,13 +75,22 @@ SEG-APO is a comprehensive community security platform designed for Tacna, Peru.
   - Carpetas creadas en `public/assets/`: carrusel, galeria, servicios, documentos
   - Express static middleware para servir archivos desde `/assets`
 
-### Sistema de Carruseles de Publicidad Completado
-- **Helpers Utilitarios**: Creado `publicidadUtils.ts` con funciones `isPublicidadActiva()` para filtrado por estado y fechas, y `filtrarPublicidadesActivas()` para ordenamiento y filtrado completo.
-- **Componente CarruselPublicidad**: 
-  - Soporta 3 tipos: `carrusel_logos` (logos horizontales), `carrusel_principal` (actividades/eventos), `logos_servicios` (servicios locales)
+### Sistema de Carruseles de Publicidad con Pausa en Hover
+- **Helpers Utilitarios** (`publicidadUtils.ts`):
+  - `isPublicidadActiva()`: filtrado por estado y fechas (excluye caducadas)
+  - `isPublicidadCaducada()`: verifica si `fechaCaducidad < fecha actual`
+  - `getGoogleMapsUrl()`: genera URL de Google Maps para ruta
+  - `filtrarPublicidadesActivas()`: ordenamiento y filtrado completo
+  
+- **Componente CarruselPublicidad** (`client/src/components/CarruselPublicidad.tsx`):
+  - Soporta 3 tipos: `carrusel_logos`, `carrusel_principal`, `logos_servicios`
   - Grid responsive: 5 columnas (≥1280px), 3 columnas (tablet), 2 columnas (mobile)
-  - Carrusel infinito con autoplay configurable y controles manuales
+  - **Pausa automática en hover**: carrusel se detiene al pasar el mouse sobre él
+  - Carrusel infinito con autoplay configurable (3s logos, 5s principal)
+  - Controles manuales: botones anterior/siguiente, pausar/reproducir manual
   - Filtrado automático por tipo, estado activo, y rango de fechas
+  - Indicadores de puntos en carrusel principal
+  
 - **Integración**: Carruseles integrados en Landing y Home con títulos descriptivos y spacing adecuado.
 - **Type Safety**: Correcciones en home.tsx para usar propiedades correctas de AuthUser (nombre, rol, activo) y tipado correcto de emergencias con `Emergencia[]`.
 

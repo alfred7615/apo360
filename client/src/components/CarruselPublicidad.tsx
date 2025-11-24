@@ -13,6 +13,7 @@ interface CarruselPublicidadProps {
 export default function CarruselPublicidad({ tipo, altura = "400px" }: CarruselPublicidadProps) {
   const [indiceActual, setIndiceActual] = useState(0);
   const [pausado, setPausado] = useState(false);
+  const [hoverPausado, setHoverPausado] = useState(false);
 
   const { data: publicidades = [] } = useQuery<Publicidad[]>({
     queryKey: ["/api/publicidad"],
@@ -22,15 +23,26 @@ export default function CarruselPublicidad({ tipo, altura = "400px" }: CarruselP
     publicidades.filter(p => p.tipo === tipo)
   );
 
+  // Clamp indiceActual cuando cambia la longitud de publicidades
   useEffect(() => {
-    if (pausado || publicidadesActivas.length === 0) return;
+    setIndiceActual((prev) => {
+      if (publicidadesActivas.length === 0) return 0;
+      if (prev >= publicidadesActivas.length) {
+        return Math.max(publicidadesActivas.length - 1, 0);
+      }
+      return prev; // No change needed
+    });
+  }, [publicidadesActivas.length]);
+
+  useEffect(() => {
+    if (pausado || hoverPausado || publicidadesActivas.length === 0) return;
 
     const intervalo = setInterval(() => {
       setIndiceActual((prev) => (prev + 1) % publicidadesActivas.length);
     }, tipo === "carrusel_logos" ? 3000 : 5000);
 
     return () => clearInterval(intervalo);
-  }, [pausado, publicidadesActivas.length, tipo]);
+  }, [pausado, hoverPausado, publicidadesActivas.length, tipo]);
 
   const irAnterior = () => {
     setIndiceActual((prev) =>
@@ -67,7 +79,12 @@ export default function CarruselPublicidad({ tipo, altura = "400px" }: CarruselP
     );
 
     return (
-      <div className="relative w-full bg-white dark:bg-gray-800 py-6 border-y" data-testid={`carousel-${tipo}`}>
+      <div 
+        className="relative w-full bg-white dark:bg-gray-800 py-6 border-y" 
+        data-testid={`carousel-${tipo}`}
+        onMouseEnter={() => setHoverPausado(true)}
+        onMouseLeave={() => setHoverPausado(false)}
+      >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between gap-4">
             <Button
@@ -156,7 +173,13 @@ export default function CarruselPublicidad({ tipo, altura = "400px" }: CarruselP
 
   // Carrusel principal (imágenes grandes)
   return (
-    <div className="relative w-full overflow-hidden rounded-lg" style={{ height: altura }} data-testid="carousel-main">
+    <div 
+      className="relative w-full overflow-hidden rounded-lg" 
+      style={{ height: altura }} 
+      data-testid="carousel-main"
+      onMouseEnter={() => setHoverPausado(true)}
+      onMouseLeave={() => setHoverPausado(false)}
+    >
       {/* Imagen actual */}
       <div className="relative h-full w-full">
         {publicidadActual.enlaceUrl ? (

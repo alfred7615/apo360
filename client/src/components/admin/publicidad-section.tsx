@@ -27,12 +27,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPublicidadSchema } from "@shared/schema";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Pause, Play, ImageIcon, Facebook, Instagram, Twitter, Youtube, Linkedin } from "lucide-react";
+import { Plus, Pencil, Trash2, Pause, Play, ImageIcon, Facebook, Instagram, Twitter, Youtube, Linkedin, MapPin, ExternalLink } from "lucide-react";
 import { SiTiktok, SiWhatsapp } from "react-icons/si";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { isPublicidadCaducada, getGoogleMapsUrl } from "@/lib/publicidadUtils";
 
 type Publicidad = {
   id: string;
@@ -47,6 +48,9 @@ type Publicidad = {
   estado: string | null;
   usuarioId: string | null;
   orden: number | null;
+  latitud: number | null;
+  longitud: number | null;
+  direccion: string | null;
   facebook: string | null;
   instagram: string | null;
   whatsapp: string | null;
@@ -100,6 +104,9 @@ export default function PublicidadSection() {
       fechaCaducidad: "",
       estado: "activo",
       orden: 0,
+      latitud: undefined,
+      longitud: undefined,
+      direccion: "",
       facebook: "",
       instagram: "",
       whatsapp: "",
@@ -232,6 +239,9 @@ export default function PublicidadSection() {
       fechaCaducidad: formatDateToInput(publicidad.fechaCaducidad),
       estado: (publicidad.estado || "activo") as any,
       orden: publicidad.orden || 0,
+      latitud: publicidad.latitud !== null ? publicidad.latitud : undefined,
+      longitud: publicidad.longitud !== null ? publicidad.longitud : undefined,
+      direccion: publicidad.direccion || "",
       facebook: publicidad.facebook || "",
       instagram: publicidad.instagram || "",
       whatsapp: publicidad.whatsapp || "",
@@ -266,6 +276,7 @@ export default function PublicidadSection() {
     const labels: Record<string, string> = {
       carrusel_logos: "Carrusel Logos",
       carrusel_principal: "Carrusel Principal",
+      logos_servicios: "Logos Servicios",
       popup: "Popup",
     };
     return <Badge variant="outline" data-testid={`badge-tipo-${tipo}`}>{labels[tipo || ""] || tipo}</Badge>;
@@ -366,6 +377,7 @@ export default function PublicidadSection() {
                           <SelectContent>
                             <SelectItem value="carrusel_logos">Carrusel Logos</SelectItem>
                             <SelectItem value="carrusel_principal">Carrusel Principal</SelectItem>
+                            <SelectItem value="logos_servicios">Logos Servicios</SelectItem>
                             <SelectItem value="popup">Popup</SelectItem>
                           </SelectContent>
                         </Select>
@@ -463,6 +475,52 @@ export default function PublicidadSection() {
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Ubicación GPS */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-purple-600" />
+                      Ubicación GPS (Opcional)
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="latitud">Latitud</Label>
+                        <Input
+                          id="latitud"
+                          type="number"
+                          step="any"
+                          {...form.register("latitud", { valueAsNumber: true })}
+                          placeholder="-18.0000"
+                          data-testid="input-latitud"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="longitud">Longitud</Label>
+                        <Input
+                          id="longitud"
+                          type="number"
+                          step="any"
+                          {...form.register("longitud", { valueAsNumber: true })}
+                          placeholder="-70.0000"
+                          data-testid="input-longitud"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="direccion">Dirección</Label>
+                        <Input
+                          id="direccion"
+                          {...form.register("direccion")}
+                          placeholder="Dirección del local"
+                          data-testid="input-direccion"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Puedes obtener las coordenadas desde Google Maps. El botón GPS aparecerá en la publicidad para que los usuarios vean la ruta.
+                    </p>
                   </div>
 
                   {/* Redes Sociales */}
@@ -597,23 +655,33 @@ export default function PublicidadSection() {
             No hay publicidades registradas. Crea la primera publicidad.
           </p>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {publicidades.map((pub) => (
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {publicidades.map((pub) => {
+              const caducada = isPublicidadCaducada(pub);
+              return (
               <Card key={pub.id} className="overflow-hidden hover-elevate" data-testid={`card-publicidad-${pub.id}`}>
-                <div className="relative aspect-square bg-muted">
+                <div className="relative w-full bg-muted flex items-center justify-center" style={{ aspectRatio: '1' }}>
                   {pub.imagenUrl ? (
                     <img
                       src={pub.imagenUrl}
                       alt={pub.titulo || "Publicidad"}
-                      className="w-full h-full object-cover"
+                      className="max-w-full max-h-full object-contain"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <ImageIcon className="h-12 w-12 text-muted-foreground" />
                     </div>
                   )}
-                  <div className="absolute top-2 right-2 flex gap-1">
+                  {caducada && (
+                    <div className="absolute inset-0 bg-gray-500/70 dark:bg-gray-800/70 flex items-center justify-center">
+                      <Badge variant="destructive" className="text-xs">Caducada</Badge>
+                    </div>
+                  )}
+                  <div className="absolute top-2 right-2 flex flex-col gap-1">
                     {getEstadoBadge(pub.estado)}
+                    {caducada && (
+                      <Badge variant="destructive" className="text-xs">Caducada</Badge>
+                    )}
                   </div>
                 </div>
                 <CardContent className="p-3 space-y-2">
@@ -623,21 +691,35 @@ export default function PublicidadSection() {
                     <span>Orden: {pub.orden}</span>
                   </div>
                   {pub.fechaCaducidad && (
-                    <div className="text-xs text-muted-foreground">
+                    <div className={`text-xs ${caducada ? 'text-red-600 font-semibold' : 'text-muted-foreground'}`}>
                       Caduca: {format(new Date(pub.fechaCaducidad), "dd/MM/yyyy")}
                     </div>
                   )}
-                  {(pub.facebook || pub.instagram || pub.whatsapp || pub.tiktok || pub.twitter || pub.youtube || pub.linkedin) && (
-                    <div className="flex gap-1 flex-wrap">
-                      {pub.facebook && <Facebook className="h-3 w-3 text-blue-600" />}
-                      {pub.instagram && <Instagram className="h-3 w-3 text-pink-600" />}
-                      {pub.whatsapp && <SiWhatsapp className="h-3 w-3 text-green-600" />}
-                      {pub.tiktok && <SiTiktok className="h-3 w-3" />}
-                      {pub.twitter && <Twitter className="h-3 w-3 text-sky-500" />}
-                      {pub.youtube && <Youtube className="h-3 w-3 text-red-600" />}
-                      {pub.linkedin && <Linkedin className="h-3 w-3 text-blue-700" />}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {(pub.facebook || pub.instagram || pub.whatsapp || pub.tiktok || pub.twitter || pub.youtube || pub.linkedin) && (
+                      <div className="flex gap-1">
+                        {pub.facebook && <Facebook className="h-3 w-3 text-blue-600" />}
+                        {pub.instagram && <Instagram className="h-3 w-3 text-pink-600" />}
+                        {pub.whatsapp && <SiWhatsapp className="h-3 w-3 text-green-600" />}
+                        {pub.tiktok && <SiTiktok className="h-3 w-3" />}
+                        {pub.twitter && <Twitter className="h-3 w-3 text-sky-500" />}
+                        {pub.youtube && <Youtube className="h-3 w-3 text-red-600" />}
+                        {pub.linkedin && <Linkedin className="h-3 w-3 text-blue-700" />}
+                      </div>
+                    )}
+                    {typeof pub.latitud === 'number' && typeof pub.longitud === 'number' && !Number.isNaN(pub.latitud) && !Number.isNaN(pub.longitud) && (
+                      <a 
+                        href={getGoogleMapsUrl(pub.latitud, pub.longitud)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
+                        data-testid={`link-gps-${pub.id}`}
+                      >
+                        <MapPin className="h-3 w-3" />
+                        GPS
+                      </a>
+                    )}
+                  </div>
                   <div className="flex gap-1 pt-2">
                     <Button
                       variant="ghost"
@@ -669,24 +751,30 @@ export default function PublicidadSection() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            );
+          })}
           </div>
         ) : (
           <div className="space-y-2">
-            {publicidades.map((pub) => (
+            {publicidades.map((pub) => {
+              const caducada = isPublicidadCaducada(pub);
+              return (
               <Card key={pub.id} className="p-4 hover-elevate" data-testid={`row-publicidad-${pub.id}`}>
                 <div className="flex gap-4">
-                  <div className="w-20 h-20 flex-shrink-0 bg-muted rounded overflow-hidden">
+                  <div className="w-20 h-20 flex-shrink-0 bg-muted rounded overflow-hidden relative">
                     {pub.imagenUrl ? (
                       <img
                         src={pub.imagenUrl}
                         alt={pub.titulo || "Publicidad"}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <ImageIcon className="h-8 w-8 text-muted-foreground" />
                       </div>
+                    )}
+                    {caducada && (
+                      <div className="absolute inset-0 bg-gray-500/70 dark:bg-gray-800/70" />
                     )}
                   </div>
                   <div className="flex-1 space-y-2">
@@ -700,7 +788,7 @@ export default function PublicidadSection() {
                         {getTipoBadge(pub.tipo)}
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                       <span>Orden: {pub.orden}</span>
                       {pub.fechaInicio && (
                         <span>Inicio: {format(new Date(pub.fechaInicio), "dd/MM/yyyy")}</span>
@@ -709,7 +797,21 @@ export default function PublicidadSection() {
                         <span>Fin: {format(new Date(pub.fechaFin), "dd/MM/yyyy")}</span>
                       )}
                       {pub.fechaCaducidad && (
-                        <span className="text-destructive">Caduca: {format(new Date(pub.fechaCaducidad), "dd/MM/yyyy")}</span>
+                        <span className={caducada ? 'text-red-600 font-semibold' : 'text-muted-foreground'}>
+                          Caduca: {format(new Date(pub.fechaCaducidad), "dd/MM/yyyy")}
+                        </span>
+                      )}
+                      {typeof pub.latitud === 'number' && typeof pub.longitud === 'number' && !Number.isNaN(pub.latitud) && !Number.isNaN(pub.longitud) && (
+                        <a 
+                          href={getGoogleMapsUrl(pub.latitud, pub.longitud)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-purple-600 hover:text-purple-700 dark:text-purple-400"
+                          data-testid={`link-gps-list-${pub.id}`}
+                        >
+                          <MapPin className="h-3 w-3" />
+                          Ver ubicación
+                        </a>
                       )}
                     </div>
                     {(pub.facebook || pub.instagram || pub.whatsapp || pub.tiktok || pub.twitter || pub.youtube || pub.linkedin) && (
@@ -751,6 +853,9 @@ export default function PublicidadSection() {
                         )}
                       </div>
                     )}
+                    {caducada && (
+                      <Badge variant="destructive" className="w-fit">Caducada</Badge>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1">
                     <Button
@@ -780,7 +885,8 @@ export default function PublicidadSection() {
                   </div>
                 </div>
               </Card>
-            ))}
+            );
+          })}
           </div>
         )}
       </CardContent>

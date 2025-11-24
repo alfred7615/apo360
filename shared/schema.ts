@@ -81,7 +81,7 @@ export const publicidad = pgTable("publicidad", {
   id: varchar("id").primaryKey(),
   titulo: varchar("titulo"),
   descripcion: text("descripcion"),
-  tipo: varchar("tipo"), // "carrusel_logos", "carrusel_principal", "popup"
+  tipo: varchar("tipo"), // "carrusel_logos", "carrusel_principal", "logos_servicios"
   imagenUrl: varchar("imagen_url"),
   enlaceUrl: varchar("enlace_url"),
   fechaInicio: timestamp("fecha_inicio"),
@@ -90,6 +90,10 @@ export const publicidad = pgTable("publicidad", {
   estado: varchar("estado").default("activo"), // "activo", "pausado", "finalizado"
   usuarioId: varchar("usuario_id"),
   orden: integer("orden"),
+  // GPS / Ubicación
+  latitud: real("latitud"),
+  longitud: real("longitud"),
+  direccion: text("direccion"),
   // Redes Sociales
   facebook: varchar("facebook"),
   instagram: varchar("instagram"),
@@ -102,7 +106,7 @@ export const publicidad = pgTable("publicidad", {
   updatedAt: timestamp("updated_at"),
 });
 
-export const insertPublicidadSchema = createInsertSchema(publicidad).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPublicidadSchema = createInsertSchema(publicidad).omit({ createdAt: true, updatedAt: true });
 export type PublicidadInsert = z.infer<typeof insertPublicidadSchema>;
 export type Publicidad = typeof publicidad.$inferSelect;
 
