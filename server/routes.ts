@@ -4,10 +4,14 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertPublicidadSchema, insertServicioSchema, insertProductoDeliverySchema, insertGrupoChatSchema, insertMensajeSchema, insertEmergenciaSchema, insertViajeTaxiSchema, insertPedidoDeliverySchema, insertRadioOnlineSchema, insertArchivoMp3Schema } from "@shared/schema";
+import { registerAdminRoutes } from "./routes-admin";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configurar autenticación
   await setupAuth(app);
+
+  // Registrar rutas de administración
+  registerAdminRoutes(app);
 
   // ============================================================
   // RUTAS DE AUTENTICACIÓN

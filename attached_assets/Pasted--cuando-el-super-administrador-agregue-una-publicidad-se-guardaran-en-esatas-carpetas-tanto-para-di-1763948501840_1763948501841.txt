@@ -1,0 +1,104 @@
+
+cuando el super administrador agregue una publicidad se guardaran en esatas carpetas tanto para disco local y en el hosting del sitio web
+/public_html/assets/img/carrusel
+/public_html/assets/img/galeria
+/public_html/assets/img/servicios
+
+F:\VARIOS\proyectos\SEGAPO2025\00 WEB\assets\img\carrusel
+F:\VARIOS\proyectos\SEGAPO2025\00 WEB\assets\img\galeria
+F:\VARIOS\proyectos\SEGAPO2025\00 WEB\assets\img\servicios
+
+datos paera recibir los comentarios o sugerencias 
+Host:     smtp.gmail.com
+Puerto:   587
+Email:    aapomayta15@gmail.com
+Password: frog svje eiih jfga (contraseña de aplicación)
+TLS:      Habilitado (STARTTLS)
+
+
+crear sistema web de superadministrador con todas sus funcionalidades para trabajar con cinco pantalla extendible para monitorizar todas klas actividades
+
+sistema web para administradores de segundo nivel que son para los grupos de chat, locales comerciales  de venta de servicios, para deliverys, grupos de taxis
+
+sistema de web principal: responsivo para escritorio tablets y dispositivos celulares que se vera toda la publicidad que sera la pagina principal que se visualizara todo el contenido que administra el super administrador y los administradores
+
+
+app nativa instalable para todos los dispositvos que se reflejara todo el contenido del sistema web principal
+
+
+los archivos e imagnes de ejemplo estan en las carpetas ya indicadas tanto en el disco local como en el hosting
+el hosting es www.tacnafm.com
+
+lso archivos creados y carpetas luego indicarme cuales tengo que subor al hosting que archivos
+como subir e instalar la base de datos y otros de vital importancia.
+
+#########
+##########3
+################33
+##########
+
+
+
+Qué está listo
+
+- Estructura base de la web con encabezado, navegación, carrusel, radio, servicios, chat y eventos.
+	NO ES COMO SE HA PLANIFICADO REVISA EL SITIO WEB WWW.TACNAFM.COM O LOS ARCHIVOS QUE ESTAN EN LA CARPETA F:\VARIOS\proyectos\SEGAPO2025\01 WEB O TE ENVIARE MAS DETALLES DE LAS DIMENSIONES TAMAÑOS Y ALTURA DE CADA SECCION TIENE UNA ANIMACION DE PRESENTACION AL INICIAR CARGAR EL SITIO WEB QUE SE IGUAL
+INDEX.HTML  SIITO PRINCIPAL
+admin_super1.html pagina del super administrador (y elsuper admin trabajara con cinco pantallas 1.- admin_super1.html 2.- notificacio.html (donde se registraran todas las notificaciones tanto de auxilñio, sos, boton de panico, tranasacciones, descuentos,  usuario que agrega saldo, atencion , y otros  etc etc 3.- geo.html (donde se visualizara el mapa de google maps para ver todos los dispositivos actuvos, taxis, emergencias, solicitudes, etc etc que estaran clasificadas, 4.- chat.html donde se vosualizara toidos los chat de todos los grupos que envian emergenecia envian ubicacion de gps de la emergenecia imagenes fotos audios etc etc igual al whatsaapp. 5.- geo_tv.html donde se vosualizara todo el resumens de la geolocalñizacion de eventos taxis etc etc en el google maps
+ 
+admin1.html sitio web para lso administradores de segundo nivel para jefe de grupo de chat, grupos de taxis, grupos de locales comerciales y otros,
+
+
+- Reproductor de audio: acepta URL de radio online y playlists embebidas ( assets/mp3/playlists-embedded.js ).
+	YA EXISTE LAS URL Y LAS LISTAS SEGUN LOS DIRECTORIOS QUE CORRESPONDEN 
+esto es para considerar la radio on line y los selectores de listas mp3 que tambien seran editables en el super administrador web
+TITULO:  Radio TacnaFM.apo
+https://mediastreamm.com/8158/; ) o codigo <iframe src="https://mediastreamm.com/cp/widgets/player/single/?p=8158" height="110" width="100%" scrolling="no" style="border:none;"></iframe>
+
+TITULO:  Radio La Juvenil
+https://mediastreamm.com:7089     <iframe src="https://mediastreamm.com/cp/widgets/player/single/?p=8180" height="110" width="100%" scrolling="no" style="border:none;"></iframe>
+
+TITULO:  Rock moderna
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 1
+/public_html/assets/mp3/lista 1
+TITULO:  Cumbia
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 2
+/public_html/assets/mp3/lista 2
+TITULO:  Exitos Variado
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 3
+/public_html/assets/mp3/lista 3
+TITULO:  Mix Variado
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 4
+/public_html/assets/mp3/lista 4
+TITULO:  Romantica
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 5
+/public_html/assets/mp3/lista 5
+
+- Servicios con modal de pedido básico y botón “Solicitar delivery” que abre WhatsApp con el detalle del pedido.
+- Botón de pánico persistente con reconfirmación que abre WhatsApp con un mensaje SOS.
+- Franja de títulos/alertas visible bajo el encabezado.
+- Controles de “Pausar/Play” en el carrusel. ES EN EL admin_super1.html CONTROLES DE MODIFICAR EDITAR PAUSAR ELIMINAR GPS
+
+
+
+- Sprint 1: Publicidad y carruseles completos (modificar/eliminar/pausa/play, programación por fechas, overlays de GPS/redes) + audio radio/playlists totalmente parametrizable.
+- Sprint 2: Autenticación y roles (RBAC), cartera digital y reglas de descuentos/bonificaciones.
+- Sprint 3: Taxi básico (conductor/pasajero, matching y tracking) + paneles mínimos operativos.
+- Sprint 4: Delivery básico integrado a locales + notificaciones a conductores.
+- Sprint 5: Chat tiempo real para sesiones activas + enlaces WhatsApp para comunidad/alertas.
+- Sprint 6: Panel super admin (dashboard, notificaciones/estadísticas, geolocalización).
+Siguientes pasos
+
+- Confirmar stack (React+NestJS+Flutter).
+- Definir reglas de cartera y porcentajes. ESO LO DEFINIRA EL SUPER ADMINISTRADOR EN SU PANEL DE CONTROL MANUALMENTE
+
+- Indicar proveedores de pago prioritarios (Yape/Plin/PayPal) y credenciales. TODAS LAS MODALIDADES DE PAGO DISPONIBLES Y ESOS DATOS SOLO EL SUPER ADMINISTRADOR COLOCARAN DE MANERA MANUAL LOS DATOS DEJAR CAMPOS PARA INGRRESAR ESOS DATOS
+
+- Habilitar Google Maps API y compartir las claves. INDICARME COMO LAS OBTENGO PARA DARRTE ESA INFORMACION
+
+- Proveer lista de grupos WhatsApp por sector/entidad para enlazarlos. EL SUPER ADMINISTRADOR ES QUIEN CREARA LOS GRUPOS DE CHAT COMO ELIMINAR MODIFICAR PAUSAR ETC ETC
+
+- Compartir categorías de servicios con sus campos por vertical (restaurant, talleres, etc.). DISPONER ESOS DATOS EN EL INTERNET LOS TIPOS DE CATEGORIAS Y SUBCATEGORIAS DISPONIBLES PARA QUE EL USUARIO PUEDA SELECCIONAR UNA DE ELLAS O VARIAS  SIEMPRE EN CUANDO SU PERFIL LO REQUIERA
+
+Si estás conforme con este avance y el roadmap, comienzo con el setup del proyecto estructurado y el Sprint 1. ¿Quieres que lo monte ya con React+Vite y NestJS y deje la maqueta actual como referencia del diseño y UX inicial?
+SI PORFAVOR CONTINUAR CON LAS SUGERE CIAS QUE SE TE HAN PLANTEADO CREAR NUEVOS ARCHIVOS DE HTML PARA CADA SITUACION  RESPOBDER EN ESPAÑOL PORFAVOR

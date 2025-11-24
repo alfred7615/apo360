@@ -56,9 +56,9 @@ async function upsertUser(
   await storage.upsertUsuario({
     id: claims["sub"],
     email: claims["email"],
-    primerNombre: claims["first_name"],
-    apellido: claims["last_name"],
-    imagenPerfil: claims["profile_image_url"],
+    firstName: claims["first_name"],
+    lastName: claims["last_name"],
+    profileImageUrl: claims["profile_image_url"],
   });
 }
 
