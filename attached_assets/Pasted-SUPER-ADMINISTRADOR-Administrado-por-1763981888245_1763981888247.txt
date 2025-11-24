@@ -1,0 +1,157 @@
+SUPER ADMINISTRADOR
+###########################################################
+
+Administrado por un super administrador que controlara las difusión de publicidad e informacion de actividades asi como tambien a los administradores (admin) creara personal de apoyo (super admin - cartera) (super admin - operaciones) (super admin - supervisores) etc etc que crea conveniente el superadministrador.
+
+El super administrador tendra el trabajo de aministrar en 5 pantallas de apoyo (Excritorio expandible)
+Pantalla 1 super administrador: Dashboard donde saldra informe de todoas las actividades en resumen con cuadros estadisticos y nuemeros totales de actividades y resumenes
+PANTALLA 2 CHAT: el superadministrador podra visualizar todas las actividades del chat para su verificacion de cada sistema o pedido de auxilio en osa grupos de chat y grupos d eparsonas o grupos de asociaciones de chat.
+PANTALLA 3 NOTIFICACIONES donde se visualizara todas las actividades desde en el momento del boton de panico hasta su atencion y solucion al problema un cuadro resumen de las actividades que se podra visualizar  por dia mes y año y periodos intervalos desde hasta mediante un calendario. igual para tipos de emergencia (cuadro estadisticos)
+PANTALLA 4 GEOLOCALIZACION donde se monitorea todas las actividades en el plano de google maps donde saldran las alertas ubicadas en el mapa y el super administrador podra visualizar o corroborar su atencion oportuna en el punto de alerta con un clic de deslizara una ventana de opciones como atender segun prioridad, atebncion urgente, derivar a entidades que puedan atender de manera inmediata, enviar apoyo, etc etc.
+Abra opciones de visualizaciones como de emergencia (atendiads por atender etc etc) taxi (donde se visualizara las unidades de taxi y estaran identificadas en colores segun sean en grupos o empresas (estan tendran su panel administrador independiente) y otra opcion donde seleccionara por un grupo A para ver donde se encuentran las unidades del grupo A y seleccionar por ejemplo el grupo B igual donde se podra visualizar las inidades del grupo B etc etc. 
+
+de igual manera el recorrido de las unidades de buses segun la seleccion por grupo o empresas (esto se desarrollara en la segunda etapa)
+
+PANTALLA 5 google maps: donde se visulizara solo las activiaddes del google maps y que esta se copia la imagen a una pantalla mas grande como por ejemplo a una TV.
+
+
+EN LA PANTALLA 1 ESTARA DIVIDIDA EN VARIOS SECTORES por ejemplo: 
+
+1.1 PUBLICIDAD que estara ubicada debajo del encabezado una barra horizontal con estas opciones que se encunetra en el sitio WEB principal.al agregra nueva publicacion de todas esta informacion publicidad se podra administrar su inicio y termino en la web al culminar su emision esta quedara suspendido automaticamente hasta su nueva renovacion de publicidad ingresando nuevamente las fecha de su periodo de emision en la web.
+cuando el super administrador agregue una publicidad se guardaran en esatas carpetas tanto para disco local y en el hosting del sitio web
+/public_html/assets/img/carrusel
+/public_html/assets/img/galeria
+/public_html/assets/img/servicios
+
+F:\VARIOS\proyectos\SEGAPO2025\00 WEB\assets\img\carrusel
+F:\VARIOS\proyectos\SEGAPO2025\00 WEB\assets\img\galeria
+F:\VARIOS\proyectos\SEGAPO2025\00 WEB\assets\img\servicios
+
+datos paera recibir los comentarios o sugerencias 
+Host:     smtp.gmail.com
+Puerto:   587
+Email:    aapomayta15@gmail.com
+Password: frog svje eiih jfga (contraseña de aplicación)
+TLS:      Habilitado (STARTTLS)
+
+1.2 RADIO ONLINE LISTAS MP3: el super administrador tendra una opcion donde colocara las url de las radios online y poxra modificar borra eliminar o pausar la emision de la radio online asi como tambiend agregar nuevas redios.
+el super administrador tbm podra crear listas mp3... las listas y radios podra modificar eliminar editar, suspender su emision etc etc 
+esto es para considerar la radio on line y los selectores de listas mp3 que tambien seran editables en el super administrador web
+TITULO:  Radio TacnaFM.apo
+https://mediastreamm.com/8158/; ) o codigo <iframe src="https://mediastreamm.com/cp/widgets/player/single/?p=8158" height="110" width="100%" scrolling="no" style="border:none;"></iframe>
+
+TITULO:  Radio La Juvenil
+https://mediastreamm.com:7089     <iframe src="https://mediastreamm.com/cp/widgets/player/single/?p=8180" height="110" width="100%" scrolling="no" style="border:none;"></iframe>
+
+TITULO:  Rock moderna
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 1
+/public_html/assets/mp3/lista 1
+TITULO:  Cumbia
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 2
+/public_html/assets/mp3/lista 2
+TITULO:  Exitos Variado
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 3
+/public_html/assets/mp3/lista 3
+TITULO:  Mix Variado
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 4
+/public_html/assets/mp3/lista 4
+TITULO:  Romantica
+F:\VARIOS\proyectos\SEGAPO2025\01 WEB\assets\mp3\lista 5
+/public_html/assets/mp3/lista 5
+
+1.3 PANEL DE USUARIOS Y ADMINISTRADORES donde se podra administrara todos los usuarios tipo de usuarios, grupos de taxis grupos de personas etc etc  donde se podra eliminar, modificar, suspender al usuario de este sistema. o bloquear.
+user
+
+super admin (podra asignar funciones a usuarios con su numero DNI de su personal)
+	operador
+	supervisor
+	registro
+	saldos
+	marketing
+
+administrador (podra asignar funciones a usuarios con su numero DNI de su personal)
+	propietario de local (restaurant, grupos de taxi, servicios, grupos de chat, 
+	operador
+	supervisor
+	registros saldos
+	etc etc
+
+usuarios
+	podran solicitar tener las funcionalidades como ser taxistas - usuario, tner local para ofrecer algun productos de servicio, roles que cumplan como (socorrer auxilios, como bomberos, dirigentes, policias, serenazgo, etc etc...) y el super administrador podra refistrarños aprobando la solicitud o en adelante podria quitar esas funcionalidade o roles asi mismo un administrador como  por ejemplo dirigente, podra agregar a varios usuarios a su grupo de chat para el boton de panico, otro el administrador de bomberos podra agregar a sus compañeros quienes son bomberos que estaran pendienta ante un llamado de socorro. y asi otros grupos o servicios podran ahgregar su personal 
+
+REGISTRO DE USUARIO:
+
+basico una estrella
+####################
+alias
+Email
+contraseña
+
+servicio chat (dos estrellas)
+###############################
+nombres:
+apellidos:
+foto:
+DNI numero: imagen:[[de frente]] [[posterior]] (fecha de caducidad)
+numero celular:
+
+Ubicacion (tres estrellas)
+#############################
+Pais:
+Departamento:
+Dsitrito:
+Sector:
+
+direccion (Cuatro estrellas)
+##################################
+Direccion:
+Mza Lote - numero:
+Avenida - Calle:
+GPS:
+
+venta de marketplace (cinco estrellas)
+#######################################
+nombre del local - empresa:
+Duireccion del local:
+ubicacion GPS del local:
+numero de RUC:
+
+
+Conductor Taxi - Bus - Delivery - mudanzas 
+###################################
+brevette	:  imagen:[[de frente]] [[posterior]] (fecha de inicio - caducidad)
+soat:		:  imagen:[[de frente]] [[posterior]] (fecha de inicio - caducidad)
+Revision tecnica:  imagen:[[de frente]] [[posterior]] (fecha de inicio - caducidad)
+credencial cond :  imagen:[[de frente]] [[posterior]] (fecha de inicio - caducidad)
+credencial taxi :  imagen:[[de frente]] [[posterior]] (fecha de inicio - caducidad)
+
+
+DE igual manera se podra administrar a los administraodres de segundo nivel como por ejemplo admin, grupos de chat, grupos asociaciones, grupos de taxi, servicios de axilios, empresas, servicios, negocios etc etc etc. tendran un panel de administracion especifico para su rubro pero un su capacidad minima luego en II etapa se habilitara tosas las funcionalidades de cada rubro y cada negocios de manera independiente. 
+
+verificacion o asignaciones de diferentes roles por ejemplo asignar a una usuario como administrador de segundo nivel, asi mismo tambien puede ser taxista, si cuenta con un a movil para el servicio, y tambien puede ser personal de serenazgo o policia etc etc. un usuario podra tener varias roles administrativos segun sea el caso. 
+por ejepmplo el serenazgo que tendra su panel administrativo el cual podra asignar o agregar un nuevo personal colocando a un usuario en su grupo como serenazgo. este rol automaticamente se feflejara en su panel de susuario y a la vez puede ser taxistas pofreciendo servicio de taxi y delivery otros
+
+1.4. CARTERA Y SALDOS 
+EL SUPERAMDINISTRADOR PODRA COLOCAR CUANTO SERA EL PORCENTAJE O MONTO DIRECTO QUE DESCONTARA de su saldo el monto por pubñicidad, ingreso de articulos nuevos, y tros serviicos que ofrece el sitio web.
+reporte de saldos de cada usuario, y la aprobacion y verificacion de ingresos nuevos por saldos, por publcidad, etc etc.
+ingreso de nuemeros de cuentas, interbancarias, paypal, plin, yape, y otros que sean posible las transacciones online.
+tipos de monedas
+
+1.5. ENCUESTAS Y IMAGENES POPUP (publi)
+administracion de encuestas el cual se hara preguntas estas puede ser 2 a mas preguntas se podra subir una imagen a la encuesta (y se podra visualiza rlos resultados de manera inmediata  sobre las encuentes que esta estara en el panel del administrador super
+
+igual maneja por medio de ventana popup se visualizara imagenes o videos de ´publicidad directa, habra una segundos de publicidad obligatoria luego pasado los segundos permitidos esta se podra omitir (similar a las pubñlicidad de youtube)
+ambos tipos de publlcidad como encuestas y puvlicidad tendra un inicio de final de publicado al termino de la fecha esta se suspendera automaticamente  y luego se podra renovar  e ingresar nueva fecha para su publicidad.
+
+1.6. SERVICIOS (MUDANZAS, ALQUILERES ETC ETC)
+
+1.7. EVENTOS CON AGENDA  1.7.- ((((SECCION DE EVENTOS CALENDARIZADO))) PUBLICAR eventos candalerizado que manualmente se colocara la fecha y hora del evento por el super administrador
+
+1.8. AVISOS DE EMERGENCIA (servicio a la comunidad)  1.8.- (((((SECCION DE AVISOS SOCIALES)))))))
+
+1.9. SERVICIO DE TAXI todas las funcionalidades para solicitar o brindar servicio de taxi similar e igual que indriver uber etc etc. agregando estas funcionalidades en la creacion de grupos d etrabajo y estos grupos tengan un jefe de grupo que seria un admin y los integrantes de un grupo pueda identificarse con un color o logo de nombre de su grupo.
+
+1.10. SERVICIO DE BUSES
+
+1.11. SERVICIO DE CAMBIO DE MONEDA 
+1.12. CONFIGURACION: en esta seccion se podra cambiar el logo nombre del sitio web, y toda la informacion de pie de pagina se podra incluir desde aqui tanto en su modificacion etc etc.... donde se seleccionara modo de pantalla oscuro y blanco o colores personalizados,,, y otrs relacionados a la configuracion (tipo de monedas, 
