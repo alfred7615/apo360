@@ -86,9 +86,18 @@ export const publicidad = pgTable("publicidad", {
   enlaceUrl: varchar("enlace_url"),
   fechaInicio: timestamp("fecha_inicio"),
   fechaFin: timestamp("fecha_fin"),
+  fechaCaducidad: timestamp("fecha_caducidad"),
   estado: varchar("estado").default("activo"), // "activo", "pausado", "finalizado"
   usuarioId: varchar("usuario_id"),
   orden: integer("orden"),
+  // Redes Sociales
+  facebook: varchar("facebook"),
+  instagram: varchar("instagram"),
+  whatsapp: varchar("whatsapp"),
+  tiktok: varchar("tiktok"),
+  twitter: varchar("twitter"),
+  youtube: varchar("youtube"),
+  linkedin: varchar("linkedin"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at"),
 });

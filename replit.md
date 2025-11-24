@@ -4,6 +4,39 @@
 SEG-APO is a comprehensive community security platform designed for Tacna, Peru. It integrates real-time messaging, ride-hailing (taxi), delivery services, local advertising, and an emergency panic button system. Its core purpose is to enhance community safety, connectivity, and local commerce. The project aims to become a vital tool for community interaction and emergency response, providing a robust platform for local services and security.
 
 ## Recent Changes (November 24, 2025)
+### Panel de Publicidad Mejorado con Vista de Galería
+- **Schema Ampliado** (`shared/schema.ts`):
+  - Agregados campos de redes sociales: facebook, instagram, whatsapp, tiktok, twitter, youtube, linkedin
+  - Agregado campo `fechaCaducidad` para control de vigencia de publicidades
+  - Todos los campos opcionales para máxima flexibilidad
+
+- **Vista de Galería en 5 Columnas** (`client/src/components/admin/publicidad-section.tsx`):
+  - Modo de visualización dual: Galería (5 columnas) y Lista
+  - Grid responsive: 5 columnas (XL), 4 columnas (LG), 3 columnas (MD), 2 columnas (SM)
+  - Cards con miniaturas de imágenes en aspecto cuadrado
+  - Preview de imagen con placeholder cuando no hay imagen
+  - Badges de estado y tipo visibles en cada card
+  - Iconos de redes sociales disponibles en miniaturas
+  - Fecha de caducidad visible en cada card
+  - Acciones rápidas (pausar/activar, editar, eliminar) en cada card
+
+- **Formulario Completo de Publicidad**:
+  - Sección "Información Básica": título, descripción, tipo, orden, estado
+  - Sección "Imagen de Publicidad": componente ImageUpload integrado
+  - Sección "Enlaces": URL de enlace opcional
+  - Sección "Fechas de Vigencia": fecha inicio, fecha fin, fecha caducidad
+  - Sección "Redes Sociales": 7 redes sociales con iconos coloridos
+    * Facebook (azul), Instagram (rosa), WhatsApp (verde)
+    * TikTok, Twitter/X (celeste), YouTube (rojo), LinkedIn (azul oscuro)
+  - Formulario con ScrollArea para mejor manejo de contenido extenso
+  - Validación de formulario con Zod
+
+- **Vista de Lista Mejorada**:
+  - Cards horizontales con thumbnail a la izquierda
+  - Información completa visible: título, descripción, fechas, redes sociales
+  - Enlaces de redes sociales clickeables con iconos
+  - WhatsApp genera automáticamente enlace wa.me
+
 ### Sistema Completo de Upload de Imágenes
 - **Backend Upload System** (`server/uploadConfigByEndpoint.ts`, `server/routes.ts`):
   - Función `createUploadMiddleware(folder, fieldName)` para configuración por endpoint

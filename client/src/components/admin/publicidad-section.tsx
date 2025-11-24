@@ -15,14 +15,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -35,10 +27,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPublicidadSchema } from "@shared/schema";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Pause, Play, ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Pause, Play, ImageIcon, Facebook, Instagram, Twitter, Youtube, Linkedin } from "lucide-react";
+import { SiTiktok, SiWhatsapp } from "react-icons/si";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ImageUpload } from "@/components/ImageUpload";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Publicidad = {
   id: string;
@@ -49,25 +43,37 @@ type Publicidad = {
   enlaceUrl: string | null;
   fechaInicio: Date | null;
   fechaFin: Date | null;
+  fechaCaducidad: Date | null;
   estado: string | null;
   usuarioId: string | null;
   orden: number | null;
+  facebook: string | null;
+  instagram: string | null;
+  whatsapp: string | null;
+  tiktok: string | null;
+  twitter: string | null;
+  youtube: string | null;
+  linkedin: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 };
 
-const formSchema = insertPublicidadSchema.omit({ fechaInicio: true, fechaFin: true }).extend({
-  fechaInicio: z.string().min(1, "Fecha de inicio requerida"),
-  fechaFin: z.string().min(1, "Fecha de fin requerida"),
-});
+const formSchema = insertPublicidadSchema
+  .omit({ fechaInicio: true, fechaFin: true, fechaCaducidad: true })
+  .extend({
+    fechaInicio: z.string().optional(),
+    fechaFin: z.string().optional(),
+    fechaCaducidad: z.string().optional(),
+  });
 
 type FormData = z.infer<typeof formSchema>;
 
 const convertFormDataToApi = (data: FormData) => {
   return {
     ...data,
-    fechaInicio: new Date(data.fechaInicio),
-    fechaFin: new Date(data.fechaFin),
+    fechaInicio: data.fechaInicio ? new Date(data.fechaInicio) : null,
+    fechaFin: data.fechaFin ? new Date(data.fechaFin) : null,
+    fechaCaducidad: data.fechaCaducidad ? new Date(data.fechaCaducidad) : null,
   };
 };
 
@@ -75,6 +81,7 @@ export default function PublicidadSection() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPublicidad, setEditingPublicidad] = useState<Publicidad | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const { data: publicidades = [], isLoading } = useQuery<Publicidad[]>({
     queryKey: ["/api/publicidad"],
@@ -90,8 +97,16 @@ export default function PublicidadSection() {
       enlaceUrl: "",
       fechaInicio: "",
       fechaFin: "",
+      fechaCaducidad: "",
       estado: "activo",
       orden: 0,
+      facebook: "",
+      instagram: "",
+      whatsapp: "",
+      tiktok: "",
+      twitter: "",
+      youtube: "",
+      linkedin: "",
     },
   });
 
@@ -120,7 +135,7 @@ export default function PublicidadSection() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<FormData> }) => {
-      const apiData = data.fechaInicio && data.fechaFin ? convertFormDataToApi(data as FormData) : data;
+      const apiData = convertFormDataToApi(data as FormData);
       return await apiRequest(`/api/publicidad/${id}`, "PATCH", apiData);
     },
     onSuccess: () => {
@@ -214,8 +229,16 @@ export default function PublicidadSection() {
       enlaceUrl: publicidad.enlaceUrl || "",
       fechaInicio: formatDateToInput(publicidad.fechaInicio),
       fechaFin: formatDateToInput(publicidad.fechaFin),
+      fechaCaducidad: formatDateToInput(publicidad.fechaCaducidad),
       estado: (publicidad.estado || "activo") as any,
       orden: publicidad.orden || 0,
+      facebook: publicidad.facebook || "",
+      instagram: publicidad.instagram || "",
+      whatsapp: publicidad.whatsapp || "",
+      tiktok: publicidad.tiktok || "",
+      twitter: publicidad.twitter || "",
+      youtube: publicidad.youtube || "",
+      linkedin: publicidad.linkedin || "",
     });
     setIsDialogOpen(true);
   };
@@ -254,163 +277,317 @@ export default function PublicidadSection() {
         <div>
           <CardTitle className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-            Publicidad
+            Gestión de Publicidad
           </CardTitle>
           <CardDescription>
-            Gestión de logos, carruseles y popups publicitarios
+            Administra logos, carruseles y popups con información de redes sociales
           </CardDescription>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 border rounded-md">
             <Button
-              onClick={() => {
-                setEditingPublicidad(null);
-                form.reset();
-              }}
-              data-testid="button-crear-publicidad"
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              data-testid="button-view-grid"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Crear Publicidad
+              Galería
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingPublicidad ? "Editar Publicidad" : "Nueva Publicidad"}
-              </DialogTitle>
-              <DialogDescription>
-                Complete los datos de la publicidad
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="titulo">Título</Label>
-                <Input
-                  id="titulo"
-                  {...form.register("titulo")}
-                  placeholder="Título de la publicidad"
-                  data-testid="input-titulo"
-                />
-                {form.formState.errors.titulo && (
-                  <p className="text-sm text-destructive">{form.formState.errors.titulo.message}</p>
-                )}
-              </div>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              data-testid="button-view-list"
+            >
+              Lista
+            </Button>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                onClick={() => {
+                  setEditingPublicidad(null);
+                  form.reset();
+                }}
+                data-testid="button-crear-publicidad"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Publicidad
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingPublicidad ? "Editar Publicidad" : "Nueva Publicidad"}
+                </DialogTitle>
+                <DialogDescription>
+                  Complete los datos de la publicidad incluyendo redes sociales
+                </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="flex-1 pr-4">
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                  {/* Información Básica */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Información Básica</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2 space-y-2">
+                        <Label htmlFor="titulo">Título *</Label>
+                        <Input
+                          id="titulo"
+                          {...form.register("titulo")}
+                          placeholder="Título de la publicidad"
+                          data-testid="input-titulo"
+                        />
+                        {form.formState.errors.titulo && (
+                          <p className="text-sm text-destructive">{form.formState.errors.titulo.message}</p>
+                        )}
+                      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="descripcion">Descripción</Label>
-                <Textarea
-                  id="descripcion"
-                  {...form.register("descripcion")}
-                  placeholder="Descripción de la publicidad"
-                  data-testid="input-descripcion"
-                />
-              </div>
+                      <div className="col-span-2 space-y-2">
+                        <Label htmlFor="descripcion">Descripción</Label>
+                        <Textarea
+                          id="descripcion"
+                          {...form.register("descripcion")}
+                          placeholder="Descripción de la publicidad"
+                          rows={3}
+                          data-testid="input-descripcion"
+                        />
+                      </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tipo">Tipo</Label>
-                  <Select
-                    value={form.watch("tipo") || undefined}
-                    onValueChange={(value) => form.setValue("tipo", value as any)}
-                  >
-                    <SelectTrigger data-testid="select-tipo">
-                      <SelectValue placeholder="Seleccionar tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="carrusel_logos">Carrusel Logos</SelectItem>
-                      <SelectItem value="carrusel_principal">Carrusel Principal</SelectItem>
-                      <SelectItem value="popup">Popup</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="tipo">Tipo</Label>
+                        <Select
+                          value={form.watch("tipo") || undefined}
+                          onValueChange={(value) => form.setValue("tipo", value as any)}
+                        >
+                          <SelectTrigger data-testid="select-tipo">
+                            <SelectValue placeholder="Seleccionar tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="carrusel_logos">Carrusel Logos</SelectItem>
+                            <SelectItem value="carrusel_principal">Carrusel Principal</SelectItem>
+                            <SelectItem value="popup">Popup</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="orden">Orden</Label>
-                  <Input
-                    id="orden"
-                    type="number"
-                    {...form.register("orden", { valueAsNumber: true })}
-                    placeholder="0"
-                    data-testid="input-orden"
-                  />
-                </div>
-              </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="orden">Orden</Label>
+                        <Input
+                          id="orden"
+                          type="number"
+                          {...form.register("orden", { valueAsNumber: true })}
+                          placeholder="0"
+                          data-testid="input-orden"
+                        />
+                      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="imagenUrl">Imagen de Publicidad</Label>
-                <ImageUpload
-                  value={form.watch("imagenUrl") || ""}
-                  onChange={(url) => form.setValue("imagenUrl", url || "")}
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                  endpoint="publicidad"
-                />
-                {form.formState.errors.imagenUrl && (
-                  <p className="text-sm text-destructive">{form.formState.errors.imagenUrl.message}</p>
-                )}
-              </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="estado">Estado</Label>
+                        <Select
+                          value={form.watch("estado") || undefined}
+                          onValueChange={(value) => form.setValue("estado", value as any)}
+                        >
+                          <SelectTrigger data-testid="select-estado">
+                            <SelectValue placeholder="Seleccionar estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="activo">Activo</SelectItem>
+                            <SelectItem value="pausado">Pausado</SelectItem>
+                            <SelectItem value="finalizado">Finalizado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="enlaceUrl">URL de Enlace (opcional)</Label>
-                <Input
-                  id="enlaceUrl"
-                  {...form.register("enlaceUrl")}
-                  placeholder="https://ejemplo.com"
-                  data-testid="input-enlace-url"
-                />
-              </div>
+                  {/* Imagen */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Imagen de Publicidad</h3>
+                    <ImageUpload
+                      value={form.watch("imagenUrl") || ""}
+                      onChange={(url) => form.setValue("imagenUrl", url || "")}
+                      disabled={createMutation.isPending || updateMutation.isPending}
+                      endpoint="publicidad"
+                    />
+                    {form.formState.errors.imagenUrl && (
+                      <p className="text-sm text-destructive">{form.formState.errors.imagenUrl.message}</p>
+                    )}
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fechaInicio">Fecha Inicio</Label>
-                  <Input
-                    id="fechaInicio"
-                    type="date"
-                    {...form.register("fechaInicio")}
-                    data-testid="input-fecha-inicio"
-                  />
-                  {form.formState.errors.fechaInicio && (
-                    <p className="text-sm text-destructive">{form.formState.errors.fechaInicio.message}</p>
-                  )}
-                </div>
+                  {/* Enlaces */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Enlaces</h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="enlaceUrl">URL de Enlace (opcional)</Label>
+                      <Input
+                        id="enlaceUrl"
+                        {...form.register("enlaceUrl")}
+                        placeholder="https://ejemplo.com"
+                        data-testid="input-enlace-url"
+                      />
+                    </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="fechaFin">Fecha Fin</Label>
-                  <Input
-                    id="fechaFin"
-                    type="date"
-                    {...form.register("fechaFin")}
-                    data-testid="input-fecha-fin"
-                  />
-                  {form.formState.errors.fechaFin && (
-                    <p className="text-sm text-destructive">{form.formState.errors.fechaFin.message}</p>
-                  )}
-                </div>
-              </div>
+                  {/* Fechas */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Fechas de Vigencia</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="fechaInicio">Fecha Inicio</Label>
+                        <Input
+                          id="fechaInicio"
+                          type="date"
+                          {...form.register("fechaInicio")}
+                          data-testid="input-fecha-inicio"
+                        />
+                      </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsDialogOpen(false);
-                    setEditingPublicidad(null);
-                    form.reset();
-                  }}
-                  data-testid="button-cancelar"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                  data-testid="button-guardar"
-                >
-                  {editingPublicidad ? "Actualizar" : "Crear"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+                      <div className="space-y-2">
+                        <Label htmlFor="fechaFin">Fecha Fin</Label>
+                        <Input
+                          id="fechaFin"
+                          type="date"
+                          {...form.register("fechaFin")}
+                          data-testid="input-fecha-fin"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="fechaCaducidad">Fecha Caducidad</Label>
+                        <Input
+                          id="fechaCaducidad"
+                          type="date"
+                          {...form.register("fechaCaducidad")}
+                          data-testid="input-fecha-caducidad"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Redes Sociales */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Redes Sociales</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="facebook" className="flex items-center gap-2">
+                          <Facebook className="h-4 w-4 text-blue-600" />
+                          Facebook
+                        </Label>
+                        <Input
+                          id="facebook"
+                          {...form.register("facebook")}
+                          placeholder="https://facebook.com/..."
+                          data-testid="input-facebook"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="instagram" className="flex items-center gap-2">
+                          <Instagram className="h-4 w-4 text-pink-600" />
+                          Instagram
+                        </Label>
+                        <Input
+                          id="instagram"
+                          {...form.register("instagram")}
+                          placeholder="https://instagram.com/..."
+                          data-testid="input-instagram"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="whatsapp" className="flex items-center gap-2">
+                          <SiWhatsapp className="h-4 w-4 text-green-600" />
+                          WhatsApp
+                        </Label>
+                        <Input
+                          id="whatsapp"
+                          {...form.register("whatsapp")}
+                          placeholder="+51 999 999 999"
+                          data-testid="input-whatsapp"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="tiktok" className="flex items-center gap-2">
+                          <SiTiktok className="h-4 w-4" />
+                          TikTok
+                        </Label>
+                        <Input
+                          id="tiktok"
+                          {...form.register("tiktok")}
+                          placeholder="https://tiktok.com/@..."
+                          data-testid="input-tiktok"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="twitter" className="flex items-center gap-2">
+                          <Twitter className="h-4 w-4 text-sky-500" />
+                          Twitter / X
+                        </Label>
+                        <Input
+                          id="twitter"
+                          {...form.register("twitter")}
+                          placeholder="https://twitter.com/..."
+                          data-testid="input-twitter"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="youtube" className="flex items-center gap-2">
+                          <Youtube className="h-4 w-4 text-red-600" />
+                          YouTube
+                        </Label>
+                        <Input
+                          id="youtube"
+                          {...form.register("youtube")}
+                          placeholder="https://youtube.com/..."
+                          data-testid="input-youtube"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="linkedin" className="flex items-center gap-2">
+                          <Linkedin className="h-4 w-4 text-blue-700" />
+                          LinkedIn
+                        </Label>
+                        <Input
+                          id="linkedin"
+                          {...form.register("linkedin")}
+                          placeholder="https://linkedin.com/..."
+                          data-testid="input-linkedin"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4 sticky bottom-0 bg-background border-t mt-6 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        setEditingPublicidad(null);
+                        form.reset();
+                      }}
+                      data-testid="button-cancelar"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={createMutation.isPending || updateMutation.isPending}
+                      data-testid="button-guardar"
+                    >
+                      {editingPublicidad ? "Actualizar" : "Crear"}
+                    </Button>
+                  </div>
+                </form>
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -419,87 +596,191 @@ export default function PublicidadSection() {
           <p className="text-muted-foreground text-center py-8">
             No hay publicidades registradas. Crea la primera publicidad.
           </p>
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {publicidades.map((pub) => (
+              <Card key={pub.id} className="overflow-hidden hover-elevate" data-testid={`card-publicidad-${pub.id}`}>
+                <div className="relative aspect-square bg-muted">
+                  {pub.imagenUrl ? (
+                    <img
+                      src={pub.imagenUrl}
+                      alt={pub.titulo || "Publicidad"}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    {getEstadoBadge(pub.estado)}
+                  </div>
+                </div>
+                <CardContent className="p-3 space-y-2">
+                  <h4 className="font-semibold text-sm line-clamp-2">{pub.titulo || "Sin título"}</h4>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    {getTipoBadge(pub.tipo)}
+                    <span>Orden: {pub.orden}</span>
+                  </div>
+                  {pub.fechaCaducidad && (
+                    <div className="text-xs text-muted-foreground">
+                      Caduca: {format(new Date(pub.fechaCaducidad), "dd/MM/yyyy")}
+                    </div>
+                  )}
+                  {(pub.facebook || pub.instagram || pub.whatsapp || pub.tiktok || pub.twitter || pub.youtube || pub.linkedin) && (
+                    <div className="flex gap-1 flex-wrap">
+                      {pub.facebook && <Facebook className="h-3 w-3 text-blue-600" />}
+                      {pub.instagram && <Instagram className="h-3 w-3 text-pink-600" />}
+                      {pub.whatsapp && <SiWhatsapp className="h-3 w-3 text-green-600" />}
+                      {pub.tiktok && <SiTiktok className="h-3 w-3" />}
+                      {pub.twitter && <Twitter className="h-3 w-3 text-sky-500" />}
+                      {pub.youtube && <Youtube className="h-3 w-3 text-red-600" />}
+                      {pub.linkedin && <Linkedin className="h-3 w-3 text-blue-700" />}
+                    </div>
+                  )}
+                  <div className="flex gap-1 pt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => toggleEstadoMutation.mutate({ id: pub.id, estado: pub.estado })}
+                      data-testid={`button-toggle-${pub.id}`}
+                    >
+                      {pub.estado === "activo" ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleEdit(pub)}
+                      data-testid={`button-editar-${pub.id}`}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleDelete(pub.id)}
+                      data-testid={`button-eliminar-${pub.id}`}
+                    >
+                      <Trash2 className="h-3 w-3 text-destructive" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Título</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Fecha Inicio</TableHead>
-                  <TableHead>Fecha Fin</TableHead>
-                  <TableHead>Orden</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {publicidades.map((pub) => (
-                  <TableRow key={pub.id} data-testid={`row-publicidad-${pub.id}`}>
-                    <TableCell className="font-medium">{pub.titulo}</TableCell>
-                    <TableCell>{getTipoBadge(pub.tipo)}</TableCell>
-                    <TableCell>{getEstadoBadge(pub.estado)}</TableCell>
-                    <TableCell>
-                      {pub.fechaInicio ? (() => {
-                        try {
-                          const date = typeof pub.fechaInicio === 'string' 
-                            ? new Date(pub.fechaInicio) 
-                            : pub.fechaInicio;
-                          return isNaN(date.getTime()) ? "-" : format(date, "dd MMM yyyy", { locale: es });
-                        } catch {
-                          return "-";
-                        }
-                      })() : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {pub.fechaFin ? (() => {
-                        try {
-                          const date = typeof pub.fechaFin === 'string' 
-                            ? new Date(pub.fechaFin) 
-                            : pub.fechaFin;
-                          return isNaN(date.getTime()) ? "-" : format(date, "dd MMM yyyy", { locale: es });
-                        } catch {
-                          return "-";
-                        }
-                      })() : "-"}
-                    </TableCell>
-                    <TableCell>{pub.orden}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggleEstadoMutation.mutate({ id: pub.id, estado: pub.estado })}
-                          data-testid={`button-toggle-${pub.id}`}
-                        >
-                          {pub.estado === "activo" ? (
-                            <Pause className="h-4 w-4" />
-                          ) : (
-                            <Play className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(pub)}
-                          data-testid={`button-editar-${pub.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(pub.id)}
-                          data-testid={`button-eliminar-${pub.id}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+          <div className="space-y-2">
+            {publicidades.map((pub) => (
+              <Card key={pub.id} className="p-4 hover-elevate" data-testid={`row-publicidad-${pub.id}`}>
+                <div className="flex gap-4">
+                  <div className="w-20 h-20 flex-shrink-0 bg-muted rounded overflow-hidden">
+                    {pub.imagenUrl ? (
+                      <img
+                        src={pub.imagenUrl}
+                        alt={pub.titulo || "Publicidad"}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h4 className="font-semibold">{pub.titulo || "Sin título"}</h4>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{pub.descripcion}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        {getEstadoBadge(pub.estado)}
+                        {getTipoBadge(pub.tipo)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span>Orden: {pub.orden}</span>
+                      {pub.fechaInicio && (
+                        <span>Inicio: {format(new Date(pub.fechaInicio), "dd/MM/yyyy")}</span>
+                      )}
+                      {pub.fechaFin && (
+                        <span>Fin: {format(new Date(pub.fechaFin), "dd/MM/yyyy")}</span>
+                      )}
+                      {pub.fechaCaducidad && (
+                        <span className="text-destructive">Caduca: {format(new Date(pub.fechaCaducidad), "dd/MM/yyyy")}</span>
+                      )}
+                    </div>
+                    {(pub.facebook || pub.instagram || pub.whatsapp || pub.tiktok || pub.twitter || pub.youtube || pub.linkedin) && (
+                      <div className="flex gap-2">
+                        {pub.facebook && (
+                          <a href={pub.facebook} target="_blank" rel="noopener noreferrer">
+                            <Facebook className="h-4 w-4 text-blue-600" />
+                          </a>
+                        )}
+                        {pub.instagram && (
+                          <a href={pub.instagram} target="_blank" rel="noopener noreferrer">
+                            <Instagram className="h-4 w-4 text-pink-600" />
+                          </a>
+                        )}
+                        {pub.whatsapp && (
+                          <a href={`https://wa.me/${pub.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">
+                            <SiWhatsapp className="h-4 w-4 text-green-600" />
+                          </a>
+                        )}
+                        {pub.tiktok && (
+                          <a href={pub.tiktok} target="_blank" rel="noopener noreferrer">
+                            <SiTiktok className="h-4 w-4" />
+                          </a>
+                        )}
+                        {pub.twitter && (
+                          <a href={pub.twitter} target="_blank" rel="noopener noreferrer">
+                            <Twitter className="h-4 w-4 text-sky-500" />
+                          </a>
+                        )}
+                        {pub.youtube && (
+                          <a href={pub.youtube} target="_blank" rel="noopener noreferrer">
+                            <Youtube className="h-4 w-4 text-red-600" />
+                          </a>
+                        )}
+                        {pub.linkedin && (
+                          <a href={pub.linkedin} target="_blank" rel="noopener noreferrer">
+                            <Linkedin className="h-4 w-4 text-blue-700" />
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleEstadoMutation.mutate({ id: pub.id, estado: pub.estado })}
+                      data-testid={`button-toggle-${pub.id}`}
+                    >
+                      {pub.estado === "activo" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(pub)}
+                      data-testid={`button-editar-${pub.id}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(pub.id)}
+                      data-testid={`button-eliminar-${pub.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         )}
       </CardContent>
