@@ -53,13 +53,46 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
+  const email = claims["email"];
+  const isSuperAdmin = email === "aapomayta15@gmail.com";
+  
   await storage.upsertUsuario({
     id: claims["sub"],
-    email: claims["email"],
+    email: email,
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
+    rol: isSuperAdmin ? "super_admin" : undefined,
+    telefono: isSuperAdmin ? "916202070" : undefined,
   });
+  
+  if (isSuperAdmin) {
+    const usuarioId = claims["sub"];
+    
+    try {
+      await storage.createRegistroBasico({
+        usuarioId,
+        alias: "alfred76",
+      });
+    } catch (error) {
+      console.log("Registro básico ya existe para super admin");
+    }
+    
+    try {
+      await storage.createRegistroChat({
+        usuarioId,
+        nombres: "Alfredo",
+        apellidos: "Apomayta",
+        dniNumero: "10329053",
+        dniFrenteUrl: "https://placeholder.com/dni-frente",
+        dniPosteriorUrl: "https://placeholder.com/dni-posterior",
+        dniFechaCaducidad: "2030-12-31",
+        numeroCelular: "916202070",
+      });
+    } catch (error) {
+      console.log("Registro chat ya existe para super admin");
+    }
+  }
 }
 
 export async function setupAuth(app: Express) {
