@@ -513,3 +513,75 @@ export const credencialesConductor = pgTable("credenciales_conductor", {
 export const insertCredencialesConductorSchema = createInsertSchema(credencialesConductor).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertCredencialesConductor = z.infer<typeof insertCredencialesConductorSchema>;
 export type CredencialesConductor = typeof credencialesConductor.$inferSelect;
+
+// ============================================================
+// EVENTOS CALENDARIZADOS
+// ============================================================
+export const eventos = pgTable("eventos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  descripcion: text("descripcion"),
+  fechaInicio: timestamp("fecha_inicio").notNull(),
+  fechaFin: timestamp("fecha_fin"),
+  ubicacion: varchar("ubicacion", { length: 255 }),
+  imagenUrl: varchar("imagen_url"),
+  activo: boolean("activo").default(true),
+  creadoPorId: varchar("creado_por_id").references(() => usuarios.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertEventoSchema = createInsertSchema(eventos).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertEvento = z.infer<typeof insertEventoSchema>;
+export type Evento = typeof eventos.$inferSelect;
+
+// ============================================================
+// AVISOS DE EMERGENCIA / SERVICIO A LA COMUNIDAD
+// ============================================================
+export const avisosEmergencia = pgTable("avisos_emergencia", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  mensaje: text("mensaje").notNull(),
+  tipo: varchar("tipo", { length: 50 }).notNull(), // "corte_agua", "corte_luz", "alerta_sanitaria", etc.
+  prioridad: varchar("prioridad", { length: 20 }).default("media"), // "baja", "media", "alta", "critica"
+  zonaAfectada: varchar("zona_afectada", { length: 255 }),
+  fechaInicio: timestamp("fecha_inicio").notNull(),
+  fechaFin: timestamp("fecha_fin"),
+  activo: boolean("activo").default(true),
+  creadoPorId: varchar("creado_por_id").references(() => usuarios.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAvisoEmergenciaSchema = createInsertSchema(avisosEmergencia).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertAvisoEmergencia = z.infer<typeof insertAvisoEmergenciaSchema>;
+export type AvisoEmergencia = typeof avisosEmergencia.$inferSelect;
+
+// ============================================================
+// TIPOS DE MONEDA / CAMBIO DE MONEDA
+// ============================================================
+export const tiposMoneda = pgTable("tipos_moneda", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  codigo: varchar("codigo", { length: 3 }).notNull().unique(), // "PEN", "USD", "EUR"
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  simbolo: varchar("simbolo", { length: 10 }).notNull(),
+  activo: boolean("activo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTipoMonedaSchema = createInsertSchema(tiposMoneda).omit({ id: true, createdAt: true });
+export type InsertTipoMoneda = z.infer<typeof insertTipoMonedaSchema>;
+export type TipoMoneda = typeof tiposMoneda.$inferSelect;
+
+export const tasasCambio = pgTable("tasas_cambio", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  monedaOrigenId: varchar("moneda_origen_id").notNull().references(() => tiposMoneda.id),
+  monedaDestinoId: varchar("moneda_destino_id").notNull().references(() => tiposMoneda.id),
+  tasa: real("tasa").notNull(),
+  fechaActualizacion: timestamp("fecha_actualizacion").defaultNow(),
+  actualizadoPorId: varchar("actualizado_por_id").references(() => usuarios.id),
+});
+
+export const insertTasaCambioSchema = createInsertSchema(tasasCambio).omit({ id: true, fechaActualizacion: true });
+export type InsertTasaCambio = z.infer<typeof insertTasaCambioSchema>;
+export type TasaCambio = typeof tasasCambio.$inferSelect;
