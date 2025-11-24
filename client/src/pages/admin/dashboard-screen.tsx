@@ -17,6 +17,8 @@ import {
   Bus
 } from "lucide-react";
 import PublicidadSection from "@/components/admin/publicidad-section";
+import RadiosOnlineSection from "@/components/admin/radios-online-section";
+import ArchivosMp3Section from "@/components/admin/archivos-mp3-section";
 
 const dashboardSections = [
   {
@@ -128,6 +130,10 @@ export default function DashboardScreen() {
       </div>
 
       <PublicidadSection />
+      
+      <RadiosOnlineSection />
+      
+      <ArchivosMp3Section />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {dashboardSections.filter(s => s.id !== "publicidad").map((section) => (
