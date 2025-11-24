@@ -786,11 +786,11 @@ export default function PublicidadSection() {
               </Card>
             );
           })}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {publicidades.map((pub) => {
-              const caducada = isPublicidadCaducada(pub);
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {publicidadesFiltradas.map((pub) => {
+                        const caducada = isPublicidadCaducada(pub);
               return (
               <Card key={pub.id} className="p-4 hover-elevate" data-testid={`row-publicidad-${pub.id}`}>
                 <div className="flex gap-4">
@@ -917,10 +917,15 @@ export default function PublicidadSection() {
                     </Button>
                   </div>
                 </div>
-              </Card>
-            );
-          })}
-          </div>
+                        </Card>
+                      );
+                    })}
+                    </div>
+                  )}
+                </TabsContent>
+              );
+            })}
+          </Tabs>
         )}
       </CardContent>
     </Card>
