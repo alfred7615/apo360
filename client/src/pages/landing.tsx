@@ -97,6 +97,15 @@ export default function Landing() {
         <CarruselPublicidad tipo="carrusel_principal" altura="500px" />
       </section>
 
+      {/* Logos de servicios destacados */}
+      <section className="py-8">
+        <div className="container mx-auto px-4 mb-6">
+          <h2 className="text-2xl font-bold text-center">Servicios Destacados</h2>
+          <p className="text-muted-foreground text-center mt-2">Comercios y servicios locales de confianza</p>
+        </div>
+        <CarruselPublicidad tipo="logos_servicios" altura="160px" />
+      </section>
+
       {/* Galería de servicios */}
       <GaleriaServicios />
 

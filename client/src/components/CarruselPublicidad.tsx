@@ -3,18 +3,10 @@ import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-
-interface PublicidadItem {
-  id: string;
-  titulo: string;
-  descripcion?: string;
-  imagenUrl: string;
-  enlaceUrl?: string;
-  orden: number;
-}
+import { filtrarPublicidadesActivas, type Publicidad } from "@/lib/publicidadUtils";
 
 interface CarruselPublicidadProps {
-  tipo: "carrusel_logos" | "carrusel_principal";
+  tipo: "carrusel_logos" | "carrusel_principal" | "logos_servicios";
   altura?: string;
 }
 
@@ -22,13 +14,13 @@ export default function CarruselPublicidad({ tipo, altura = "400px" }: CarruselP
   const [indiceActual, setIndiceActual] = useState(0);
   const [pausado, setPausado] = useState(false);
 
-  const { data: publicidades = [] } = useQuery<PublicidadItem[]>({
-    queryKey: ["/api/publicidad", tipo],
+  const { data: publicidades = [] } = useQuery<Publicidad[]>({
+    queryKey: ["/api/publicidad"],
   });
 
-  const publicidadesActivas = publicidades
-    .filter((p) => p.orden !== undefined)
-    .sort((a, b) => a.orden - b.orden);
+  const publicidadesActivas = filtrarPublicidadesActivas(
+    publicidades.filter(p => p.tipo === tipo)
+  );
 
   useEffect(() => {
     if (pausado || publicidadesActivas.length === 0) return;
@@ -64,9 +56,18 @@ export default function CarruselPublicidad({ tipo, altura = "400px" }: CarruselP
 
   const publicidadActual = publicidadesActivas[indiceActual];
 
-  if (tipo === "carrusel_logos") {
+  if (tipo === "carrusel_logos" || tipo === "logos_servicios") {
+    const logosConDuplicados = publicidadesActivas.length > 0 
+      ? [...publicidadesActivas, ...publicidadesActivas, ...publicidadesActivas]
+      : [];
+    
+    const logosVisibles = logosConDuplicados.slice(
+      indiceActual, 
+      indiceActual + 5
+    );
+
     return (
-      <div className="relative w-full bg-white dark:bg-gray-800 py-4 border-y" data-testid="carousel-logos">
+      <div className="relative w-full bg-white dark:bg-gray-800 py-6 border-y" data-testid={`carousel-${tipo}`}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between gap-4">
             <Button
@@ -79,33 +80,53 @@ export default function CarruselPublicidad({ tipo, altura = "400px" }: CarruselP
               <ChevronLeft className="h-5 w-5" />
             </Button>
 
-            <div className="flex items-center justify-center gap-6 overflow-hidden">
-              {publicidadesActivas.slice(0, 5).map((pub, idx) => (
-                <div
-                  key={pub.id}
-                  className={`transition-all duration-300 ${
-                    idx === indiceActual ? "scale-110" : "scale-90 opacity-60"
-                  }`}
-                >
-                  {pub.enlaceUrl ? (
-                    <a href={pub.enlaceUrl} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={pub.imagenUrl}
-                        alt={pub.titulo}
-                        className="h-20 w-20 object-contain rounded-lg hover-elevate"
-                        data-testid={`img-logo-${idx}`}
-                      />
-                    </a>
-                  ) : (
-                    <img
-                      src={pub.imagenUrl}
-                      alt={pub.titulo}
-                      className="h-20 w-20 object-contain rounded-lg"
-                      data-testid={`img-logo-${idx}`}
-                    />
-                  )}
-                </div>
-              ))}
+            <div className="flex-1 overflow-hidden">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6 px-4">
+                {logosVisibles.map((pub, idx) => {
+                  const uniqueKey = `${pub.id}-${indiceActual}-${idx}`;
+                  return (
+                    <div
+                      key={uniqueKey}
+                      className="flex items-center justify-center transition-all duration-300 hover-elevate"
+                    >
+                      {pub.enlaceUrl ? (
+                        <a 
+                          href={pub.enlaceUrl || undefined} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="w-full flex flex-col items-center gap-2"
+                        >
+                          <img
+                            src={pub.imagenUrl || undefined}
+                            alt={pub.titulo || undefined}
+                            className="h-20 w-20 object-contain rounded-lg"
+                            data-testid={`img-logo-${idx}`}
+                          />
+                          {tipo === "logos_servicios" && pub.titulo && (
+                            <span className="text-sm text-center font-medium">
+                              {pub.titulo}
+                            </span>
+                          )}
+                        </a>
+                      ) : (
+                        <div className="w-full flex flex-col items-center gap-2">
+                          <img
+                            src={pub.imagenUrl || undefined}
+                            alt={pub.titulo || undefined}
+                            className="h-20 w-20 object-contain rounded-lg"
+                            data-testid={`img-logo-${idx}`}
+                          />
+                          {tipo === "logos_servicios" && pub.titulo && (
+                            <span className="text-sm text-center font-medium">
+                              {pub.titulo}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <Button
@@ -139,18 +160,18 @@ export default function CarruselPublicidad({ tipo, altura = "400px" }: CarruselP
       {/* Imagen actual */}
       <div className="relative h-full w-full">
         {publicidadActual.enlaceUrl ? (
-          <a href={publicidadActual.enlaceUrl} target="_blank" rel="noopener noreferrer" className="block h-full w-full">
+          <a href={publicidadActual.enlaceUrl || undefined} target="_blank" rel="noopener noreferrer" className="block h-full w-full">
             <img
-              src={publicidadActual.imagenUrl}
-              alt={publicidadActual.titulo}
+              src={publicidadActual.imagenUrl || undefined}
+              alt={publicidadActual.titulo || undefined}
               className="h-full w-full object-cover"
               data-testid="img-carousel-main"
             />
           </a>
         ) : (
           <img
-            src={publicidadActual.imagenUrl}
-            alt={publicidadActual.titulo}
+            src={publicidadActual.imagenUrl || undefined}
+            alt={publicidadActual.titulo || undefined}
             className="h-full w-full object-cover"
             data-testid="img-carousel-main"
           />

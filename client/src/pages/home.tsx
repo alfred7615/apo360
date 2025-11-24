@@ -10,6 +10,7 @@ import CarruselPublicidad from "@/components/CarruselPublicidad";
 import GaleriaServicios from "@/components/GaleriaServicios";
 import ModuloAudio from "@/components/ModuloAudio";
 import { useQuery } from "@tanstack/react-query";
+import type { Emergencia } from "@shared/schema";
 
 export default function Home() {
   const { toast } = useToast();
@@ -28,7 +29,7 @@ export default function Home() {
     }
   }, [user, isLoading, toast]);
 
-  const { data: emergenciasRecientes = [] } = useQuery({
+  const { data: emergenciasRecientes = [] } = useQuery<Emergencia[]>({
     queryKey: ["/api/emergencias/recientes"],
   });
 
@@ -47,7 +48,7 @@ export default function Home() {
     );
   }
 
-  const nombreCompleto = `${user.primerNombre || user.firstName || ''} ${user.apellido || user.lastName || ''}`.trim() || 'Usuario';
+  const nombreCompleto = user.nombre ?? 'Usuario';
 
   return (
     <div className="min-h-screen pb-20" data-testid="page-home">
@@ -69,9 +70,9 @@ export default function Home() {
               <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-sm px-3 py-1">
                 {user.rol || 'Usuario'}
               </Badge>
-              {user.enLinea && (
+              {user.activo && (
                 <Badge variant="secondary" className="bg-success/20 text-white border-success/30 text-sm px-3 py-1">
-                  ● En Línea
+                  ● Activo
                 </Badge>
               )}
             </div>
@@ -124,9 +125,20 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Carrusel de logos publicitarios */}
+      <CarruselPublicidad tipo="carrusel_logos" altura="120px" />
+
       {/* Carrusel principal */}
       <section className="container mx-auto px-4 py-8">
         <CarruselPublicidad tipo="carrusel_principal" altura="400px" />
+      </section>
+
+      {/* Logos de servicios destacados */}
+      <section className="py-6">
+        <div className="container mx-auto px-4 mb-4">
+          <h2 className="text-xl font-bold text-center">Servicios Recomendados</h2>
+        </div>
+        <CarruselPublicidad tipo="logos_servicios" altura="140px" />
       </section>
 
       {/* Alertas recientes */}
