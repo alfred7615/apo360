@@ -116,7 +116,7 @@ export function ImageUpload({
       />
 
       {preview ? (
-        <div className="relative">
+        <div className="space-y-2">
           <div 
             className="relative aspect-video rounded-md overflow-hidden border-2 border-border bg-muted"
             data-testid="image-preview"
@@ -133,16 +133,27 @@ export function ImageUpload({
             )}
           </div>
           {!disabled && !isUploading && (
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              className="absolute top-2 right-2"
-              onClick={handleRemove}
-              data-testid="button-remove-image"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClick}
+                className="flex-1"
+                data-testid="button-change-image"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Cambiar Imagen
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleRemove}
+                data-testid="button-remove-image"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Eliminar
+              </Button>
+            </div>
           )}
         </div>
       ) : (

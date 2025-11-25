@@ -101,7 +101,7 @@ export default function GaleriaServicios() {
                         <img
                           src={servicio.logoUrl}
                           alt={servicio.nombreServicio}
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-contain p-1"
                         />
                       ) : (
                         <span className="text-3xl">{icono}</span>
@@ -133,7 +133,7 @@ export default function GaleriaServicios() {
                       <img
                         src={servicioSeleccionado.logoUrl}
                         alt={servicioSeleccionado.nombreServicio}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-contain p-1"
                       />
                     ) : (
                       <span className="text-3xl">

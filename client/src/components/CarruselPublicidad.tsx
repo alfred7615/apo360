@@ -181,13 +181,13 @@ export default function CarruselPublicidad({ tipo, altura = "400px" }: CarruselP
       onMouseLeave={() => setHoverPausado(false)}
     >
       {/* Imagen actual */}
-      <div className="relative h-full w-full">
+      <div className="relative h-full w-full bg-muted flex items-center justify-center">
         {publicidadActual.enlaceUrl ? (
-          <a href={publicidadActual.enlaceUrl || undefined} target="_blank" rel="noopener noreferrer" className="block h-full w-full">
+          <a href={publicidadActual.enlaceUrl || undefined} target="_blank" rel="noopener noreferrer" className="block h-full w-full flex items-center justify-center">
             <img
               src={publicidadActual.imagenUrl || undefined}
               alt={publicidadActual.titulo || undefined}
-              className="h-full w-full object-cover"
+              className="max-h-full max-w-full object-contain"
               data-testid="img-carousel-main"
             />
           </a>
@@ -195,13 +195,13 @@ export default function CarruselPublicidad({ tipo, altura = "400px" }: CarruselP
           <img
             src={publicidadActual.imagenUrl || undefined}
             alt={publicidadActual.titulo || undefined}
-            className="h-full w-full object-cover"
+            className="max-h-full max-w-full object-contain"
             data-testid="img-carousel-main"
           />
         )}
 
         {/* Overlay con gradiente */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
         {/* Información de la publicidad */}
         {(publicidadActual.titulo || publicidadActual.descripcion) && (

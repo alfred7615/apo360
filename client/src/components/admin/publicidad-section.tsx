@@ -78,11 +78,17 @@ const formSchema = insertPublicidadSchema
 type FormData = z.infer<typeof formSchema>;
 
 const convertFormDataToApi = (data: FormData) => {
+  const convertirFecha = (fecha: string | undefined) => {
+    if (!fecha || fecha === "") return null;
+    const date = new Date(fecha);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
   return {
     ...data,
-    fechaInicio: data.fechaInicio ? new Date(data.fechaInicio) : null,
-    fechaFin: data.fechaFin ? new Date(data.fechaFin) : null,
-    fechaCaducidad: data.fechaCaducidad ? new Date(data.fechaCaducidad) : null,
+    fechaInicio: convertirFecha(data.fechaInicio),
+    fechaFin: convertirFecha(data.fechaFin),
+    fechaCaducidad: convertirFecha(data.fechaCaducidad),
   };
 };
 
@@ -755,8 +761,8 @@ export default function PublicidadSection() {
                   {publicidadesFiltradas.map(pub => (
                     <Card key={pub.id} className="overflow-hidden">
                       {pub.imagenUrl && (
-                        <div className="h-48 overflow-hidden">
-                          <img src={pub.imagenUrl} alt={pub.titulo || ""} className="w-full h-full object-cover" />
+                        <div className="h-48 overflow-hidden bg-muted flex items-center justify-center">
+                          <img src={pub.imagenUrl} alt={pub.titulo || ""} className="w-full h-full object-contain" />
                         </div>
                       )}
                       <CardHeader>
