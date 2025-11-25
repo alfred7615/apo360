@@ -2,6 +2,23 @@
 
 ## Recent Changes (Noviembre 25, 2025)
 
+### Submenú GESTIONES en Panel de Administración
+- **Estructura de navegación mejorada**: Submenú colapsable "GESTIONES" usando Collapsible de shadcn
+- **11 secciones de gestión implementadas**:
+  1. Publicidad - Gestión completa de anuncios y logos
+  2. Radio Online/MP3 - Control de radios y listas de reproducción
+  3. Usuarios/Administradores - Administración de usuarios y roles
+  4. Cartera/Saldos - Sistema de billetera (estructura MVP)
+  5. Encuestas/Popups - Encuestas e imágenes popup (estructura MVP)
+  6. Servicios - Mudanzas, alquileres y servicios locales
+  7. Eventos - Calendario de eventos de la comunidad
+  8. Taxi - Gestión de viajes y conductores
+  9. Buses - Rutas y horarios de buses (estructura MVP)
+  10. Cambio de Moneda - Tipos de cambio (estructura MVP)
+  11. Configuración - Ajustes del sistema
+- **Rutas backend agregadas**: GET /api/taxi/conductores para filtrar conductores
+- **Todas las pantallas incluyen**: data-testid para testing, estados de carga, estados vacíos
+
 ### Mejoras al Sistema de Carga Múltiple de Imágenes
 - **Persistencia Automática**: Ahora las imágenes subidas se persisten automáticamente en la BD
   - Callback `onImagesUploaded` crea registros con datos mínimos (imagenUrl, tipo, estado, titulo, orden)
