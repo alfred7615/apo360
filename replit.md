@@ -2,18 +2,24 @@
 
 ## Recent Changes (Noviembre 25, 2025)
 
-### Sistema de Chat Comunitario Mejorado
-- **Esquema BD Corregido**: Campos correctos `remitenteId` y `tipo` en tabla mensajes
-- **Datos de Prueba**: 8 grupos (4 emergencia: policía, bomberos, serenazgo, SAMU; 4 comunitarios)
-- **6 Mensajes de Prueba**: En grupos de vecinos, policía y taxi
-- **Script**: server/seed-chat.ts para datos de chat reproducibles
+### Sistema de Chat Comunitario con Layout Dividido
+- **Nuevo Layout Dividido**: Panel izquierdo (320px) con grupos/contactos, panel derecho con conversación
+- **Pestañas Grupos/Contactos**: Tabs para alternar entre grupos de chat y lista de contactos
+- **Buscador Integrado**: Búsqueda en tiempo real de conversaciones
+- **Botones Multimedia**: Adjuntar archivos, fotos, audio y ubicación GPS en cada mensaje
+- **Sistema de Invitaciones**: Ruta /api/invitaciones para invitar contactos no registrados
+- **Lista de Contactos**: Ruta /api/contactos que lista usuarios registrados como contactos potenciales
+- **Esquema BD**: Campos correctos `remitenteId`, `tipo`, `archivoUrl`, `gpsLatitud`, `gpsLongitud`
+- **Datos de Prueba**: 8 grupos (4 emergencia, 4 comunitarios), 6 mensajes
 
-### Botón de Pánico Arrastrable Mejorado
-- **Funcionalidad Drag & Drop**: Usa framer-motion con dragControls
-- **Accesos Rápidos**: Botones expandibles para policía, bomberos, SAMU, serenazgo
-- **GPS Automático**: Obtiene ubicación al abrir modal de emergencia
+### Botón de Pánico Arrastrable Completo
+- **Arrastre Nativo**: Eventos mouse/touch para arrastre fluido a cualquier posición de pantalla
+- **Persistencia Posición**: Guarda posición en localStorage y la restaura al recargar
+- **Accesos Rápidos Expandibles**: Botones para policía, bomberos, SAMU, serenazgo
+- **GPS Automático**: Obtiene ubicación inmediatamente al abrir modal de emergencia
 - **Selección de Grupos**: Permite elegir grupos de emergencia específicos a notificar
-- **Interfaz Responsive**: Modal scrolleable con tipos de emergencia descriptivos
+- **6 Tipos de Emergencia**: Policía, Bomberos, SAMU, Serenazgo, Línea 105, Grúa
+- **Handle de Arrastre**: Botón separado para arrastrar sin activar pánico accidentalmente
 
 ### Sistema de Autenticación Local (email/password)
 - **Nueva Ruta POST /api/auth/login**: Login con email y contraseña hasheada (SHA256)
