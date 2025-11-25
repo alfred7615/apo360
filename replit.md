@@ -5,6 +5,40 @@ SEG-APO is a comprehensive community security platform designed to enhance safet
 
 ## Recent Changes (November 25, 2025)
 
+### Mejoras de UX en Formulario de Publicidad (November 25, 2025)
+- **Problemas Reportados por el Usuario**:
+  1. En la grilla de 5 columnas falta el botón de eliminar publicación (nota: ya existía, solo necesitaba verificación)
+  2. No funciona el scroll del mouse en el formulario para visualizar todo el contenido
+  3. Ajustar todo el contenido en la ventana emergente
+  4. No se puede editar/reemplazar la imagen (falta botón)
+  5. Aplicar estos cambios en todas las pestañas
+
+- **Soluciones Implementadas**:
+  
+  **1. Grilla de 5 Columnas**:
+  - Cambiado de `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` a `grid-cols-1 md:grid-cols-3 lg:grid-cols-5`
+  - Verificado que el botón de eliminar ya existía y funciona correctamente
+  
+  **2. Scroll Funcional en Formulario**:
+  - Cambiado contenedor de `overflow-hidden` a `overflow-y-auto` para habilitar scroll
+  - Eliminado componente `ScrollArea` que causaba conflictos
+  - TabsList ahora es sticky (permanece visible al hacer scroll)
+  - Removidas clases `pr-4` de todos los TabsContent para mejor visualización
+  
+  **3. Verificación de ImageUpload**:
+  - Confirmado que los botones "Cambiar Imagen" y "Eliminar" funcionan correctamente
+  - Disponibles en todas las pestañas del formulario
+  - Permite reemplazar imágenes durante la edición
+
+- **Archivos Modificados**:
+  - `client/src/components/admin/publicidad-section.tsx` - Grilla de 5 columnas + scroll funcional
+
+- **Resultado**: Formulario de publicidad con UX mejorada:
+  - ✅ Grilla muestra 5 columnas en pantallas grandes
+  - ✅ Scroll del mouse funciona correctamente en el formulario
+  - ✅ Todo el contenido es visible y accesible
+  - ✅ Botones de cambiar/eliminar imagen funcionan en todas las pestañas
+
 ### Corrección de Bugs Críticos en Sistema de Publicidad (November 25, 2025)
 - **Problemas Reportados por el Usuario**:
   1. Al editar publicidad, no se puede cambiar la imagen (falta botón de subir)
