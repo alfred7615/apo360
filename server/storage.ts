@@ -1601,6 +1601,182 @@ export class DatabaseStorage implements IStorage {
       return nuevo;
     }
   }
+
+  // ============================================================
+  // INTERACCIONES SOCIALES
+  // ============================================================
+  async toggleInteraccion(
+    usuarioId: string, 
+    tipoContenido: string, 
+    contenidoId: string, 
+    tipoInteraccion: string
+  ): Promise<{ accion: 'agregado' | 'eliminado'; interaccion?: InteraccionSocial }> {
+    if (tipoInteraccion === 'compartir') {
+      const result = await this.registerCompartir(usuarioId, tipoContenido, contenidoId);
+      return { accion: 'agregado', interaccion: result };
+    }
+
+    const existing = await db.select().from(interaccionesSociales)
+      .where(
+        and(
+          eq(interaccionesSociales.usuarioId, usuarioId),
+          eq(interaccionesSociales.tipoContenido, tipoContenido),
+          eq(interaccionesSociales.contenidoId, contenidoId),
+          eq(interaccionesSociales.tipoInteraccion, tipoInteraccion)
+        )
+      );
+
+    if (existing.length > 0) {
+      await db.delete(interaccionesSociales)
+        .where(eq(interaccionesSociales.id, existing[0].id));
+      await this.actualizarContadorInteraccion(tipoContenido, contenidoId, tipoInteraccion, -1);
+      return { accion: 'eliminado' };
+    } else {
+      const [nueva] = await db.insert(interaccionesSociales).values({
+        usuarioId,
+        tipoContenido,
+        contenidoId,
+        tipoInteraccion,
+      }).returning();
+      await this.actualizarContadorInteraccion(tipoContenido, contenidoId, tipoInteraccion, 1);
+      return { accion: 'agregado', interaccion: nueva };
+    }
+  }
+
+  async registerCompartir(
+    usuarioId: string, 
+    tipoContenido: string, 
+    contenidoId: string
+  ): Promise<InteraccionSocial> {
+    const [nueva] = await db.insert(interaccionesSociales).values({
+      usuarioId,
+      tipoContenido,
+      contenidoId,
+      tipoInteraccion: 'compartir',
+    }).returning();
+    
+    await this.actualizarContadorInteraccion(tipoContenido, contenidoId, 'compartir', 1);
+    return nueva;
+  }
+
+  private async actualizarContadorInteraccion(
+    tipoContenido: string, 
+    contenidoId: string, 
+    tipoInteraccion: string, 
+    delta: number
+  ): Promise<void> {
+    const campo = tipoInteraccion === 'like' ? 'totalLikes' : 
+                  tipoInteraccion === 'favorito' ? 'totalFavoritos' : 
+                  tipoInteraccion === 'compartir' ? 'totalCompartidos' : null;
+    
+    if (!campo) return;
+
+    if (tipoContenido === 'logo_servicio') {
+      await db.execute(sql`
+        UPDATE logos_servicios 
+        SET ${sql.raw(`"${campo}"`)} = COALESCE(${sql.raw(`"${campo}"`)}, 0) + ${delta}
+        WHERE id = ${contenidoId}
+      `);
+    } else if (tipoContenido === 'producto_servicio') {
+      await db.execute(sql`
+        UPDATE productos_servicio 
+        SET ${sql.raw(`"${campo}"`)} = COALESCE(${sql.raw(`"${campo}"`)}, 0) + ${delta}
+        WHERE id = ${contenidoId}
+      `);
+    } else if (tipoContenido === 'popup') {
+      await db.execute(sql`
+        UPDATE popups_publicitarios 
+        SET ${sql.raw(`"${campo}"`)} = COALESCE(${sql.raw(`"${campo}"`)}, 0) + ${delta}
+        WHERE id = ${contenidoId}
+      `);
+    }
+  }
+
+  async getInteraccionesStats(tipoContenido: string, contenidoId: string): Promise<{
+    likes: number;
+    favoritos: number;
+    compartidos: number;
+    comentarios: number;
+  }> {
+    const [stats] = await db.execute(sql`
+      SELECT 
+        COALESCE(SUM(CASE WHEN tipo_interaccion = 'like' THEN 1 ELSE 0 END), 0) as likes,
+        COALESCE(SUM(CASE WHEN tipo_interaccion = 'favorito' THEN 1 ELSE 0 END), 0) as favoritos,
+        COALESCE(SUM(CASE WHEN tipo_interaccion = 'compartir' THEN 1 ELSE 0 END), 0) as compartidos
+      FROM interacciones_sociales
+      WHERE tipo_contenido = ${tipoContenido} AND contenido_id = ${contenidoId}
+    `);
+
+    const [comentariosCount] = await db.execute(sql`
+      SELECT COUNT(*) as total FROM comentarios
+      WHERE tipo_contenido = ${tipoContenido} AND contenido_id = ${contenidoId}
+    `);
+
+    return {
+      likes: Number((stats as any)?.likes || 0),
+      favoritos: Number((stats as any)?.favoritos || 0),
+      compartidos: Number((stats as any)?.compartidos || 0),
+      comentarios: Number((comentariosCount as any)?.total || 0),
+    };
+  }
+
+  async getInteraccionesUsuario(
+    usuarioId: string, 
+    tipoContenido: string, 
+    contenidoId: string
+  ): Promise<{ liked: boolean; favorito: boolean; compartido: boolean }> {
+    const interacciones = await db.select().from(interaccionesSociales)
+      .where(
+        and(
+          eq(interaccionesSociales.usuarioId, usuarioId),
+          eq(interaccionesSociales.tipoContenido, tipoContenido),
+          eq(interaccionesSociales.contenidoId, contenidoId)
+        )
+      );
+
+    return {
+      liked: interacciones.some(i => i.tipoInteraccion === 'like'),
+      favorito: interacciones.some(i => i.tipoInteraccion === 'favorito'),
+      compartido: interacciones.some(i => i.tipoInteraccion === 'compartir'),
+    };
+  }
+
+  // ============================================================
+  // COMENTARIOS
+  // ============================================================
+  async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+    return await db.select().from(comentarios)
+      .where(
+        and(
+          eq(comentarios.tipoContenido, tipoContenido),
+          eq(comentarios.contenidoId, contenidoId)
+        )
+      )
+      .orderBy(desc(comentarios.createdAt));
+  }
+
+  async getComentario(id: string): Promise<Comentario | undefined> {
+    const [comentario] = await db.select().from(comentarios).where(eq(comentarios.id, id));
+    return comentario;
+  }
+
+  async createComentario(data: InsertComentario): Promise<Comentario> {
+    const [comentario] = await db.insert(comentarios).values(data).returning();
+    return comentario;
+  }
+
+  async updateComentario(id: string, data: { texto: string }): Promise<Comentario | undefined> {
+    const [actualizado] = await db
+      .update(comentarios)
+      .set({ texto: data.texto, updatedAt: new Date() })
+      .where(eq(comentarios.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteComentario(id: string): Promise<void> {
+    await db.delete(comentarios).where(eq(comentarios.id, id));
+  }
 }
 
 export const storage = new DatabaseStorage();

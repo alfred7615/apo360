@@ -14,6 +14,7 @@ import Perfil from "@/pages/perfil";
 import Registro from "@/pages/registro";
 import IniciarSesion from "@/pages/iniciar-sesion";
 import AdminPanel from "@/pages/admin-panel";
+import Favoritos from "@/pages/favoritos";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/registro" component={Registro} />
       <Route path="/chat" component={Chat} />
       <Route path="/perfil" component={Perfil} />
+      <Route path="/favoritos" component={Favoritos} />
       <Route path="/admin" component={AdminPanel} />
       <Route component={NotFound} />
     </Switch>

@@ -1941,6 +1941,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // INTERACCIONES SOCIALES (likes, favoritos, compartir)
+  // ============================================================
+
+  app.post('/api/interacciones', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tipoContenido, contenidoId, tipoInteraccion } = req.body;
+      
+      if (!tipoContenido || !contenidoId || !tipoInteraccion) {
+        return res.status(400).json({ message: "Faltan campos requeridos" });
+      }
+
+      const interaccion = await storage.toggleInteraccion(userId, tipoContenido, contenidoId, tipoInteraccion);
+      res.json(interaccion);
+    } catch (error: any) {
+      console.error("Error en interacción:", error);
+      res.status(400).json({ message: error.message || "Error en interacción" });
+    }
+  });
+
+  app.get('/api/interacciones/:tipoContenido/:contenidoId', async (req, res) => {
+    try {
+      const { tipoContenido, contenidoId } = req.params;
+      const stats = await storage.getInteraccionesStats(tipoContenido, contenidoId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error al obtener stats:", error);
+      res.status(500).json({ message: "Error al obtener estadísticas" });
+    }
+  });
+
+  app.get('/api/interacciones/:tipoContenido/:contenidoId/usuario', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tipoContenido, contenidoId } = req.params;
+      const interacciones = await storage.getInteraccionesUsuario(userId, tipoContenido, contenidoId);
+      res.json(interacciones);
+    } catch (error) {
+      console.error("Error al obtener interacciones del usuario:", error);
+      res.status(500).json({ message: "Error al obtener interacciones" });
+    }
+  });
+
+  // ============================================================
+  // COMENTARIOS
+  // ============================================================
+
+  app.get('/api/comentarios/:tipoContenido/:contenidoId', async (req, res) => {
+    try {
+      const { tipoContenido, contenidoId } = req.params;
+      const comentarios = await storage.getComentarios(tipoContenido, contenidoId);
+      res.json(comentarios);
+    } catch (error) {
+      console.error("Error al obtener comentarios:", error);
+      res.status(500).json({ message: "Error al obtener comentarios" });
+    }
+  });
+
+  app.post('/api/comentarios', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tipoContenido, contenidoId, texto } = req.body;
+      
+      if (!tipoContenido || !contenidoId || !texto) {
+        return res.status(400).json({ message: "Faltan campos requeridos" });
+      }
+
+      const comentario = await storage.createComentario({
+        usuarioId: userId,
+        tipoContenido,
+        contenidoId,
+        texto,
+      });
+      res.json(comentario);
+    } catch (error: any) {
+      console.error("Error al crear comentario:", error);
+      res.status(400).json({ message: error.message || "Error al crear comentario" });
+    }
+  });
+
+  app.patch('/api/comentarios/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      
+      const comentario = await storage.getComentario(req.params.id);
+      if (!comentario) {
+        return res.status(404).json({ message: "Comentario no encontrado" });
+      }
+      
+      if (!esSuperAdmin && comentario.usuarioId !== userId) {
+        return res.status(403).json({ message: "No tienes permiso para editar este comentario" });
+      }
+      
+      const { texto } = req.body;
+      if (!texto) {
+        return res.status(400).json({ message: "El texto es requerido" });
+      }
+      
+      const actualizado = await storage.updateComentario(req.params.id, { texto });
+      res.json(actualizado);
+    } catch (error: any) {
+      console.error("Error al actualizar comentario:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar comentario" });
+    }
+  });
+
+  app.delete('/api/comentarios/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      
+      const comentario = await storage.getComentario(req.params.id);
+      if (!comentario) {
+        return res.status(404).json({ message: "Comentario no encontrado" });
+      }
+      
+      if (!esSuperAdmin && comentario.usuarioId !== userId) {
+        return res.status(403).json({ message: "No tienes permiso para eliminar este comentario" });
+      }
+      
+      await storage.deleteComentario(req.params.id);
+      res.json({ message: "Comentario eliminado" });
+    } catch (error) {
+      console.error("Error al eliminar comentario:", error);
+      res.status(500).json({ message: "Error al eliminar comentario" });
+    }
+  });
+
+  // ============================================================
   // FAVORITOS DEL USUARIO
   // ============================================================
 
