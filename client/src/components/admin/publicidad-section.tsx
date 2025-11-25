@@ -338,12 +338,39 @@ export default function PublicidadSection() {
               </DialogHeader>
               <div className="py-4">
                 <MultipleImageUpload
-                  onImagesUploaded={(urls) => {
+                  onImagesUploaded={async (urls) => {
                     setUploadedImages(urls);
-                    toast({
-                      title: "Imágenes subidas",
-                      description: `Se subieron ${urls.length} imágenes exitosamente. Ahora puedes editar cada una para completar su información.`,
-                    });
+                    
+                    // Crear registros de publicidad automáticamente para cada imagen subida
+                    try {
+                      const promises = urls.map(url => 
+                        apiRequest("POST", "/api/publicidad", {
+                          imagenUrl: url,
+                          tipo: activeTab || "carrusel_logos",
+                          estado: "activo",
+                          titulo: `Publicidad ${new Date().toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' })}`,
+                          orden: 0,
+                        })
+                      );
+                      
+                      await Promise.all(promises);
+                      
+                      // Refrescar la lista de publicidades
+                      queryClient.invalidateQueries({ queryKey: ["/api/publicidad"] });
+                      
+                      toast({
+                        title: "Imágenes guardadas",
+                        description: `Se crearon ${urls.length} publicidades exitosamente. Puedes editarlas para completar su información.`,
+                      });
+                      
+                      setIsMultipleUploadDialogOpen(false);
+                    } catch (error) {
+                      toast({
+                        title: "Error al guardar",
+                        description: "Las imágenes se subieron pero hubo un error al crear los registros. Intenta crear manualmente.",
+                        variant: "destructive",
+                      });
+                    }
                   }}
                   endpoint="publicidad"
                   maxSize={15}
@@ -854,11 +881,72 @@ export default function PublicidadSection() {
                         </div>
                       </div>
 
-                      {/* Información mínima en footer */}
-                      <CardContent className="p-2">
+                      {/* Información mínima en footer con indicadores */}
+                      <CardContent className="p-2 space-y-1">
                         <p className="text-xs font-medium truncate" title={pub.titulo || "Sin título"}>
                           {pub.titulo || "Sin título"}
                         </p>
+                        
+                        {/* Indicadores visuales de información adicional */}
+                        <div className="flex flex-wrap gap-1 items-center">
+                          {/* Indicador de GPS */}
+                          {(pub.latitud !== null && pub.longitud !== null) && (
+                            <span title="Tiene ubicación GPS">
+                              <MapPin className="h-3 w-3 text-blue-500" />
+                            </span>
+                          )}
+                          
+                          {/* Indicadores de redes sociales */}
+                          {pub.facebook && (
+                            <span title="Facebook configurado">
+                              <Facebook className="h-3 w-3 text-blue-600" />
+                            </span>
+                          )}
+                          {pub.instagram && (
+                            <span title="Instagram configurado">
+                              <Instagram className="h-3 w-3 text-pink-600" />
+                            </span>
+                          )}
+                          {pub.whatsapp && (
+                            <span title="WhatsApp configurado">
+                              <SiWhatsapp className="h-3 w-3 text-green-600" />
+                            </span>
+                          )}
+                          {pub.tiktok && (
+                            <span title="TikTok configurado">
+                              <SiTiktok className="h-3 w-3 text-gray-800 dark:text-gray-200" />
+                            </span>
+                          )}
+                          {pub.twitter && (
+                            <span title="Twitter/X configurado">
+                              <Twitter className="h-3 w-3 text-blue-400" />
+                            </span>
+                          )}
+                          {pub.youtube && (
+                            <span title="YouTube configurado">
+                              <Youtube className="h-3 w-3 text-red-600" />
+                            </span>
+                          )}
+                          {pub.linkedin && (
+                            <span title="LinkedIn configurado">
+                              <Linkedin className="h-3 w-3 text-blue-700" />
+                            </span>
+                          )}
+                          
+                          {/* Indicador de enlace externo */}
+                          {pub.enlaceUrl && (
+                            <span title="Tiene enlace externo">
+                              <ExternalLink className="h-3 w-3 text-purple-500" />
+                            </span>
+                          )}
+                          
+                          {/* Indicador de fechas configuradas */}
+                          {(pub.fechaInicio || pub.fechaFin || pub.fechaCaducidad) && (
+                            <span title="Tiene fechas configuradas">
+                              <Calendar className="h-3 w-3 text-orange-500" />
+                            </span>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
