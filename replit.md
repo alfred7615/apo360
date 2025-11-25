@@ -2,6 +2,30 @@
 
 ## Recent Changes (Noviembre 25, 2025)
 
+### Sistema Completo de Encuestas y Popups Publicitarios
+- **5 Tablas de Base de Datos**:
+  - `encuestas` - Con soporte para múltiples preguntas JSON, fechas inicio/fin, estado, contador de respuestas
+  - `popups_publicitarios` - Imágenes/videos con temporizador obligatorio, tipos (publicidad, persona_desaparecida, mascota_desaparecida, evento)
+  - `interacciones_sociales` - Likes, favoritos, compartir, calendario por contenido
+  - `respuestas_encuesta` - Respuestas de usuarios con índice de pregunta y opción
+  - `comentarios` - Sistema de comentarios para popups y encuestas
+- **Panel de Administración Completo** (gestion-encuestas.tsx):
+  - Tabs para separar encuestas vs popups
+  - CRUD completo con modales de creación/edición
+  - Estadísticas en tiempo real (activos, total respuestas, vistas)
+  - Editor de preguntas dinámico con opciones múltiples
+  - Visualización de resultados con barras de progreso
+- **Componente PopupViewer**:
+  - Temporizador estilo YouTube (segundos obligatorios antes de poder omitir)
+  - Interacciones sociales: likes, favoritos, comentarios, compartir, calendario
+  - Botones de compartir en Facebook, X/Twitter, WhatsApp, copiar enlace
+  - Badges coloridos por tipo de popup
+- **Datos de Prueba Insertados**:
+  - 23 usuarios falsos con roles variados (usuario, conductor, local)
+  - 5 encuestas con 2-3 preguntas cada una
+  - 10 popups (3 personas desaparecidas, 2 mascotas desaparecidas, 5 publicidad)
+- **Script de Seed**: server/seed-encuestas.ts para datos de prueba reproducibles
+
 ### Submenú GESTIONES en Panel de Administración
 - **Estructura de navegación mejorada**: Submenú colapsable "GESTIONES" usando Collapsible de shadcn
 - **11 secciones de gestión implementadas**:

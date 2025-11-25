@@ -997,6 +997,325 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // ENCUESTAS
+  // ============================================================
+
+  app.get('/api/encuestas', async (req, res) => {
+    try {
+      const encuestas = await storage.getEncuestas();
+      res.json(encuestas);
+    } catch (error) {
+      console.error("Error al obtener encuestas:", error);
+      res.status(500).json({ message: "Error al obtener encuestas" });
+    }
+  });
+
+  app.get('/api/encuestas/activas', async (req, res) => {
+    try {
+      const encuestas = await storage.getEncuestas();
+      const ahora = new Date();
+      const activas = encuestas.filter(e => {
+        if (e.estado !== 'activa') return false;
+        const inicioValido = !e.fechaInicio || new Date(e.fechaInicio) <= ahora;
+        const finValido = !e.fechaFin || new Date(e.fechaFin) >= ahora;
+        return inicioValido && finValido;
+      });
+      res.json(activas);
+    } catch (error) {
+      console.error("Error al obtener encuestas activas:", error);
+      res.status(500).json({ message: "Error al obtener encuestas activas" });
+    }
+  });
+
+  app.get('/api/encuestas/:id', async (req, res) => {
+    try {
+      const encuesta = await storage.getEncuesta(req.params.id);
+      if (!encuesta) {
+        return res.status(404).json({ message: "Encuesta no encontrada" });
+      }
+      res.json(encuesta);
+    } catch (error) {
+      console.error("Error al obtener encuesta:", error);
+      res.status(500).json({ message: "Error al obtener encuesta" });
+    }
+  });
+
+  app.get('/api/encuestas/:id/resultados', async (req, res) => {
+    try {
+      const encuesta = await storage.getEncuesta(req.params.id);
+      if (!encuesta) {
+        return res.status(404).json({ message: "Encuesta no encontrada" });
+      }
+      const resultados = await storage.getResultadosEncuesta(req.params.id);
+      res.json({ encuesta, resultados });
+    } catch (error) {
+      console.error("Error al obtener resultados:", error);
+      res.status(500).json({ message: "Error al obtener resultados" });
+    }
+  });
+
+  app.post('/api/encuestas', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const data = {
+        ...req.body,
+        usuarioId: userId,
+        fechaInicio: req.body.fechaInicio ? new Date(req.body.fechaInicio) : null,
+        fechaFin: req.body.fechaFin ? new Date(req.body.fechaFin) : null,
+      };
+      const encuesta = await storage.createEncuesta(data);
+      res.json(encuesta);
+    } catch (error: any) {
+      console.error("Error al crear encuesta:", error);
+      res.status(400).json({ message: error.message || "Error al crear encuesta" });
+    }
+  });
+
+  app.patch('/api/encuestas/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const data = {
+        ...req.body,
+        fechaInicio: req.body.fechaInicio ? new Date(req.body.fechaInicio) : undefined,
+        fechaFin: req.body.fechaFin ? new Date(req.body.fechaFin) : undefined,
+      };
+      const encuesta = await storage.updateEncuesta(req.params.id, data);
+      if (!encuesta) {
+        return res.status(404).json({ message: "Encuesta no encontrada" });
+      }
+      res.json(encuesta);
+    } catch (error: any) {
+      console.error("Error al actualizar encuesta:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar encuesta" });
+    }
+  });
+
+  app.delete('/api/encuestas/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      await storage.deleteEncuesta(req.params.id);
+      res.json({ message: "Encuesta eliminada" });
+    } catch (error) {
+      console.error("Error al eliminar encuesta:", error);
+      res.status(500).json({ message: "Error al eliminar encuesta" });
+    }
+  });
+
+  app.post('/api/encuestas/:id/responder', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const encuestaId = req.params.id;
+      
+      const yaRespondio = await storage.verificarRespuestaUsuario(encuestaId, userId);
+      if (yaRespondio) {
+        return res.status(400).json({ message: "Ya has respondido esta encuesta" });
+      }
+
+      const respuesta = await storage.createRespuestaEncuesta({
+        encuestaId,
+        usuarioId: userId,
+        respuestas: req.body.respuestas,
+      });
+      res.json(respuesta);
+    } catch (error: any) {
+      console.error("Error al responder encuesta:", error);
+      res.status(400).json({ message: error.message || "Error al responder encuesta" });
+    }
+  });
+
+  // ============================================================
+  // POPUPS PUBLICITARIOS
+  // ============================================================
+
+  app.get('/api/popups', async (req, res) => {
+    try {
+      const popups = await storage.getPopups();
+      res.json(popups);
+    } catch (error) {
+      console.error("Error al obtener popups:", error);
+      res.status(500).json({ message: "Error al obtener popups" });
+    }
+  });
+
+  app.get('/api/popups/activos', async (req, res) => {
+    try {
+      const popups = await storage.getPopupsActivos();
+      res.json(popups);
+    } catch (error) {
+      console.error("Error al obtener popups activos:", error);
+      res.status(500).json({ message: "Error al obtener popups activos" });
+    }
+  });
+
+  app.get('/api/popups/:id', async (req, res) => {
+    try {
+      const popup = await storage.getPopup(req.params.id);
+      if (!popup) {
+        return res.status(404).json({ message: "Popup no encontrado" });
+      }
+      res.json(popup);
+    } catch (error) {
+      console.error("Error al obtener popup:", error);
+      res.status(500).json({ message: "Error al obtener popup" });
+    }
+  });
+
+  app.post('/api/popups', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const data = {
+        ...req.body,
+        usuarioId: userId,
+        fechaInicio: req.body.fechaInicio ? new Date(req.body.fechaInicio) : null,
+        fechaFin: req.body.fechaFin ? new Date(req.body.fechaFin) : null,
+      };
+      const popup = await storage.createPopup(data);
+      res.json(popup);
+    } catch (error: any) {
+      console.error("Error al crear popup:", error);
+      res.status(400).json({ message: error.message || "Error al crear popup" });
+    }
+  });
+
+  app.patch('/api/popups/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const data = {
+        ...req.body,
+        fechaInicio: req.body.fechaInicio ? new Date(req.body.fechaInicio) : undefined,
+        fechaFin: req.body.fechaFin ? new Date(req.body.fechaFin) : undefined,
+      };
+      const popup = await storage.updatePopup(req.params.id, data);
+      if (!popup) {
+        return res.status(404).json({ message: "Popup no encontrado" });
+      }
+      res.json(popup);
+    } catch (error: any) {
+      console.error("Error al actualizar popup:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar popup" });
+    }
+  });
+
+  app.delete('/api/popups/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      await storage.deletePopup(req.params.id);
+      res.json({ message: "Popup eliminado" });
+    } catch (error) {
+      console.error("Error al eliminar popup:", error);
+      res.status(500).json({ message: "Error al eliminar popup" });
+    }
+  });
+
+  app.post('/api/popups/:id/vista', async (req, res) => {
+    try {
+      await storage.incrementarVistasPopup(req.params.id);
+      res.json({ message: "Vista registrada" });
+    } catch (error) {
+      console.error("Error al registrar vista:", error);
+      res.status(500).json({ message: "Error al registrar vista" });
+    }
+  });
+
+  // ============================================================
+  // INTERACCIONES SOCIALES (likes, favoritos, compartir, calendario)
+  // ============================================================
+
+  app.get('/api/interacciones/:tipoContenido/:contenidoId', async (req, res) => {
+    try {
+      const { tipoContenido, contenidoId } = req.params;
+      const contadores = await storage.getContadoresInteracciones(tipoContenido, contenidoId);
+      res.json(contadores);
+    } catch (error) {
+      console.error("Error al obtener interacciones:", error);
+      res.status(500).json({ message: "Error al obtener interacciones" });
+    }
+  });
+
+  app.post('/api/interacciones', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tipoContenido, contenidoId, tipoInteraccion, valor } = req.body;
+      
+      const yaExiste = await storage.verificarInteraccion(userId, tipoContenido, contenidoId, tipoInteraccion);
+      if (yaExiste) {
+        await storage.deleteInteraccion(userId, tipoContenido, contenidoId, tipoInteraccion);
+        return res.json({ message: "Interacción eliminada", accion: "eliminada" });
+      }
+
+      const interaccion = await storage.createInteraccion({
+        tipoContenido,
+        contenidoId,
+        usuarioId: userId,
+        tipoInteraccion,
+        valor,
+      });
+      res.json({ ...interaccion, accion: "creada" });
+    } catch (error: any) {
+      console.error("Error al crear interacción:", error);
+      res.status(400).json({ message: error.message || "Error al crear interacción" });
+    }
+  });
+
+  app.get('/api/interacciones/:tipoContenido/:contenidoId/usuario', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tipoContenido, contenidoId } = req.params;
+      
+      const tipos = ['like', 'favorito', 'compartir', 'calendario'];
+      const interacciones: { [key: string]: boolean } = {};
+      
+      for (const tipo of tipos) {
+        interacciones[tipo] = await storage.verificarInteraccion(userId, tipoContenido, contenidoId, tipo);
+      }
+      
+      res.json(interacciones);
+    } catch (error) {
+      console.error("Error al verificar interacciones:", error);
+      res.status(500).json({ message: "Error al verificar interacciones" });
+    }
+  });
+
+  // ============================================================
+  // COMENTARIOS
+  // ============================================================
+
+  app.get('/api/comentarios/:tipoContenido/:contenidoId', async (req, res) => {
+    try {
+      const { tipoContenido, contenidoId } = req.params;
+      const comentarios = await storage.getComentarios(tipoContenido, contenidoId);
+      res.json(comentarios);
+    } catch (error) {
+      console.error("Error al obtener comentarios:", error);
+      res.status(500).json({ message: "Error al obtener comentarios" });
+    }
+  });
+
+  app.post('/api/comentarios', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tipoContenido, contenidoId, texto } = req.body;
+      
+      const comentario = await storage.createComentario({
+        tipoContenido,
+        contenidoId,
+        usuarioId: userId,
+        texto,
+      });
+      res.json(comentario);
+    } catch (error: any) {
+      console.error("Error al crear comentario:", error);
+      res.status(400).json({ message: error.message || "Error al crear comentario" });
+    }
+  });
+
+  app.delete('/api/comentarios/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.deleteComentario(req.params.id);
+      res.json({ message: "Comentario eliminado" });
+    } catch (error) {
+      console.error("Error al eliminar comentario:", error);
+      res.status(500).json({ message: "Error al eliminar comentario" });
+    }
+  });
+
+  // ============================================================
   // CONFIGURACIÓN DE WEBSOCKET
   // ============================================================
 

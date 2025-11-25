@@ -17,6 +17,9 @@ import {
   configuracionSaldos,
   encuestas,
   popupsPublicitarios,
+  interaccionesSociales,
+  respuestasEncuestas,
+  comentarios,
   registroBasico,
   registroChat,
   registroUbicacion,
@@ -61,6 +64,12 @@ import {
   type InsertEncuesta,
   type PopupPublicitario,
   type InsertPopupPublicitario,
+  type InteraccionSocial,
+  type InsertInteraccionSocial,
+  type RespuestaEncuesta,
+  type InsertRespuestaEncuesta,
+  type Comentario,
+  type InsertComentario,
   type MiembroGrupo,
   type InsertMiembroGrupo,
   type RegistroBasico,
@@ -177,10 +186,30 @@ export interface IStorage {
   
   // Operaciones de popups publicitarios
   getPopups(): Promise<PopupPublicitario[]>;
+  getPopupsActivos(): Promise<PopupPublicitario[]>;
   getPopup(id: string): Promise<PopupPublicitario | undefined>;
   createPopup(data: InsertPopupPublicitario): Promise<PopupPublicitario>;
   updatePopup(id: string, data: Partial<InsertPopupPublicitario>): Promise<PopupPublicitario | undefined>;
   deletePopup(id: string): Promise<void>;
+  incrementarVistasPopup(id: string): Promise<void>;
+  
+  // Operaciones de interacciones sociales
+  getInteracciones(tipoContenido: string, contenidoId: string): Promise<InteraccionSocial[]>;
+  getContadoresInteracciones(tipoContenido: string, contenidoId: string): Promise<{ tipo: string; cantidad: number }[]>;
+  createInteraccion(data: InsertInteraccionSocial): Promise<InteraccionSocial>;
+  deleteInteraccion(usuarioId: string, tipoContenido: string, contenidoId: string, tipoInteraccion: string): Promise<void>;
+  verificarInteraccion(usuarioId: string, tipoContenido: string, contenidoId: string, tipoInteraccion: string): Promise<boolean>;
+  
+  // Operaciones de respuestas de encuestas
+  getRespuestasEncuesta(encuestaId: string): Promise<RespuestaEncuesta[]>;
+  getResultadosEncuesta(encuestaId: string): Promise<{ preguntaIndex: number; opcion: number; cantidad: number }[]>;
+  createRespuestaEncuesta(data: InsertRespuestaEncuesta): Promise<RespuestaEncuesta>;
+  verificarRespuestaUsuario(encuestaId: string, usuarioId: string): Promise<boolean>;
+  
+  // Operaciones de comentarios
+  getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]>;
+  createComentario(data: InsertComentario): Promise<Comentario>;
+  deleteComentario(id: string): Promise<void>;
   
   // Sistema de Registro por Niveles (5 estrellas)
   getNivelRegistro(usuarioId: string): Promise<number>;
@@ -740,6 +769,172 @@ export class DatabaseStorage implements IStorage {
 
   async deletePopup(id: string): Promise<void> {
     await db.delete(popupsPublicitarios).where(eq(popupsPublicitarios.id, id));
+  }
+
+  async getPopupsActivos(): Promise<PopupPublicitario[]> {
+    const ahora = new Date();
+    const popups = await db.select()
+      .from(popupsPublicitarios)
+      .where(eq(popupsPublicitarios.estado, 'activo'))
+      .orderBy(desc(popupsPublicitarios.createdAt));
+    
+    return popups.filter(p => {
+      const inicioValido = !p.fechaInicio || new Date(p.fechaInicio) <= ahora;
+      const finValido = !p.fechaFin || new Date(p.fechaFin) >= ahora;
+      return inicioValido && finValido;
+    });
+  }
+
+  async incrementarVistasPopup(id: string): Promise<void> {
+    await db.update(popupsPublicitarios)
+      .set({ vistas: sql`COALESCE(vistas, 0) + 1` })
+      .where(eq(popupsPublicitarios.id, id));
+  }
+
+  // ============================================================
+  // INTERACCIONES SOCIALES
+  // ============================================================
+
+  async getInteracciones(tipoContenido: string, contenidoId: string): Promise<InteraccionSocial[]> {
+    return await db.select()
+      .from(interaccionesSociales)
+      .where(
+        and(
+          eq(interaccionesSociales.tipoContenido, tipoContenido),
+          eq(interaccionesSociales.contenidoId, contenidoId)
+        )
+      );
+  }
+
+  async getContadoresInteracciones(tipoContenido: string, contenidoId: string): Promise<{ tipo: string; cantidad: number }[]> {
+    const result = await db.execute(sql`
+      SELECT tipo_interaccion as tipo, COUNT(*)::int as cantidad
+      FROM interacciones_sociales
+      WHERE tipo_contenido = ${tipoContenido} AND contenido_id = ${contenidoId}
+      GROUP BY tipo_interaccion
+    `);
+    return result.rows as { tipo: string; cantidad: number }[];
+  }
+
+  async createInteraccion(data: InsertInteraccionSocial): Promise<InteraccionSocial> {
+    const [interaccion] = await db
+      .insert(interaccionesSociales)
+      .values(data)
+      .returning();
+    return interaccion;
+  }
+
+  async deleteInteraccion(usuarioId: string, tipoContenido: string, contenidoId: string, tipoInteraccion: string): Promise<void> {
+    await db.delete(interaccionesSociales)
+      .where(
+        and(
+          eq(interaccionesSociales.usuarioId, usuarioId),
+          eq(interaccionesSociales.tipoContenido, tipoContenido),
+          eq(interaccionesSociales.contenidoId, contenidoId),
+          eq(interaccionesSociales.tipoInteraccion, tipoInteraccion)
+        )
+      );
+  }
+
+  async verificarInteraccion(usuarioId: string, tipoContenido: string, contenidoId: string, tipoInteraccion: string): Promise<boolean> {
+    const [existe] = await db.select()
+      .from(interaccionesSociales)
+      .where(
+        and(
+          eq(interaccionesSociales.usuarioId, usuarioId),
+          eq(interaccionesSociales.tipoContenido, tipoContenido),
+          eq(interaccionesSociales.contenidoId, contenidoId),
+          eq(interaccionesSociales.tipoInteraccion, tipoInteraccion)
+        )
+      )
+      .limit(1);
+    return !!existe;
+  }
+
+  // ============================================================
+  // RESPUESTAS DE ENCUESTAS
+  // ============================================================
+
+  async getRespuestasEncuesta(encuestaId: string): Promise<RespuestaEncuesta[]> {
+    return await db.select()
+      .from(respuestasEncuestas)
+      .where(eq(respuestasEncuestas.encuestaId, encuestaId));
+  }
+
+  async getResultadosEncuesta(encuestaId: string): Promise<{ preguntaIndex: number; opcion: number; cantidad: number }[]> {
+    const respuestas = await this.getRespuestasEncuesta(encuestaId);
+    const resultados: { [key: string]: number } = {};
+    
+    respuestas.forEach(r => {
+      if (r.respuestas && Array.isArray(r.respuestas)) {
+        r.respuestas.forEach((resp: any) => {
+          const key = `${resp.preguntaIndex}-${resp.opcionSeleccionada}`;
+          resultados[key] = (resultados[key] || 0) + 1;
+        });
+      }
+    });
+    
+    return Object.entries(resultados).map(([key, cantidad]) => {
+      const [preguntaIndex, opcion] = key.split('-').map(Number);
+      return { preguntaIndex, opcion, cantidad };
+    });
+  }
+
+  async createRespuestaEncuesta(data: InsertRespuestaEncuesta): Promise<RespuestaEncuesta> {
+    const [respuesta] = await db
+      .insert(respuestasEncuestas)
+      .values(data)
+      .returning();
+    
+    await db.update(encuestas)
+      .set({ totalRespuestas: sql`COALESCE(total_respuestas, 0) + 1` })
+      .where(eq(encuestas.id, data.encuestaId));
+    
+    return respuesta;
+  }
+
+  async verificarRespuestaUsuario(encuestaId: string, usuarioId: string): Promise<boolean> {
+    const [existe] = await db.select()
+      .from(respuestasEncuestas)
+      .where(
+        and(
+          eq(respuestasEncuestas.encuestaId, encuestaId),
+          eq(respuestasEncuestas.usuarioId, usuarioId)
+        )
+      )
+      .limit(1);
+    return !!existe;
+  }
+
+  // ============================================================
+  // COMENTARIOS
+  // ============================================================
+
+  async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+    return await db.select()
+      .from(comentarios)
+      .where(
+        and(
+          eq(comentarios.tipoContenido, tipoContenido),
+          eq(comentarios.contenidoId, contenidoId),
+          eq(comentarios.estado, 'activo')
+        )
+      )
+      .orderBy(desc(comentarios.createdAt));
+  }
+
+  async createComentario(data: InsertComentario): Promise<Comentario> {
+    const [comentario] = await db
+      .insert(comentarios)
+      .values(data)
+      .returning();
+    return comentario;
+  }
+
+  async deleteComentario(id: string): Promise<void> {
+    await db.update(comentarios)
+      .set({ estado: 'eliminado' })
+      .where(eq(comentarios.id, id));
   }
 
   // ============================================================
