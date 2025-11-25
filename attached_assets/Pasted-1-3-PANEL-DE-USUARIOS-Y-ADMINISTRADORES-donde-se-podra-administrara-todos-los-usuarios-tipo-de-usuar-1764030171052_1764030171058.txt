@@ -1,0 +1,30 @@
+1.3 PANEL DE USUARIOS Y ADMINISTRADORES donde se podra administrara todos los usuarios tipo de usuarios, grupos de taxis grupos de personas etc etc  donde se podra eliminar, modificar, suspender al usuario de este sistema. o bloquear.
+DE igual manera se podra administrar a los administraodres de segundo nivel como por ejemplo admin, grupos de chat, grupos asociaciones, grupos de taxi, servicios de axilios, empresas, servicios, negocios etc etc etc. tendran un panel de administracion especifico para su rubro pero un su capacidad minima luego en II etapa se habilitara tosas las funcionalidades de cada rubro y cada negocios de manera independiente. 
+
+verificacion o asignaciones de diferentes roles por ejemplo asignar a una usuario como administrador de segundo nivel, asi mismo tambien puede ser taxista, si cuenta con un a movil para el servicio, y tambien puede ser personal de serenazgo o policia etc etc. un usuario podra tener varias roles administrativos segun sea el caso. 
+por ejepmplo el serenazgo que tendra su panel administrativo el cual podra asignar o agregar un nuevo personal colocando a un usuario en su grupo como serenazgo. este rol automaticamente se feflejara en su panel de susuario y a la vez puede ser taxistas pofreciendo servicio de taxi y delivery otros
+
+1.4. CARTERA Y SALDOS 
+EL SUPERAMDINISTRADOR PODRA COLOCAR CUANTO SERA EL PORCENTAJE O MONTO DIRECTO QUE DESCONTARA de su saldo el monto por pubñicidad, ingreso de articulos nuevos, y tros serviicos que ofrece el sitio web.
+reporte de saldos de cada usuario, y la aprobacion y verificacion de ingresos nuevos por saldos, por publcidad, etc etc.
+ingreso de nuemeros de cuentas, interbancarias, paypal, plin, yape, y otros que sean posible las transacciones online.
+tipos de monedas
+
+1.5. ENCUESTAS Y IMAGENES POPUP (publi)
+administracion de encuestas el cual se hara preguntas estas puede ser 2 a mas preguntas se podra subir una imagen a la encuesta (y se podra visualiza rlos resultados de manera inmediata  sobre las encuentes que esta estara en el panel del administrador super
+
+igual maneja por medio de ventana popup se visualizara imagenes o videos de ´publicidad directa, habra una segundos de publicidad obligatoria luego pasado los segundos permitidos esta se podra omitir (similar a las pubñlicidad de youtube)
+ambos tipos de publlcidad como encuestas y puvlicidad tendra un inicio de final de publicado al termino de la fecha esta se suspendera automaticamente  y luego se podra renovar  e ingresar nueva fecha para su publicidad.
+
+1.6. SERVICIOS (MUDANZAS, ALQUILERES ETC ETC)
+
+1.7. EVENTOS CON AGENDA  1.7.- ((((SECCION DE EVENTOS CALENDARIZADO))) PUBLICAR eventos candalerizado que manualmente se colocara la fecha y hora del evento por el super administrador
+
+1.8. AVISOS DE EMERGENCIA (servicio a la comunidad)  1.8.- (((((SECCION DE AVISOS SOCIALES)))))))
+
+1.9. SERVICIO DE TAXI todas las funcionalidades para solicitar o brindar servicio de taxi similar e igual que indriver uber etc etc. agregando estas funcionalidades en la creacion de grupos d etrabajo y estos grupos tengan un jefe de grupo que seria un admin y los integrantes de un grupo pueda identificarse con un color o logo de nombre de su grupo.
+
+1.10. SERVICIO DE BUSES
+
+1.11. SERVICIO DE CAMBIO DE MONEDA 
+1.12. CONFIGURACION: en esta seccion se podra cambiar el logo nombre del sitio web, y toda la informacion de pie de pagina se podra incluir desde aqui tanto en su modificacion etc etc.... donde se seleccionara modo de pantalla oscuro y blanco o colores personalizados,,, y otrs relacionados a la configuracion (tipo de monedas,
