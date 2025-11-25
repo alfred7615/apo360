@@ -78,7 +78,7 @@ export const administradores = pgTable("administradores", {
 // PUBLICIDAD
 // ============================================================
 export const publicidad = pgTable("publicidad", {
-  id: varchar("id").primaryKey(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   titulo: varchar("titulo"),
   descripcion: text("descripcion"),
   tipo: varchar("tipo"), // "carrusel_logos", "carrusel_principal", "logos_servicios", "popup_emergencia", "encuestas_apoyo"
