@@ -26,6 +26,7 @@ SEG-APO is a comprehensive community security platform designed to enhance safet
   - Botones: "Subir Todas", "Agregar más", "Limpiar"
   - Indicadores visuales de progreso (carga, completado, error)
   - Integrado en publicidad-section con botón "Cargar Múltiples"
+  - Fix crítico: uploadImage retorna Promise<string | null> y uploadAllImages acumula URLs directamente desde promesas resueltas, evitando race condition con estado asíncrono
   
   **3. Grilla Compacta**:
   - Tarjetas muestran solo imagen (aspect-square) + título mínimo
@@ -43,8 +44,10 @@ SEG-APO is a comprehensive community security platform designed to enhance safet
   - `client/src/components/ImageUpload.tsx` - Límite 15MB
   - `client/src/components/MultipleImageUpload.tsx` - Nuevo componente (carga múltiple)
   - `client/src/components/admin/publicidad-section.tsx` - Grilla compacta + botón "Cargar Múltiples"
+  - `client/src/components/Encabezado.tsx` - Link "Panel de Administración" en menú de usuario
   - `server/uploadConfig.ts` - Límite backend 15MB
   - `server/uploadConfigByEndpoint.ts` - Límite backend 15MB
+  - `server/replitAuth.ts` - Manejo de roles desde claims OIDC para testing
 
 - **Resultado**: Sistema de imágenes profesional y eficiente:
   - ✅ Imágenes hasta 15MB soportadas
@@ -52,6 +55,9 @@ SEG-APO is a comprehensive community security platform designed to enhance safet
   - ✅ Grilla compacta con iconos en hover
   - ✅ Imágenes completas sin recortes en todos los previews
   - ✅ Aplicado a todas las secciones con imágenes
+  - ✅ Link "Panel de Administración" visible en menú de usuario para admins
+  - ✅ Soporte para roles OIDC en testing (claims.roles)
+  - ✅ Test E2E exitoso verificando todo el flujo
 
 ### Mejoras de UX en Formulario de Publicidad (November 25, 2025)
 - **Problemas Reportados por el Usuario**:

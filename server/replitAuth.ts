@@ -56,13 +56,26 @@ async function upsertUser(
   const email = claims["email"];
   const isSuperAdmin = email === "aapomayta15@gmail.com";
   
+  // Tomar rol de claims si existe (usado en testing), sino verificar email
+  let rol: string | undefined = undefined;
+  if (claims["roles"] && Array.isArray(claims["roles"])) {
+    // En testing, roles viene como array con valores como ["super_admin"]
+    if (claims["roles"].includes("super_admin")) {
+      rol = "super_admin";
+    } else if (claims["roles"].includes("admin")) {
+      rol = "admin";
+    }
+  } else if (isSuperAdmin) {
+    rol = "super_admin";
+  }
+  
   await storage.upsertUsuario({
     id: claims["sub"],
     email: email,
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
-    rol: isSuperAdmin ? "super_admin" : undefined,
+    rol: rol,
     telefono: isSuperAdmin ? "916202070" : undefined,
   });
   

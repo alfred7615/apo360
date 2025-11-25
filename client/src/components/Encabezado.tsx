@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, User, Music, LogOut, Bell } from "lucide-react";
+import { Menu, User, Music, LogOut, Bell, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -122,6 +122,14 @@ export default function Encabezado() {
                       Mi Perfil
                     </Link>
                   </DropdownMenuItem>
+                  {user?.rol?.includes('admin') && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" className="cursor-pointer" data-testid="link-admin-panel">
+                        <Shield className="mr-2 h-4 w-4" />
+                        Panel de Administración
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild>
                     <a href="/api/logout" className="cursor-pointer" data-testid="link-logout">
                       <LogOut className="mr-2 h-4 w-4" />
