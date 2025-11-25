@@ -28,11 +28,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPublicidadSchema } from "@shared/schema";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Pause, Play, ImageIcon, Facebook, Instagram, Twitter, Youtube, Linkedin, MapPin, ExternalLink, Calendar, Info } from "lucide-react";
+import { Plus, Pencil, Trash2, Pause, Play, ImageIcon, Facebook, Instagram, Twitter, Youtube, Linkedin, MapPin, ExternalLink, Calendar, Info, Upload } from "lucide-react";
 import { SiTiktok, SiWhatsapp } from "react-icons/si";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ImageUpload } from "@/components/ImageUpload";
+import { MultipleImageUpload } from "@/components/MultipleImageUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isPublicidadCaducada, getGoogleMapsUrl } from "@/lib/publicidadUtils";
 
@@ -94,6 +95,8 @@ const convertFormDataToApi = (data: FormData) => {
 export default function PublicidadSection() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isMultipleUploadDialogOpen, setIsMultipleUploadDialogOpen] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [editingPublicidad, setEditingPublicidad] = useState<Publicidad | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState<string>('carrusel_logos');
@@ -312,6 +315,51 @@ export default function PublicidadSection() {
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
+          <Dialog open={isMultipleUploadDialogOpen} onOpenChange={setIsMultipleUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                onClick={() => setUploadedImages([])}
+                data-testid="button-cargar-multiples"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Cargar Múltiples
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-5xl max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Cargar Múltiples Imágenes
+                </DialogTitle>
+                <DialogDescription>
+                  Sube varias imágenes a la vez. Después podrás editar y completar la información de cada una.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <MultipleImageUpload
+                  onImagesUploaded={(urls) => {
+                    setUploadedImages(urls);
+                    toast({
+                      title: "Imágenes subidas",
+                      description: `Se subieron ${urls.length} imágenes exitosamente. Ahora puedes editar cada una para completar su información.`,
+                    });
+                  }}
+                  endpoint="publicidad"
+                  maxSize={15}
+                  maxFiles={10}
+                />
+              </div>
+              {uploadedImages.length > 0 && (
+                <div className="border-t pt-4">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {uploadedImages.length} imágenes subidas. Cierra este diálogo para editar cada una desde la grilla.
+                  </p>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+          
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) form.reset(); }}>
             <DialogTrigger asChild>
               <Button
@@ -756,72 +804,61 @@ export default function PublicidadSection() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                   {publicidadesFiltradas.map(pub => (
-                    <Card key={pub.id} className="overflow-hidden">
-                      {pub.imagenUrl && (
-                        <div className="h-48 overflow-hidden bg-muted flex items-center justify-center">
-                          <img src={pub.imagenUrl} alt={pub.titulo || ""} className="w-full h-full object-contain" />
-                        </div>
-                      )}
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">{pub.titulo}</CardTitle>
+                    <Card key={pub.id} className="group overflow-hidden relative">
+                      {/* Imagen a pantalla completa */}
+                      <div className="aspect-square overflow-hidden bg-muted flex items-center justify-center relative">
+                        {pub.imagenUrl ? (
+                          <img 
+                            src={pub.imagenUrl} 
+                            alt={pub.titulo || ""} 
+                            className="w-full h-full object-contain" 
+                          />
+                        ) : (
+                          <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                        )}
+                        
+                        {/* Badge de estado en esquina superior derecha */}
+                        <div className="absolute top-2 right-2">
                           {getEstadoBadge(pub.estado)}
                         </div>
-                        <CardDescription>{pub.descripcion}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        {pub.enlaceUrl && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <ExternalLink className="h-4 w-4" />
-                            <a href={pub.enlaceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
-                              {pub.enlaceUrl}
-                            </a>
-                          </div>
-                        )}
-                        {(pub.latitud && pub.longitud) && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <MapPin className="h-4 w-4" />
-                            <span className="text-muted-foreground">{pub.direccion || "Ubicación GPS"}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 flex-wrap mt-2">
-                          {pub.facebook && <Facebook className="h-4 w-4 text-blue-600" />}
-                          {pub.instagram && <Instagram className="h-4 w-4 text-pink-600" />}
-                          {pub.whatsapp && <SiWhatsapp className="h-4 w-4 text-green-600" />}
-                          {pub.tiktok && <SiTiktok className="h-4 w-4" />}
-                          {pub.twitter && <Twitter className="h-4 w-4 text-blue-400" />}
-                          {pub.youtube && <Youtube className="h-4 w-4 text-red-600" />}
-                          {pub.linkedin && <Linkedin className="h-4 w-4 text-blue-700" />}
-                        </div>
-                        <div className="flex items-center gap-2 pt-4">
+
+                        {/* Overlay con acciones - aparece al hacer hover */}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                           <Button
-                            size="sm"
-                            variant="outline"
+                            size="icon"
+                            variant="secondary"
                             onClick={() => handleEdit(pub)}
                             data-testid={`button-editar-${pub.id}`}
+                            title="Editar"
                           >
-                            <Pencil className="h-3 w-3 mr-1" />
-                            Editar
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
-                            size="sm"
-                            variant="outline"
+                            size="icon"
+                            variant="secondary"
                             onClick={() => toggleEstadoMutation.mutate({ id: pub.id, estado: pub.estado })}
                             data-testid={`button-toggle-${pub.id}`}
+                            title={pub.estado === "activo" ? "Suspender" : "Activar"}
                           >
-                            {pub.estado === "activo" ? <Pause className="h-3 w-3 mr-1" /> : <Play className="h-3 w-3 mr-1" />}
-                            {pub.estado === "activo" ? "Pausar" : "Activar"}
+                            {pub.estado === "activo" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                           </Button>
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="destructive"
                             onClick={() => handleDelete(pub.id)}
                             data-testid={`button-eliminar-${pub.id}`}
+                            title="Eliminar"
                           >
-                            <Trash2 className="h-3 w-3 mr-1" />
-                            Eliminar
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
+                      </div>
+
+                      {/* Información mínima en footer */}
+                      <CardContent className="p-2">
+                        <p className="text-xs font-medium truncate" title={pub.titulo || "Sin título"}>
+                          {pub.titulo || "Sin título"}
+                        </p>
                       </CardContent>
                     </Card>
                   ))}

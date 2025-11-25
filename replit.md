@@ -5,6 +5,54 @@ SEG-APO is a comprehensive community security platform designed to enhance safet
 
 ## Recent Changes (November 25, 2025)
 
+### Sistema Avanzado de Gestión de Imágenes (November 25, 2025)
+- **Mejoras Implementadas**:
+  1. **Aumento de Límite de Tamaño**: Imágenes hasta **15MB** (antes 5MB)
+  2. **Carga Múltiple de Imágenes**: Nuevo botón "Cargar Múltiples" para subir hasta 10 imágenes simultáneamente
+  3. **Grilla Compacta con Iconos**: Visualización optimizada mostrando solo imagen + iconos de acción (hover)
+  4. **Autoajuste de Imágenes**: object-contain en todos los previews para visualización completa
+
+- **Soluciones Implementadas**:
+  
+  **1. Límite de 15MB**:
+  - Frontend: `ImageUpload.tsx` actualizado con `maxSize = 15`
+  - Backend: `uploadConfig.ts` y `uploadConfigByEndpoint.ts` actualizados con `fileSize: 15 * 1024 * 1024`
+  - Aplicado a TODAS las secciones que usan imágenes (publicidad, radios, servicios)
+  
+  **2. Componente MultipleImageUpload**:
+  - Nuevo componente en `client/src/components/MultipleImageUpload.tsx`
+  - Permite seleccionar múltiples archivos (hasta 10 a la vez)
+  - Vista previa en grilla 2x2 (móvil) / 3x3 (tablet) / 4x4 (escritorio)
+  - Botones: "Subir Todas", "Agregar más", "Limpiar"
+  - Indicadores visuales de progreso (carga, completado, error)
+  - Integrado en publicidad-section con botón "Cargar Múltiples"
+  
+  **3. Grilla Compacta**:
+  - Tarjetas muestran solo imagen (aspect-square) + título mínimo
+  - Badge de estado en esquina superior derecha
+  - Overlay oscuro con iconos aparece al hacer hover
+  - Tres acciones: Editar (Pencil), Suspender/Activar (Pause/Play), Eliminar (Trash)
+  - Uso de `group-hover` para transición suave del overlay
+  
+  **4. Visualización Completa**:
+  - `object-contain` en todos los componentes de imagen
+  - Fondos `bg-muted` para mejor contraste
+  - Imágenes se adaptan al contenedor sin distorsión
+
+- **Archivos Modificados**:
+  - `client/src/components/ImageUpload.tsx` - Límite 15MB
+  - `client/src/components/MultipleImageUpload.tsx` - Nuevo componente (carga múltiple)
+  - `client/src/components/admin/publicidad-section.tsx` - Grilla compacta + botón "Cargar Múltiples"
+  - `server/uploadConfig.ts` - Límite backend 15MB
+  - `server/uploadConfigByEndpoint.ts` - Límite backend 15MB
+
+- **Resultado**: Sistema de imágenes profesional y eficiente:
+  - ✅ Imágenes hasta 15MB soportadas
+  - ✅ Carga de hasta 10 imágenes simultáneamente
+  - ✅ Grilla compacta con iconos en hover
+  - ✅ Imágenes completas sin recortes en todos los previews
+  - ✅ Aplicado a todas las secciones con imágenes
+
 ### Mejoras de UX en Formulario de Publicidad (November 25, 2025)
 - **Problemas Reportados por el Usuario**:
   1. En la grilla de 5 columnas falta el botón de eliminar publicación (nota: ya existía, solo necesitaba verificación)

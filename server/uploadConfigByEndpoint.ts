@@ -43,7 +43,7 @@ export function createUploadMiddleware(folder: string, fieldName: string = 'imag
   return multer({
     storage: storage,
     limits: {
-      fileSize: 5 * 1024 * 1024,
+      fileSize: 15 * 1024 * 1024,
     },
     fileFilter: fileFilter,
   }).single(fieldName);

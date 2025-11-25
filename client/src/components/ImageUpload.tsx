@@ -21,7 +21,7 @@ export function ImageUpload({
   className,
   endpoint = 'publicidad',
   fileField,
-  maxSize = 5,
+  maxSize = 15,
   acceptedFormats = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
 }: ImageUploadProps) {
   const [preview, setPreview] = useState<string | null>(value || null);
