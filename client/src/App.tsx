@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { useAuth } from "@/hooks/useAuth";
+import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import Encabezado from "@/components/Encabezado";
 import BotonPanico from "@/components/BotonPanico";
 import PiePagina from "@/components/PiePagina";
@@ -54,8 +55,10 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppContent />
-      <Toaster />
+      <ViewModeProvider>
+        <AppContent />
+        <Toaster />
+      </ViewModeProvider>
     </QueryClientProvider>
   );
 }

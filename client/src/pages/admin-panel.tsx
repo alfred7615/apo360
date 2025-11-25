@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useViewMode, ViewMode } from "@/contexts/ViewModeContext";
 import { 
   AlertCircle, 
   LayoutDashboard, 
@@ -18,27 +19,18 @@ import {
   Bus,
   Coins,
   Settings,
-  Menu
+  Menu,
+  Monitor,
+  Tablet,
+  Smartphone,
+  X
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
-  SidebarMenu, 
-  SidebarMenuButton, 
-  SidebarMenuItem, 
-  SidebarProvider, 
-  SidebarTrigger,
-  useSidebar
-} from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { Separator } from "@/components/ui/separator";
 import DashboardScreen from "@/pages/admin/dashboard-screen";
 import ChatMonitorScreen from "@/pages/admin/chat-monitor-screen";
 import NotificationsScreen from "@/pages/admin/notifications-screen";
@@ -115,15 +107,55 @@ const screenComponents: Record<AdminScreen, React.ComponentType> = {
   "gestion-configuracion": GestionConfiguracionScreen,
 };
 
-function MobileMenuContent({ 
-  activeScreen, 
-  setActiveScreen,
-  onItemClick 
-}: { 
-  activeScreen: AdminScreen; 
+interface ViewModeSelectorProps {
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+}
+
+function ViewModeSelector({ viewMode, setViewMode }: ViewModeSelectorProps) {
+  const modes: { mode: ViewMode; icon: typeof Monitor; label: string }[] = [
+    { mode: "desktop", icon: Monitor, label: "Escritorio" },
+    { mode: "tablet", icon: Tablet, label: "Tablet" },
+    { mode: "mobile", icon: Smartphone, label: "Celular" },
+  ];
+
+  return (
+    <div className="p-3 border-b">
+      <p className="text-xs text-muted-foreground mb-2 font-medium">Modo de Visualización</p>
+      <div className="grid grid-cols-3 gap-1">
+        {modes.map(({ mode, icon: Icon, label }) => (
+          <Button
+            key={mode}
+            variant={viewMode === mode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode(mode)}
+            className="flex flex-col h-auto py-2 px-1 gap-1"
+            data-testid={`button-view-${mode}`}
+          >
+            <Icon className="h-4 w-4" />
+            <span className="text-[10px]">{label}</span>
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface MenuContentProps {
+  activeScreen: AdminScreen;
   setActiveScreen: (screen: AdminScreen) => void;
   onItemClick?: () => void;
-}) {
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+}
+
+function MenuContent({ 
+  activeScreen, 
+  setActiveScreen,
+  onItemClick,
+  viewMode,
+  setViewMode
+}: MenuContentProps) {
   const [gestionesOpen, setGestionesOpen] = useState(true);
 
   const handleItemClick = (id: AdminScreen) => {
@@ -132,127 +164,72 @@ function MobileMenuContent({
   };
 
   return (
-    <div className="py-4 space-y-4">
-      <div className="px-3">
-        <h2 className="text-lg font-bold text-primary mb-4">SEG-APO Admin</h2>
-        <nav className="space-y-1">
-          {mainMenuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleItemClick(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                activeScreen === item.id 
-                  ? "bg-primary text-primary-foreground" 
-                  : "hover:bg-muted"
-              }`}
-              data-testid={`mobile-nav-${item.id}`}
-            >
-              <item.icon className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate">{item.title}</span>
-            </button>
-          ))}
-        </nav>
-      </div>
+    <div className="flex flex-col h-full">
+      <ViewModeSelector viewMode={viewMode} setViewMode={setViewMode} />
+      
+      <div className="flex-1 overflow-y-auto scrollbar-hide py-3">
+        <div className="px-3 mb-4">
+          <h2 className="text-base font-bold text-primary mb-3">SEG-APO Admin</h2>
+          <nav className="space-y-1">
+            {mainMenuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleItemClick(item.id)}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  activeScreen === item.id 
+                    ? "bg-primary text-primary-foreground" 
+                    : "hover:bg-muted"
+                }`}
+                data-testid={`nav-${item.id}`}
+              >
+                <item.icon className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{item.title}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
 
-      <div className="border-t pt-4">
-        <Collapsible open={gestionesOpen} onOpenChange={setGestionesOpen}>
-          <CollapsibleTrigger className="w-full px-3">
-            <div className="flex items-center justify-between py-2 text-sm font-semibold text-primary">
-              <span>GESTIONES</span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${gestionesOpen ? "rotate-180" : ""}`} />
-            </div>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <nav className="px-3 space-y-1 mt-2">
-              {gestionesMenuItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleItemClick(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                    activeScreen === item.id 
-                      ? "bg-primary text-primary-foreground" 
-                      : "hover:bg-muted"
-                  }`}
-                  data-testid={`mobile-nav-${item.id}`}
-                >
-                  <item.icon className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{item.title}</span>
-                </button>
-              ))}
-            </nav>
-          </CollapsibleContent>
-        </Collapsible>
+        <Separator className="mx-3" />
+
+        <div className="pt-3">
+          <Collapsible open={gestionesOpen} onOpenChange={setGestionesOpen}>
+            <CollapsibleTrigger className="w-full px-3">
+              <div className="flex items-center justify-between py-2 text-sm font-semibold text-primary">
+                <span>GESTIONES</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${gestionesOpen ? "rotate-180" : ""}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <nav className="px-3 space-y-1 mt-1">
+                {gestionesMenuItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleItemClick(item.id)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                      activeScreen === item.id 
+                        ? "bg-primary text-primary-foreground" 
+                        : "hover:bg-muted"
+                    }`}
+                    data-testid={`nav-${item.id}`}
+                  >
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{item.title}</span>
+                  </button>
+                ))}
+              </nav>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
       </div>
     </div>
   );
 }
 
-function AdminSidebar({ activeScreen, setActiveScreen }: { activeScreen: AdminScreen; setActiveScreen: (screen: AdminScreen) => void }) {
-  const [gestionesOpen, setGestionesOpen] = useState(true);
-
-  return (
-    <Sidebar data-testid="sidebar-admin" className="hidden md:flex">
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-lg font-bold text-primary">SEG-APO Admin</SidebarGroupLabel>
-          <SidebarGroupContent className="mt-4">
-            <SidebarMenu>
-              {mainMenuItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => setActiveScreen(item.id)}
-                    className={activeScreen === item.id ? "bg-sidebar-accent" : ""}
-                    data-testid={`nav-${item.id}`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <Collapsible open={gestionesOpen} onOpenChange={setGestionesOpen}>
-            <CollapsibleTrigger asChild>
-              <SidebarGroupLabel 
-                className="text-base font-semibold text-primary cursor-pointer flex items-center justify-between hover:bg-sidebar-accent rounded-md px-2 py-1.5"
-                data-testid="nav-gestiones-trigger"
-              >
-                <span>GESTIONES</span>
-                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${gestionesOpen ? "rotate-180" : ""}`} />
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarGroupContent className="mt-2">
-                <SidebarMenu>
-                  {gestionesMenuItems.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        onClick={() => setActiveScreen(item.id)}
-                        className={activeScreen === item.id ? "bg-sidebar-accent" : ""}
-                        data-testid={`nav-${item.id}`}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span className="text-sm">{item.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
-  );
-}
-
 export default function AdminPanel() {
   const { user } = useAuth();
+  const { viewMode, setViewMode } = useViewMode();
   const [activeScreen, setActiveScreen] = useState<AdminScreen>("dashboard");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (!user || (user.rol !== "super_admin" && !user.rolesSuperAdmin)) {
     return (
@@ -267,76 +244,67 @@ export default function AdminPanel() {
     );
   }
 
-  const sidebarStyle = {
-    "--sidebar-width": "16rem",
-    "--sidebar-width-icon": "3rem",
-  };
-
   const ActiveComponent = screenComponents[activeScreen];
   const currentScreenTitle = [...mainMenuItems, ...gestionesMenuItems].find(item => item.id === activeScreen)?.title || "Dashboard";
 
-  return (
-    <SidebarProvider style={sidebarStyle as React.CSSProperties}>
-      <div className="flex h-screen w-full overflow-hidden">
-        <AdminSidebar activeScreen={activeScreen} setActiveScreen={setActiveScreen} />
-        
-        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          <header className="flex items-center justify-between gap-2 p-2 sm:p-3 border-b bg-card flex-shrink-0">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="md:hidden flex-shrink-0"
-                    data-testid="button-mobile-menu"
-                  >
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">Abrir menú</span>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0 overflow-y-auto">
-                  <VisuallyHidden>
-                    <SheetTitle>Menú de navegación</SheetTitle>
-                  </VisuallyHidden>
-                  <MobileMenuContent 
-                    activeScreen={activeScreen} 
-                    setActiveScreen={setActiveScreen}
-                    onItemClick={() => setMobileMenuOpen(false)}
-                  />
-                </SheetContent>
-              </Sheet>
-              
-              <div className="hidden md:block">
-                <SidebarTrigger data-testid="button-sidebar-toggle" />
-              </div>
-              
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-xl font-bold truncate">
-                  <span className="hidden sm:inline">Panel Super Administrador</span>
-                  <span className="sm:hidden">{currentScreenTitle}</span>
-                </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                  Gestión centralizada de SEG-APO
-                </p>
-              </div>
-            </div>
-            <Badge 
-              className="bg-primary text-primary-foreground flex-shrink-0 text-xs sm:text-sm" 
-              data-testid="badge-role"
-            >
-              <span className="hidden sm:inline">Super Admin</span>
-              <span className="sm:hidden">Admin</span>
-            </Badge>
-          </header>
+  const ViewModeIcon = viewMode === "desktop" ? Monitor : viewMode === "tablet" ? Tablet : Smartphone;
 
-          <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-4 md:p-6 bg-background">
-            <div className="w-full max-w-full">
-              <ActiveComponent />
-            </div>
-          </main>
+  return (
+    <div className="flex flex-col h-screen w-full overflow-hidden" data-testid="admin-panel">
+      <header className="flex items-center justify-between gap-2 p-2 border-b bg-card flex-shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="flex-shrink-0"
+                data-testid="button-menu"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Abrir menú</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[280px] p-0 overflow-hidden">
+              <SheetHeader className="sr-only">
+                <SheetTitle>Menú de navegación</SheetTitle>
+              </SheetHeader>
+              <MenuContent 
+                activeScreen={activeScreen} 
+                setActiveScreen={setActiveScreen}
+                onItemClick={() => setMenuOpen(false)}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+              />
+            </SheetContent>
+          </Sheet>
+          
+          <div className="min-w-0 flex-1">
+            <h1 className="text-sm font-bold truncate flex items-center gap-2">
+              <ViewModeIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span>{currentScreenTitle}</span>
+            </h1>
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              Panel Super Administrador
+            </p>
+          </div>
         </div>
-      </div>
-    </SidebarProvider>
+        <Badge 
+          className="bg-primary text-primary-foreground flex-shrink-0 text-xs" 
+          data-testid="badge-role"
+        >
+          Admin
+        </Badge>
+      </header>
+
+      <main 
+        className="flex-1 overflow-y-auto overflow-x-hidden p-3 bg-background scrollbar-hide"
+        data-scroll-hide="true"
+      >
+        <div className="w-full max-w-full">
+          <ActiveComponent />
+        </div>
+      </main>
+    </div>
   );
 }

@@ -17,6 +17,7 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useViewMode } from "@/contexts/ViewModeContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -71,6 +72,25 @@ export default function GestionEncuestasScreen() {
   const [encuestaResultados, setEncuestaResultados] = useState<Encuesta | null>(null);
   const [resultados, setResultados] = useState<ResultadoEncuesta[]>([]);
   const { toast } = useToast();
+  const { viewMode, getFormCols } = useViewMode();
+
+  const getStatsGridCols = () => {
+    switch (viewMode) {
+      case "desktop": return "grid-cols-5";
+      case "tablet": return "grid-cols-3";
+      case "mobile": return "grid-cols-2";
+      default: return "grid-cols-3";
+    }
+  };
+
+  const getCardsGridCols = () => {
+    switch (viewMode) {
+      case "desktop": return "grid-cols-5";
+      case "tablet": return "grid-cols-3";
+      case "mobile": return "grid-cols-2";
+      default: return "grid-cols-3";
+    }
+  };
 
   const [formEncuesta, setFormEncuesta] = useState({
     titulo: "",
@@ -430,8 +450,8 @@ export default function GestionEncuestasScreen() {
           </Button>
         </div>
 
-        <TabsContent value="encuestas" className="mt-4 sm:mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <TabsContent value="encuestas" className="mt-4">
+          <div className={`grid ${getStatsGridCols()} gap-2 mb-4`}>
             <Card>
               <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
                 <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Activas</CardTitle>
