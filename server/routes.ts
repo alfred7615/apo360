@@ -36,6 +36,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const publicPath = path.join(process.cwd(), 'public');
   app.use('/assets', express.static(path.join(publicPath, 'assets')));
 
+  // ============================================================
+  // RUTAS DE PERFIL DE USUARIO (debe ir ANTES de rutas admin)
+  // Las rutas /api/usuarios/me deben registrarse antes de /api/usuarios/:id
+  // ============================================================
+
+  app.get('/api/usuarios/me', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error al obtener perfil:", error);
+      res.status(500).json({ message: "Error al obtener perfil" });
+    }
+  });
+
+  app.patch('/api/usuarios/me', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.updateUser(userId, req.body);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      res.json(user);
+    } catch (error: any) {
+      console.error("Error al actualizar perfil:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar perfil" });
+    }
+  });
+
   // Registrar rutas de administración
   registerAdminRoutes(app);
 
@@ -420,38 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ============================================================
-  // RUTAS DE PERFIL DE USUARIO
-  // ============================================================
-
-  app.get('/api/usuarios/me', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
-      }
-      res.json(user);
-    } catch (error) {
-      console.error("Error al obtener perfil:", error);
-      res.status(500).json({ message: "Error al obtener perfil" });
-    }
-  });
-
-  app.patch('/api/usuarios/me', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.updateUser(userId, req.body);
-      if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
-      }
-      res.json(user);
-    } catch (error: any) {
-      console.error("Error al actualizar perfil:", error);
-      res.status(400).json({ message: error.message || "Error al actualizar perfil" });
-    }
-  });
-
+  // Ruta para subir foto de perfil (separada porque tiene middleware de upload)
   app.post('/api/usuarios/:id/foto', isAuthenticated, createUploadMiddleware('perfiles', 'imagen'), async (req: any, res) => {
     try {
       const { id } = req.params;
