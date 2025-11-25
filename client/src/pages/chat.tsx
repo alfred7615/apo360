@@ -3,8 +3,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Send, Search, MoreVertical, Users, MessageCircle, Plus, ArrowLeft, WifiOff,
-  Paperclip, Image, Mic, MapPin, Phone, Video, UserPlus, Mail, X, Check
+  Paperclip, Image, Mic, MapPin, Phone, Video, UserPlus, Mail, X, Check, 
+  MessageSquare, Globe, ExternalLink
 } from "lucide-react";
+import { SiWhatsapp } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -102,6 +104,9 @@ export default function Chat() {
   const [mostrarPanelInfo, setMostrarPanelInfo] = useState(false);
   const [mostrarModalInvitar, setMostrarModalInvitar] = useState(false);
   const [emailInvitacion, setEmailInvitacion] = useState("");
+  const [telefonoInvitacion, setTelefonoInvitacion] = useState("");
+  const [metodoInvitacion, setMetodoInvitacion] = useState<'email' | 'whatsapp'>('email');
+  const [tabBusqueda, setTabBusqueda] = useState<'grupos' | 'contactos' | 'gmail'>('grupos');
   const [grabandoAudio, setGrabandoAudio] = useState(false);
   const [enviandoUbicacion, setEnviandoUbicacion] = useState(false);
   const mensajesEndRef = useRef<HTMLDivElement>(null);
@@ -204,21 +209,54 @@ export default function Chat() {
   });
 
   const invitarContactoMutation = useMutation({
-    mutationFn: async (email: string) => {
-      return await apiRequest("POST", "/api/invitaciones", { email });
+    mutationFn: async (datos: { email?: string; telefono?: string; metodo: 'email' | 'whatsapp' }) => {
+      return await apiRequest("POST", "/api/invitaciones", datos);
     },
-    onSuccess: () => {
-      toast({
-        title: "Invitación enviada",
-        description: "Se ha enviado un correo con el enlace de registro",
-      });
+    onSuccess: (data: any) => {
+      if (data.whatsappUrl) {
+        // Abrir WhatsApp en nueva pestaña
+        window.open(data.whatsappUrl, '_blank');
+        toast({
+          title: "WhatsApp abierto",
+          description: "Se ha abierto WhatsApp con el mensaje de invitación",
+        });
+      } else {
+        toast({
+          title: "Invitación enviada",
+          description: "Se ha enviado un correo con el enlace de registro",
+        });
+      }
       setMostrarModalInvitar(false);
       setEmailInvitacion("");
+      setTelefonoInvitacion("");
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "No se pudo enviar la invitación",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const crearConversacionPrivadaMutation = useMutation({
+    mutationFn: async (contactoId: string) => {
+      return await apiRequest("POST", "/api/chat/conversaciones-privadas", { contactoId });
+    },
+    onSuccess: (data: any) => {
+      // Actualizar lista de grupos y seleccionar el nuevo
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
+      setGrupoSeleccionado(data.id);
+      setMostrarPanelInfo(false);
+      toast({
+        title: "Conversación abierta",
+        description: `Ahora puedes chatear con ${data.nombreMostrar}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo abrir la conversación",
         variant: "destructive",
       });
     },
@@ -366,7 +404,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-background" data-testid="page-chat">
+    <div className="flex flex-col md:flex-row min-h-[600px] bg-background" data-testid="page-chat">
       {/* Panel izquierdo - Lista de conversaciones y contactos */}
       <div className={`${grupoSeleccionado && !mostrarPanelInfo ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 border-r bg-card`}>
         {/* Header */}
@@ -403,16 +441,20 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Tabs: Grupos y Contactos */}
+        {/* Tabs: Grupos, Contactos y Gmail */}
         <Tabs defaultValue="grupos" className="flex-1 flex flex-col">
-          <TabsList className="mx-4 mt-2 grid w-[calc(100%-2rem)] grid-cols-2">
+          <TabsList className="mx-4 mt-2 grid w-[calc(100%-2rem)] grid-cols-3">
             <TabsTrigger value="grupos" data-testid="tab-grupos">
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Grupos
+              <MessageCircle className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Grupos</span>
             </TabsTrigger>
             <TabsTrigger value="contactos" data-testid="tab-contactos">
-              <Users className="h-4 w-4 mr-2" />
-              Contactos
+              <Users className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Contactos</span>
+            </TabsTrigger>
+            <TabsTrigger value="gmail" data-testid="tab-gmail">
+              <Globe className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Gmail</span>
             </TabsTrigger>
           </TabsList>
 
@@ -492,7 +534,7 @@ export default function Chat() {
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar contactos..."
+                  placeholder="Buscar contactos registrados..."
                   value={busquedaContactos}
                   onChange={(e) => setBusquedaContactos(e.target.value)}
                   className="pl-10"
@@ -504,7 +546,7 @@ export default function Chat() {
               {contactosFiltrados.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No hay contactos</p>
+                  <p>No hay contactos registrados</p>
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -518,9 +560,19 @@ export default function Chat() {
               ) : (
                 <div className="px-2">
                   {contactosFiltrados.map((contacto) => (
-                    <div
+                    <button
                       key={contacto.id}
-                      className="flex items-center gap-3 p-3 rounded-lg hover-elevate"
+                      onClick={() => {
+                        if (contacto.registrado) {
+                          crearConversacionPrivadaMutation.mutate(contacto.id);
+                        }
+                      }}
+                      disabled={!contacto.registrado || crearConversacionPrivadaMutation.isPending}
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
+                        contacto.registrado 
+                          ? 'hover-elevate active-elevate-2 cursor-pointer' 
+                          : 'opacity-70 cursor-default'
+                      }`}
                       data-testid={`contact-${contacto.id}`}
                     >
                       <Avatar className="h-10 w-10 shrink-0">
@@ -530,21 +582,25 @@ export default function Chat() {
                         </AvatarFallback>
                       </Avatar>
                       
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 text-left">
                         <p className="font-medium text-sm truncate">{contacto.nombre}</p>
                         <p className="text-xs text-muted-foreground truncate">{contacto.email}</p>
                       </div>
 
                       {contacto.registrado ? (
-                        <Badge variant="outline" className="shrink-0 text-xs bg-green-500/10 text-green-600 border-green-500/30">
-                          <Check className="h-3 w-3 mr-1" />
-                          Registrado
-                        </Badge>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">
+                            <Check className="h-3 w-3 mr-1" />
+                            Registrado
+                          </Badge>
+                          <MessageSquare className="h-4 w-4 text-primary" />
+                        </div>
                       ) : (
                         <Button 
                           size="sm" 
                           variant="outline"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setEmailInvitacion(contacto.email);
                             setMostrarModalInvitar(true);
                           }}
@@ -554,10 +610,48 @@ export default function Chat() {
                           Invitar
                         </Button>
                       )}
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
+            </ScrollArea>
+          </TabsContent>
+
+          {/* Pestaña de Gmail/Google Contacts */}
+          <TabsContent value="gmail" className="flex-1 m-0">
+            <div className="p-4 pt-2">
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar contactos de Gmail..."
+                  className="pl-10"
+                  data-testid="input-search-gmail"
+                />
+              </div>
+            </div>
+            <ScrollArea className="h-[calc(100%-5rem)]">
+              <div className="p-8 text-center text-muted-foreground">
+                <Globe className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium mb-2">Conecta tu cuenta de Gmail</p>
+                <p className="text-sm mb-4">Importa tus contactos de Google para invitarlos a SEG-APO</p>
+                <Button 
+                  variant="outline" 
+                  className="mb-3"
+                  onClick={() => {
+                    toast({
+                      title: "Próximamente",
+                      description: "La integración con Google Contacts estará disponible pronto",
+                    });
+                  }}
+                  data-testid="button-connect-gmail"
+                >
+                  <Globe className="h-4 w-4 mr-2" />
+                  Conectar con Google
+                </Button>
+                <p className="text-xs text-muted-foreground mt-4">
+                  Podrás seleccionar múltiples contactos e invitarlos por email o WhatsApp
+                </p>
+              </div>
             </ScrollArea>
           </TabsContent>
         </Tabs>
@@ -915,43 +1009,109 @@ export default function Chat() {
         </div>
       )}
 
-      {/* Modal de invitación */}
+      {/* Modal de invitación con Email o WhatsApp */}
       <Dialog open={mostrarModalInvitar} onOpenChange={setMostrarModalInvitar}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
+              <UserPlus className="h-5 w-5" />
               Invitar contacto
             </DialogTitle>
             <DialogDescription>
-              Envía un correo con el enlace de registro para que tu contacto pueda unirse a SEG-APO
+              Envía una invitación por correo electrónico o WhatsApp para que tu contacto se una a SEG-APO
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Correo electrónico</label>
-              <Input
-                type="email"
-                placeholder="contacto@gmail.com"
-                value={emailInvitacion}
-                onChange={(e) => setEmailInvitacion(e.target.value)}
-                data-testid="input-invitation-email"
-              />
+            {/* Selector de método */}
+            <div className="flex rounded-lg border p-1">
+              <button
+                type="button"
+                onClick={() => setMetodoInvitacion('email')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  metodoInvitacion === 'email'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover-elevate'
+                }`}
+                data-testid="button-method-email"
+              >
+                <Mail className="h-4 w-4" />
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => setMetodoInvitacion('whatsapp')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  metodoInvitacion === 'whatsapp'
+                    ? 'bg-green-600 text-white'
+                    : 'hover-elevate'
+                }`}
+                data-testid="button-method-whatsapp"
+              >
+                <SiWhatsapp className="h-4 w-4" />
+                WhatsApp
+              </button>
             </div>
+
+            {metodoInvitacion === 'email' ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Correo electrónico</label>
+                <Input
+                  type="email"
+                  placeholder="contacto@gmail.com"
+                  value={emailInvitacion}
+                  onChange={(e) => setEmailInvitacion(e.target.value)}
+                  data-testid="input-invitation-email"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Se enviará un correo con el enlace de registro
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Número de WhatsApp</label>
+                <Input
+                  type="tel"
+                  placeholder="+51 999 888 777"
+                  value={telefonoInvitacion}
+                  onChange={(e) => setTelefonoInvitacion(e.target.value)}
+                  data-testid="input-invitation-phone"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Incluye el código de país (ej: +51 para Perú)
+                </p>
+              </div>
+            )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMostrarModalInvitar(false)}>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setMostrarModalInvitar(false);
+              setEmailInvitacion("");
+              setTelefonoInvitacion("");
+            }}>
               Cancelar
             </Button>
-            <Button 
-              onClick={() => invitarContactoMutation.mutate(emailInvitacion)}
-              disabled={!emailInvitacion.includes('@') || invitarContactoMutation.isPending}
-              data-testid="button-send-invitation"
-            >
-              {invitarContactoMutation.isPending ? 'Enviando...' : 'Enviar invitación'}
-            </Button>
+            {metodoInvitacion === 'email' ? (
+              <Button 
+                onClick={() => invitarContactoMutation.mutate({ email: emailInvitacion, metodo: 'email' })}
+                disabled={!emailInvitacion.includes('@') || invitarContactoMutation.isPending}
+                data-testid="button-send-email-invitation"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                {invitarContactoMutation.isPending ? 'Enviando...' : 'Enviar por Email'}
+              </Button>
+            ) : (
+              <Button 
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => invitarContactoMutation.mutate({ telefono: telefonoInvitacion, metodo: 'whatsapp' })}
+                disabled={!telefonoInvitacion || telefonoInvitacion.length < 8 || invitarContactoMutation.isPending}
+                data-testid="button-send-whatsapp-invitation"
+              >
+                <SiWhatsapp className="h-4 w-4 mr-2" />
+                {invitarContactoMutation.isPending ? 'Abriendo...' : 'Abrir WhatsApp'}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

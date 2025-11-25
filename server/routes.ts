@@ -1105,12 +1105,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enviar invitación por correo
+  // Enviar invitación por correo o WhatsApp
   app.post('/api/invitaciones', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { email } = req.body;
+      const { email, telefono, metodo } = req.body;
       
+      if (metodo === 'whatsapp') {
+        if (!telefono) {
+          return res.status(400).json({ message: "Número de teléfono requerido" });
+        }
+        // Para WhatsApp, generamos el enlace de invitación
+        const enlace = `${req.protocol}://${req.get('host')}/registro`;
+        const mensaje = encodeURIComponent(`¡Hola! Te invito a unirte a SEG-APO, la app de seguridad comunitaria de Tacna. Regístrate aquí: ${enlace}`);
+        const whatsappUrl = `https://wa.me/${telefono.replace(/[^0-9]/g, '')}?text=${mensaje}`;
+        
+        console.log(`📱 Invitación WhatsApp generada para ${telefono}`);
+        
+        return res.json({ 
+          message: "Enlace de WhatsApp generado",
+          whatsappUrl,
+          enviada: true
+        });
+      }
+      
+      // Invitación por email
       if (!email || !email.includes('@')) {
         return res.status(400).json({ message: "Email inválido" });
       }
@@ -1125,7 +1144,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const nombreRemitente = `${remitente?.firstName || ''} ${remitente?.lastName || ''}`.trim() || 'Un usuario';
       
       // En producción, aquí enviaríamos el correo con nodemailer
-      // Por ahora, solo registramos la invitación
       console.log(`📧 Invitación enviada a ${email} por ${nombreRemitente}`);
       
       res.json({ 
@@ -1136,6 +1154,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al enviar invitación:", error);
       res.status(500).json({ message: "Error al enviar invitación" });
+    }
+  });
+
+  // Crear o obtener conversación privada 1-a-1
+  app.post('/api/chat/conversaciones-privadas', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { contactoId } = req.body;
+      
+      if (!contactoId) {
+        return res.status(400).json({ message: "Se requiere el ID del contacto" });
+      }
+
+      // Verificar que el contacto existe
+      const contacto = await storage.getUser(contactoId);
+      if (!contacto) {
+        return res.status(404).json({ message: "Contacto no encontrado" });
+      }
+
+      // Buscar si ya existe una conversación privada entre estos dos usuarios
+      const gruposUsuario = await storage.getGruposUsuario(userId);
+      let grupoPrivado = gruposUsuario.find(g => {
+        if (g.tipo !== 'privado') return false;
+        // El nombre del grupo privado tiene formato: "privado_userId1_userId2"
+        const ids = [userId, contactoId].sort();
+        return g.nombre === `privado_${ids[0]}_${ids[1]}`;
+      });
+
+      if (!grupoPrivado) {
+        // Crear nuevo grupo privado
+        const ids = [userId, contactoId].sort();
+        const nuevoGrupo = await storage.createGrupoChat({
+          nombre: `privado_${ids[0]}_${ids[1]}`,
+          tipo: 'privado',
+          descripcion: 'Conversación privada',
+          creadorId: userId,
+        });
+
+        // Agregar ambos usuarios como miembros
+        await storage.addMiembroGrupo({
+          grupoId: nuevoGrupo.id,
+          usuarioId: userId,
+          rol: 'admin',
+        });
+        await storage.addMiembroGrupo({
+          grupoId: nuevoGrupo.id,
+          usuarioId: contactoId,
+          rol: 'miembro',
+        });
+
+        grupoPrivado = nuevoGrupo;
+      }
+
+      // Enriquecer con datos del contacto para mostrar en UI
+      const nombreContacto = `${contacto.firstName || ''} ${contacto.lastName || ''}`.trim() || contacto.email?.split('@')[0] || 'Usuario';
+
+      res.json({
+        ...grupoPrivado,
+        nombreMostrar: nombreContacto,
+        avatarContacto: contacto.profileImageUrl,
+        contactoId: contacto.id,
+      });
+    } catch (error) {
+      console.error("Error al crear conversación privada:", error);
+      res.status(500).json({ message: "Error al crear conversación privada" });
     }
   });
 
