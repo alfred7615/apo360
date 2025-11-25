@@ -385,27 +385,77 @@ export const configuracionSaldos = pgTable("configuracion_saldos", {
 // ENCUESTAS
 // ============================================================
 export const encuestas = pgTable("encuestas", {
-  id: varchar("id").primaryKey().default("uuid()"),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   titulo: varchar("titulo").notNull(),
+  descripcion: text("descripcion"),
   preguntas: json("preguntas").$type<{ pregunta: string; opciones: string[] }[]>(),
   imagenUrl: varchar("imagen_url"),
   estado: varchar("estado").default("activa"),
   respuestas: json("respuestas").$type<{ preguntaIndex: number; opcion: string; cantidad: number }[]>(),
+  fechaInicio: timestamp("fecha_inicio"),
+  fechaFin: timestamp("fecha_fin"),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id),
+  totalRespuestas: integer("total_respuestas").default(0),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // ============================================================
 // POPUP PUBLICITARIOS
 // ============================================================
 export const popupsPublicitarios = pgTable("popups_publicitarios", {
-  id: varchar("id").primaryKey().default("uuid()"),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   titulo: varchar("titulo"),
   descripcion: text("descripcion"),
   imagenUrl: varchar("imagen_url"),
   videoUrl: varchar("video_url"),
-  duracionSegundos: integer("duracion_segundos"),
+  tipo: varchar("tipo", { length: 50 }).default("publicidad"),
+  duracionSegundos: integer("duracion_segundos").default(30),
+  segundosObligatorios: integer("segundos_obligatorios").default(5),
   puedeOmitir: boolean("puede_omitir").default(true),
   estado: varchar("estado").default("activo"),
+  fechaInicio: timestamp("fecha_inicio"),
+  fechaFin: timestamp("fecha_fin"),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id),
+  vistas: integer("vistas").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ============================================================
+// INTERACCIONES SOCIALES (likes, favoritos, comentarios, compartir, calendario)
+// ============================================================
+export const interaccionesSociales = pgTable("interacciones_sociales", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tipoContenido: varchar("tipo_contenido", { length: 50 }).notNull(),
+  contenidoId: varchar("contenido_id").notNull(),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  tipoInteraccion: varchar("tipo_interaccion", { length: 50 }).notNull(),
+  valor: text("valor"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ============================================================
+// RESPUESTAS DE ENCUESTAS
+// ============================================================
+export const respuestasEncuestas = pgTable("respuestas_encuestas", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  encuestaId: varchar("encuesta_id").notNull().references(() => encuestas.id),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id),
+  respuestas: json("respuestas").$type<{ preguntaIndex: number; opcionSeleccionada: number }[]>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ============================================================
+// COMENTARIOS
+// ============================================================
+export const comentarios = pgTable("comentarios", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tipoContenido: varchar("tipo_contenido", { length: 50 }).notNull(),
+  contenidoId: varchar("contenido_id").notNull(),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  texto: text("texto").notNull(),
+  estado: varchar("estado", { length: 20 }).default("activo"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -428,13 +478,25 @@ export const insertConfiguracionSaldoSchema = createInsertSchema(configuracionSa
 export type InsertConfiguracionSaldo = z.infer<typeof insertConfiguracionSaldoSchema>;
 export type ConfiguracionSaldo = typeof configuracionSaldos.$inferSelect;
 
-export const insertEncuestaSchema = createInsertSchema(encuestas).omit({ id: true, createdAt: true });
+export const insertEncuestaSchema = createInsertSchema(encuestas).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertEncuesta = z.infer<typeof insertEncuestaSchema>;
 export type Encuesta = typeof encuestas.$inferSelect;
 
-export const insertPopupPublicitarioSchema = createInsertSchema(popupsPublicitarios).omit({ id: true, createdAt: true });
+export const insertPopupPublicitarioSchema = createInsertSchema(popupsPublicitarios).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertPopupPublicitario = z.infer<typeof insertPopupPublicitarioSchema>;
 export type PopupPublicitario = typeof popupsPublicitarios.$inferSelect;
+
+export const insertInteraccionSocialSchema = createInsertSchema(interaccionesSociales).omit({ id: true, createdAt: true });
+export type InsertInteraccionSocial = z.infer<typeof insertInteraccionSocialSchema>;
+export type InteraccionSocial = typeof interaccionesSociales.$inferSelect;
+
+export const insertRespuestaEncuestaSchema = createInsertSchema(respuestasEncuestas).omit({ id: true, createdAt: true });
+export type InsertRespuestaEncuesta = z.infer<typeof insertRespuestaEncuestaSchema>;
+export type RespuestaEncuesta = typeof respuestasEncuestas.$inferSelect;
+
+export const insertComentarioSchema = createInsertSchema(comentarios).omit({ id: true, createdAt: true });
+export type InsertComentario = z.infer<typeof insertComentarioSchema>;
+export type Comentario = typeof comentarios.$inferSelect;
 
 // Export insert schemas for usuario_roles and administradores (defined earlier)
 export const insertUsuarioRolSchema = createInsertSchema(usuarioRoles).omit({ id: true, createdAt: true });
