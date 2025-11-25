@@ -2,6 +2,26 @@
 
 ## Recent Changes (Noviembre 25, 2025)
 
+### Sistema de Autenticación Local (email/password)
+- **Nueva Ruta POST /api/auth/login**: Login con email y contraseña hasheada (SHA256)
+  - Verificación de estado del usuario (activo, suspendido, pendiente_aprobacion)
+  - Creación de sesión compatible con OIDC existente
+  - Persistencia de sesión con session.save() callback
+- **Middleware isAuthenticated Actualizado**: Ahora soporta AMBOS métodos de autenticación
+  - Primero verifica sesión local (session.user.claims.sub)
+  - Luego verifica autenticación OIDC/Passport
+- **getUserRoles Mejorado**: Ahora combina rol principal de tabla usuarios + roles adicionales de usuarioRoles
+- **Bug Fix Crítico**: Eliminadas rutas duplicadas de /api/usuarios/me que causaban conflictos
+
+### Nuevos Usuarios de Prueba (10 usuarios realistas)
+- **3 Administradores de segundo nivel**: bombero, policía, conductor taxi
+- **2 Usuarios normales**: rol "usuario"
+- **2 Serenazgo**: seguridad municipal
+- **2 SAMU**: emergencias médicas
+- **1 Bombero adicional**
+- **Contraseña común**: Tacna2025! para todos los usuarios de prueba
+- **Script**: server/seed-nuevos-usuarios.ts
+
 ### Sistema Completo de Encuestas y Popups Publicitarios
 - **5 Tablas de Base de Datos**:
   - `encuestas` - Con soporte para múltiples preguntas JSON, fechas inicio/fin, estado, contador de respuestas
