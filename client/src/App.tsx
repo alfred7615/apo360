@@ -15,18 +15,20 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Cargando...</p>
+      </div>
+    );
+  }
+
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
-        <>
-          <Route path="/" component={Home} />
-          <Route path="/chat" component={Chat} />
-          <Route path="/admin" component={AdminPanel} />
-          {/* Más rutas para usuarios autenticados */}
-        </>
-      )}
+      <Route path="/" component={isAuthenticated ? Home : Landing} />
+      <Route path="/chat" component={Chat} />
+      <Route path="/admin" component={AdminPanel} />
+      {/* Más rutas para usuarios autenticados */}
       <Route component={NotFound} />
     </Switch>
   );
