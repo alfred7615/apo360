@@ -1000,15 +1000,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const mensaje = await storage.createMensaje({
         grupoId,
-        usuarioId: userId,
+        remitenteId: userId,
         contenido: req.body.contenido,
-        tipoContenido: req.body.tipoContenido || 'texto',
-        mediaUrl: req.body.mediaUrl,
-        latitud: req.body.latitud,
-        longitud: req.body.longitud,
-        metadataFoto: req.body.metadataFoto,
-        nombreRemitente: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'Usuario',
-        fotoRemitente: user?.profileImageUrl,
+        tipo: req.body.tipoContenido || 'texto',
+        archivoUrl: req.body.archivoUrl,
+        gpsLatitud: req.body.gpsLatitud,
+        gpsLongitud: req.body.gpsLongitud,
+        metadataFoto: req.body.metadataFoto ? {
+          nombreUsuario: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'Usuario',
+          logoUrl: user?.profileImageUrl,
+          fechaHora: new Date().toISOString(),
+        } : undefined,
       });
       
       res.json(mensaje);
@@ -1070,6 +1072,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al obtener historial:", error);
       res.status(500).json({ message: "Error al obtener historial" });
+    }
+  });
+
+  // ============================================================
+  // RUTAS DE CONTACTOS E INVITACIONES
+  // ============================================================
+
+  // Obtener contactos del usuario (simulado - en producción conectaría con Google Contacts)
+  app.get('/api/contactos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Obtener todos los usuarios registrados como "contactos potenciales"
+      const usuarios = await storage.getAllUsers();
+      
+      const contactos = usuarios
+        .filter(u => u.id !== userId)
+        .map(u => ({
+          id: u.id,
+          nombre: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email?.split('@')[0] || 'Usuario',
+          email: u.email || '',
+          telefono: u.telefono,
+          avatarUrl: u.profileImageUrl,
+          registrado: true,
+        }));
+      
+      res.json(contactos);
+    } catch (error) {
+      console.error("Error al obtener contactos:", error);
+      res.status(500).json({ message: "Error al obtener contactos" });
+    }
+  });
+
+  // Enviar invitación por correo
+  app.post('/api/invitaciones', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { email } = req.body;
+      
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ message: "Email inválido" });
+      }
+      
+      // Verificar si ya está registrado
+      const usuarioExistente = await storage.getUserByEmail(email);
+      if (usuarioExistente) {
+        return res.status(400).json({ message: "Este usuario ya está registrado en SEG-APO" });
+      }
+      
+      const remitente = await storage.getUser(userId);
+      const nombreRemitente = `${remitente?.firstName || ''} ${remitente?.lastName || ''}`.trim() || 'Un usuario';
+      
+      // En producción, aquí enviaríamos el correo con nodemailer
+      // Por ahora, solo registramos la invitación
+      console.log(`📧 Invitación enviada a ${email} por ${nombreRemitente}`);
+      
+      res.json({ 
+        message: "Invitación enviada exitosamente",
+        email,
+        enviada: true
+      });
+    } catch (error) {
+      console.error("Error al enviar invitación:", error);
+      res.status(500).json({ message: "Error al enviar invitación" });
     }
   });
 

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { AlertTriangle, Shield, Phone, Truck, Ambulance, Flame, MapPin, Send, ChevronUp, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { AlertTriangle, Shield, Phone, Truck, Ambulance, Flame, MapPin, Send, ChevronUp, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,11 +43,37 @@ export default function BotonPanico() {
   const [ubicacion, setUbicacion] = useState<{ lat: number; lng: number } | null>(null);
   const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
   const [expandido, setExpandido] = useState(false);
+  
+  // Estado para arrastre
+  const [posicion, setPosicion] = useState({ x: 0, y: 0 });
+  const [arrastrando, setArrastrando] = useState(false);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const botonRef = useRef<HTMLDivElement>(null);
 
   const { data: gruposEmergencia = [] } = useQuery<GrupoEmergencia[]>({
     queryKey: ["/api/chat/grupos-emergencia"],
     enabled: modalAbierto,
   });
+
+  // Cargar posición guardada
+  useEffect(() => {
+    const posicionGuardada = localStorage.getItem('panicButtonPosition');
+    if (posicionGuardada) {
+      try {
+        const pos = JSON.parse(posicionGuardada);
+        setPosicion(pos);
+      } catch (e) {
+        console.error('Error al cargar posición guardada');
+      }
+    }
+  }, []);
+
+  // Guardar posición
+  useEffect(() => {
+    if (posicion.x !== 0 || posicion.y !== 0) {
+      localStorage.setItem('panicButtonPosition', JSON.stringify(posicion));
+    }
+  }, [posicion]);
 
   const obtenerUbicacion = () => {
     if (!navigator.geolocation) {
@@ -148,11 +174,105 @@ export default function BotonPanico() {
     emergenciaMutation.mutate(datosEmergencia);
   };
 
+  // Handlers de arrastre - Mouse
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!botonRef.current) return;
+    e.preventDefault();
+    setArrastrando(true);
+    const rect = botonRef.current.getBoundingClientRect();
+    setOffset({
+      x: e.clientX - rect.left - posicion.x,
+      y: e.clientY - rect.top - posicion.y,
+    });
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!arrastrando) return;
+    
+    const newX = e.clientX - offset.x - (window.innerWidth - 80);
+    const newY = e.clientY - offset.y - (window.innerHeight - 120);
+    
+    // Limitar dentro de la pantalla
+    const maxX = 0;
+    const minX = -(window.innerWidth - 100);
+    const maxY = 0;
+    const minY = -(window.innerHeight - 150);
+    
+    setPosicion({
+      x: Math.max(minX, Math.min(maxX, newX)),
+      y: Math.max(minY, Math.min(maxY, newY)),
+    });
+  };
+
+  const handleMouseUp = () => {
+    setArrastrando(false);
+  };
+
+  // Handlers de arrastre - Touch
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!botonRef.current) return;
+    const touch = e.touches[0];
+    setArrastrando(true);
+    const rect = botonRef.current.getBoundingClientRect();
+    setOffset({
+      x: touch.clientX - rect.left - posicion.x,
+      y: touch.clientY - rect.top - posicion.y,
+    });
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!arrastrando) return;
+    const touch = e.touches[0];
+    
+    const newX = touch.clientX - offset.x - (window.innerWidth - 80);
+    const newY = touch.clientY - offset.y - (window.innerHeight - 120);
+    
+    const maxX = 0;
+    const minX = -(window.innerWidth - 100);
+    const maxY = 0;
+    const minY = -(window.innerHeight - 150);
+    
+    setPosicion({
+      x: Math.max(minX, Math.min(maxX, newX)),
+      y: Math.max(minY, Math.min(maxY, newY)),
+    });
+  };
+
+  const handleTouchEnd = () => {
+    setArrastrando(false);
+  };
+
+  // Agregar/remover event listeners globales
+  useEffect(() => {
+    if (arrastrando) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove);
+      window.addEventListener('touchend', handleTouchEnd);
+    }
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [arrastrando, offset]);
+
   if (!user) return null;
 
   return (
     <>
-      <div className="fixed bottom-20 right-4 z-50 flex flex-col items-end gap-2">
+      <div 
+        ref={botonRef}
+        className="fixed bottom-20 right-4 z-50 flex flex-col items-end gap-2"
+        style={{
+          transform: `translate(${posicion.x}px, ${posicion.y}px)`,
+          transition: arrastrando ? 'none' : 'transform 0.1s ease-out',
+        }}
+        data-testid="panic-button-container"
+      >
+        {/* Botones de acceso rápido expandibles */}
         {expandido && (
           <div className="flex flex-col gap-2 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
             {TIPOS_EMERGENCIA.slice(0, 4).map((tipo) => (
@@ -173,6 +293,7 @@ export default function BotonPanico() {
         )}
 
         <div className="flex items-center gap-2">
+          {/* Botón expandir */}
           <button
             onClick={() => setExpandido(!expandido)}
             className="bg-gray-700 text-white p-2 rounded-full shadow-lg hover:bg-gray-600 transition-colors"
@@ -181,9 +302,10 @@ export default function BotonPanico() {
             <ChevronUp className={`h-4 w-4 transition-transform ${expandido ? 'rotate-180' : ''}`} />
           </button>
 
+          {/* Botón principal de pánico */}
           <button
             onClick={abrirModal}
-            className="relative animate-panic-pulse"
+            className="relative"
             data-testid="button-panic"
             aria-label="Botón de pánico - Solicitar ayuda de emergencia"
           >
@@ -192,9 +314,20 @@ export default function BotonPanico() {
               <AlertTriangle className="h-8 w-8" />
             </div>
           </button>
+
+          {/* Handle de arrastre */}
+          <div 
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            className={`cursor-grab active:cursor-grabbing bg-gray-700/80 text-white p-2 rounded-full touch-none select-none ${arrastrando ? 'bg-gray-500' : ''}`}
+            data-testid="panic-drag-handle"
+          >
+            <GripVertical className="h-4 w-4" />
+          </div>
         </div>
       </div>
 
+      {/* Modal de emergencia */}
       <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" data-testid="dialog-panic-confirmation">
           <DialogHeader>
