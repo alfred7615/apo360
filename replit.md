@@ -1,5 +1,23 @@
 # SEG-APO - Sistema de Seguridad y Apoyo Comunitario
 
+## Recent Changes (Noviembre 25, 2025)
+
+### Mejoras al Sistema de Carga Múltiple de Imágenes
+- **Persistencia Automática**: Ahora las imágenes subidas se persisten automáticamente en la BD
+  - Callback `onImagesUploaded` crea registros con datos mínimos (imagenUrl, tipo, estado, titulo, orden)
+  - Usa `Promise.allSettled` para manejo granular de errores (evita fallo total si una imagen falla)
+  - Feedback detallado al usuario: "X de Y imágenes guardadas" o "Guardado parcial"
+- **Indicadores Visuales de Información Adicional**: Iconos pequeños debajo de cada imagen en la grilla
+  - GPS (MapPin azul): Coordenadas válidas en rangos -90/90, -180/180
+  - Redes Sociales: Facebook, Instagram, WhatsApp, TikTok, Twitter, YouTube, LinkedIn con validación de formato
+  - Enlaces (ExternalLink morado): URLs válidas con http:// o https://
+  - Fechas (Calendar naranja): Si tiene fechas de inicio/fin/caducidad configuradas
+  - Tooltips con información detallada (coordenadas GPS, URLs de redes sociales)
+- **Validaciones Robustas**:
+  - GPS: Valida rangos de latitud/longitud y != 0
+  - URLs: Verifica formato válido (http/https) y longitud mínima
+  - Redes sociales: Valida que contengan dominio esperado (facebook.com, instagram.com) o formato @ para handles
+
 ## Overview
 SEG-APO is a comprehensive community security platform designed to enhance safety, connectivity, and local commerce in Tacna, Peru. It integrates real-time messaging, ride-hailing (taxi), delivery services, local advertising, and an emergency panic button system. The project's vision is to become a vital tool for community interaction and emergency response, providing a robust platform for local services and security.
 
