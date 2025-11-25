@@ -63,6 +63,31 @@
 - **Rutas backend agregadas**: GET /api/taxi/conductores para filtrar conductores
 - **Todas las pantallas incluyen**: data-testid para testing, estados de carga, estados vacíos
 
+### Sistema de Servicios Locales con Interacciones Sociales (Noviembre 25, 2025)
+- **4 Tablas de Base de Datos**:
+  - `categorias_servicio` - Categorías para organizar servicios (nombre, descripción, icono)
+  - `logos_servicios` - Logos de comercios locales con formato circular
+  - `productos_servicio` - Productos con código único, precios, imágenes, y contadores sociales
+  - `transacciones_saldo` - Registro de cobros al agregar productos
+- **Panel de Administración Completo** (gestion-servicios-locales.tsx):
+  - 3 pestañas: Categorías, Logos de Servicios, Productos
+  - CRUD completo para cada entidad con modales de creación/edición
+  - Visualización de productos con badge de categoría e información de precio
+  - Sistema de cobro configurable (monto fijo o porcentaje)
+- **Sistema de Interacciones Sociales Completo**:
+  - Like y Favorito: toggle (agregar/quitar) con contadores actualizados en productos
+  - Compartir: SIEMPRE incrementa contador (registerCompartir separado de toggle)
+  - Comentarios: CRUD completo con GET, POST, PATCH, DELETE y permisos (propietario o super_admin)
+- **Página de Favoritos para Usuarios** (favoritos.tsx):
+  - Vista agrupada por tipo de contenido (servicios, productos)
+  - Acciones: quitar favorito, compartir con registro en BD
+  - Navegación desde el layout principal
+- **Sistema de Cobro al Agregar Productos**:
+  - Configuración por admin: monto fijo (S/ soles) o porcentaje del precio
+  - storage.createProductoServicioConCobro() registra transacción automáticamente
+  - Transacciones tipo 'cobro_producto' con referencia al productoId
+- **Datos de Prueba**: server/seed-servicios-locales.ts con 6 categorías, 5 logos, 11 productos
+
 ### Mejoras al Sistema de Carga Múltiple de Imágenes
 - **Persistencia Automática**: Ahora las imágenes subidas se persisten automáticamente en la BD
   - Callback `onImagesUploaded` crea registros con datos mínimos (imagenUrl, tipo, estado, titulo, orden)
