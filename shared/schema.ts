@@ -46,6 +46,59 @@ export const usuarios = pgTable("users", {
   descripcionLocal: text("descripcion_local"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  
+  nivelUsuario: integer("nivel_usuario").default(1),
+  alias: varchar("alias", { length: 100 }),
+  dni: varchar("dni", { length: 20 }),
+  dniImagenFrente: varchar("dni_imagen_frente"),
+  dniImagenPosterior: varchar("dni_imagen_posterior"),
+  dniEmision: date("dni_emision"),
+  dniCaducidad: date("dni_caducidad"),
+  
+  pais: varchar("pais", { length: 100 }),
+  departamento: varchar("departamento", { length: 100 }),
+  distrito: varchar("distrito", { length: 100 }),
+  sector: varchar("sector", { length: 100 }),
+  
+  direccion: text("direccion"),
+  manzanaLote: varchar("manzana_lote", { length: 50 }),
+  avenidaCalle: varchar("avenida_calle", { length: 200 }),
+  gpsLatitud: real("gps_latitud"),
+  gpsLongitud: real("gps_longitud"),
+  
+  ruc: varchar("ruc", { length: 20 }),
+  gpsLocalLatitud: real("gps_local_latitud"),
+  gpsLocalLongitud: real("gps_local_longitud"),
+  
+  breveteImagenFrente: varchar("brevete_imagen_frente"),
+  breveteImagenPosterior: varchar("brevete_imagen_posterior"),
+  breveteEmision: date("brevete_emision"),
+  breveteCaducidad: date("brevete_caducidad"),
+  
+  soatImagenFrente: varchar("soat_imagen_frente"),
+  soatImagenPosterior: varchar("soat_imagen_posterior"),
+  soatEmision: date("soat_emision"),
+  soatCaducidad: date("soat_caducidad"),
+  
+  revisionTecnicaImagenFrente: varchar("revision_tecnica_imagen_frente"),
+  revisionTecnicaImagenPosterior: varchar("revision_tecnica_imagen_posterior"),
+  revisionTecnicaEmision: date("revision_tecnica_emision"),
+  revisionTecnicaCaducidad: date("revision_tecnica_caducidad"),
+  
+  credencialConductorImagenFrente: varchar("credencial_conductor_imagen_frente"),
+  credencialConductorImagenPosterior: varchar("credencial_conductor_imagen_posterior"),
+  credencialConductorEmision: date("credencial_conductor_emision"),
+  credencialConductorCaducidad: date("credencial_conductor_caducidad"),
+  
+  credencialTaxiImagenFrente: varchar("credencial_taxi_imagen_frente"),
+  credencialTaxiImagenPosterior: varchar("credencial_taxi_imagen_posterior"),
+  credencialTaxiEmision: date("credencial_taxi_emision"),
+  credencialTaxiCaducidad: date("credencial_taxi_caducidad"),
+  
+  motivoSuspension: text("motivo_suspension"),
+  fechaSuspension: timestamp("fecha_suspension"),
+  motivoBloqueo: text("motivo_bloqueo"),
+  fechaBloqueo: timestamp("fecha_bloqueo"),
 });
 
 export const insertUsuarioSchema = createInsertSchema(usuarios).omit({ id: true, createdAt: true, updatedAt: true });
