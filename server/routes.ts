@@ -1191,7 +1191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar si ya existe una conversación privada entre estos dos usuarios
-      const gruposUsuario = await storage.getGruposUsuario(userId);
+      const gruposUsuario = await storage.getGruposPorUsuario(userId);
       let grupoPrivado = gruposUsuario.find(g => {
         if (g.tipo !== 'privado') return false;
         // El nombre del grupo privado tiene formato: "privado_userId1_userId2"
@@ -1202,14 +1202,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!grupoPrivado) {
         // Crear nuevo grupo privado
         const ids = [userId, contactoId].sort();
-        const nuevoGrupo = await storage.createGrupoChat({
+        const nuevoGrupo = await storage.createGrupo({
           nombre: `privado_${ids[0]}_${ids[1]}`,
           tipo: 'privado',
           descripcion: 'Conversación privada',
           creadorId: userId,
         });
 
-        // Agregar al contacto como miembro (el creador ya se agrega automáticamente en createGrupoChat)
+        // Agregar al contacto como miembro (el creador ya se agrega automáticamente en createGrupo)
         await storage.agregarMiembroGrupo({
           grupoId: nuevoGrupo.id,
           usuarioId: contactoId,
