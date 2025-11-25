@@ -1,0 +1,41 @@
+Agent
+Add supportive message for missing people
+0 / 6
+7:01 am, Nov 25, 2025
+Saved progress at the end of the loop
+Show less
+Time worked
+12 minutes
+Work done
+48 actions
+Items read
+822 lines
+Code changed
++1190
+-227
+Agent Usage
+$7.80
+$4.84
+Corregir botón 'Nuevo Usuario' en panel admin para que abra el modal de registro
+$6.20
+Automated UI testing
+$0.13
+Planning user registration system features
+$0.05
+General work
+$1.42
+Promo: High power model at no extra cost until Dec 8
+-$2.96
+1.5. ENCUESTAS Y IMAGENES POPUP (publi)
+administracion de encuestas el cual se hara preguntas estas puede ser 2 a mas preguntas se podra subir una imagen a la encuesta (y se podra visualiza rlos resultados de manera inmediata sobre las encuentes que esta estara en el panel del administrador super
+
+igual maneja por medio de ventana popup se visualizara imagenes o videos de ´publicidad directa, habra una segundos de publicidad obligatoria luego pasado los segundos permitidos esta se podra omitir (similar a las pubñlicidad de youtube)
+ambos tipos de publlcidad como encuestas y puvlicidad tendra un inicio de final de publicado al termino de la fecha esta se suspendera automaticamente y luego se podra renovar e ingresar nueva fecha para su publicidad. También el usuario podra compartir las encuestas o publicidad a sus redes sociales habrán unos iconos en la parte inferior de la imagen habrá iconos de darle me gusta icono de favorito, icono de comentarios, icono de compartir, icono calendario si es un evento para registrarlo en su calendario en cad a icono se mostrará el número de actividad por ejemplo 123 me gusta 5 comentarios 9 favoritos 5 calendarios 129 compartidos generar 5 encuestas falsas como modelos y 3 imágenes popup de personas desaparecidas mascotas desaparecidas 5 publicidad dicha información buscarla del internet (de igual manera crea 23 usuarios de perfiles falsos usados del internet par aque le pueda lllegar las encuestas
+
+7:49 am, Nov 25, 2025
+8:14 am, Nov 25, 2025
+Add a complete system for surveys and advertising popups
+25 minutes of work
+Cunado el usuario visualiza publicidad encuestas y el popup también se pueda emitir imágenes y videos con un límite de tiempo similar al YouTube este tiempo lo cobfigura el súper administrador en todo los referente de visualizar publicidad también de apoyo social de desaparecidos se vea un mensaje pequeño que indicando que genera el mantenimiento del sistema al servicios de todos algo así o podrías mejorarlo el mensaje.... Además verificar que todo el sistema debe ser responsivo para plataformas de escritorio para tablet y para dispositivos celulares tiene q autoajustarse no debe haber desplazamiento horizontal toda visualización debera ser vertical desplazándose con el mouse así mismo todos los formularios de agregar modificar etc etc en todos los niveles
+
+8:22 am, Nov 25, 2025

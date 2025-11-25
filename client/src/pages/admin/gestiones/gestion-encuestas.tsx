@@ -396,139 +396,139 @@ export default function GestionEncuestasScreen() {
   const totalVistas = popups.reduce((acc, p) => acc + (p.vistas || 0), 0);
 
   return (
-    <div className="space-y-6" data-testid="screen-gestion-encuestas">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <ClipboardList className="h-6 w-6 text-primary" />
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden" data-testid="screen-gestion-encuestas">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+        <div className="p-2 rounded-lg bg-primary/10 w-fit">
+          <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
         </div>
-        <div>
-          <h2 className="text-2xl font-bold">Gestión de Encuestas e Imágenes Popup</h2>
-          <p className="text-muted-foreground">Crea encuestas y configura popups informativos para usuarios</p>
+        <div className="min-w-0">
+          <h2 className="text-lg sm:text-2xl font-bold">Gestión de Encuestas e Imágenes Popup</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">Crea encuestas y configura popups informativos</p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <TabsList>
-            <TabsTrigger value="encuestas" data-testid="tab-encuestas">
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Encuestas
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:flex">
+            <TabsTrigger value="encuestas" data-testid="tab-encuestas" className="text-xs sm:text-sm">
+              <ClipboardList className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span>Encuestas</span>
             </TabsTrigger>
-            <TabsTrigger value="popups" data-testid="tab-popups">
-              <Image className="h-4 w-4 mr-2" />
-              Popups Publicitarios
+            <TabsTrigger value="popups" data-testid="tab-popups" className="text-xs sm:text-sm">
+              <Image className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span>Popups</span>
             </TabsTrigger>
           </TabsList>
           <Button 
             onClick={() => activeTab === "encuestas" ? abrirModalEncuesta() : abrirModalPopup()}
             data-testid="button-agregar"
+            className="w-full sm:w-auto text-sm"
+            size="sm"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-1 sm:mr-2" />
             {activeTab === "encuestas" ? "Nueva Encuesta" : "Nuevo Popup"}
           </Button>
         </div>
 
-        <TabsContent value="encuestas" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <TabsContent value="encuestas" className="mt-4 sm:mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Encuestas Activas</CardTitle>
+              <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Activas</CardTitle>
               </CardHeader>
-              <CardContent>
-                <span className="text-2xl font-bold" data-testid="text-encuestas-activas">{encuestasActivas}</span>
+              <CardContent className="p-3 sm:p-4 pt-0">
+                <span className="text-xl sm:text-2xl font-bold" data-testid="text-encuestas-activas">{encuestasActivas}</span>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Respuestas</CardTitle>
+              <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Respuestas</CardTitle>
               </CardHeader>
-              <CardContent>
-                <span className="text-2xl font-bold" data-testid="text-total-respuestas">{totalRespuestas}</span>
+              <CardContent className="p-3 sm:p-4 pt-0">
+                <span className="text-xl sm:text-2xl font-bold" data-testid="text-total-respuestas">{totalRespuestas}</span>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Encuestas</CardTitle>
+              <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Total</CardTitle>
               </CardHeader>
-              <CardContent>
-                <span className="text-2xl font-bold">{encuestas.length}</span>
+              <CardContent className="p-3 sm:p-4 pt-0">
+                <span className="text-xl sm:text-2xl font-bold">{encuestas.length}</span>
               </CardContent>
             </Card>
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Lista de Encuestas</CardTitle>
-              <CardDescription>Encuestas creadas para recopilar feedback de usuarios</CardDescription>
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Lista de Encuestas</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Encuestas creadas para recopilar feedback</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0">
               {loadingEncuestas ? (
-                <div className="text-center py-8 text-muted-foreground">Cargando encuestas...</div>
+                <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm">Cargando encuestas...</div>
               ) : encuestas.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm">
                   No hay encuestas configuradas. Crea una nueva encuesta para comenzar.
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {encuestas.map((encuesta) => (
                     <div 
                       key={encuesta.id} 
-                      className="flex items-center justify-between p-4 border rounded-lg"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border rounded-lg gap-3"
                       data-testid={`card-encuesta-${encuesta.id}`}
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
                         {encuesta.imagenUrl && (
                           <img 
                             src={encuesta.imagenUrl} 
                             alt={encuesta.titulo}
-                            className="w-16 h-16 object-cover rounded"
+                            className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded flex-shrink-0"
                           />
                         )}
-                        <div>
-                          <h4 className="font-semibold">{encuesta.titulo}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {encuesta.preguntas?.length || 0} preguntas | {encuesta.totalRespuestas || 0} respuestas
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold text-sm sm:text-base truncate">{encuesta.titulo}</h4>
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            {encuesta.preguntas?.length || 0} preg. | {encuesta.totalRespuestas || 0} resp.
                           </p>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
                             {getEstadoBadge(encuesta.estado)}
                             {encuesta.fechaInicio && (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {format(new Date(encuesta.fechaInicio), "dd/MM/yyyy")}
-                              </span>
-                            )}
-                            {encuesta.fechaFin && (
-                              <span className="text-xs text-muted-foreground">
-                                - {format(new Date(encuesta.fechaFin), "dd/MM/yyyy")}
+                              <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-0.5">
+                                <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                {format(new Date(encuesta.fechaInicio), "dd/MM/yy")}
                               </span>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 justify-end flex-shrink-0">
                         <Button 
                           variant="outline" 
                           size="icon"
+                          className="h-8 w-8 sm:h-9 sm:w-9"
                           onClick={() => verResultados(encuesta)}
                           data-testid={`button-resultados-${encuesta.id}`}
                         >
-                          <BarChart3 className="h-4 w-4" />
+                          <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
                         <Button 
                           variant="outline" 
                           size="icon"
+                          className="h-8 w-8 sm:h-9 sm:w-9"
                           onClick={() => abrirModalEncuesta(encuesta)}
                           data-testid={`button-editar-encuesta-${encuesta.id}`}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
                         <Button 
                           variant="outline" 
                           size="icon"
+                          className="h-8 w-8 sm:h-9 sm:w-9"
                           onClick={() => eliminarEncuestaMutation.mutate(encuesta.id)}
                           data-testid={`button-eliminar-encuesta-${encuesta.id}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
                       </div>
                     </div>
@@ -539,38 +539,38 @@ export default function GestionEncuestasScreen() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="popups" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <TabsContent value="popups" className="mt-4 sm:mt-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Popups Activos</CardTitle>
+              <CardHeader className="p-2 sm:p-4 pb-1 sm:pb-2">
+                <CardTitle className="text-[10px] sm:text-sm font-medium text-muted-foreground">Activos</CardTitle>
               </CardHeader>
-              <CardContent>
-                <span className="text-2xl font-bold" data-testid="text-popups-activos">{popupsActivos}</span>
+              <CardContent className="p-2 sm:p-4 pt-0">
+                <span className="text-lg sm:text-2xl font-bold" data-testid="text-popups-activos">{popupsActivos}</span>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Vistas</CardTitle>
+              <CardHeader className="p-2 sm:p-4 pb-1 sm:pb-2">
+                <CardTitle className="text-[10px] sm:text-sm font-medium text-muted-foreground">Vistas</CardTitle>
               </CardHeader>
-              <CardContent>
-                <span className="text-2xl font-bold" data-testid="text-total-vistas">{totalVistas}</span>
+              <CardContent className="p-2 sm:p-4 pt-0">
+                <span className="text-lg sm:text-2xl font-bold" data-testid="text-total-vistas">{totalVistas}</span>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Publicidad</CardTitle>
+              <CardHeader className="p-2 sm:p-4 pb-1 sm:pb-2">
+                <CardTitle className="text-[10px] sm:text-sm font-medium text-muted-foreground">Publicidad</CardTitle>
               </CardHeader>
-              <CardContent>
-                <span className="text-2xl font-bold">{popups.filter(p => p.tipo === "publicidad").length}</span>
+              <CardContent className="p-2 sm:p-4 pt-0">
+                <span className="text-lg sm:text-2xl font-bold">{popups.filter(p => p.tipo === "publicidad").length}</span>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Desaparecidos</CardTitle>
+              <CardHeader className="p-2 sm:p-4 pb-1 sm:pb-2">
+                <CardTitle className="text-[10px] sm:text-sm font-medium text-muted-foreground">Desaparec.</CardTitle>
               </CardHeader>
-              <CardContent>
-                <span className="text-2xl font-bold">
+              <CardContent className="p-2 sm:p-4 pt-0">
+                <span className="text-lg sm:text-2xl font-bold">
                   {popups.filter(p => p.tipo === "persona_desaparecida" || p.tipo === "mascota_desaparecida").length}
                 </span>
               </CardContent>
@@ -578,70 +578,72 @@ export default function GestionEncuestasScreen() {
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Lista de Popups Publicitarios</CardTitle>
-              <CardDescription>Imágenes y videos que se muestran a los usuarios</CardDescription>
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Lista de Popups</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Imágenes y videos mostrados a usuarios</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0">
               {loadingPopups ? (
-                <div className="text-center py-8 text-muted-foreground">Cargando popups...</div>
+                <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm">Cargando popups...</div>
               ) : popups.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm">
                   No hay popups configurados. Agrega un nuevo popup para comenzar.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {popups.map((popup) => (
                     <Card key={popup.id} className="overflow-hidden" data-testid={`card-popup-${popup.id}`}>
                       {popup.imagenUrl && (
-                        <div className="relative h-40">
+                        <div className="relative h-32 sm:h-40">
                           <img 
                             src={popup.imagenUrl} 
                             alt={popup.titulo || "Popup"}
                             className="w-full h-full object-cover"
                           />
-                          <div className="absolute top-2 right-2 flex gap-1">
+                          <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex flex-wrap gap-1 max-w-[80%] justify-end">
                             {getEstadoBadge(popup.estado)}
                             {getTipoBadge(popup.tipo)}
                           </div>
                         </div>
                       )}
                       {popup.videoUrl && (
-                        <div className="relative h-40 bg-gray-900 flex items-center justify-center">
-                          <Play className="h-12 w-12 text-white" />
-                          <div className="absolute top-2 right-2 flex gap-1">
+                        <div className="relative h-32 sm:h-40 bg-gray-900 flex items-center justify-center">
+                          <Play className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
+                          <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex flex-wrap gap-1 max-w-[80%] justify-end">
                             {getEstadoBadge(popup.estado)}
                             {getTipoBadge(popup.tipo)}
                           </div>
                         </div>
                       )}
-                      <CardContent className="p-4">
-                        <h4 className="font-semibold truncate">{popup.titulo || "Sin título"}</h4>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{popup.descripcion}</p>
-                        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>{popup.duracionSegundos}s ({popup.segundosObligatorios}s obligatorios)</span>
+                      <CardContent className="p-3 sm:p-4">
+                        <h4 className="font-semibold truncate text-sm sm:text-base">{popup.titulo || "Sin título"}</h4>
+                        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{popup.descripcion}</p>
+                        <div className="flex items-center gap-1.5 sm:gap-2 mt-2 text-[10px] sm:text-xs text-muted-foreground">
+                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          <span>{popup.duracionSegundos}s ({popup.segundosObligatorios}s oblig.)</span>
                         </div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                          <Eye className="h-3 w-3" />
+                        <div className="flex items-center gap-1.5 sm:gap-2 mt-1 text-[10px] sm:text-xs text-muted-foreground">
+                          <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           <span>{popup.vistas || 0} vistas</span>
                         </div>
-                        <div className="flex justify-end gap-2 mt-4">
+                        <div className="flex justify-end gap-1.5 sm:gap-2 mt-3 sm:mt-4">
                           <Button 
                             variant="outline" 
-                            size="sm"
+                            size="icon"
+                            className="h-7 w-7 sm:h-8 sm:w-8"
                             onClick={() => abrirModalPopup(popup)}
                             data-testid={`button-editar-popup-${popup.id}`}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
                           <Button 
                             variant="outline" 
-                            size="sm"
+                            size="icon"
+                            className="h-7 w-7 sm:h-8 sm:w-8"
                             onClick={() => eliminarPopupMutation.mutate(popup.id)}
                             data-testid={`button-eliminar-popup-${popup.id}`}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
                         </div>
                       </CardContent>
@@ -655,68 +657,75 @@ export default function GestionEncuestasScreen() {
       </Tabs>
 
       <Dialog open={modalEncuestaOpen} onOpenChange={setModalEncuestaOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{encuestaEditando ? "Editar Encuesta" : "Nueva Encuesta"}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">{encuestaEditando ? "Editar Encuesta" : "Nueva Encuesta"}</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               {encuestaEditando ? "Modifica los datos de la encuesta" : "Completa los campos para crear una nueva encuesta"}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label htmlFor="titulo">Título de la Encuesta</Label>
+          <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
+            <div className="space-y-3 sm:space-y-4">
+              <div>
+                <Label htmlFor="titulo" className="text-xs sm:text-sm">Título de la Encuesta</Label>
                 <Input
                   id="titulo"
                   value={formEncuesta.titulo}
                   onChange={(e) => setFormEncuesta(prev => ({ ...prev, titulo: e.target.value }))}
                   placeholder="Ej: Encuesta de satisfacción"
                   data-testid="input-titulo-encuesta"
+                  className="text-sm"
                 />
               </div>
-              <div className="col-span-2">
-                <Label htmlFor="descripcion">Descripción</Label>
+              <div>
+                <Label htmlFor="descripcion" className="text-xs sm:text-sm">Descripción</Label>
                 <Textarea
                   id="descripcion"
                   value={formEncuesta.descripcion}
                   onChange={(e) => setFormEncuesta(prev => ({ ...prev, descripcion: e.target.value }))}
                   placeholder="Describe brevemente la encuesta"
                   data-testid="input-descripcion-encuesta"
+                  className="text-sm"
                 />
               </div>
-              <div className="col-span-2">
-                <Label htmlFor="imagenUrl">URL de Imagen (opcional)</Label>
+              <div>
+                <Label htmlFor="imagenUrl" className="text-xs sm:text-sm">URL de Imagen (opcional)</Label>
                 <Input
                   id="imagenUrl"
                   value={formEncuesta.imagenUrl}
                   onChange={(e) => setFormEncuesta(prev => ({ ...prev, imagenUrl: e.target.value }))}
                   placeholder="https://..."
                   data-testid="input-imagen-encuesta"
+                  className="text-sm"
                 />
               </div>
-              <div>
-                <Label htmlFor="fechaInicio">Fecha de Inicio</Label>
-                <Input
-                  id="fechaInicio"
-                  type="date"
-                  value={formEncuesta.fechaInicio}
-                  onChange={(e) => setFormEncuesta(prev => ({ ...prev, fechaInicio: e.target.value }))}
-                  data-testid="input-fecha-inicio-encuesta"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <Label htmlFor="fechaInicio" className="text-xs sm:text-sm">Fecha de Inicio</Label>
+                  <Input
+                    id="fechaInicio"
+                    type="date"
+                    value={formEncuesta.fechaInicio}
+                    onChange={(e) => setFormEncuesta(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                    data-testid="input-fecha-inicio-encuesta"
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="fechaFin" className="text-xs sm:text-sm">Fecha de Fin</Label>
+                  <Input
+                    id="fechaFin"
+                    type="date"
+                    value={formEncuesta.fechaFin}
+                    onChange={(e) => setFormEncuesta(prev => ({ ...prev, fechaFin: e.target.value }))}
+                    data-testid="input-fecha-fin-encuesta"
+                    className="text-sm"
+                  />
+                </div>
               </div>
               <div>
-                <Label htmlFor="fechaFin">Fecha de Fin</Label>
-                <Input
-                  id="fechaFin"
-                  type="date"
-                  value={formEncuesta.fechaFin}
-                  onChange={(e) => setFormEncuesta(prev => ({ ...prev, fechaFin: e.target.value }))}
-                  data-testid="input-fecha-fin-encuesta"
-                />
-              </div>
-              <div>
-                <Label htmlFor="estado">Estado</Label>
+                <Label htmlFor="estado" className="text-xs sm:text-sm">Estado</Label>
                 <Select
                   value={formEncuesta.estado}
                   onValueChange={(v) => setFormEncuesta(prev => ({ ...prev, estado: v }))}
@@ -733,27 +742,28 @@ export default function GestionEncuestasScreen() {
               </div>
             </div>
 
-            <div className="border-t pt-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-semibold">Preguntas</h4>
-                <Button variant="outline" size="sm" onClick={agregarPregunta} data-testid="button-agregar-pregunta">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agregar Pregunta
+            <div className="border-t pt-3 sm:pt-4">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h4 className="font-semibold text-sm sm:text-base">Preguntas</h4>
+                <Button variant="outline" size="sm" onClick={agregarPregunta} data-testid="button-agregar-pregunta" className="text-xs sm:text-sm">
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Agregar
                 </Button>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {formEncuesta.preguntas.map((pregunta, pIndex) => (
-                  <div key={pIndex} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <Label>Pregunta {pIndex + 1}</Label>
+                  <div key={pIndex} className="border rounded-lg p-3 sm:p-4">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                      <Label className="text-xs sm:text-sm">Pregunta {pIndex + 1}</Label>
                       {formEncuesta.preguntas.length > 1 && (
                         <Button 
                           variant="ghost" 
-                          size="sm"
+                          size="icon"
+                          className="h-6 w-6 sm:h-8 sm:w-8"
                           onClick={() => eliminarPregunta(pIndex)}
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                       )}
                     </div>
@@ -761,27 +771,29 @@ export default function GestionEncuestasScreen() {
                       value={pregunta.pregunta}
                       onChange={(e) => actualizarPregunta(pIndex, "pregunta", e.target.value)}
                       placeholder="Escribe la pregunta"
-                      className="mb-3"
+                      className="mb-2 sm:mb-3 text-sm"
                       data-testid={`input-pregunta-${pIndex}`}
                     />
                     
                     <div className="space-y-2">
-                      <Label className="text-sm">Opciones de respuesta</Label>
+                      <Label className="text-xs sm:text-sm">Opciones de respuesta</Label>
                       {pregunta.opciones.map((opcion, oIndex) => (
-                        <div key={oIndex} className="flex items-center gap-2">
+                        <div key={oIndex} className="flex items-center gap-1.5 sm:gap-2">
                           <Input
                             value={opcion}
                             onChange={(e) => actualizarOpcion(pIndex, oIndex, e.target.value)}
                             placeholder={`Opción ${oIndex + 1}`}
                             data-testid={`input-opcion-${pIndex}-${oIndex}`}
+                            className="text-sm"
                           />
                           {pregunta.opciones.length > 2 && (
                             <Button 
                               variant="ghost" 
                               size="icon"
+                              className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0"
                               onClick={() => eliminarOpcion(pIndex, oIndex)}
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-3 w-3 sm:h-4 sm:w-4" />
                             </Button>
                           )}
                         </div>
@@ -789,9 +801,10 @@ export default function GestionEncuestasScreen() {
                       <Button 
                         variant="outline" 
                         size="sm"
+                        className="text-xs sm:text-sm"
                         onClick={() => agregarOpcion(pIndex)}
                       >
-                        <Plus className="h-4 w-4 mr-2" />
+                        <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Agregar Opción
                       </Button>
                     </div>
@@ -800,16 +813,17 @@ export default function GestionEncuestasScreen() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setModalEncuestaOpen(false)}>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 sm:pt-4">
+              <Button variant="outline" onClick={() => setModalEncuestaOpen(false)} className="w-full sm:w-auto">
                 Cancelar
               </Button>
               <Button 
                 onClick={guardarEncuesta}
                 disabled={crearEncuestaMutation.isPending || actualizarEncuestaMutation.isPending}
                 data-testid="button-guardar-encuesta"
+                className="w-full sm:w-auto"
               >
-                {crearEncuestaMutation.isPending || actualizarEncuestaMutation.isPending ? "Guardando..." : "Guardar Encuesta"}
+                {crearEncuestaMutation.isPending || actualizarEncuestaMutation.isPending ? "Guardando..." : "Guardar"}
               </Button>
             </div>
           </div>
@@ -817,42 +831,44 @@ export default function GestionEncuestasScreen() {
       </Dialog>
 
       <Dialog open={modalPopupOpen} onOpenChange={setModalPopupOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{popupEditando ? "Editar Popup" : "Nuevo Popup"}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">{popupEditando ? "Editar Popup" : "Nuevo Popup"}</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               {popupEditando ? "Modifica los datos del popup" : "Completa los campos para crear un nuevo popup"}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
             <div>
-              <Label htmlFor="tituloPopup">Título</Label>
+              <Label htmlFor="tituloPopup" className="text-xs sm:text-sm">Título</Label>
               <Input
                 id="tituloPopup"
                 value={formPopup.titulo}
                 onChange={(e) => setFormPopup(prev => ({ ...prev, titulo: e.target.value }))}
                 placeholder="Título del popup"
                 data-testid="input-titulo-popup"
+                className="text-sm"
               />
             </div>
             <div>
-              <Label htmlFor="descripcionPopup">Descripción</Label>
+              <Label htmlFor="descripcionPopup" className="text-xs sm:text-sm">Descripción</Label>
               <Textarea
                 id="descripcionPopup"
                 value={formPopup.descripcion}
                 onChange={(e) => setFormPopup(prev => ({ ...prev, descripcion: e.target.value }))}
                 placeholder="Descripción del popup"
                 data-testid="input-descripcion-popup"
+                className="text-sm"
               />
             </div>
             <div>
-              <Label htmlFor="tipoPopup">Tipo</Label>
+              <Label htmlFor="tipoPopup" className="text-xs sm:text-sm">Tipo</Label>
               <Select
                 value={formPopup.tipo}
                 onValueChange={(v) => setFormPopup(prev => ({ ...prev, tipo: v }))}
               >
-                <SelectTrigger data-testid="select-tipo-popup">
+                <SelectTrigger data-testid="select-tipo-popup" className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -864,76 +880,82 @@ export default function GestionEncuestasScreen() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="imagenUrlPopup">URL de Imagen</Label>
+              <Label htmlFor="imagenUrlPopup" className="text-xs sm:text-sm">URL de Imagen</Label>
               <Input
                 id="imagenUrlPopup"
                 value={formPopup.imagenUrl}
                 onChange={(e) => setFormPopup(prev => ({ ...prev, imagenUrl: e.target.value }))}
                 placeholder="https://..."
                 data-testid="input-imagen-popup"
+                className="text-sm"
               />
             </div>
             <div>
-              <Label htmlFor="videoUrlPopup">URL de Video (opcional)</Label>
+              <Label htmlFor="videoUrlPopup" className="text-xs sm:text-sm">URL de Video (opcional)</Label>
               <Input
                 id="videoUrlPopup"
                 value={formPopup.videoUrl}
                 onChange={(e) => setFormPopup(prev => ({ ...prev, videoUrl: e.target.value }))}
                 placeholder="https://..."
                 data-testid="input-video-popup"
+                className="text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="duracion">Duración (segundos)</Label>
+                <Label htmlFor="duracion" className="text-xs sm:text-sm">Duración (segundos)</Label>
                 <Input
                   id="duracion"
                   type="number"
                   value={formPopup.duracionSegundos}
                   onChange={(e) => setFormPopup(prev => ({ ...prev, duracionSegundos: parseInt(e.target.value) || 30 }))}
                   data-testid="input-duracion-popup"
+                  className="text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="obligatorios">Segundos Obligatorios</Label>
+                <Label htmlFor="obligatorios" className="text-xs sm:text-sm">Seg. Obligatorios</Label>
                 <Input
                   id="obligatorios"
                   type="number"
                   value={formPopup.segundosObligatorios}
                   onChange={(e) => setFormPopup(prev => ({ ...prev, segundosObligatorios: parseInt(e.target.value) || 5 }))}
                   data-testid="input-obligatorios-popup"
+                  className="text-sm"
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="fechaInicioPopup">Fecha de Inicio</Label>
+                <Label htmlFor="fechaInicioPopup" className="text-xs sm:text-sm">Fecha de Inicio</Label>
                 <Input
                   id="fechaInicioPopup"
                   type="date"
                   value={formPopup.fechaInicio}
                   onChange={(e) => setFormPopup(prev => ({ ...prev, fechaInicio: e.target.value }))}
                   data-testid="input-fecha-inicio-popup"
+                  className="text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="fechaFinPopup">Fecha de Fin</Label>
+                <Label htmlFor="fechaFinPopup" className="text-xs sm:text-sm">Fecha de Fin</Label>
                 <Input
                   id="fechaFinPopup"
                   type="date"
                   value={formPopup.fechaFin}
                   onChange={(e) => setFormPopup(prev => ({ ...prev, fechaFin: e.target.value }))}
                   data-testid="input-fecha-fin-popup"
+                  className="text-sm"
                 />
               </div>
             </div>
             <div>
-              <Label htmlFor="estadoPopup">Estado</Label>
+              <Label htmlFor="estadoPopup" className="text-xs sm:text-sm">Estado</Label>
               <Select
                 value={formPopup.estado}
                 onValueChange={(v) => setFormPopup(prev => ({ ...prev, estado: v }))}
               >
-                <SelectTrigger data-testid="select-estado-popup">
+                <SelectTrigger data-testid="select-estado-popup" className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -944,16 +966,17 @@ export default function GestionEncuestasScreen() {
               </Select>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setModalPopupOpen(false)}>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 sm:pt-4">
+              <Button variant="outline" onClick={() => setModalPopupOpen(false)} className="w-full sm:w-auto">
                 Cancelar
               </Button>
               <Button 
                 onClick={guardarPopup}
                 disabled={crearPopupMutation.isPending || actualizarPopupMutation.isPending}
                 data-testid="button-guardar-popup"
+                className="w-full sm:w-auto"
               >
-                {crearPopupMutation.isPending || actualizarPopupMutation.isPending ? "Guardando..." : "Guardar Popup"}
+                {crearPopupMutation.isPending || actualizarPopupMutation.isPending ? "Guardando..." : "Guardar"}
               </Button>
             </div>
           </div>
@@ -961,23 +984,23 @@ export default function GestionEncuestasScreen() {
       </Dialog>
 
       <Dialog open={modalResultadosOpen} onOpenChange={setModalResultadosOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Resultados de la Encuesta</DialogTitle>
-            <DialogDescription>
-              {encuestaResultados?.titulo} - {encuestaResultados?.totalRespuestas || 0} respuestas totales
+            <DialogTitle className="text-base sm:text-lg">Resultados de la Encuesta</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              {encuestaResultados?.titulo} - {encuestaResultados?.totalRespuestas || 0} respuestas
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <div className="space-y-4 sm:space-y-6 py-2 sm:py-4">
             {encuestaResultados?.preguntas?.map((pregunta, pIndex) => {
               const respuestasPregunta = resultados.filter(r => r.preguntaIndex === pIndex);
               const totalPregunta = respuestasPregunta.reduce((acc, r) => acc + r.cantidad, 0);
 
               return (
-                <div key={pIndex} className="border rounded-lg p-4">
-                  <h4 className="font-semibold mb-4">{pregunta.pregunta}</h4>
-                  <div className="space-y-3">
+                <div key={pIndex} className="border rounded-lg p-3 sm:p-4">
+                  <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">{pregunta.pregunta}</h4>
+                  <div className="space-y-2 sm:space-y-3">
                     {pregunta.opciones.map((opcion, oIndex) => {
                       const resultado = respuestasPregunta.find(r => r.opcion === oIndex);
                       const cantidad = resultado?.cantidad || 0;
@@ -985,11 +1008,11 @@ export default function GestionEncuestasScreen() {
 
                       return (
                         <div key={oIndex}>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>{opcion}</span>
-                            <span className="font-medium">{cantidad} ({porcentaje.toFixed(1)}%)</span>
+                          <div className="flex justify-between text-xs sm:text-sm mb-1 gap-2">
+                            <span className="truncate flex-1">{opcion}</span>
+                            <span className="font-medium flex-shrink-0">{cantidad} ({porcentaje.toFixed(0)}%)</span>
                           </div>
-                          <Progress value={porcentaje} className="h-2" />
+                          <Progress value={porcentaje} className="h-1.5 sm:h-2" />
                         </div>
                       );
                     })}
