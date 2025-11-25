@@ -2,6 +2,19 @@
 
 ## Recent Changes (Noviembre 25, 2025)
 
+### Sistema de Chat Comunitario Mejorado
+- **Esquema BD Corregido**: Campos correctos `remitenteId` y `tipo` en tabla mensajes
+- **Datos de Prueba**: 8 grupos (4 emergencia: policía, bomberos, serenazgo, SAMU; 4 comunitarios)
+- **6 Mensajes de Prueba**: En grupos de vecinos, policía y taxi
+- **Script**: server/seed-chat.ts para datos de chat reproducibles
+
+### Botón de Pánico Arrastrable Mejorado
+- **Funcionalidad Drag & Drop**: Usa framer-motion con dragControls
+- **Accesos Rápidos**: Botones expandibles para policía, bomberos, SAMU, serenazgo
+- **GPS Automático**: Obtiene ubicación al abrir modal de emergencia
+- **Selección de Grupos**: Permite elegir grupos de emergencia específicos a notificar
+- **Interfaz Responsive**: Modal scrolleable con tipos de emergencia descriptivos
+
 ### Sistema de Autenticación Local (email/password)
 - **Nueva Ruta POST /api/auth/login**: Login con email y contraseña hasheada (SHA256)
   - Verificación de estado del usuario (activo, suspendido, pendiente_aprobacion)

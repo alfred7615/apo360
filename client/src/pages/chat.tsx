@@ -37,14 +37,17 @@ interface Mensaje {
   grupoId?: string;
   remitenteId: string;
   contenido: string;
-  tipo: string;
-  leido: boolean;
-  createdAt: string;
-  remitente?: {
-    primerNombre?: string;
-    apellido?: string;
-    imagenPerfil?: string;
+  tipo?: string;
+  archivoUrl?: string;
+  gpsLatitud?: number;
+  gpsLongitud?: number;
+  metadataFoto?: {
+    nombreUsuario?: string;
+    fechaHora?: string;
+    logoUrl?: string;
   };
+  eliminado?: boolean;
+  createdAt: string;
 }
 
 export default function Chat() {
@@ -70,12 +73,18 @@ export default function Chat() {
   }, [user, cargandoAuth, toast]);
 
   const { data: grupos = [], isLoading: cargandoGrupos } = useQuery<GrupoChat[]>({
-    queryKey: ["/api/chat/grupos"],
+    queryKey: ["/api/chat/mis-grupos"],
     enabled: !!user,
   });
 
   const { data: mensajes = [], isLoading: cargandoMensajes } = useQuery<Mensaje[]>({
-    queryKey: ["/api/chat/mensajes", grupoSeleccionado],
+    queryKey: ["/api/chat/grupos", grupoSeleccionado, "mensajes"],
+    queryFn: async () => {
+      if (!grupoSeleccionado) return [];
+      const res = await fetch(`/api/chat/grupos/${grupoSeleccionado}/mensajes`);
+      if (!res.ok) throw new Error("Error al cargar mensajes");
+      return res.json();
+    },
     enabled: !!grupoSeleccionado && !!user,
   });
 
@@ -92,12 +101,15 @@ export default function Chat() {
   });
 
   const enviarMensajeMutation = useMutation({
-    mutationFn: async (datos: any) => {
-      return await apiRequest("POST", "/api/chat/mensajes", datos);
+    mutationFn: async (datos: { grupoId: string; contenido: string; tipo: string }) => {
+      return await apiRequest("POST", `/api/chat/grupos/${datos.grupoId}/mensajes`, {
+        contenido: datos.contenido,
+        tipoContenido: datos.tipo,
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/mensajes", grupoSeleccionado] });
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/grupos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/grupos", grupoSeleccionado, "mensajes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
       setMensajeNuevo("");
     },
     onError: (error: Error) => {
@@ -327,11 +339,9 @@ export default function Chat() {
               </div>
             ) : (
               <div className="space-y-3">
-                {mensajes.map((mensaje) => {
+                {mensajes.filter(m => !m.eliminado).map((mensaje) => {
                   const esMio = mensaje.remitenteId === user.id;
-                  const nombreRemitente = mensaje.remitente
-                    ? `${mensaje.remitente.primerNombre || ''} ${mensaje.remitente.apellido || ''}`.trim()
-                    : 'Usuario';
+                  const nombreRemitente = mensaje.metadataFoto?.nombreUsuario || 'Usuario';
 
                   return (
                     <div
@@ -342,7 +352,7 @@ export default function Chat() {
                       <div className={`flex gap-2 max-w-[70%] ${esMio ? 'flex-row-reverse' : 'flex-row'}`}>
                         {!esMio && (
                           <Avatar className="h-8 w-8 shrink-0">
-                            <AvatarImage src={mensaje.remitente?.imagenPerfil} alt={nombreRemitente} />
+                            <AvatarImage src={mensaje.metadataFoto?.logoUrl} alt={nombreRemitente} />
                             <AvatarFallback className="bg-muted text-xs">
                               {nombreRemitente.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
@@ -362,7 +372,31 @@ export default function Chat() {
                                 : 'bg-card border'
                             }`}
                           >
-                            <p className="text-sm whitespace-pre-wrap break-words">{mensaje.contenido}</p>
+                            {mensaje.tipo === 'imagen' && mensaje.archivoUrl ? (
+                              <img 
+                                src={mensaje.archivoUrl} 
+                                alt="Imagen" 
+                                className="max-w-full rounded-lg max-h-64 object-cover"
+                              />
+                            ) : mensaje.tipo === 'ubicacion' && mensaje.gpsLatitud && mensaje.gpsLongitud ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-2xl">📍</span>
+                                <a 
+                                  href={`https://www.google.com/maps?q=${mensaje.gpsLatitud},${mensaje.gpsLongitud}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`text-sm underline ${esMio ? 'text-white' : 'text-primary'}`}
+                                >
+                                  Ver ubicación
+                                </a>
+                              </div>
+                            ) : mensaje.tipo === 'audio' && mensaje.archivoUrl ? (
+                              <audio controls className="max-w-full">
+                                <source src={mensaje.archivoUrl} type="audio/mpeg" />
+                              </audio>
+                            ) : (
+                              <p className="text-sm whitespace-pre-wrap break-words">{mensaje.contenido}</p>
+                            )}
                           </div>
                           <span className="text-xs text-muted-foreground mt-1 px-1">
                             {new Date(mensaje.createdAt).toLocaleTimeString('es-PE', {

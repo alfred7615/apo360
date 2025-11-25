@@ -258,11 +258,23 @@ export const gruposChat = pgTable("grupos_chat", {
   tipo: varchar("tipo", { length: 50 }).notNull(),
   avatarUrl: varchar("avatar_url"),
   creadorId: varchar("creador_id").notNull().references(() => usuarios.id),
+  adminGrupoId: varchar("admin_grupo_id").references(() => usuarios.id),
+  estado: varchar("estado", { length: 20 }).default("activo"),
+  estrellasMinimas: integer("estrellas_minimas").default(3),
+  tipoCobro: varchar("tipo_cobro", { length: 20 }).default("ninguno"),
+  tarifaGrupo: decimal("tarifa_grupo", { precision: 10, scale: 2 }).default("0"),
+  tarifaUsuario: decimal("tarifa_usuario", { precision: 10, scale: 2 }).default("0"),
+  esEmergencia: boolean("es_emergencia").default(false),
+  totalMiembros: integer("total_miembros").default(0),
+  totalMensajes: integer("total_mensajes").default(0),
+  ultimoMensajeAt: timestamp("ultimo_mensaje_at"),
+  motivoSuspension: text("motivo_suspension"),
+  fechaSuspension: timestamp("fecha_suspension"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertGrupoChatSchema = createInsertSchema(gruposChat).omit({ id: true, createdAt: true });
+export const insertGrupoChatSchema = createInsertSchema(gruposChat).omit({ id: true, createdAt: true, updatedAt: true });
 export type GrupoChatInsert = z.infer<typeof insertGrupoChatSchema>;
 export type GrupoChat = typeof gruposChat.$inferSelect;
 
@@ -273,14 +285,24 @@ export const miembrosGrupo = pgTable("miembros_grupo", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   grupoId: varchar("grupo_id").notNull().references(() => gruposChat.id),
   usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
-  rol: varchar("rol", { length: 50 }).default("miembro"), // miembro, admin
+  rol: varchar("rol", { length: 50 }).default("miembro"),
+  estado: varchar("estado", { length: 20 }).default("activo"),
+  nivelEstrellas: integer("nivel_estrellas").default(1),
+  pagoConfirmado: boolean("pago_confirmado").default(false),
+  fechaPago: timestamp("fecha_pago"),
+  motivoSuspension: text("motivo_suspension"),
+  fechaSuspension: timestamp("fecha_suspension"),
+  silenciado: boolean("silenciado").default(false),
+  notificaciones: boolean("notificaciones").default(true),
+  mensajesNoLeidos: integer("mensajes_no_leidos").default(0),
+  ultimoMensajeVisto: timestamp("ultimo_mensaje_visto"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
-  // UNIQUE constraint para prevenir duplicados
   uniqueMember: unique().on(table.grupoId, table.usuarioId),
 }));
 
-export const insertMiembroGrupoSchema = createInsertSchema(miembrosGrupo).omit({ id: true, createdAt: true });
+export const insertMiembroGrupoSchema = createInsertSchema(miembrosGrupo).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertMiembroGrupo = z.infer<typeof insertMiembroGrupoSchema>;
 export type MiembroGrupo = typeof miembrosGrupo.$inferSelect;
 
@@ -292,16 +314,32 @@ export const mensajes = pgTable("mensajes", {
   grupoId: varchar("grupo_id").references(() => gruposChat.id),
   remitenteId: varchar("remitente_id").notNull().references(() => usuarios.id),
   destinatarioId: varchar("destinatario_id").references(() => usuarios.id),
-  contenido: text("contenido").notNull(),
+  contenido: text("contenido"),
   tipo: varchar("tipo", { length: 50 }).default("texto"),
   archivoUrl: varchar("archivo_url"),
+  thumbnailUrl: varchar("thumbnail_url"),
+  metadataFoto: json("metadata_foto").$type<{
+    fechaHora: string;
+    logoUrl?: string;
+    nombreUsuario: string;
+    latitud?: number;
+    longitud?: number;
+  }>(),
+  duracionAudio: integer("duracion_audio"),
+  esEmergencia: boolean("es_emergencia").default(false),
+  gpsLatitud: real("gps_latitud"),
+  gpsLongitud: real("gps_longitud"),
   leido: boolean("leido").default(false),
+  eliminado: boolean("eliminado").default(false),
+  eliminadoPor: varchar("eliminado_por").references(() => usuarios.id),
+  fechaEliminacion: timestamp("fecha_eliminacion"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertMensajeSchema = createInsertSchema(mensajes).omit({ id: true, createdAt: true });
 export type MensajeInsert = z.infer<typeof insertMensajeSchema>;
 export type Mensaje = typeof mensajes.$inferSelect;
+export type InsertMensaje = z.infer<typeof insertMensajeSchema>;
 
 // ============================================================
 // EMERGENCIAS
@@ -319,13 +357,50 @@ export const emergencias = pgTable("emergencias", {
   gruposNotificados: text("grupos_notificados").array(),
   entidadesNotificadas: text("entidades_notificadas").array(),
   atendidoPor: varchar("atendido_por").references(() => usuarios.id),
+  imagenUrl: varchar("imagen_url"),
+  audioUrl: varchar("audio_url"),
+  videoUrl: varchar("video_url"),
+  mensajeVoz: varchar("mensaje_voz"),
+  metadataGps: json("metadata_gps").$type<{
+    precision?: number;
+    altitud?: number;
+    velocidad?: number;
+    timestamp?: string;
+  }>(),
+  vistaPorAdmin: boolean("vista_por_admin").default(false),
+  fechaVistaAdmin: timestamp("fecha_vista_admin"),
+  adminQueVio: varchar("admin_que_vio").references(() => usuarios.id),
+  notas: text("notas"),
   createdAt: timestamp("created_at").defaultNow(),
   resolvedAt: timestamp("resolved_at"),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertEmergenciaSchema = createInsertSchema(emergencias).omit({ id: true, createdAt: true });
+export const insertEmergenciaSchema = createInsertSchema(emergencias).omit({ id: true, createdAt: true, updatedAt: true });
 export type EmergenciaInsert = z.infer<typeof insertEmergenciaSchema>;
 export type Emergencia = typeof emergencias.$inferSelect;
+
+// ============================================================
+// NOTIFICACIONES DE CHAT
+// ============================================================
+export const notificacionesChat = pgTable("notificaciones_chat", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  grupoId: varchar("grupo_id").references(() => gruposChat.id),
+  mensajeId: varchar("mensaje_id").references(() => mensajes.id),
+  emergenciaId: varchar("emergencia_id").references(() => emergencias.id),
+  tipo: varchar("tipo", { length: 50 }).notNull(),
+  titulo: varchar("titulo", { length: 255 }),
+  contenido: text("contenido"),
+  leida: boolean("leida").default(false),
+  fechaLeida: timestamp("fecha_leida"),
+  datosExtra: json("datos_extra").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNotificacionChatSchema = createInsertSchema(notificacionesChat).omit({ id: true, createdAt: true });
+export type InsertNotificacionChat = z.infer<typeof insertNotificacionChatSchema>;
+export type NotificacionChat = typeof notificacionesChat.$inferSelect;
 
 // ============================================================
 // VIAJES TAXI
@@ -893,3 +968,17 @@ export const rolesConAprobacion: RolRegistro[] = [
 export function requiereAprobacion(rol: RolRegistro): boolean {
   return rolesConAprobacion.includes(rol);
 }
+
+// ============================================================
+// TYPE ALIASES (para compatibilidad con código existente)
+// ============================================================
+export type InsertPublicidad = PublicidadInsert;
+export type InsertServicio = ServicioInsert;
+export type InsertProductoDelivery = ProductoDeliveryInsert;
+export type InsertGrupoChat = GrupoChatInsert;
+export type InsertEmergencia = EmergenciaInsert;
+export type InsertViajeTaxi = ViajeTaxiInsert;
+export type InsertPedidoDelivery = PedidoDeliveryInsert;
+export type InsertRadioOnline = RadioOnlineInsert;
+export type InsertArchivoMp3 = ArchivoMp3Insert;
+export { viajeTaxi as viajesTaxi };

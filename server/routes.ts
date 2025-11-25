@@ -645,6 +645,435 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // RUTAS DE CHAT COMUNITARIO
+  // ============================================================
+
+  // Obtener todos los grupos de chat (admin)
+  app.get('/api/chat/grupos', isAuthenticated, async (req: any, res) => {
+    try {
+      const grupos = await storage.getGruposChat();
+      res.json(grupos);
+    } catch (error) {
+      console.error("Error al obtener grupos:", error);
+      res.status(500).json({ message: "Error al obtener grupos de chat" });
+    }
+  });
+
+  // Obtener grupos de chat del usuario autenticado
+  app.get('/api/chat/mis-grupos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const grupos = await storage.getGruposPorUsuario(userId);
+      res.json(grupos);
+    } catch (error) {
+      console.error("Error al obtener grupos del usuario:", error);
+      res.status(500).json({ message: "Error al obtener tus grupos" });
+    }
+  });
+
+  // Obtener grupos de emergencia (policía, bomberos, etc.)
+  app.get('/api/chat/grupos-emergencia', async (req, res) => {
+    try {
+      const grupos = await storage.getGruposEmergencia();
+      res.json(grupos);
+    } catch (error) {
+      console.error("Error al obtener grupos de emergencia:", error);
+      res.status(500).json({ message: "Error al obtener grupos de emergencia" });
+    }
+  });
+
+  // Obtener un grupo específico
+  app.get('/api/chat/grupos/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const grupo = await storage.getGrupo(id);
+      if (!grupo) {
+        return res.status(404).json({ message: "Grupo no encontrado" });
+      }
+      res.json(grupo);
+    } catch (error) {
+      console.error("Error al obtener grupo:", error);
+      res.status(500).json({ message: "Error al obtener grupo" });
+    }
+  });
+
+  // Verificar si usuario puede acceder a un grupo
+  app.get('/api/chat/grupos/:id/acceso', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const resultado = await storage.puedeAccederChat(userId, id);
+      res.json(resultado);
+    } catch (error) {
+      console.error("Error al verificar acceso:", error);
+      res.status(500).json({ message: "Error al verificar acceso" });
+    }
+  });
+
+  // Crear grupo de chat
+  app.post('/api/chat/grupos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const data = insertGrupoChatSchema.parse(req.body);
+      const grupo = await storage.createGrupo({
+        ...data,
+        creadorId: userId,
+        adminGrupoId: userId,
+      });
+      res.json(grupo);
+    } catch (error: any) {
+      console.error("Error al crear grupo:", error);
+      res.status(400).json({ message: error.message || "Error al crear grupo" });
+    }
+  });
+
+  // Actualizar grupo de chat
+  app.patch('/api/chat/grupos/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Verificar que sea admin del grupo o super_admin
+      const grupo = await storage.getGrupo(id);
+      if (!grupo) {
+        return res.status(404).json({ message: "Grupo no encontrado" });
+      }
+      
+      const miembro = await storage.getMiembroGrupo(id, userId);
+      const user = await storage.getUser(userId);
+      
+      if (!miembro || (miembro.rol !== 'admin' && user?.rol !== 'super_admin')) {
+        return res.status(403).json({ message: "No tienes permisos para editar este grupo" });
+      }
+      
+      const grupoActualizado = await storage.updateGrupoChat(id, req.body);
+      res.json(grupoActualizado);
+    } catch (error: any) {
+      console.error("Error al actualizar grupo:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar grupo" });
+    }
+  });
+
+  // Suspender grupo de chat
+  app.post('/api/chat/grupos/:id/suspender', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { motivo } = req.body;
+      const grupo = await storage.suspenderGrupo(id, motivo || "Suspendido por administrador");
+      if (!grupo) {
+        return res.status(404).json({ message: "Grupo no encontrado" });
+      }
+      res.json(grupo);
+    } catch (error) {
+      console.error("Error al suspender grupo:", error);
+      res.status(500).json({ message: "Error al suspender grupo" });
+    }
+  });
+
+  // Activar grupo de chat
+  app.post('/api/chat/grupos/:id/activar', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const grupo = await storage.activarGrupo(id);
+      if (!grupo) {
+        return res.status(404).json({ message: "Grupo no encontrado" });
+      }
+      res.json(grupo);
+    } catch (error) {
+      console.error("Error al activar grupo:", error);
+      res.status(500).json({ message: "Error al activar grupo" });
+    }
+  });
+
+  // Eliminar grupo de chat
+  app.delete('/api/chat/grupos/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteGrupoChat(id);
+      res.json({ message: "Grupo eliminado correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar grupo:", error);
+      res.status(500).json({ message: "Error al eliminar grupo" });
+    }
+  });
+
+  // ============================================================
+  // MIEMBROS DE GRUPO
+  // ============================================================
+
+  // Obtener miembros de un grupo
+  app.get('/api/chat/grupos/:grupoId/miembros', isAuthenticated, async (req: any, res) => {
+    try {
+      const { grupoId } = req.params;
+      const miembros = await storage.getMiembrosGrupo(grupoId);
+      res.json(miembros);
+    } catch (error) {
+      console.error("Error al obtener miembros:", error);
+      res.status(500).json({ message: "Error al obtener miembros" });
+    }
+  });
+
+  // Agregar miembro a grupo
+  app.post('/api/chat/grupos/:grupoId/miembros', isAuthenticated, async (req: any, res) => {
+    try {
+      const { grupoId } = req.params;
+      const { usuarioId, rol = 'miembro' } = req.body;
+      const userId = req.user.claims.sub;
+      
+      // Verificar que sea admin del grupo
+      const miembroActual = await storage.getMiembroGrupo(grupoId, userId);
+      const user = await storage.getUser(userId);
+      
+      if (!miembroActual || (miembroActual.rol !== 'admin' && user?.rol !== 'super_admin')) {
+        return res.status(403).json({ message: "No tienes permisos para agregar miembros" });
+      }
+      
+      const miembro = await storage.agregarMiembroGrupo({
+        grupoId,
+        usuarioId,
+        rol,
+      });
+      res.json(miembro);
+    } catch (error: any) {
+      console.error("Error al agregar miembro:", error);
+      res.status(400).json({ message: error.message || "Error al agregar miembro" });
+    }
+  });
+
+  // Unirse a un grupo (usuario se une a sí mismo)
+  app.post('/api/chat/grupos/:grupoId/unirse', isAuthenticated, async (req: any, res) => {
+    try {
+      const { grupoId } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Verificar que pueda acceder
+      const acceso = await storage.puedeAccederChat(userId, grupoId);
+      if (acceso.puede) {
+        return res.status(400).json({ message: "Ya eres miembro de este grupo" });
+      }
+      
+      // Verificar nivel de estrellas
+      const nivelUsuario = await storage.verificarNivelUsuario(userId);
+      const grupo = await storage.getGrupo(grupoId);
+      
+      if (!grupo) {
+        return res.status(404).json({ message: "Grupo no encontrado" });
+      }
+      
+      if (nivelUsuario < (grupo.estrellasMinimas || 3)) {
+        return res.status(403).json({ 
+          message: `Necesitas ${grupo.estrellasMinimas || 3} estrellas para unirte. Tienes ${nivelUsuario} estrellas.` 
+        });
+      }
+      
+      const miembro = await storage.agregarMiembroGrupo({
+        grupoId,
+        usuarioId: userId,
+        rol: 'miembro',
+      });
+      res.json(miembro);
+    } catch (error: any) {
+      console.error("Error al unirse al grupo:", error);
+      res.status(400).json({ message: error.message || "Error al unirse al grupo" });
+    }
+  });
+
+  // Actualizar rol de miembro
+  app.patch('/api/chat/grupos/:grupoId/miembros/:usuarioId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { grupoId, usuarioId } = req.params;
+      const adminId = req.user.claims.sub;
+      
+      const miembroAdmin = await storage.getMiembroGrupo(grupoId, adminId);
+      const user = await storage.getUser(adminId);
+      
+      if (!miembroAdmin || (miembroAdmin.rol !== 'admin' && user?.rol !== 'super_admin')) {
+        return res.status(403).json({ message: "No tienes permisos para editar miembros" });
+      }
+      
+      const miembro = await storage.updateMiembroGrupo(grupoId, usuarioId, req.body);
+      if (!miembro) {
+        return res.status(404).json({ message: "Miembro no encontrado" });
+      }
+      res.json(miembro);
+    } catch (error: any) {
+      console.error("Error al actualizar miembro:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar miembro" });
+    }
+  });
+
+  // Suspender miembro
+  app.post('/api/chat/grupos/:grupoId/miembros/:usuarioId/suspender', isAuthenticated, async (req: any, res) => {
+    try {
+      const { grupoId, usuarioId } = req.params;
+      const { motivo } = req.body;
+      const adminId = req.user.claims.sub;
+      
+      const miembroAdmin = await storage.getMiembroGrupo(grupoId, adminId);
+      const user = await storage.getUser(adminId);
+      
+      if (!miembroAdmin || (miembroAdmin.rol !== 'admin' && user?.rol !== 'super_admin')) {
+        return res.status(403).json({ message: "No tienes permisos para suspender miembros" });
+      }
+      
+      const miembro = await storage.suspenderMiembroGrupo(grupoId, usuarioId, motivo || "Suspendido por administrador del grupo");
+      if (!miembro) {
+        return res.status(404).json({ message: "Miembro no encontrado" });
+      }
+      res.json(miembro);
+    } catch (error) {
+      console.error("Error al suspender miembro:", error);
+      res.status(500).json({ message: "Error al suspender miembro" });
+    }
+  });
+
+  // Remover miembro del grupo
+  app.delete('/api/chat/grupos/:grupoId/miembros/:usuarioId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { grupoId, usuarioId } = req.params;
+      const adminId = req.user.claims.sub;
+      
+      // Permitir que el usuario se remueva a sí mismo
+      if (usuarioId === adminId) {
+        await storage.removerMiembroGrupo(grupoId, usuarioId);
+        return res.json({ message: "Has salido del grupo" });
+      }
+      
+      const miembroAdmin = await storage.getMiembroGrupo(grupoId, adminId);
+      const user = await storage.getUser(adminId);
+      
+      if (!miembroAdmin || (miembroAdmin.rol !== 'admin' && user?.rol !== 'super_admin')) {
+        return res.status(403).json({ message: "No tienes permisos para remover miembros" });
+      }
+      
+      await storage.removerMiembroGrupo(grupoId, usuarioId);
+      res.json({ message: "Miembro removido del grupo" });
+    } catch (error) {
+      console.error("Error al remover miembro:", error);
+      res.status(500).json({ message: "Error al remover miembro" });
+    }
+  });
+
+  // ============================================================
+  // MENSAJES DE CHAT
+  // ============================================================
+
+  // Obtener mensajes de un grupo
+  app.get('/api/chat/grupos/:grupoId/mensajes', isAuthenticated, async (req: any, res) => {
+    try {
+      const { grupoId } = req.params;
+      const userId = req.user.claims.sub;
+      const limite = parseInt(req.query.limite as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      // Verificar acceso
+      const acceso = await storage.puedeAccederChat(userId, grupoId);
+      if (!acceso.puede) {
+        return res.status(403).json({ message: acceso.razon });
+      }
+      
+      const mensajes = await storage.getMensajesGrupoConPaginacion(grupoId, limite, offset);
+      
+      // Marcar mensajes como leídos
+      await storage.marcarMensajesComoLeidos(grupoId, userId);
+      
+      res.json(mensajes);
+    } catch (error) {
+      console.error("Error al obtener mensajes:", error);
+      res.status(500).json({ message: "Error al obtener mensajes" });
+    }
+  });
+
+  // Enviar mensaje a un grupo
+  app.post('/api/chat/grupos/:grupoId/mensajes', isAuthenticated, async (req: any, res) => {
+    try {
+      const { grupoId } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Verificar acceso
+      const acceso = await storage.puedeAccederChat(userId, grupoId);
+      if (!acceso.puede) {
+        return res.status(403).json({ message: acceso.razon });
+      }
+      
+      const user = await storage.getUser(userId);
+      
+      const mensaje = await storage.createMensaje({
+        grupoId,
+        usuarioId: userId,
+        contenido: req.body.contenido,
+        tipoContenido: req.body.tipoContenido || 'texto',
+        mediaUrl: req.body.mediaUrl,
+        latitud: req.body.latitud,
+        longitud: req.body.longitud,
+        metadataFoto: req.body.metadataFoto,
+        nombreRemitente: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'Usuario',
+        fotoRemitente: user?.profileImageUrl,
+      });
+      
+      res.json(mensaje);
+    } catch (error: any) {
+      console.error("Error al enviar mensaje:", error);
+      res.status(400).json({ message: error.message || "Error al enviar mensaje" });
+    }
+  });
+
+  // Subir archivo para mensaje (imagen, audio, documento)
+  app.post('/api/chat/upload', isAuthenticated, createUploadMiddleware('chat', 'archivo'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
+      }
+
+      const url = getPublicUrl(req.file.path);
+      res.json({ 
+        url, 
+        path: req.file.path,
+        filename: req.file.filename,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+      });
+    } catch (error: any) {
+      console.error('Error al subir archivo de chat:', error);
+      res.status(500).json({ message: error.message || 'Error al subir archivo' });
+    }
+  });
+
+  // Eliminar mensaje (soft delete)
+  app.delete('/api/chat/mensajes/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const mensaje = await storage.eliminarMensaje(id, userId);
+      if (!mensaje) {
+        return res.status(404).json({ message: "Mensaje no encontrado" });
+      }
+      res.json({ message: "Mensaje eliminado" });
+    } catch (error) {
+      console.error("Error al eliminar mensaje:", error);
+      res.status(500).json({ message: "Error al eliminar mensaje" });
+    }
+  });
+
+  // Historial de mensajes (últimos 30 días)
+  app.get('/api/chat/grupos/:grupoId/historial', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { grupoId } = req.params;
+      const dias = parseInt(req.query.dias as string) || 30;
+      
+      const fechaDesde = new Date();
+      fechaDesde.setDate(fechaDesde.getDate() - dias);
+      
+      const mensajes = await storage.getMensajesHistorico(grupoId, fechaDesde);
+      res.json(mensajes);
+    } catch (error) {
+      console.error("Error al obtener historial:", error);
+      res.status(500).json({ message: "Error al obtener historial" });
+    }
+  });
+
+  // ============================================================
   // RUTAS DE SERVICIOS
   // ============================================================
 

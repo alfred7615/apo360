@@ -1,7 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
 import { storage } from './storage';
-import type { InsertMensaje } from '@shared/schema';
+import type { InsertMensaje, InsertEmergencia } from '@shared/schema';
 import type { IncomingMessage } from 'http';
 import { getSession } from './replitAuth';
 import passport from 'passport';
@@ -10,14 +10,29 @@ interface ExtendedWebSocket extends WebSocket {
   usuarioId?: string;
   grupoId?: string;
   isAlive?: boolean;
+  userName?: string;
+  userPhoto?: string;
 }
 
 interface WebSocketMessage {
-  type: 'join' | 'message' | 'typing' | 'ping';
+  type: 'join' | 'message' | 'typing' | 'ping' | 'location' | 'emergency' | 'multimedia' | 'leave';
   grupoId?: string;
   usuarioId?: string;
   contenido?: string;
   archivoUrl?: string;
+  tipoContenido?: 'texto' | 'imagen' | 'audio' | 'video' | 'documento' | 'ubicacion' | 'emergencia';
+  latitud?: number;
+  longitud?: number;
+  metadataFoto?: {
+    fechaHora?: string;
+    logoUrl?: string;
+    nombreUsuario?: string;
+    gpsLat?: number;
+    gpsLng?: number;
+    marcaAgua?: string;
+  };
+  tipoEmergencia?: 'policia' | 'bomberos' | 'ambulancia' | 'serenazgo' | 'general';
+  gruposDestino?: string[];
 }
 
 export function setupWebSocket(httpServer: Server) {
@@ -143,11 +158,12 @@ export function setupWebSocket(httpServer: Server) {
             break;
 
           case 'message':
-            // Enviar mensaje y persistir en BD
-            if (!data.contenido) {
+          case 'multimedia':
+            // Enviar mensaje (texto o multimedia) y persistir en BD
+            if (!data.contenido && !data.archivoUrl) {
               ws.send(JSON.stringify({
                 type: 'error',
-                message: 'contenido es requerido',
+                message: 'contenido o archivoUrl es requerido',
               }));
               return;
             }
@@ -161,33 +177,177 @@ export function setupWebSocket(httpServer: Server) {
               return;
             }
 
-            // SEGURIDAD: Usar ws.usuarioId de la sesión (NO del cliente)
-            {
+            try {
+              // Obtener datos del usuario para metadata
+              const usuario = await storage.getUser(ws.usuarioId);
+              const nombreRemitente = `${usuario?.firstName || ''} ${usuario?.lastName || ''}`.trim() || usuario?.email || 'Usuario';
+              
+              // Persistir mensaje en base de datos usando usuarioId de la sesión
+              const mensajeData: InsertMensaje = {
+                grupoId: ws.grupoId,
+                remitenteId: ws.usuarioId,
+                contenido: data.contenido || '',
+                tipo: data.tipoContenido || 'texto',
+                archivoUrl: data.archivoUrl,
+                gpsLatitud: data.latitud,
+                gpsLongitud: data.longitud,
+                metadataFoto: data.metadataFoto ? {
+                  fechaHora: data.metadataFoto.fechaHora || new Date().toISOString(),
+                  nombreUsuario: data.metadataFoto.nombreUsuario || nombreRemitente,
+                  logoUrl: data.metadataFoto.logoUrl,
+                  latitud: data.metadataFoto.gpsLat,
+                  longitud: data.metadataFoto.gpsLng,
+                } : undefined,
+              };
 
-              try {
-                // Persistir mensaje en base de datos usando usuarioId de la sesión
-                const mensajeData: InsertMensaje = {
-                  grupoId: ws.grupoId,
-                  remitenteId: ws.usuarioId, // Usar ws.usuarioId de la sesión autenticada
-                  contenido: data.contenido,
-                  archivoUrl: data.archivoUrl,
-                };
+              const mensaje = await storage.createMensaje(mensajeData);
+              console.log('💾 Mensaje guardado en BD:', mensaje.id, 'tipo:', data.tipoContenido || 'texto');
 
-                const mensaje = await storage.createMensaje(mensajeData);
-                console.log('💾 Mensaje guardado en BD:', mensaje.id);
+              // Broadcast mensaje con datos del remitente
+              broadcastToGroup(wss, ws.grupoId, {
+                type: 'new_message',
+                mensaje: {
+                  ...mensaje,
+                  nombreRemitente,
+                  fotoRemitente: usuario?.profileImageUrl,
+                },
+              });
+            } catch (error) {
+              console.error('❌ Error al guardar mensaje:', error);
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Error al enviar mensaje',
+              }));
+            }
+            break;
 
-                // Broadcast mensaje (ya tiene remitenteId correcto)
-                broadcastToGroup(wss, ws.grupoId, {
-                  type: 'new_message',
-                  mensaje: mensaje,
+          case 'location':
+            // Enviar ubicación GPS
+            if (!ws.grupoId || !ws.usuarioId) {
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Debe unirse a un grupo primero',
+              }));
+              return;
+            }
+
+            if (!data.latitud || !data.longitud) {
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'latitud y longitud son requeridos',
+              }));
+              return;
+            }
+
+            try {
+              const usuario = await storage.getUser(ws.usuarioId);
+              const nombreRemitente = `${usuario?.firstName || ''} ${usuario?.lastName || ''}`.trim() || usuario?.email || 'Usuario';
+              
+              const mensajeUbicacion: InsertMensaje = {
+                grupoId: ws.grupoId,
+                remitenteId: ws.usuarioId,
+                contenido: data.contenido || 'Ubicación compartida',
+                tipo: 'ubicacion',
+                gpsLatitud: data.latitud,
+                gpsLongitud: data.longitud,
+              };
+
+              const mensaje = await storage.createMensaje(mensajeUbicacion);
+              console.log('📍 Ubicación guardada en BD:', mensaje.id);
+
+              broadcastToGroup(wss, ws.grupoId, {
+                type: 'new_location',
+                mensaje: {
+                  ...mensaje,
+                  nombreRemitente,
+                  fotoRemitente: usuario?.profileImageUrl,
+                },
+              });
+            } catch (error) {
+              console.error('❌ Error al guardar ubicación:', error);
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Error al enviar ubicación',
+              }));
+            }
+            break;
+
+          case 'emergency':
+            // BOTÓN DE PÁNICO - Enviar alerta de emergencia a grupos específicos
+            if (!ws.usuarioId) {
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Usuario no autenticado',
+              }));
+              return;
+            }
+
+            try {
+              const usuario = await storage.getUser(ws.usuarioId);
+              const nombreUsuario = `${usuario?.firstName || ''} ${usuario?.lastName || ''}`.trim() || usuario?.email || 'Usuario';
+              
+              // Crear registro de emergencia en BD
+              const emergenciaData: InsertEmergencia = {
+                usuarioId: ws.usuarioId,
+                tipo: data.tipoEmergencia || 'general',
+                descripcion: data.contenido || 'Alerta de emergencia activada',
+                latitud: data.latitud,
+                longitud: data.longitud,
+                estado: 'activa',
+              };
+
+              const emergencia = await storage.createEmergencia(emergenciaData);
+              console.log('🚨 Emergencia creada:', emergencia.id, 'tipo:', data.tipoEmergencia);
+
+              // Obtener grupos de emergencia para notificar
+              const gruposEmergencia = await storage.getGruposEmergencia();
+              
+              // Filtrar por tipo de emergencia si se especificaron grupos destino
+              const gruposDestino = data.gruposDestino?.length 
+                ? gruposEmergencia.filter(g => data.gruposDestino?.includes(g.id))
+                : gruposEmergencia;
+
+              // Broadcast a todos los grupos de emergencia
+              for (const grupo of gruposDestino) {
+                broadcastToGroup(wss, grupo.id, {
+                  type: 'emergency_alert',
+                  emergencia: {
+                    ...emergencia,
+                    nombreUsuario,
+                    fotoUsuario: usuario?.profileImageUrl,
+                    telefonoUsuario: usuario?.telefono,
+                  },
                 });
-              } catch (error) {
-                console.error('❌ Error al guardar mensaje:', error);
-                ws.send(JSON.stringify({
-                  type: 'error',
-                  message: 'Error al enviar mensaje',
-                }));
               }
+
+              // Confirmar al usuario que envió el pánico
+              ws.send(JSON.stringify({
+                type: 'emergency_confirmed',
+                emergencia,
+                gruposNotificados: gruposDestino.length,
+                mensaje: `Alerta enviada a ${gruposDestino.length} grupos de emergencia`,
+              }));
+
+              console.log(`🚨 Emergencia broadcast a ${gruposDestino.length} grupos`);
+            } catch (error) {
+              console.error('❌ Error al crear emergencia:', error);
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Error al enviar alerta de emergencia',
+              }));
+            }
+            break;
+
+          case 'leave':
+            // Usuario abandona el grupo actual
+            if (ws.grupoId && ws.usuarioId) {
+              broadcastToGroup(wss, ws.grupoId, {
+                type: 'user_left',
+                usuarioId: ws.usuarioId,
+                grupoId: ws.grupoId,
+              });
+              console.log(`👋 Usuario ${ws.usuarioId} abandonó el grupo ${ws.grupoId}`);
+              ws.grupoId = undefined;
             }
             break;
 

@@ -7,7 +7,7 @@ import {
   miembrosGrupo,
   mensajes,
   emergencias,
-  viajeTaxi,
+  viajesTaxi,
   pedidosDelivery,
   radiosOnline,
   archivosMp3,
@@ -34,28 +34,29 @@ import {
   logosServicios,
   productosServicio,
   transaccionesSaldo,
+  notificacionesChat,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
-  type PublicidadInsert,
+  type InsertPublicidad,
   type Servicio,
-  type ServicioInsert,
+  type InsertServicio,
   type ProductoDelivery,
-  type ProductoDeliveryInsert,
+  type InsertProductoDelivery,
   type GrupoChat,
-  type GrupoChatInsert,
+  type InsertGrupoChat,
   type Mensaje,
-  type MensajeInsert,
+  type InsertMensaje,
   type Emergencia,
-  type EmergenciaInsert,
+  type InsertEmergencia,
   type ViajeTaxi,
-  type ViajeTaxiInsert,
+  type InsertViajeTaxi,
   type PedidoDelivery,
-  type PedidoDeliveryInsert,
+  type InsertPedidoDelivery,
   type RadioOnline,
-  type RadioOnlineInsert,
+  type InsertRadioOnline,
   type ArchivoMp3,
-  type ArchivoMp3Insert,
+  type InsertArchivoMp3,
   type ConfiguracionSitio,
   type InsertConfiguracionSitio,
   type UsuarioRol,
@@ -106,7 +107,7 @@ import {
   type InsertTransaccionSaldo,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
 
 // Interfaz del storage
 export interface IStorage {
@@ -391,23 +392,17 @@ export class DatabaseStorage implements IStorage {
   // ============================================================
   
   async getGruposPorUsuario(usuarioId: string): Promise<GrupoChat[]> {
-    // Obtener grupos usando la tabla normalizada miembros_grupo
-    const gruposConMiembros = await db
-      .select({
-        id: gruposChat.id,
-        nombre: gruposChat.nombre,
-        tipo: gruposChat.tipo,
-        miembros: gruposChat.miembros,
-        creadorId: gruposChat.creadorId,
-        createdAt: gruposChat.createdAt,
-        updatedAt: gruposChat.updatedAt,
-      })
+    const grupos = await db
+      .select()
       .from(gruposChat)
       .innerJoin(miembrosGrupo, eq(gruposChat.id, miembrosGrupo.grupoId))
-      .where(eq(miembrosGrupo.usuarioId, usuarioId))
-      .orderBy(desc(gruposChat.createdAt));
+      .where(and(
+        eq(miembrosGrupo.usuarioId, usuarioId),
+        eq(miembrosGrupo.estado, 'activo')
+      ))
+      .orderBy(desc(gruposChat.updatedAt));
     
-    return gruposConMiembros;
+    return grupos.map(g => g.grupos_chat);
   }
 
   async getGrupo(id: string): Promise<GrupoChat | undefined> {
@@ -481,7 +476,258 @@ export class DatabaseStorage implements IStorage {
       .insert(mensajes)
       .values(mensajeData)
       .returning();
+    
+    // Actualizar contador de mensajes y último mensaje del grupo
+    if (mensajeData.grupoId) {
+      await db.update(gruposChat)
+        .set({ 
+          totalMensajes: sql`total_mensajes + 1`,
+          ultimoMensajeAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(gruposChat.id, mensajeData.grupoId));
+    }
+    
     return mensaje;
+  }
+
+  // ============================================================
+  // FUNCIONES ADICIONALES DE CHAT
+  // ============================================================
+  
+  async getGruposChat(): Promise<GrupoChat[]> {
+    return await db.select()
+      .from(gruposChat)
+      .orderBy(desc(gruposChat.updatedAt));
+  }
+
+  async getGruposChatActivos(): Promise<GrupoChat[]> {
+    return await db.select()
+      .from(gruposChat)
+      .where(eq(gruposChat.estado, 'activo'))
+      .orderBy(desc(gruposChat.updatedAt));
+  }
+
+  async getGruposEmergencia(): Promise<GrupoChat[]> {
+    return await db.select()
+      .from(gruposChat)
+      .where(and(
+        eq(gruposChat.esEmergencia, true),
+        eq(gruposChat.estado, 'activo')
+      ))
+      .orderBy(gruposChat.nombre);
+  }
+
+  async updateGrupoChat(id: string, data: Partial<InsertGrupoChat>): Promise<GrupoChat | undefined> {
+    const [actualizado] = await db
+      .update(gruposChat)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(gruposChat.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async suspenderGrupo(id: string, motivo: string): Promise<GrupoChat | undefined> {
+    const [grupo] = await db
+      .update(gruposChat)
+      .set({ 
+        estado: 'suspendido',
+        motivoSuspension: motivo,
+        fechaSuspension: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(gruposChat.id, id))
+      .returning();
+    return grupo;
+  }
+
+  async activarGrupo(id: string): Promise<GrupoChat | undefined> {
+    const [grupo] = await db
+      .update(gruposChat)
+      .set({ 
+        estado: 'activo',
+        motivoSuspension: null,
+        fechaSuspension: null,
+        updatedAt: new Date()
+      })
+      .where(eq(gruposChat.id, id))
+      .returning();
+    return grupo;
+  }
+
+  async deleteGrupoChat(id: string): Promise<void> {
+    await db.delete(miembrosGrupo).where(eq(miembrosGrupo.grupoId, id));
+    await db.delete(mensajes).where(eq(mensajes.grupoId, id));
+    await db.delete(gruposChat).where(eq(gruposChat.id, id));
+  }
+
+  // Miembros de grupo
+  async getMiembrosGrupo(grupoId: string): Promise<(MiembroGrupo & { usuario?: Usuario })[]> {
+    const miembros = await db
+      .select()
+      .from(miembrosGrupo)
+      .leftJoin(usuarios, eq(miembrosGrupo.usuarioId, usuarios.id))
+      .where(eq(miembrosGrupo.grupoId, grupoId))
+      .orderBy(miembrosGrupo.rol, miembrosGrupo.createdAt);
+    
+    return miembros.map(m => ({
+      ...m.miembros_grupo,
+      usuario: m.users || undefined
+    }));
+  }
+
+  async getMiembroGrupo(grupoId: string, usuarioId: string): Promise<MiembroGrupo | undefined> {
+    const [miembro] = await db
+      .select()
+      .from(miembrosGrupo)
+      .where(and(
+        eq(miembrosGrupo.grupoId, grupoId),
+        eq(miembrosGrupo.usuarioId, usuarioId)
+      ))
+      .limit(1);
+    return miembro;
+  }
+
+  async updateMiembroGrupo(grupoId: string, usuarioId: string, data: Partial<InsertMiembroGrupo>): Promise<MiembroGrupo | undefined> {
+    const [actualizado] = await db
+      .update(miembrosGrupo)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(
+        eq(miembrosGrupo.grupoId, grupoId),
+        eq(miembrosGrupo.usuarioId, usuarioId)
+      ))
+      .returning();
+    return actualizado;
+  }
+
+  async suspenderMiembroGrupo(grupoId: string, usuarioId: string, motivo: string): Promise<MiembroGrupo | undefined> {
+    const [miembro] = await db
+      .update(miembrosGrupo)
+      .set({ 
+        estado: 'suspendido',
+        motivoSuspension: motivo,
+        fechaSuspension: new Date(),
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(miembrosGrupo.grupoId, grupoId),
+        eq(miembrosGrupo.usuarioId, usuarioId)
+      ))
+      .returning();
+    return miembro;
+  }
+
+  async removerMiembroGrupo(grupoId: string, usuarioId: string): Promise<void> {
+    await db.delete(miembrosGrupo)
+      .where(and(
+        eq(miembrosGrupo.grupoId, grupoId),
+        eq(miembrosGrupo.usuarioId, usuarioId)
+      ));
+    
+    // Actualizar contador de miembros
+    await db.update(gruposChat)
+      .set({ 
+        totalMiembros: sql`GREATEST(total_miembros - 1, 0)`,
+        updatedAt: new Date()
+      })
+      .where(eq(gruposChat.id, grupoId));
+  }
+
+  async contarMiembrosGrupo(grupoId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(miembrosGrupo)
+      .where(and(
+        eq(miembrosGrupo.grupoId, grupoId),
+        eq(miembrosGrupo.estado, 'activo')
+      ));
+    return Number(result[0]?.count || 0);
+  }
+
+  // Mensajes avanzados
+  async getMensajesGrupoConPaginacion(grupoId: string, limite: number = 50, offset: number = 0): Promise<Mensaje[]> {
+    return await db.select()
+      .from(mensajes)
+      .where(and(
+        eq(mensajes.grupoId, grupoId),
+        eq(mensajes.eliminado, false)
+      ))
+      .orderBy(desc(mensajes.createdAt))
+      .limit(limite)
+      .offset(offset);
+  }
+
+  async getMensajesHistorico(grupoId: string, fechaDesde: Date): Promise<Mensaje[]> {
+    return await db.select()
+      .from(mensajes)
+      .where(and(
+        eq(mensajes.grupoId, grupoId),
+        gte(mensajes.createdAt, fechaDesde),
+        eq(mensajes.eliminado, false)
+      ))
+      .orderBy(mensajes.createdAt);
+  }
+
+  async eliminarMensaje(id: string, usuarioId: string): Promise<Mensaje | undefined> {
+    const [mensaje] = await db
+      .update(mensajes)
+      .set({
+        eliminado: true,
+        eliminadoPor: usuarioId,
+        fechaEliminacion: new Date()
+      })
+      .where(eq(mensajes.id, id))
+      .returning();
+    return mensaje;
+  }
+
+  async marcarMensajesComoLeidos(grupoId: string, usuarioId: string): Promise<void> {
+    await db.update(miembrosGrupo)
+      .set({
+        mensajesNoLeidos: 0,
+        ultimoMensajeVisto: new Date(),
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(miembrosGrupo.grupoId, grupoId),
+        eq(miembrosGrupo.usuarioId, usuarioId)
+      ));
+  }
+
+  // Verificar nivel de estrellas
+  async verificarNivelUsuario(usuarioId: string): Promise<number> {
+    const [usuario] = await db.select({ nivelUsuario: usuarios.nivelUsuario })
+      .from(usuarios)
+      .where(eq(usuarios.id, usuarioId));
+    return usuario?.nivelUsuario || 1;
+  }
+
+  async puedeAccederChat(usuarioId: string, grupoId: string): Promise<{ puede: boolean; razon?: string }> {
+    const nivelUsuario = await this.verificarNivelUsuario(usuarioId);
+    const grupo = await this.getGrupo(grupoId);
+    
+    if (!grupo) {
+      return { puede: false, razon: 'Grupo no encontrado' };
+    }
+    
+    if (grupo.estado !== 'activo') {
+      return { puede: false, razon: 'Grupo suspendido' };
+    }
+    
+    if (nivelUsuario < (grupo.estrellasMinimas || 3)) {
+      return { puede: false, razon: `Requiere nivel ${grupo.estrellasMinimas} estrellas. Tu nivel actual es ${nivelUsuario}` };
+    }
+    
+    const miembro = await this.getMiembroGrupo(grupoId, usuarioId);
+    if (!miembro) {
+      return { puede: false, razon: 'No eres miembro de este grupo' };
+    }
+    
+    if (miembro.estado !== 'activo') {
+      return { puede: false, razon: 'Tu membresía está suspendida' };
+    }
+    
+    return { puede: true };
   }
 
   // ============================================================
