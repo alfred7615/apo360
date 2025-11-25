@@ -453,6 +453,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/taxi/conductores', isAuthenticated, async (req, res) => {
+    try {
+      const usuarios = await storage.getAllUsers();
+      const conductores = usuarios.filter(u => u.rol === 'conductor' || u.modoTaxi === 'conductor');
+      res.json(conductores.map(c => ({
+        id: c.id,
+        nombre: c.firstName && c.lastName ? `${c.firstName} ${c.lastName}`.trim() : c.firstName || c.lastName || 'Conductor',
+        telefono: c.telefono || '',
+        activo: c.estado === 'activo',
+        email: c.email,
+      })));
+    } catch (error) {
+      console.error("Error al obtener conductores:", error);
+      res.status(500).json({ message: "Error al obtener conductores" });
+    }
+  });
+
   // ============================================================
   // RUTAS DE DELIVERY
   // ============================================================
