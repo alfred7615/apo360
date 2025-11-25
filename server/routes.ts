@@ -1115,16 +1115,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!telefono) {
           return res.status(400).json({ message: "Número de teléfono requerido" });
         }
+        
+        // Limpiar número de teléfono y agregar prefijo de Perú si no tiene
+        let numeroLimpio = telefono.replace(/[^0-9+]/g, '');
+        
+        // Si empieza con 0, quitarlo (ej: 052 -> 52)
+        if (numeroLimpio.startsWith('0')) {
+          numeroLimpio = numeroLimpio.substring(1);
+        }
+        
+        // Si no tiene prefijo de país, agregar +51 (Perú)
+        if (!numeroLimpio.startsWith('+') && !numeroLimpio.startsWith('51')) {
+          numeroLimpio = '51' + numeroLimpio;
+        } else if (numeroLimpio.startsWith('+')) {
+          numeroLimpio = numeroLimpio.substring(1);
+        }
+        
         // Para WhatsApp, generamos el enlace de invitación
         const enlace = `${req.protocol}://${req.get('host')}/registro`;
         const mensaje = encodeURIComponent(`¡Hola! Te invito a unirte a SEG-APO, la app de seguridad comunitaria de Tacna. Regístrate aquí: ${enlace}`);
-        const whatsappUrl = `https://wa.me/${telefono.replace(/[^0-9]/g, '')}?text=${mensaje}`;
+        const whatsappUrl = `https://wa.me/${numeroLimpio}?text=${mensaje}`;
         
-        console.log(`📱 Invitación WhatsApp generada para ${telefono}`);
+        console.log(`📱 Invitación WhatsApp generada para ${numeroLimpio}`);
         
         return res.json({ 
           message: "Enlace de WhatsApp generado",
           whatsappUrl,
+          numeroFormateado: numeroLimpio,
           enviada: true
         });
       }
@@ -1192,13 +1209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           creadorId: userId,
         });
 
-        // Agregar ambos usuarios como miembros
-        await storage.addMiembroGrupo({
-          grupoId: nuevoGrupo.id,
-          usuarioId: userId,
-          rol: 'admin',
-        });
-        await storage.addMiembroGrupo({
+        // Agregar al contacto como miembro (el creador ya se agrega automáticamente en createGrupoChat)
+        await storage.agregarMiembroGrupo({
           grupoId: nuevoGrupo.id,
           usuarioId: contactoId,
           rol: 'miembro',

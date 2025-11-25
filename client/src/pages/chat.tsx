@@ -208,27 +208,28 @@ export default function Chat() {
     },
   });
 
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
+
   const invitarContactoMutation = useMutation({
     mutationFn: async (datos: { email?: string; telefono?: string; metodo: 'email' | 'whatsapp' }) => {
       return await apiRequest("POST", "/api/invitaciones", datos);
     },
     onSuccess: (data: any) => {
       if (data.whatsappUrl) {
-        // Abrir WhatsApp en nueva pestaña
-        window.open(data.whatsappUrl, '_blank');
+        setWhatsappUrl(data.whatsappUrl);
         toast({
-          title: "WhatsApp abierto",
-          description: "Se ha abierto WhatsApp con el mensaje de invitación",
+          title: "Enlace de WhatsApp listo",
+          description: `Número formateado: ${data.numeroFormateado || 'N/A'}. Haz clic en el botón verde para abrir WhatsApp.`,
         });
       } else {
         toast({
           title: "Invitación enviada",
           description: "Se ha enviado un correo con el enlace de registro",
         });
+        setMostrarModalInvitar(false);
+        setEmailInvitacion("");
+        setTelefonoInvitacion("");
       }
-      setMostrarModalInvitar(false);
-      setEmailInvitacion("");
-      setTelefonoInvitacion("");
     },
     onError: (error: Error) => {
       toast({
@@ -1072,14 +1073,37 @@ export default function Chat() {
                 <label className="text-sm font-medium">Número de WhatsApp</label>
                 <Input
                   type="tel"
-                  placeholder="+51 999 888 777"
+                  placeholder="999 888 777"
                   value={telefonoInvitacion}
                   onChange={(e) => setTelefonoInvitacion(e.target.value)}
                   data-testid="input-invitation-phone"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Incluye el código de país (ej: +51 para Perú)
+                  Ingresa el número sin prefijo (se agregará +51 automáticamente para Perú)
                 </p>
+                
+                {whatsappUrl && (
+                  <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                    <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+                      Enlace listo. Haz clic para abrir WhatsApp:
+                    </p>
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium"
+                      onClick={() => {
+                        setMostrarModalInvitar(false);
+                        setTelefonoInvitacion("");
+                        setWhatsappUrl(null);
+                      }}
+                      data-testid="link-open-whatsapp"
+                    >
+                      <SiWhatsapp className="h-5 w-5" />
+                      Abrir WhatsApp
+                    </a>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1089,6 +1113,7 @@ export default function Chat() {
               setMostrarModalInvitar(false);
               setEmailInvitacion("");
               setTelefonoInvitacion("");
+              setWhatsappUrl(null);
             }}>
               Cancelar
             </Button>
