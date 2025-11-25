@@ -170,7 +170,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/publicidad', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const data = insertPublicidadSchema.parse(req.body);
+      
+      // Convertir fechas de string a Date si es necesario
+      const body = { ...req.body };
+      if (body.fechaInicio && typeof body.fechaInicio === 'string') {
+        body.fechaInicio = body.fechaInicio ? new Date(body.fechaInicio) : null;
+      }
+      if (body.fechaFin && typeof body.fechaFin === 'string') {
+        body.fechaFin = body.fechaFin ? new Date(body.fechaFin) : null;
+      }
+      if (body.fechaCaducidad && typeof body.fechaCaducidad === 'string') {
+        body.fechaCaducidad = body.fechaCaducidad ? new Date(body.fechaCaducidad) : null;
+      }
+      
+      const data = insertPublicidadSchema.parse(body);
       const publicidad = await storage.createPublicidad({
         ...data,
         usuarioId: userId,
@@ -185,7 +198,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/publicidad/:id', isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
-      const publicidad = await storage.updatePublicidad(id, req.body);
+      
+      // Convertir fechas de string a Date si es necesario
+      const body = { ...req.body };
+      if (body.fechaInicio && typeof body.fechaInicio === 'string') {
+        body.fechaInicio = body.fechaInicio ? new Date(body.fechaInicio) : null;
+      }
+      if (body.fechaFin && typeof body.fechaFin === 'string') {
+        body.fechaFin = body.fechaFin ? new Date(body.fechaFin) : null;
+      }
+      if (body.fechaCaducidad && typeof body.fechaCaducidad === 'string') {
+        body.fechaCaducidad = body.fechaCaducidad ? new Date(body.fechaCaducidad) : null;
+      }
+      
+      const publicidad = await storage.updatePublicidad(id, body);
       if (!publicidad) {
         return res.status(404).json({ message: "Publicidad no encontrada" });
       }
