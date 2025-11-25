@@ -108,6 +108,34 @@ export function registerAdminRoutes(app: Express) {
   });
 
   // ============================================================
+  // USUARIOS - Gestión básica
+  // ============================================================
+
+  app.get('/api/usuarios', isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const usuarios = await storage.getAllUsers();
+      res.json(usuarios);
+    } catch (error) {
+      console.error('Error al obtener usuarios:', error);
+      res.status(500).json({ message: 'Error al obtener usuarios' });
+    }
+  });
+
+  app.patch('/api/usuarios/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const usuario = await storage.updateUser(id, req.body);
+      if (!usuario) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      res.json(usuario);
+    } catch (error: any) {
+      console.error('Error al actualizar usuario:', error);
+      res.status(400).json({ message: error.message || 'Error al actualizar usuario' });
+    }
+  });
+
+  // ============================================================
   // ROLES DE USUARIO
   // ============================================================
 

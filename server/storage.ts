@@ -92,6 +92,8 @@ export interface IStorage {
   // Operaciones de usuarios (obligatorias para Replit Auth)
   getUser(id: string): Promise<Usuario | undefined>;
   upsertUsuario(usuario: Partial<InsertUsuario> & { id: string }): Promise<Usuario>;
+  getAllUsers(): Promise<Usuario[]>;
+  updateUser(id: string, data: Partial<InsertUsuario>): Promise<Usuario | undefined>;
   
   // Operaciones de publicidad
   getPublicidades(tipo?: string): Promise<Publicidad[]>;
@@ -234,6 +236,19 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return usuario;
+  }
+
+  async getAllUsers(): Promise<Usuario[]> {
+    return await db.select().from(usuarios).orderBy(desc(usuarios.createdAt));
+  }
+
+  async updateUser(id: string, data: Partial<InsertUsuario>): Promise<Usuario | undefined> {
+    const [updated] = await db
+      .update(usuarios)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(usuarios.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   // ============================================================
