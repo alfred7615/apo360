@@ -177,21 +177,43 @@ export function UsuarioEditModal({ usuario, open, onClose }: UsuarioEditModalPro
     );
   };
 
+  const createMutation = useMutation({
+    mutationFn: async (data: Partial<Usuario>) => {
+      const response = await apiRequest("POST", `/api/usuarios`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/usuarios"] });
+      toast({ title: "Usuario creado", description: "El nuevo usuario se ha registrado correctamente" });
+      onClose();
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "No se pudo crear el usuario", variant: "destructive" });
+    },
+  });
+
   const handleGuardar = () => {
     const rolPrincipal = rolesSeleccionados[0] || "usuario";
     const nivelCalculado = calcularNivelUsuario(formData);
     
-    updateMutation.mutate({
+    const datosGuardar = {
       ...formData,
       rol: rolPrincipal,
       nivelUsuario: nivelCalculado,
-    });
+    };
+
+    if (usuario) {
+      updateMutation.mutate(datosGuardar);
+    } else {
+      createMutation.mutate(datosGuardar);
+    }
   };
 
-  if (!usuario) return null;
+  const esNuevoUsuario = !usuario;
 
   const nivelActual = calcularNivelUsuario(formData);
-  const isPending = updateMutation.isPending || suspenderMutation.isPending || bloquearMutation.isPending || activarMutation.isPending;
+  const isPending = updateMutation.isPending || createMutation.isPending || suspenderMutation.isPending || bloquearMutation.isPending || activarMutation.isPending;
+  const estadoActual = usuario?.estado || "activo";
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -202,18 +224,20 @@ export function UsuarioEditModal({ usuario, open, onClose }: UsuarioEditModalPro
               <User className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <span>Editar Usuario</span>
+              <span>{esNuevoUsuario ? "Nuevo Usuario" : "Editar Usuario"}</span>
               <div className="flex items-center gap-2 mt-1">
                 {renderEstrellas(nivelActual)}
-                <Badge 
-                  className={
-                    usuario.estado === "activo" ? "bg-green-500" :
-                    usuario.estado === "suspendido" ? "bg-yellow-500" :
-                    usuario.estado === "bloqueado" ? "bg-red-500" : "bg-gray-500"
-                  }
-                >
-                  {usuario.estado || "activo"}
-                </Badge>
+                {!esNuevoUsuario && (
+                  <Badge 
+                    className={
+                      estadoActual === "activo" ? "bg-green-500" :
+                      estadoActual === "suspendido" ? "bg-yellow-500" :
+                      estadoActual === "bloqueado" ? "bg-red-500" : "bg-gray-500"
+                    }
+                  >
+                    {estadoActual}
+                  </Badge>
+                )}
               </div>
             </div>
           </DialogTitle>
@@ -221,7 +245,7 @@ export function UsuarioEditModal({ usuario, open, onClose }: UsuarioEditModalPro
 
         <ScrollArea className="h-[60vh]">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className={`grid w-full ${esNuevoUsuario ? 'grid-cols-4' : 'grid-cols-5'}`}>
               <TabsTrigger value="basico" data-testid="tab-basico">
                 <User className="h-4 w-4 mr-2" />
                 Básico
@@ -238,10 +262,12 @@ export function UsuarioEditModal({ usuario, open, onClose }: UsuarioEditModalPro
                 <Shield className="h-4 w-4 mr-2" />
                 Roles
               </TabsTrigger>
-              <TabsTrigger value="acciones" data-testid="tab-acciones">
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Acciones
-              </TabsTrigger>
+              {!esNuevoUsuario && (
+                <TabsTrigger value="acciones" data-testid="tab-acciones">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Acciones
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="basico" className="mt-4 space-y-4">
@@ -688,7 +714,7 @@ export function UsuarioEditModal({ usuario, open, onClose }: UsuarioEditModalPro
                       data-testid="input-motivo-suspension"
                     />
                   </div>
-                  {usuario.estado === "suspendido" ? (
+                  {estadoActual === "suspendido" ? (
                     <Button 
                       variant="outline" 
                       className="w-full"
@@ -742,7 +768,7 @@ export function UsuarioEditModal({ usuario, open, onClose }: UsuarioEditModalPro
                       data-testid="input-motivo-bloqueo"
                     />
                   </div>
-                  {usuario.estado === "bloqueado" ? (
+                  {estadoActual === "bloqueado" ? (
                     <Button 
                       variant="outline" 
                       className="w-full"
@@ -788,12 +814,12 @@ export function UsuarioEditModal({ usuario, open, onClose }: UsuarioEditModalPro
             disabled={isPending}
             data-testid="button-guardar-usuario"
           >
-            {updateMutation.isPending ? (
+            {(updateMutation.isPending || createMutation.isPending) ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            Guardar Cambios
+            {esNuevoUsuario ? "Crear Usuario" : "Guardar Cambios"}
           </Button>
         </DialogFooter>
       </DialogContent>

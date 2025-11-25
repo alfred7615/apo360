@@ -121,6 +121,28 @@ export function registerAdminRoutes(app: Express) {
     }
   });
 
+  app.post('/api/usuarios', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const nuevoId = crypto.randomUUID();
+      
+      const datosUsuario = {
+        id: nuevoId,
+        nombre: req.body.firstName || req.body.alias || 'Usuario',
+        email: req.body.email || `${nuevoId}@temp.com`,
+        rol: req.body.rol || 'usuario',
+        activo: true,
+        modoTaxi: false,
+        ...req.body,
+      };
+
+      const usuario = await storage.upsertUsuario(datosUsuario);
+      res.status(201).json(usuario);
+    } catch (error: any) {
+      console.error('Error al crear usuario:', error);
+      res.status(400).json({ message: error.message || 'Error al crear usuario' });
+    }
+  });
+
   app.patch('/api/usuarios/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
     try {
       const { id } = req.params;

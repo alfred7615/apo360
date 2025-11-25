@@ -354,7 +354,13 @@ export default function GestionUsuariosScreen() {
           </SelectContent>
         </Select>
 
-        <Button data-testid="button-nuevo-usuario">
+        <Button 
+          onClick={() => {
+            setUsuarioSeleccionado(null);
+            setModalOpen(true);
+          }}
+          data-testid="button-nuevo-usuario"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Usuario
         </Button>

@@ -143,12 +143,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ubicacionLongitud: user.longitud || undefined,
         modoTaxi: user.modoTaxi === 'conductor',
         activo: user.estado === 'activo',
+        imagenPerfil: user.profileImageUrl || undefined,
+        primerNombre: user.firstName || undefined,
+        apellido: user.lastName || undefined,
       };
       
       res.json(authUser);
     } catch (error) {
       console.error("Error al obtener usuario:", error);
       res.status(500).json({ message: "Error al obtener usuario" });
+    }
+  });
+
+  // ============================================================
+  // RUTAS DE PERFIL DE USUARIO
+  // ============================================================
+
+  app.get('/api/usuarios/me', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error al obtener perfil:", error);
+      res.status(500).json({ message: "Error al obtener perfil" });
+    }
+  });
+
+  app.patch('/api/usuarios/me', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.updateUser(userId, req.body);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      res.json(user);
+    } catch (error: any) {
+      console.error("Error al actualizar perfil:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar perfil" });
+    }
+  });
+
+  app.post('/api/usuarios/:id/foto', isAuthenticated, createUploadMiddleware('perfiles', 'imagen'), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      if (id !== userId && req.user.claims.rol !== 'super_admin') {
+        return res.status(403).json({ message: "No autorizado" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se proporcionó ninguna imagen' });
+      }
+
+      const url = getPublicUrl(req.file.path);
+      const user = await storage.updateUser(id, { profileImageUrl: url });
+      
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      res.json({ 
+        profileImageUrl: url,
+        message: "Foto de perfil actualizada"
+      });
+    } catch (error: any) {
+      console.error("Error al subir foto de perfil:", error);
+      res.status(500).json({ message: error.message || "Error al subir foto de perfil" });
     }
   });
 
