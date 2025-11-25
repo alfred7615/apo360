@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -6,16 +6,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   User, MapPin, FileText, Briefcase, Star, 
-  Save, Loader2, Check, Camera
+  Save, Loader2, Check, Camera, Car, Upload,
+  Image as ImageIcon, Trash2, RotateCcw, ZoomIn, ZoomOut
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { ProfileImageCapture } from "@/components/ProfileImageCapture";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Usuario } from "@shared/schema";
+
+const TIPOS_VEHICULO = [
+  { value: "auto", label: "Automóvil" },
+  { value: "camioneta", label: "Camioneta" },
+  { value: "camion", label: "Camión" },
+  { value: "mototaxi", label: "Mototaxi" },
+  { value: "moto", label: "Motocicleta" },
+  { value: "van", label: "Van / Minivan" },
+  { value: "bus", label: "Bus" },
+  { value: "combi", label: "Combi" },
+];
 
 const calcularNivelUsuario = (usuario: Partial<Usuario>): number => {
   let nivel = 1;
@@ -56,6 +70,242 @@ const NIVELES_INFO = [
   { nivel: 4, titulo: "Dirección", descripcion: "Dirección completa y GPS", color: "bg-purple-500" },
   { nivel: 5, titulo: "Marketplace", descripcion: "Datos de negocio (RUC)", color: "bg-yellow-500" },
 ];
+
+async function uploadImageToServer(file: File): Promise<string | null> {
+  try {
+    const formData = new FormData();
+    formData.append('imagen', file);
+    
+    const response = await fetch('/api/upload/documentos', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error al subir imagen');
+    }
+    
+    const data = await response.json();
+    return data.url;
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    return null;
+  }
+}
+
+async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  return new File([blob], filename, { type: blob.type || 'image/jpeg' });
+}
+
+interface DocumentoUploadProps {
+  titulo: string;
+  imagenFrente?: string | null;
+  imagenPosterior?: string | null;
+  fechaEmision?: string | null;
+  fechaCaducidad?: string | null;
+  onFrenteChange: (url: string) => void;
+  onPosteriorChange: (url: string) => void;
+  onEmisionChange: (fecha: string) => void;
+  onCaducidadChange: (fecha: string) => void;
+  testIdPrefix: string;
+}
+
+function DocumentoUpload({
+  titulo,
+  imagenFrente,
+  imagenPosterior,
+  fechaEmision,
+  fechaCaducidad,
+  onFrenteChange,
+  onPosteriorChange,
+  onEmisionChange,
+  onCaducidadChange,
+  testIdPrefix
+}: DocumentoUploadProps) {
+  const [uploading, setUploading] = useState<'frente' | 'posterior' | null>(null);
+  const { toast } = useToast();
+  
+  const handleFileChange = async (type: 'frente' | 'posterior', file: File) => {
+    setUploading(type);
+    try {
+      const url = await uploadImageToServer(file);
+      if (url) {
+        if (type === 'frente') {
+          onFrenteChange(url);
+        } else {
+          onPosteriorChange(url);
+        }
+        toast({ title: "Imagen subida", description: "La imagen se guardó correctamente" });
+      } else {
+        toast({ title: "Error", description: "No se pudo subir la imagen", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Error al subir la imagen", variant: "destructive" });
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  return (
+    <Card className="mb-4">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">{titulo}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">Foto Frontal</Label>
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                id={`${testIdPrefix}-frente`}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileChange('frente', file);
+                }}
+              />
+              <label 
+                htmlFor={`${testIdPrefix}-frente`}
+                className={`block border-2 border-dashed rounded-lg p-2 text-center cursor-pointer hover:bg-muted/50 transition-colors ${uploading === 'frente' ? 'opacity-50 pointer-events-none' : ''}`}
+              >
+                {uploading === 'frente' ? (
+                  <div className="flex flex-col items-center py-4">
+                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                    <span className="text-xs text-muted-foreground mt-1">Subiendo...</span>
+                  </div>
+                ) : imagenFrente ? (
+                  <img 
+                    src={imagenFrente} 
+                    alt={`${titulo} frente`} 
+                    className="h-20 w-full object-cover rounded"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center py-2">
+                    <Camera className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground mt-1">Frente</span>
+                  </div>
+                )}
+              </label>
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">Foto Posterior</Label>
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                id={`${testIdPrefix}-posterior`}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileChange('posterior', file);
+                }}
+              />
+              <label 
+                htmlFor={`${testIdPrefix}-posterior`}
+                className={`block border-2 border-dashed rounded-lg p-2 text-center cursor-pointer hover:bg-muted/50 transition-colors ${uploading === 'posterior' ? 'opacity-50 pointer-events-none' : ''}`}
+              >
+                {uploading === 'posterior' ? (
+                  <div className="flex flex-col items-center py-4">
+                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                    <span className="text-xs text-muted-foreground mt-1">Subiendo...</span>
+                  </div>
+                ) : imagenPosterior ? (
+                  <img 
+                    src={imagenPosterior} 
+                    alt={`${titulo} posterior`} 
+                    className="h-20 w-full object-cover rounded"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center py-2">
+                    <Camera className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground mt-1">Posterior</span>
+                  </div>
+                )}
+              </label>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor={`${testIdPrefix}-emision`} className="text-xs">Emisión</Label>
+            <Input
+              id={`${testIdPrefix}-emision`}
+              type="date"
+              value={fechaEmision || ""}
+              onChange={(e) => onEmisionChange(e.target.value)}
+              className="h-8 text-sm"
+              data-testid={`input-${testIdPrefix}-emision`}
+            />
+          </div>
+          <div>
+            <Label htmlFor={`${testIdPrefix}-caducidad`} className="text-xs">Caducidad</Label>
+            <Input
+              id={`${testIdPrefix}-caducidad`}
+              type="date"
+              value={fechaCaducidad || ""}
+              onChange={(e) => onCaducidadChange(e.target.value)}
+              className="h-8 text-sm"
+              data-testid={`input-${testIdPrefix}-caducidad`}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface VehiculoFotoProps {
+  titulo: string;
+  imagen?: string | null;
+  onImageChange: (url: string) => void;
+  testId: string;
+}
+
+function VehiculoFoto({ titulo, imagen, onImageChange, testId }: VehiculoFotoProps) {
+  const handleFileChange = (file: File) => {
+    const url = URL.createObjectURL(file);
+    onImageChange(url);
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <Label className="text-xs text-muted-foreground mb-1">{titulo}</Label>
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        id={testId}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFileChange(file);
+        }}
+      />
+      <label 
+        htmlFor={testId}
+        className="block w-full border-2 border-dashed rounded-lg p-2 text-center cursor-pointer hover:bg-muted/50 transition-colors aspect-video"
+      >
+        {imagen ? (
+          <img 
+            src={imagen} 
+            alt={titulo} 
+            className="h-full w-full object-cover rounded"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full">
+            <Car className="h-6 w-6 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground mt-1">{titulo}</span>
+          </div>
+        )}
+      </label>
+    </div>
+  );
+}
 
 export default function PerfilPage() {
   const { toast } = useToast();
@@ -98,11 +348,19 @@ export default function PerfilPage() {
   };
 
   const handleGuardar = () => {
+    if (!formData || Object.keys(formData).length === 0) {
+      toast({ title: "Error", description: "No hay datos para guardar", variant: "destructive" });
+      return;
+    }
+    
     const nivelCalculado = calcularNivelUsuario(formData);
-    updateMutation.mutate({
+    const dataToSave = {
       ...formData,
       nivelUsuario: nivelCalculado,
-    });
+    };
+    
+    console.log("Guardando datos:", dataToSave);
+    updateMutation.mutate(dataToSave);
   };
 
   if (!user) {
@@ -130,21 +388,22 @@ export default function PerfilPage() {
 
   const nivelActual = calcularNivelUsuario(formData);
   const progresoNivel = (nivelActual / 5) * 100;
+  const esConductor = formData.rol === "conductor" || formData.modoTaxi === "conductor";
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl" data-testid="page-perfil">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-titulo-perfil">
-          <User className="h-6 w-6" />
+    <div className="container mx-auto p-4 max-w-5xl" data-testid="page-perfil">
+      <div className="mb-4">
+        <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-titulo-perfil">
+          <User className="h-5 w-5" />
           Mi Perfil
         </h1>
-        <p className="text-muted-foreground">Completa tu información para desbloquear más funciones</p>
+        <p className="text-sm text-muted-foreground">Completa tu información para desbloquear más funciones</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1 space-y-4">
           <Card data-testid="card-foto-perfil">
-            <CardContent className="p-6 flex flex-col items-center">
+            <CardContent className="p-4 flex flex-col items-center">
               <ProfileImageCapture
                 usuarioId={user.id}
                 imagenActual={formData.profileImageUrl || undefined}
@@ -152,45 +411,45 @@ export default function PerfilPage() {
                 size="xl"
                 onImageUpdated={(url) => handleInputChange("profileImageUrl", url)}
               />
-              <h2 className="mt-4 text-lg font-semibold" data-testid="text-nombre-usuario">
+              <h2 className="mt-3 text-base font-semibold" data-testid="text-nombre-usuario">
                 {formData.firstName || user.nombre || "Usuario"}
               </h2>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+              <p className="text-xs text-muted-foreground">{user.email}</p>
               
-              <div className="mt-4 w-full">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Nivel de Perfil</span>
+              <div className="mt-3 w-full">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium">Nivel</span>
                   {renderEstrellas(nivelActual)}
                 </div>
-                <Progress value={progresoNivel} className="h-2" data-testid="progress-nivel" />
-                <p className="text-xs text-muted-foreground mt-1 text-center">
-                  {nivelActual} de 5 niveles completados
+                <Progress value={progresoNivel} className="h-1.5" data-testid="progress-nivel" />
+                <p className="text-[10px] text-muted-foreground mt-1 text-center">
+                  {nivelActual}/5 niveles
                 </p>
               </div>
             </CardContent>
           </Card>
 
           <Card data-testid="card-niveles">
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle className="text-sm">Niveles de Perfil</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-1.5">
               {NIVELES_INFO.map((info) => (
                 <div 
                   key={info.nivel}
-                  className={`flex items-center gap-3 p-2 rounded-lg ${
+                  className={`flex items-center gap-2 p-1.5 rounded-md text-sm ${
                     nivelActual >= info.nivel ? 'bg-green-50 dark:bg-green-950' : 'bg-muted/50'
                   }`}
                   data-testid={`nivel-info-${info.nivel}`}
                 >
-                  <div className={`h-6 w-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                  <div className={`h-5 w-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${
                     nivelActual >= info.nivel ? 'bg-green-500' : 'bg-muted-foreground/30'
                   }`}>
                     {nivelActual >= info.nivel ? <Check className="h-3 w-3" /> : info.nivel}
                   </div>
                   <div>
-                    <p className="text-sm font-medium">{info.titulo}</p>
-                    <p className="text-xs text-muted-foreground">{info.descripcion}</p>
+                    <p className="text-xs font-medium">{info.titulo}</p>
+                    <p className="text-[10px] text-muted-foreground">{info.descripcion}</p>
                   </div>
                 </div>
               ))}
@@ -199,59 +458,63 @@ export default function PerfilPage() {
         </div>
 
         <Card className="lg:col-span-2" data-testid="card-formulario-perfil">
-          <CardHeader>
-            <CardTitle>Información del Perfil</CardTitle>
-            <CardDescription>Completa cada sección para subir de nivel</CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Información del Perfil</CardTitle>
+            <CardDescription className="text-xs">Completa cada sección para subir de nivel</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="basico" data-testid="tab-perfil-basico">
-                  <User className="h-4 w-4 mr-2" />
+              <TabsList className="grid w-full grid-cols-5 h-auto">
+                <TabsTrigger value="basico" className="text-xs py-1.5 px-1" data-testid="tab-perfil-basico">
+                  <User className="h-3 w-3 mr-1" />
                   Básico
                 </TabsTrigger>
-                <TabsTrigger value="ubicacion" data-testid="tab-perfil-ubicacion">
-                  <MapPin className="h-4 w-4 mr-2" />
+                <TabsTrigger value="ubicacion" className="text-xs py-1.5 px-1" data-testid="tab-perfil-ubicacion">
+                  <MapPin className="h-3 w-3 mr-1" />
                   Ubicación
                 </TabsTrigger>
-                <TabsTrigger value="documentos" data-testid="tab-perfil-documentos">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Documentos
+                <TabsTrigger value="documentos" className="text-xs py-1.5 px-1" data-testid="tab-perfil-documentos">
+                  <FileText className="h-3 w-3 mr-1" />
+                  Docs
                 </TabsTrigger>
-                <TabsTrigger value="negocio" data-testid="tab-perfil-negocio">
-                  <Briefcase className="h-4 w-4 mr-2" />
+                <TabsTrigger value="conductor" className="text-xs py-1.5 px-1" data-testid="tab-perfil-conductor">
+                  <Car className="h-3 w-3 mr-1" />
+                  Conductor
+                </TabsTrigger>
+                <TabsTrigger value="negocio" className="text-xs py-1.5 px-1" data-testid="tab-perfil-negocio">
+                  <Briefcase className="h-3 w-3 mr-1" />
                   Negocio
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="basico" className="mt-4 space-y-4">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-1">
+                      <Star className="h-3 w-3 text-yellow-400" />
                       Nivel 1 - Básico
                     </CardTitle>
-                    <CardDescription>Información mínima requerida</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="alias">Alias / Apodo</Label>
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="alias" className="text-xs">Alias</Label>
                       <Input
                         id="alias"
                         value={formData.alias || ""}
                         onChange={(e) => handleInputChange("alias", e.target.value)}
                         placeholder="Tu nombre de usuario"
+                        className="h-8"
                         data-testid="input-perfil-alias"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="email" className="text-xs">Email</Label>
                       <Input
                         id="email"
                         type="email"
                         value={formData.email || user.email || ""}
                         disabled
-                        className="bg-muted"
+                        className="h-8 bg-muted"
                         data-testid="input-perfil-email"
                       />
                     </div>
@@ -259,53 +522,56 @@ export default function PerfilPage() {
                 </Card>
 
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <Star className="h-4 w-4 text-yellow-400" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-1">
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <Star className="h-3 w-3 text-yellow-400" />
                       Nivel 2 - Chat
                     </CardTitle>
-                    <CardDescription>Datos para usar el chat comunitario</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">Nombres</Label>
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="firstName" className="text-xs">Nombres</Label>
                       <Input
                         id="firstName"
                         value={formData.firstName || ""}
                         onChange={(e) => handleInputChange("firstName", e.target.value)}
                         placeholder="Tus nombres"
+                        className="h-8"
                         data-testid="input-perfil-nombres"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Apellidos</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="lastName" className="text-xs">Apellidos</Label>
                       <Input
                         id="lastName"
                         value={formData.lastName || ""}
                         onChange={(e) => handleInputChange("lastName", e.target.value)}
                         placeholder="Tus apellidos"
+                        className="h-8"
                         data-testid="input-perfil-apellidos"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="telefono">Teléfono</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="telefono" className="text-xs">Teléfono</Label>
                       <Input
                         id="telefono"
                         value={formData.telefono || ""}
                         onChange={(e) => handleInputChange("telefono", e.target.value)}
                         placeholder="+51 999 999 999"
+                        className="h-8"
                         data-testid="input-perfil-telefono"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="dni">DNI</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="dni" className="text-xs">DNI</Label>
                       <Input
                         id="dni"
                         value={formData.dni || ""}
                         onChange={(e) => handleInputChange("dni", e.target.value)}
                         placeholder="12345678"
                         maxLength={8}
+                        className="h-8"
                         data-testid="input-perfil-dni"
                       />
                     </div>
@@ -315,52 +581,55 @@ export default function PerfilPage() {
 
               <TabsContent value="ubicacion" className="mt-4 space-y-4">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <Star className="h-4 w-4 text-yellow-400" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-1">
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <Star className="h-3 w-3 text-yellow-400" />
                       Nivel 3 - Ubicación
                     </CardTitle>
-                    <CardDescription>Tu ubicación general</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="pais">País</Label>
+                  <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="pais" className="text-xs">País</Label>
                       <Input
                         id="pais"
                         value={formData.pais || "Perú"}
                         onChange={(e) => handleInputChange("pais", e.target.value)}
+                        className="h-8"
                         data-testid="input-perfil-pais"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="departamento">Departamento</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="departamento" className="text-xs">Departamento</Label>
                       <Input
                         id="departamento"
                         value={formData.departamento || ""}
                         onChange={(e) => handleInputChange("departamento", e.target.value)}
                         placeholder="Tacna"
+                        className="h-8"
                         data-testid="input-perfil-departamento"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="distrito">Distrito</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="distrito" className="text-xs">Distrito</Label>
                       <Input
                         id="distrito"
                         value={formData.distrito || ""}
                         onChange={(e) => handleInputChange("distrito", e.target.value)}
                         placeholder="Tacna"
+                        className="h-8"
                         data-testid="input-perfil-distrito"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="sector">Sector</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="sector" className="text-xs">Sector</Label>
                       <Input
                         id="sector"
                         value={formData.sector || ""}
                         onChange={(e) => handleInputChange("sector", e.target.value)}
                         placeholder="Centro"
+                        className="h-8"
                         data-testid="input-perfil-sector"
                       />
                     </div>
@@ -368,49 +637,51 @@ export default function PerfilPage() {
                 </Card>
 
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <Star className="h-4 w-4 text-yellow-400" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-1">
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <Star className="h-3 w-3 text-yellow-400" />
                       Nivel 4 - Dirección
                     </CardTitle>
-                    <CardDescription>Tu dirección completa</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="avenidaCalle">Avenida / Calle</Label>
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="avenidaCalle" className="text-xs">Avenida / Calle</Label>
                       <Input
                         id="avenidaCalle"
                         value={formData.avenidaCalle || ""}
                         onChange={(e) => handleInputChange("avenidaCalle", e.target.value)}
                         placeholder="Av. Principal"
+                        className="h-8"
                         data-testid="input-perfil-avenida"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="manzanaLote">Manzana / Lote</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="manzanaLote" className="text-xs">Mza / Lote</Label>
                       <Input
                         id="manzanaLote"
                         value={formData.manzanaLote || ""}
                         onChange={(e) => handleInputChange("manzanaLote", e.target.value)}
                         placeholder="Mz. A Lt. 10"
+                        className="h-8"
                         data-testid="input-perfil-manzana"
                       />
                     </div>
-                    <div className="md:col-span-2 space-y-2">
-                      <Label htmlFor="direccion">Dirección Completa</Label>
+                    <div className="sm:col-span-2 space-y-1">
+                      <Label htmlFor="direccion" className="text-xs">Dirección Completa</Label>
                       <Input
                         id="direccion"
                         value={formData.direccion || ""}
                         onChange={(e) => handleInputChange("direccion", e.target.value)}
                         placeholder="Dirección completa"
+                        className="h-8"
                         data-testid="input-perfil-direccion"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="gpsLatitud">Latitud GPS</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="gpsLatitud" className="text-xs">Latitud GPS</Label>
                       <Input
                         id="gpsLatitud"
                         type="number"
@@ -418,11 +689,12 @@ export default function PerfilPage() {
                         value={formData.gpsLatitud || ""}
                         onChange={(e) => handleInputChange("gpsLatitud", parseFloat(e.target.value))}
                         placeholder="-18.0065"
+                        className="h-8"
                         data-testid="input-perfil-latitud"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="gpsLongitud">Longitud GPS</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="gpsLongitud" className="text-xs">Longitud GPS</Label>
                       <Input
                         id="gpsLongitud"
                         type="number"
@@ -430,72 +702,266 @@ export default function PerfilPage() {
                         value={formData.gpsLongitud || ""}
                         onChange={(e) => handleInputChange("gpsLongitud", parseFloat(e.target.value))}
                         placeholder="-70.2463"
+                        className="h-8"
                         data-testid="input-perfil-longitud"
                       />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full"
+                        onClick={() => {
+                          if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(
+                              (position) => {
+                                handleInputChange("gpsLatitud", position.coords.latitude);
+                                handleInputChange("gpsLongitud", position.coords.longitude);
+                                toast({ title: "Ubicación obtenida" });
+                              },
+                              () => toast({ title: "Error", description: "No se pudo obtener ubicación", variant: "destructive" })
+                            );
+                          }
+                        }}
+                        data-testid="button-obtener-gps"
+                      >
+                        <MapPin className="h-3 w-3 mr-1" />
+                        Obtener mi GPS
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
               <TabsContent value="documentos" className="mt-4 space-y-4">
+                <DocumentoUpload
+                  titulo="DNI - Documento Nacional de Identidad"
+                  imagenFrente={formData.dniImagenFrente}
+                  imagenPosterior={formData.dniImagenPosterior}
+                  fechaEmision={formData.dniEmision?.toString()}
+                  fechaCaducidad={formData.dniCaducidad?.toString()}
+                  onFrenteChange={(url) => handleInputChange("dniImagenFrente", url)}
+                  onPosteriorChange={(url) => handleInputChange("dniImagenPosterior", url)}
+                  onEmisionChange={(fecha) => handleInputChange("dniEmision", fecha)}
+                  onCaducidadChange={(fecha) => handleInputChange("dniCaducidad", fecha)}
+                  testIdPrefix="dni"
+                />
+              </TabsContent>
+
+              <TabsContent value="conductor" className="mt-4 space-y-4">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Documentos de Identidad</CardTitle>
-                    <CardDescription>
-                      Sube fotos de tu DNI para verificar tu identidad
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Car className="h-4 w-4" />
+                      Perfil de Conductor
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Completa los documentos para ser conductor
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      La carga de documentos estará disponible próximamente
-                    </p>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="tipoVehiculo" className="text-xs">Tipo de Vehículo</Label>
+                        <Select 
+                          value={formData.tipoVehiculo || ""} 
+                          onValueChange={(v) => handleInputChange("tipoVehiculo", v)}
+                        >
+                          <SelectTrigger className="h-8" data-testid="select-tipo-vehiculo">
+                            <SelectValue placeholder="Seleccionar tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TIPOS_VEHICULO.map((tipo) => (
+                              <SelectItem key={tipo.value} value={tipo.value}>
+                                {tipo.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="vehiculoPlaca" className="text-xs">Placa del Vehículo</Label>
+                        <Input
+                          id="vehiculoPlaca"
+                          value={formData.vehiculoPlaca || ""}
+                          onChange={(e) => handleInputChange("vehiculoPlaca", e.target.value.toUpperCase())}
+                          placeholder="ABC-123"
+                          className="h-8"
+                          data-testid="input-vehiculo-placa"
+                        />
+                      </div>
+                      <div className="sm:col-span-2 space-y-1">
+                        <Label htmlFor="vehiculoModelo" className="text-xs">Modelo del Vehículo</Label>
+                        <Input
+                          id="vehiculoModelo"
+                          value={formData.vehiculoModelo || ""}
+                          onChange={(e) => handleInputChange("vehiculoModelo", e.target.value)}
+                          placeholder="Toyota Yaris 2020"
+                          className="h-8"
+                          data-testid="input-vehiculo-modelo"
+                        />
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Fotos del Vehículo (4 lados)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-3">
+                      <VehiculoFoto
+                        titulo="Frente"
+                        imagen={formData.vehiculoFotoFrente}
+                        onImageChange={(url) => handleInputChange("vehiculoFotoFrente", url)}
+                        testId="vehiculo-foto-frente"
+                      />
+                      <VehiculoFoto
+                        titulo="Posterior"
+                        imagen={formData.vehiculoFotoPosterior}
+                        onImageChange={(url) => handleInputChange("vehiculoFotoPosterior", url)}
+                        testId="vehiculo-foto-posterior"
+                      />
+                      <VehiculoFoto
+                        titulo="Lateral Izq."
+                        imagen={formData.vehiculoFotoLateralIzq}
+                        onImageChange={(url) => handleInputChange("vehiculoFotoLateralIzq", url)}
+                        testId="vehiculo-foto-lateral-izq"
+                      />
+                      <VehiculoFoto
+                        titulo="Lateral Der."
+                        imagen={formData.vehiculoFotoLateralDer}
+                        onImageChange={(url) => handleInputChange("vehiculoFotoLateralDer", url)}
+                        testId="vehiculo-foto-lateral-der"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <DocumentoUpload
+                  titulo="Brevete / Licencia de Conducir"
+                  imagenFrente={formData.breveteImagenFrente}
+                  imagenPosterior={formData.breveteImagenPosterior}
+                  fechaEmision={formData.breveteEmision?.toString()}
+                  fechaCaducidad={formData.breveteCaducidad?.toString()}
+                  onFrenteChange={(url) => handleInputChange("breveteImagenFrente", url)}
+                  onPosteriorChange={(url) => handleInputChange("breveteImagenPosterior", url)}
+                  onEmisionChange={(fecha) => handleInputChange("breveteEmision", fecha)}
+                  onCaducidadChange={(fecha) => handleInputChange("breveteCaducidad", fecha)}
+                  testIdPrefix="brevete"
+                />
+
+                <DocumentoUpload
+                  titulo="SOAT - Seguro Obligatorio"
+                  imagenFrente={formData.soatImagenFrente}
+                  imagenPosterior={formData.soatImagenPosterior}
+                  fechaEmision={formData.soatEmision?.toString()}
+                  fechaCaducidad={formData.soatCaducidad?.toString()}
+                  onFrenteChange={(url) => handleInputChange("soatImagenFrente", url)}
+                  onPosteriorChange={(url) => handleInputChange("soatImagenPosterior", url)}
+                  onEmisionChange={(fecha) => handleInputChange("soatEmision", fecha)}
+                  onCaducidadChange={(fecha) => handleInputChange("soatCaducidad", fecha)}
+                  testIdPrefix="soat"
+                />
+
+                <DocumentoUpload
+                  titulo="Revisión Técnica Vehicular"
+                  imagenFrente={formData.revisionTecnicaImagenFrente}
+                  imagenPosterior={formData.revisionTecnicaImagenPosterior}
+                  fechaEmision={formData.revisionTecnicaEmision?.toString()}
+                  fechaCaducidad={formData.revisionTecnicaCaducidad?.toString()}
+                  onFrenteChange={(url) => handleInputChange("revisionTecnicaImagenFrente", url)}
+                  onPosteriorChange={(url) => handleInputChange("revisionTecnicaImagenPosterior", url)}
+                  onEmisionChange={(fecha) => handleInputChange("revisionTecnicaEmision", fecha)}
+                  onCaducidadChange={(fecha) => handleInputChange("revisionTecnicaCaducidad", fecha)}
+                  testIdPrefix="revision-tecnica"
+                />
+
+                <DocumentoUpload
+                  titulo="Credencial de Conductor"
+                  imagenFrente={formData.credencialConductorImagenFrente}
+                  imagenPosterior={formData.credencialConductorImagenPosterior}
+                  fechaEmision={formData.credencialConductorEmision?.toString()}
+                  fechaCaducidad={formData.credencialConductorCaducidad?.toString()}
+                  onFrenteChange={(url) => handleInputChange("credencialConductorImagenFrente", url)}
+                  onPosteriorChange={(url) => handleInputChange("credencialConductorImagenPosterior", url)}
+                  onEmisionChange={(fecha) => handleInputChange("credencialConductorEmision", fecha)}
+                  onCaducidadChange={(fecha) => handleInputChange("credencialConductorCaducidad", fecha)}
+                  testIdPrefix="credencial-conductor"
+                />
+
+                <DocumentoUpload
+                  titulo="Credencial de Taxi"
+                  imagenFrente={formData.credencialTaxiImagenFrente}
+                  imagenPosterior={formData.credencialTaxiImagenPosterior}
+                  fechaEmision={formData.credencialTaxiEmision?.toString()}
+                  fechaCaducidad={formData.credencialTaxiCaducidad?.toString()}
+                  onFrenteChange={(url) => handleInputChange("credencialTaxiImagenFrente", url)}
+                  onPosteriorChange={(url) => handleInputChange("credencialTaxiImagenPosterior", url)}
+                  onEmisionChange={(fecha) => handleInputChange("credencialTaxiEmision", fecha)}
+                  onCaducidadChange={(fecha) => handleInputChange("credencialTaxiCaducidad", fecha)}
+                  testIdPrefix="credencial-taxi"
+                />
               </TabsContent>
 
               <TabsContent value="negocio" className="mt-4 space-y-4">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <Star className="h-4 w-4 text-yellow-400" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-1">
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <Star className="h-3 w-3 text-yellow-400" />
                       Nivel 5 - Marketplace
                     </CardTitle>
-                    <CardDescription>Datos de tu negocio para el marketplace</CardDescription>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="nombreLocal">Nombre del Local</Label>
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="nombreLocal" className="text-xs">Nombre del Local</Label>
                       <Input
                         id="nombreLocal"
                         value={formData.nombreLocal || ""}
                         onChange={(e) => handleInputChange("nombreLocal", e.target.value)}
                         placeholder="Mi Negocio"
+                        className="h-8"
                         data-testid="input-perfil-nombre-local"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="ruc">RUC</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="ruc" className="text-xs">RUC</Label>
                       <Input
                         id="ruc"
                         value={formData.ruc || ""}
                         onChange={(e) => handleInputChange("ruc", e.target.value)}
                         placeholder="20123456789"
                         maxLength={11}
+                        className="h-8"
                         data-testid="input-perfil-ruc"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="categoriaLocal">Categoría del Negocio</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="categoriaLocal" className="text-xs">Categoría</Label>
                       <Input
                         id="categoriaLocal"
                         value={formData.categoriaLocal || ""}
                         onChange={(e) => handleInputChange("categoriaLocal", e.target.value)}
-                        placeholder="Restaurante, Tienda, etc."
+                        placeholder="Restaurante, Tienda..."
+                        className="h-8"
                         data-testid="input-perfil-categoria-local"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="direccionLocal" className="text-xs">Dirección del Local</Label>
+                      <Input
+                        id="direccionLocal"
+                        value={formData.direccionLocal || ""}
+                        onChange={(e) => handleInputChange("direccionLocal", e.target.value)}
+                        placeholder="Dirección del negocio"
+                        className="h-8"
+                        data-testid="input-perfil-direccion-local"
                       />
                     </div>
                   </CardContent>
@@ -503,7 +969,7 @@ export default function PerfilPage() {
               </TabsContent>
             </Tabs>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-end gap-2">
               <Button 
                 onClick={handleGuardar}
                 disabled={updateMutation.isPending}

@@ -95,6 +95,14 @@ export const usuarios = pgTable("users", {
   credencialTaxiEmision: date("credencial_taxi_emision"),
   credencialTaxiCaducidad: date("credencial_taxi_caducidad"),
   
+  tipoVehiculo: varchar("tipo_vehiculo", { length: 50 }),
+  vehiculoFotoFrente: varchar("vehiculo_foto_frente"),
+  vehiculoFotoPosterior: varchar("vehiculo_foto_posterior"),
+  vehiculoFotoLateralIzq: varchar("vehiculo_foto_lateral_izq"),
+  vehiculoFotoLateralDer: varchar("vehiculo_foto_lateral_der"),
+  
+  passwordHash: varchar("password_hash"),
+  
   motivoSuspension: text("motivo_suspension"),
   fechaSuspension: timestamp("fecha_suspension"),
   motivoBloqueo: text("motivo_bloqueo"),

@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/upload/documentos', isAuthenticated, requireSuperAdmin, createUploadMiddleware('documentos', 'documento'), async (req, res) => {
+  app.post('/api/upload/documentos', isAuthenticated, createUploadMiddleware('documentos', 'imagen'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
@@ -121,6 +121,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============================================================
   // RUTAS DE AUTENTICACIÓN
   // ============================================================
+
+  app.post('/api/auth/registro', async (req, res) => {
+    try {
+      const { 
+        alias, email, password, nivelUsuario,
+        firstName, lastName, dni, telefono,
+        dniImagenFrente, dniImagenPosterior, dniEmision, dniCaducidad,
+        profileImageUrl, pais, departamento, distrito, sector,
+        direccion, manzanaLote, avenidaCalle, gpsLatitud, gpsLongitud,
+        nombreLocal, direccionLocal, gpsLocalLatitud, gpsLocalLongitud, ruc
+      } = req.body;
+
+      if (!alias || !email || !password) {
+        return res.status(400).json({ message: "Alias, email y contraseña son requeridos" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "El email ya está registrado" });
+      }
+
+      const crypto = await import('crypto');
+      const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+      const id = crypto.randomUUID();
+
+      const userData: Partial<any> & { id: string } = {
+        id,
+        alias,
+        email,
+        passwordHash,
+        nivelUsuario: nivelUsuario || 1,
+        rol: 'usuario',
+        estado: 'activo',
+      };
+
+      if (nivelUsuario >= 2) {
+        userData.firstName = firstName;
+        userData.lastName = lastName;
+        userData.dni = dni;
+        userData.telefono = telefono;
+        userData.dniImagenFrente = dniImagenFrente;
+        userData.dniImagenPosterior = dniImagenPosterior;
+        if (dniEmision) userData.dniEmision = dniEmision;
+        if (dniCaducidad) userData.dniCaducidad = dniCaducidad;
+        userData.profileImageUrl = profileImageUrl;
+      }
+
+      if (nivelUsuario >= 3) {
+        userData.pais = pais;
+        userData.departamento = departamento;
+        userData.distrito = distrito;
+        userData.sector = sector;
+      }
+
+      if (nivelUsuario >= 4) {
+        userData.direccion = direccion;
+        userData.manzanaLote = manzanaLote;
+        userData.avenidaCalle = avenidaCalle;
+        if (gpsLatitud) userData.gpsLatitud = parseFloat(gpsLatitud);
+        if (gpsLongitud) userData.gpsLongitud = parseFloat(gpsLongitud);
+      }
+
+      if (nivelUsuario >= 5) {
+        userData.nombreLocal = nombreLocal;
+        userData.direccionLocal = direccionLocal;
+        if (gpsLocalLatitud) userData.gpsLocalLatitud = parseFloat(gpsLocalLatitud);
+        if (gpsLocalLongitud) userData.gpsLocalLongitud = parseFloat(gpsLocalLongitud);
+        userData.ruc = ruc;
+      }
+
+      const newUser = await storage.createUser(userData);
+      
+      res.status(201).json({ 
+        message: "Usuario registrado exitosamente",
+        user: {
+          id: newUser.id,
+          alias: newUser.alias,
+          email: newUser.email,
+          nivelUsuario: newUser.nivelUsuario,
+        }
+      });
+    } catch (error: any) {
+      console.error("Error en registro:", error);
+      res.status(500).json({ message: error.message || "Error al registrar usuario" });
+    }
+  });
 
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {

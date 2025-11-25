@@ -11,6 +11,7 @@ import Landing from "@/pages/landing";
 import Home from "@/pages/home";
 import Chat from "@/pages/chat";
 import Perfil from "@/pages/perfil";
+import Registro from "@/pages/registro";
 import AdminPanel from "@/pages/admin-panel";
 import NotFound from "@/pages/not-found";
 
@@ -28,6 +29,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={isAuthenticated ? Home : Landing} />
+      <Route path="/registro" component={Registro} />
       <Route path="/chat" component={Chat} />
       <Route path="/perfil" component={Perfil} />
       <Route path="/admin" component={AdminPanel} />
