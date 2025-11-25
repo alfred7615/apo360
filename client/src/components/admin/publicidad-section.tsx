@@ -342,32 +342,41 @@ export default function PublicidadSection() {
                     setUploadedImages(urls);
                     
                     // Crear registros de publicidad automáticamente para cada imagen subida
-                    try {
-                      const promises = urls.map(url => 
+                    // Manejo granular de errores por imagen
+                    const resultados = await Promise.allSettled(
+                      urls.map(url => 
                         apiRequest("POST", "/api/publicidad", {
                           imagenUrl: url,
                           tipo: activeTab || "carrusel_logos",
                           estado: "activo",
-                          titulo: `Publicidad ${new Date().toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' })}`,
+                          titulo: `Nueva Publicidad`,
+                          descripcion: "",
                           orden: 0,
                         })
-                      );
-                      
-                      await Promise.all(promises);
-                      
-                      // Refrescar la lista de publicidades
-                      queryClient.invalidateQueries({ queryKey: ["/api/publicidad"] });
-                      
+                      )
+                    );
+                    
+                    const exitosos = resultados.filter(r => r.status === 'fulfilled').length;
+                    const fallidos = resultados.filter(r => r.status === 'rejected').length;
+                    
+                    // Refrescar la lista de publicidades
+                    await queryClient.invalidateQueries({ queryKey: ["/api/publicidad"] });
+                    
+                    if (exitosos > 0) {
                       toast({
-                        title: "Imágenes guardadas",
-                        description: `Se crearon ${urls.length} publicidades exitosamente. Puedes editarlas para completar su información.`,
+                        title: fallidos > 0 ? "Guardado parcial" : "Imágenes guardadas",
+                        description: fallidos > 0 
+                          ? `Se crearon ${exitosos} publicidades. ${fallidos} fallaron. Puedes editarlas para completar su información.`
+                          : `Se crearon ${exitosos} publicidades exitosamente. Puedes editarlas para completar su información.`,
+                        variant: fallidos > 0 ? "default" : "default",
                       });
                       
+                      // Solo cerrar si al menos una se guardó exitosamente
                       setIsMultipleUploadDialogOpen(false);
-                    } catch (error) {
+                    } else {
                       toast({
                         title: "Error al guardar",
-                        description: "Las imágenes se subieron pero hubo un error al crear los registros. Intenta crear manualmente.",
+                        description: "Las imágenes se subieron pero no se pudieron crear los registros. Intenta crear manualmente desde 'Nueva Publicidad'.",
                         variant: "destructive",
                       });
                     }
@@ -888,59 +897,68 @@ export default function PublicidadSection() {
                         </p>
                         
                         {/* Indicadores visuales de información adicional */}
-                        <div className="flex flex-wrap gap-1 items-center">
-                          {/* Indicador de GPS */}
-                          {(pub.latitud !== null && pub.longitud !== null) && (
-                            <span title="Tiene ubicación GPS">
+                        <div className="flex flex-wrap gap-1 items-center min-h-[16px]">
+                          {/* Indicador de GPS - solo si tiene coordenadas válidas */}
+                          {(typeof pub.latitud === 'number' && typeof pub.longitud === 'number' && 
+                            Math.abs(pub.latitud) <= 90 && Math.abs(pub.longitud) <= 180 &&
+                            pub.latitud !== 0 && pub.longitud !== 0) && (
+                            <span title={`GPS: ${pub.latitud}, ${pub.longitud}`}>
                               <MapPin className="h-3 w-3 text-blue-500" />
                             </span>
                           )}
                           
-                          {/* Indicadores de redes sociales */}
-                          {pub.facebook && (
-                            <span title="Facebook configurado">
+                          {/* Indicadores de redes sociales - solo si tienen contenido válido y formato URL */}
+                          {pub.facebook && pub.facebook.trim().length > 5 && 
+                            (pub.facebook.includes('facebook.com') || pub.facebook.includes('fb.com') || pub.facebook.startsWith('@')) && (
+                            <span title={`Facebook: ${pub.facebook}`}>
                               <Facebook className="h-3 w-3 text-blue-600" />
                             </span>
                           )}
-                          {pub.instagram && (
-                            <span title="Instagram configurado">
+                          {pub.instagram && pub.instagram.trim().length > 3 && 
+                            (pub.instagram.includes('instagram.com') || pub.instagram.startsWith('@')) && (
+                            <span title={`Instagram: ${pub.instagram}`}>
                               <Instagram className="h-3 w-3 text-pink-600" />
                             </span>
                           )}
-                          {pub.whatsapp && (
-                            <span title="WhatsApp configurado">
+                          {pub.whatsapp && pub.whatsapp.trim().length > 5 && (
+                            <span title={`WhatsApp: ${pub.whatsapp}`}>
                               <SiWhatsapp className="h-3 w-3 text-green-600" />
                             </span>
                           )}
-                          {pub.tiktok && (
-                            <span title="TikTok configurado">
+                          {pub.tiktok && pub.tiktok.trim().length > 3 && 
+                            (pub.tiktok.includes('tiktok.com') || pub.tiktok.startsWith('@')) && (
+                            <span title={`TikTok: ${pub.tiktok}`}>
                               <SiTiktok className="h-3 w-3 text-gray-800 dark:text-gray-200" />
                             </span>
                           )}
-                          {pub.twitter && (
-                            <span title="Twitter/X configurado">
+                          {pub.twitter && pub.twitter.trim().length > 3 && 
+                            (pub.twitter.includes('twitter.com') || pub.twitter.includes('x.com') || pub.twitter.startsWith('@')) && (
+                            <span title={`Twitter/X: ${pub.twitter}`}>
                               <Twitter className="h-3 w-3 text-blue-400" />
                             </span>
                           )}
-                          {pub.youtube && (
-                            <span title="YouTube configurado">
+                          {pub.youtube && pub.youtube.trim().length > 5 && 
+                            (pub.youtube.includes('youtube.com') || pub.youtube.includes('youtu.be') || pub.youtube.startsWith('@')) && (
+                            <span title={`YouTube: ${pub.youtube}`}>
                               <Youtube className="h-3 w-3 text-red-600" />
                             </span>
                           )}
-                          {pub.linkedin && (
-                            <span title="LinkedIn configurado">
+                          {pub.linkedin && pub.linkedin.trim().length > 5 && 
+                            pub.linkedin.includes('linkedin.com') && (
+                            <span title={`LinkedIn: ${pub.linkedin}`}>
                               <Linkedin className="h-3 w-3 text-blue-700" />
                             </span>
                           )}
                           
-                          {/* Indicador de enlace externo */}
-                          {pub.enlaceUrl && (
-                            <span title="Tiene enlace externo">
+                          {/* Indicador de enlace externo - solo si tiene URL válida */}
+                          {pub.enlaceUrl && pub.enlaceUrl.trim().length > 5 && 
+                            (pub.enlaceUrl.startsWith('http://') || pub.enlaceUrl.startsWith('https://')) && (
+                            <span title={`Enlace: ${pub.enlaceUrl}`}>
                               <ExternalLink className="h-3 w-3 text-purple-500" />
                             </span>
                           )}
                           
-                          {/* Indicador de fechas configuradas */}
+                          {/* Indicador de fechas configuradas - solo si tiene al menos una fecha válida */}
                           {(pub.fechaInicio || pub.fechaFin || pub.fechaCaducidad) && (
                             <span title="Tiene fechas configuradas">
                               <Calendar className="h-3 w-3 text-orange-500" />
