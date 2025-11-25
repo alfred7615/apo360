@@ -1,137 +1,9 @@
 # SEG-APO - Sistema de Seguridad y Apoyo Comunitario
 
 ## Overview
-SEG-APO is a comprehensive community security platform designed for Tacna, Peru. It integrates real-time messaging, ride-hailing (taxi), delivery services, local advertising, and an emergency panic button system. Its core purpose is to enhance community safety, connectivity, and local commerce. The project aims to become a vital tool for community interaction and emergency response, providing a robust platform for local services and security.
-
-## Recent Changes (November 24, 2025)
-### Panel de Administración: Radio Online y Archivos MP3 (November 24, 2025)
-- **Nuevas Secciones de Administración**:
-  - **Radio Online** (`client/src/components/admin/radios-online-section.tsx`):
-    * CRUD completo: Create, Read, Update, Delete, Toggle Estado
-    * Formularios controlados con React Hook Form usando patrón `form.watch()` + `form.setValue()`
-    * Campos: nombre*, url*, descripcion, logoUrl (con ImageUpload), orden, estado
-    * Estados: "activo" | "pausado"
-    * Lista ordenada con badges visuales de estado
-    * Integración con endpoints `/api/radios-online`
-  
-  - **Archivos MP3** (`client/src/components/admin/archivos-mp3-section.tsx`):
-    * CRUD completo: Create, Read, Update, Delete, Toggle Estado
-    * Formularios controlados (mismo patrón que Radio Online)
-    * Campos: titulo*, archivoUrl*, categoria, duracion, orden, estado
-    * Categorías: Música, Jingles, Publicidad, Promocionales, Noticias, Otros
-    * Display de duración formateada (MM:SS)
-    * Lista ordenada con badges de estado y categoría
-    * Integración con endpoints `/api/archivos-mp3`
-
-- **Patrón de Formularios Controlados**:
-  - Solución al problema de formularios no controlados en edición
-  - Pattern: `value={form.watch("campo")} onChange={e => form.setValue("campo", e.value)}`
-  - Garantiza que `form.reset()` funcione correctamente al editar
-  - Previene pérdida de datos al actualizar registros existentes
-
-- **Corrección de Bug apiRequest**:
-  - Arreglado orden de parámetros: `apiRequest(method, url, data)` en lugar de `apiRequest(url, method, data)`
-  - Aplicado en `publicidad-section.tsx`
-
-### Panel de Publicidad Completo con GPS y Caducidad Visual
-- **Schema Ampliado** (`shared/schema.ts`):
-  - Campos de redes sociales: facebook, instagram, whatsapp, tiktok, twitter, youtube, linkedin
-  - Campo `fechaCaducidad` para control de vigencia de publicidades
-  - **Campos GPS**: `latitud` (real), `longitud` (real), `direccion` (text) para ubicación del local
-  - Tipo `logos_servicios` agregado (total 3 tipos: carrusel_logos, carrusel_principal, logos_servicios)
-
-- **Vista de Galería Responsive** (`client/src/components/admin/publicidad-section.tsx`):
-  - Modo de visualización dual: Galería (5 columnas) y Lista
-  - Grid móvil: **2 columnas en SM/móvil**, 3 columnas (MD), 4 columnas (LG), 5 columnas (XL)
-  - **Imágenes flexibles**: `object-contain` con aspect-ratio cuadrado que se adapta a la orientación natural de la imagen (horizontal, vertical, cuadrada)
-  - **Overlay gris con badge "Caducada"**: cuando `fechaCaducidad < fecha actual`
-  - **Botón GPS**: enlace directo a Google Maps cuando tiene coordenadas GPS
-  - Preview de imagen con placeholder cuando no hay imagen
-  - Badges de estado y tipo visibles en cada card
-  - Iconos de redes sociales disponibles en miniaturas
-  - Fecha de caducidad visible (roja cuando está caducada)
-  - Acciones rápidas (pausar/activar, editar, eliminar) en cada card
-
-- **Formulario Completo de Publicidad**:
-  - Sección "Información Básica": título, descripción, tipo (3 opciones), orden, estado
-  - Sección "Imagen de Publicidad": componente ImageUpload integrado
-  - Sección "Enlaces": URL de enlace opcional
-  - Sección "Fechas de Vigencia": fecha inicio, fecha fin, fecha caducidad
-  - **Sección "Ubicación GPS"**: latitud, longitud, dirección del local
-  - Sección "Redes Sociales": 7 redes sociales con iconos coloridos
-    * Facebook (azul), Instagram (rosa), WhatsApp (verde)
-    * TikTok, Twitter/X (celeste), YouTube (rojo), LinkedIn (azul oscuro)
-  - Formulario con ScrollArea para mejor manejo de contenido extenso
-  - Validación de formulario con Zod
-
-- **Vista de Lista Mejorada**:
-  - Cards horizontales con thumbnail a la izquierda (object-contain)
-  - **Overlay gris en thumbnail** cuando está caducada
-  - Badge "Caducada" visible cuando aplica
-  - **Enlace GPS** ("Ver ubicación") que abre Google Maps
-  - Información completa visible: título, descripción, fechas, redes sociales
-  - Enlaces de redes sociales clickeables con iconos
-  - WhatsApp genera automáticamente enlace wa.me
-  - Fecha de caducidad en rojo cuando está vencida
-
-### Sistema Completo de Upload de Imágenes
-- **Backend Upload System** (`server/uploadConfigByEndpoint.ts`, `server/routes.ts`):
-  - Función `createUploadMiddleware(folder, fieldName)` para configuración por endpoint
-  - 4 endpoints protegidos con autenticación + rol super_admin:
-    * `/api/upload/publicidad` → carpeta 'carrusel', campo 'imagen'
-    * `/api/upload/galeria` → carpeta 'galeria', campo 'imagen'
-    * `/api/upload/servicios` → carpeta 'servicios', campo 'imagen'
-    * `/api/upload/documentos` → carpeta 'documentos', campo 'documento'
-  - Validación MIME automática (JPG, PNG, WEBP)
-  - Tamaño máximo: 5MB por archivo
-  - Generación correcta de URLs públicas: `/assets/{carpeta}/{archivo}`
-  - Función `deleteFile()` para eliminación segura de archivos
-  
-- **Middleware de Seguridad** (`server/authMiddleware.ts`):
-  - `requireSuperAdmin` verifica rol desde base de datos usando `storage.getUser()`
-  - Previene privilege spoofing
-  - Manejo robusto de errores con códigos HTTP apropiados
-
-- **Componente Frontend** (`client/src/components/ImageUpload.tsx`):
-  - Reutilizable con detección automática de campo según endpoint
-  - Preview de imagen con sincronización inteligente (no sobrescribe durante upload)
-  - Props: `endpoint`, `fileField`, `maxSize`, `acceptedFormats`
-  - Validación de tipo y tamaño en cliente
-  - Manejo de errores con mensajes descriptivos
-  - Integrado en panel de administración de publicidad
-
-- **Estructura de Archivos**:
-  - Carpetas creadas en `public/assets/`: carrusel, galeria, servicios, documentos
-  - Express static middleware para servir archivos desde `/assets`
-
-### Sistema de Carruseles de Publicidad con Pausa en Hover
-- **Helpers Utilitarios** (`publicidadUtils.ts`):
-  - `isPublicidadActiva()`: filtrado por estado y fechas (excluye caducadas)
-  - `isPublicidadCaducada()`: verifica si `fechaCaducidad < fecha actual`
-  - `getGoogleMapsUrl()`: genera URL de Google Maps para ruta
-  - `filtrarPublicidadesActivas()`: ordenamiento y filtrado completo
-  
-- **Componente CarruselPublicidad** (`client/src/components/CarruselPublicidad.tsx`):
-  - Soporta 3 tipos: `carrusel_logos`, `carrusel_principal`, `logos_servicios`
-  - Grid responsive: 5 columnas (≥1280px), 3 columnas (tablet), 2 columnas (mobile)
-  - **Pausa automática en hover**: carrusel se detiene al pasar el mouse sobre él
-  - Carrusel infinito con autoplay configurable (3s logos, 5s principal)
-  - Controles manuales: botones anterior/siguiente, pausar/reproducir manual
-  - Filtrado automático por tipo, estado activo, y rango de fechas
-  - Indicadores de puntos en carrusel principal
-  
-- **Integración**: Carruseles integrados en Landing y Home con títulos descriptivos y spacing adecuado.
-- **Type Safety**: Correcciones en home.tsx para usar propiedades correctas de AuthUser (nombre, rol, activo) y tipado correcto de emergencias con `Emergencia[]`.
-- **Testing E2E Verificado** (November 24, 2025):
-  - ✅ Pausa en hover: Carrusel se detiene al pasar mouse, se reanuda al quitarlo
-  - ✅ Grid responsive: 2 columnas móvil, escalando hasta 5 columnas desktop
-  - ✅ Caducidad visual: Overlay gris y badge "Caducada" funcionando
-  - ✅ GPS: Botones de ubicación solo visibles con coordenadas válidas
-  - ✅ Formulario completo: Todos los campos GPS, redes sociales, y ImageUpload integrados
-  - ✅ Autoplay: Intervalos de 3s (logos) y 5s (principal) funcionando correctamente
+SEG-APO is a comprehensive community security platform designed to enhance safety, connectivity, and local commerce in Tacna, Peru. It integrates real-time messaging, ride-hailing (taxi), delivery services, local advertising, and an emergency panic button system. The project's vision is to become a vital tool for community interaction and emergency response, providing a robust platform for local services and security.
 
 ## User Preferences
-**User Preferences:**
 - **Codebase changes:** All changes to the codebase, including new features, bug fixes, or refactoring, must prioritize the Spanish language for variable names, function names, comments, UI texts, error messages, and database schema elements.
 - **Development Process:** I prefer an iterative development approach, focusing on completing core functionalities before moving to advanced features.
 - **Communication:** Please use clear and concise language. If a major change is proposed, explain the reasoning and potential impact before implementation.
@@ -141,34 +13,35 @@ SEG-APO is a comprehensive community security platform designed for Tacna, Peru.
 ## System Architecture
 
 ### UI/UX Decisions
-- **Color Scheme**: Main gradient from Purple (#8B5CF6) to Pink (#EC4899). Panic button is bright Red (#EF4444) with a pulse animation. Chat messages use WhatsApp green (#25D366) for sent messages and light grey for received. Status indicators use Yellow (pending), Green (active), and Red (emergency).
+- **Color Scheme**: Main gradient from Purple (#8B5CF6) to Pink (#EC4899). Panic button is bright Red (#EF4444) with a pulse animation. Chat messages use WhatsApp green (#25D366) for sent and light grey for received. Status indicators use Yellow (pending), Green (active), and Red (emergency).
 - **Typography**: Inter font from Google Fonts. Headings (H1, H2, H3) are 32px, 24px, 20px respectively. Body text is 16px, and metadata is 14px.
-- **Spacing**: Utilizes Tailwind CSS spacing units (2, 3, 4, 6, 8, 12, 16), with component padding from p-4 to p-6, and section separation from my-8 to my-16.
+- **Spacing**: Utilizes Tailwind CSS spacing units, with component padding from p-4 to p-6, and section separation from my-8 to my-16.
 - **Component Library**: Shadcn UI is used for base components.
 
 ### Technical Implementations
-- **Frontend**: Built with React 18+ and TypeScript, styled with Tailwind CSS. Wouter is used for routing, and TanStack Query for state management and caching. Socket.io Client enables real-time WebSocket communication.
-- **Backend**: Developed using Express.js with TypeScript. Socket.io provides real-time communication.
-- **Database Interaction**: Drizzle ORM is used to interact with the PostgreSQL database.
-- **Authentication**: Replit Auth (OpenID Connect) handles user authentication, with Express Session managing sessions stored in PostgreSQL.
-- **Real-time Features**: WebSocket is central to the chat, emergency notifications, and real-time taxi/delivery updates.
-- **Internationalization**: The entire system, including codebase (variables, functions, comments), UI, error messages, and database schema, is developed in Spanish.
+- **Frontend**: React 18+ with TypeScript, styled with Tailwind CSS. Wouter for routing, TanStack Query for state management. Socket.io Client for real-time communication.
+- **Backend**: Express.js with TypeScript and Socket.io for real-time communication.
+- **Database Interaction**: Drizzle ORM for PostgreSQL.
+- **Authentication**: Replit Auth (OpenID Connect) with Express Session managing sessions in PostgreSQL.
+- **Real-time Features**: WebSockets are central to chat, emergency notifications, and taxi/delivery updates.
+- **Internationalization**: The entire system, including codebase, UI, error messages, and database schema, is developed in Spanish.
 
 ### Feature Specifications
 - **Emergency System**: Floating panic button, emergency type selection, automatic GPS location, notifications to community groups and rescue entities, real-time tracking.
 - **Community Chat**: Real-time messaging (WebSocket), community groups, private chats, unread message notifications.
 - **Taxi System**: Driver/passenger modes, ride requests with real-time geolocation, ride status tracking.
-- **Delivery System**: Order listing, local integration (restaurants, pharmacies), automated local notifications, driver assignment.
-- **Local Advertising**: Carousels for logos and activities, event listings, service galleries, timed ad displays, pop-up information.
-- **Online Radio & Audio**: Configurable online radio player, MP3 playlist with custom order, playback controls.
-- **Super Administrator Panel**: 5 dedicated screens for Dashboard (statistics, admin tools for advertising, radio, users, cartera, surveys), Chat Monitoring, Notifications Timeline, Real-time Geolocalization, and an expanded Google Maps view.
-- **Role-Based Access Control**: Supports `super_admin`, `admin_cartera`, `admin_operaciones`, `supervisor`, `usuario`, `conductor`, and `local` roles with specific permissions.
-- **Wallet and Balance System**: Configurable commissions/discounts for advertising, taxi services (driver/passenger), delivery, and group chat subscriptions. Includes a unique social media sharing incentive.
+- **Delivery System**: Order listing, local integration, automated local notifications, driver assignment.
+- **Local Advertising**: Carousels for logos and activities, event listings, service galleries, timed ad displays, pop-up information, GPS location linking, social media integration, and an image upload system.
+- **Online Radio & Audio**: Configurable online radio player, MP3 playlist with custom order, playback controls, and a dedicated admin section for management.
+- **Super Administrator Panel**: Features a dashboard (statistics, admin tools for advertising, radio, users, wallet, surveys), Chat Monitoring, Notifications Timeline, Real-time Geolocalization, and an expanded Google Maps view. Includes full CRUD for radios online and MP3 files.
+- **Role-Based Access Control**: Supports various roles including `super_admin`, `admin_cartera`, `admin_operaciones`, `supervisor`, `usuario`, `conductor`, and `local` with specific permissions.
+- **Wallet and Balance System**: Configurable commissions/discounts for various services, including a social media sharing incentive.
+- **Image Upload System**: Secure backend upload system with endpoint-specific configuration, MIME validation, size limits, and a reusable frontend component for previews and error handling.
 
 ### System Design Choices
-- **Modular Project Structure**: Clear separation between `client` (React), `server` (Express), and `shared` (common schemas/types) directories.
+- **Modular Project Structure**: Clear separation between `client` (React), `server` (Express), and `shared` (common schemas/types).
 - **Database Schema**: Comprehensive PostgreSQL schema with 25 tables covering users, advertising, services, products, chat groups, messages, emergencies, taxi trips, delivery orders, audio configurations, and site settings.
-- **Environment Management**: Utilizes environment variables for sensitive data and configuration (`DATABASE_URL`, `SESSION_SECRET`, `REPL_ID`, `ISSUER_URL`, SMTP credentials).
+- **Environment Management**: Utilizes environment variables for sensitive data and configuration.
 
 ## External Dependencies
 
@@ -176,6 +49,6 @@ SEG-APO is a comprehensive community security platform designed for Tacna, Peru.
 -   **Database**: Neon (PostgreSQL)
 -   **Authentication**: Replit Auth (OpenID Connect)
 -   **Real-time Communication**: Socket.io
--   **Mapping**: Google Maps API (for geolocalization features)
--   **Email Services**: SMTP (for contact/suggestion forms, specifically via Gmail SMTP)
+-   **Mapping**: Google Maps API
+-   **Email Services**: SMTP (via Gmail SMTP)
 -   **Fonts**: Google Fonts (Inter)
