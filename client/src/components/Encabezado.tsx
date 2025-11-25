@@ -146,7 +146,7 @@ export default function Encabezado() {
                 className="bg-white/20 text-white hover:bg-white/30"
                 data-testid="button-login"
               >
-                <a href="/api/login">Iniciar Sesión</a>
+                <Link href="/iniciar-sesion">Iniciar Sesión</Link>
               </Button>
             )}
 

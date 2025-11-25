@@ -24,7 +24,7 @@ export default function Home() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/iniciar-sesion";
       }, 500);
     }
   }, [user, isLoading, toast]);

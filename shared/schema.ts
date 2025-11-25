@@ -721,3 +721,71 @@ export const tasasCambio = pgTable("tasas_cambio", {
 export const insertTasaCambioSchema = createInsertSchema(tasasCambio).omit({ id: true, fechaActualizacion: true });
 export type InsertTasaCambio = z.infer<typeof insertTasaCambioSchema>;
 export type TasaCambio = typeof tasasCambio.$inferSelect;
+
+// ============================================================
+// ESQUEMAS DE AUTENTICACIÓN PARA FRONTEND
+// ============================================================
+
+// Roles disponibles para registro
+export const rolesRegistroValidos = [
+  "usuario",
+  "conductor", 
+  "local",
+  "serenazgo",
+  "policia",
+  "bombero",
+  "samu",
+] as const;
+
+export type RolRegistro = typeof rolesRegistroValidos[number];
+
+// Esquema de login
+export const loginSchema = z.object({
+  email: z.string().email("Ingresa un email válido"),
+  password: z.string().min(1, "La contraseña es requerida"),
+});
+export type LoginInput = z.infer<typeof loginSchema>;
+
+// Esquema de registro nivel 1 (básico)
+export const registroNivel1Schema = z.object({
+  alias: z.string()
+    .min(3, "El alias debe tener al menos 3 caracteres")
+    .max(50, "El alias no puede tener más de 50 caracteres")
+    .regex(/^[a-zA-Z0-9_]+$/, "El alias solo puede contener letras, números y guión bajo"),
+  email: z.string().email("Ingresa un email válido"),
+  telefono: z.string().optional(),
+  password: z.string()
+    .min(8, "La contraseña debe tener al menos 8 caracteres")
+    .regex(/[A-Z]/, "La contraseña debe contener al menos una mayúscula")
+    .regex(/[0-9]/, "La contraseña debe contener al menos un número"),
+  rol: z.enum(rolesRegistroValidos, {
+    errorMap: () => ({ message: "Selecciona un rol válido" }),
+  }),
+});
+export type RegistroNivel1Input = z.infer<typeof registroNivel1Schema>;
+
+// Esquema de registro con confirmación de contraseña (para frontend)
+export const registroNivel1ConConfirmacionSchema = registroNivel1Schema
+  .extend({
+    confirmPassword: z.string().min(1, "Confirma tu contraseña"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmPassword"],
+  });
+export type RegistroNivel1ConConfirmacion = z.infer<typeof registroNivel1ConConfirmacionSchema>;
+
+// Roles que requieren aprobación de administrador
+export const rolesConAprobacion: RolRegistro[] = [
+  "conductor",
+  "local", 
+  "serenazgo",
+  "policia",
+  "bombero",
+  "samu",
+];
+
+// Helper para verificar si un rol requiere aprobación
+export function requiereAprobacion(rol: RolRegistro): boolean {
+  return rolesConAprobacion.includes(rol);
+}

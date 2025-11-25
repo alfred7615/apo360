@@ -43,7 +43,7 @@ export default function Landing() {
                 className="bg-white text-purple-700 hover:bg-white/90 px-8 py-6 text-lg font-semibold shadow-xl"
                 data-testid="button-get-started"
               >
-                <a href="/api/login">
+                <a href="/iniciar-sesion">
                   <Shield className="mr-2 h-5 w-5" />
                   Comenzar Ahora
                 </a>
@@ -175,7 +175,7 @@ export default function Landing() {
             className="bg-white text-purple-700 hover:bg-white/90 px-10 py-6 text-lg font-semibold shadow-2xl"
             data-testid="button-cta-register"
           >
-            <a href="/api/login">
+            <a href="/iniciar-sesion">
               <Shield className="mr-2 h-5 w-5" />
               Registrarse Gratis
             </a>

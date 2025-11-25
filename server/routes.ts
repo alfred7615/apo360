@@ -23,6 +23,8 @@ import {
   insertRegistroDireccionSchema,
   insertRegistroMarketplaceSchema,
   insertCredencialesConductorSchema,
+  rolesRegistroValidos,
+  rolesConAprobacion,
 } from "@shared/schema";
 import { registerAdminRoutes } from "./routes-admin";
 
@@ -122,11 +124,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // RUTAS DE AUTENTICACIÓN
   // ============================================================
 
+  // Helper para generar configuración fail-closed (solo usuario habilitado)
+  const getFailClosedConfig = (): Record<string, { habilitado: boolean }> => {
+    const config: Record<string, { habilitado: boolean }> = {};
+    rolesRegistroValidos.forEach(rol => {
+      config[rol] = { habilitado: rol === "usuario" };
+    });
+    return config;
+  };
+
+  // Helper para validar estructura de configuración de roles
+  // Devuelve null si inválida, o el objeto validado si es correcto
+  const validateAndGetRolesConfig = (valorConfig: string | null | undefined): Record<string, { habilitado: boolean }> | null => {
+    // Valor nulo, undefined o vacío = inválido
+    if (!valorConfig || valorConfig.trim() === '') {
+      return null;
+    }
+    
+    let parsed: any;
+    try {
+      parsed = JSON.parse(valorConfig);
+    } catch {
+      return null; // Error parsing = inválido
+    }
+    
+    // Debe ser objeto no nulo y NO un array
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return null;
+    }
+    
+    // Objeto vacío {} = inválido (no es primera vez, es config corrupta/limpiada)
+    if (Object.keys(parsed).length === 0) {
+      return null;
+    }
+    
+    // Validar que cada entrada de rol conocido tenga estructura correcta
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!(rolesRegistroValidos as readonly string[]).includes(key)) continue;
+      if (typeof value !== 'object' || value === null) return null;
+      if (typeof (value as any).habilitado !== 'boolean') return null;
+    }
+    
+    return parsed as Record<string, { habilitado: boolean }>;
+  };
+
+  // Helper unificado para verificar si un rol específico está habilitado
+  // Devuelve: true si habilitado, false si no, null si es primera vez (sin config)
+  const isRolHabilitadoEnConfig = async (rolId: string): Promise<{ habilitado: boolean; primeraVez: boolean }> => {
+    // Rol "usuario" siempre está habilitado
+    if (rolId === "usuario") {
+      return { habilitado: true, primeraVez: false };
+    }
+    
+    try {
+      const configRoles = await storage.getConfiguracion('roles_habilitados');
+      
+      // CASO: No existe registro en BD = primera vez, permitir todos
+      if (configRoles === null || configRoles === undefined) {
+        return { habilitado: true, primeraVez: true };
+      }
+      
+      // CASO: Existe registro, validar contenido
+      const configValidada = validateAndGetRolesConfig(configRoles.valor);
+      
+      if (configValidada === null) {
+        // Config inválida/corrupta/vacía = fail-closed
+        return { habilitado: false, primeraVez: false };
+      }
+      
+      // Config válida: verificar que el rol esté explícitamente habilitado
+      if (rolId in configValidada && configValidada[rolId]?.habilitado === true) {
+        return { habilitado: true, primeraVez: false };
+      }
+      
+      // Rol no existe en config o no está habilitado = fail-closed
+      return { habilitado: false, primeraVez: false };
+    } catch (error) {
+      console.error("Error de BD al verificar rol habilitado:", error);
+      // Error de BD = fail-closed
+      return { habilitado: false, primeraVez: false };
+    }
+  };
+
+  // Endpoint para obtener configuración de roles habilitados
+  app.get('/api/configuracion/roles', async (req, res) => {
+    try {
+      const configRoles = await storage.getConfiguracion('roles_habilitados');
+      
+      // CASO: No existe registro en BD = primera vez, todos habilitados
+      if (configRoles === null || configRoles === undefined) {
+        const defaultConfig: Record<string, { habilitado: boolean }> = {};
+        rolesRegistroValidos.forEach(rol => {
+          defaultConfig[rol] = { habilitado: true };
+        });
+        return res.json(defaultConfig);
+      }
+      
+      // CASO: Existe registro, validar usando helper unificado
+      const configValidada = validateAndGetRolesConfig(configRoles.valor);
+      
+      if (configValidada === null) {
+        // Config inválida/corrupta/vacía = fail-closed
+        console.warn("Configuración de roles inválida en GET, aplicando fail-closed");
+        return res.json(getFailClosedConfig());
+      }
+      
+      // Config válida con contenido
+      return res.json(configValidada);
+    } catch (error) {
+      console.error("Error de BD al obtener configuración de roles:", error);
+      // Error de BD = fail-closed
+      res.json(getFailClosedConfig());
+    }
+  });
+
+  // Endpoint para actualizar configuración de roles (solo super admin)
+  app.put('/api/configuracion/roles', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const rolesConfig = req.body;
+      
+      // Validar estructura del JSON antes de guardar usando helper unificado
+      // Serializamos y re-validamos para asegurar consistencia
+      const jsonString = JSON.stringify(rolesConfig);
+      const configValidada = validateAndGetRolesConfig(jsonString);
+      
+      if (configValidada === null) {
+        return res.status(400).json({ 
+          message: "Estructura de configuración inválida. Debe ser {rol: {habilitado: boolean}} con al menos un rol" 
+        });
+      }
+      
+      await storage.setConfiguracion({
+        clave: 'roles_habilitados',
+        valor: jsonString,
+        tipo: 'json',
+      });
+      res.json({ message: "Configuración de roles actualizada", config: configValidada });
+    } catch (error: any) {
+      console.error("Error al actualizar configuración de roles:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar configuración" });
+    }
+  });
+
   app.post('/api/auth/registro', async (req, res) => {
     try {
       const { 
-        alias, email, password, nivelUsuario,
-        firstName, lastName, dni, telefono,
+        alias, email, password, nivelUsuario, rol, telefono,
+        firstName, lastName, dni,
         dniImagenFrente, dniImagenPosterior, dniEmision, dniCaducidad,
         profileImageUrl, pais, departamento, distrito, sector,
         direccion, manzanaLote, avenidaCalle, gpsLatitud, gpsLongitud,
@@ -137,10 +281,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Alias, email y contraseña son requeridos" });
       }
 
+      if (alias.length < 3 || alias.length > 50) {
+        return res.status(400).json({ message: "El alias debe tener entre 3 y 50 caracteres" });
+      }
+
+      if (!/^[a-zA-Z0-9_]+$/.test(alias)) {
+        return res.status(400).json({ message: "El alias solo puede contener letras, números y guión bajo" });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ message: "La contraseña debe tener al menos 8 caracteres" });
+      }
+
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: "El email ya está registrado" });
       }
+
+      // Usar helpers compartidos para validar rol
+      const rolSeleccionado = rol && (rolesRegistroValidos as readonly string[]).includes(rol) 
+        ? rol 
+        : "usuario";
+      
+      // Validar que el rol esté habilitado usando helper unificado (fail-closed approach)
+      const { habilitado: rolHabilitado } = await isRolHabilitadoEnConfig(rolSeleccionado);
+      
+      if (!rolHabilitado) {
+        return res.status(400).json({ 
+          message: "Este tipo de cuenta no está disponible actualmente. Por favor, selecciona otro rol o contacta al administrador." 
+        });
+      }
+      
+      // Usar helper compartido para determinar si requiere aprobación
+      const requiereAprobacion = (rolesConAprobacion as readonly string[]).includes(rolSeleccionado);
+      const estadoUsuario = requiereAprobacion ? "pendiente_aprobacion" : "activo";
 
       const crypto = await import('crypto');
       const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
@@ -150,17 +324,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id,
         alias,
         email,
+        telefono: telefono || null,
         passwordHash,
         nivelUsuario: nivelUsuario || 1,
-        rol: 'usuario',
-        estado: 'activo',
+        rol: rolSeleccionado,
+        estado: estadoUsuario,
       };
 
       if (nivelUsuario >= 2) {
         userData.firstName = firstName;
         userData.lastName = lastName;
         userData.dni = dni;
-        userData.telefono = telefono;
         userData.dniImagenFrente = dniImagenFrente;
         userData.dniImagenPosterior = dniImagenPosterior;
         if (dniEmision) userData.dniEmision = dniEmision;
@@ -194,13 +368,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newUser = await storage.createUser(userData);
       
       res.status(201).json({ 
-        message: "Usuario registrado exitosamente",
+        message: requiereAprobacion 
+          ? "Registro enviado. Tu solicitud será revisada por un administrador."
+          : "Usuario registrado exitosamente",
         user: {
           id: newUser.id,
           alias: newUser.alias,
           email: newUser.email,
           nivelUsuario: newUser.nivelUsuario,
-        }
+          rol: newUser.rol,
+          estado: newUser.estado,
+        },
+        requiereAprobacion,
       });
     } catch (error: any) {
       console.error("Error en registro:", error);

@@ -12,6 +12,7 @@ import Home from "@/pages/home";
 import Chat from "@/pages/chat";
 import Perfil from "@/pages/perfil";
 import Registro from "@/pages/registro";
+import IniciarSesion from "@/pages/iniciar-sesion";
 import AdminPanel from "@/pages/admin-panel";
 import NotFound from "@/pages/not-found";
 
@@ -29,11 +30,14 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={isAuthenticated ? Home : Landing} />
+      <Route path="/landing" component={Landing} />
+      <Route path="/home" component={Home} />
+      <Route path="/iniciar-sesion" component={IniciarSesion} />
+      <Route path="/login" component={IniciarSesion} />
       <Route path="/registro" component={Registro} />
       <Route path="/chat" component={Chat} />
       <Route path="/perfil" component={Perfil} />
       <Route path="/admin" component={AdminPanel} />
-      {/* Más rutas para usuarios autenticados */}
       <Route component={NotFound} />
     </Switch>
   );
