@@ -178,9 +178,18 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // Primero verificar autenticación local (email/password)
+  const session = req.session as any;
+  if (session?.user?.claims?.sub) {
+    // Usuario autenticado via login local
+    (req as any).user = session.user;
+    return next();
+  }
+
+  // Luego verificar autenticación OIDC/Passport
   const user = req.user as any;
 
-  if (!req.isAuthenticated() || !user.expires_at) {
+  if (!req.isAuthenticated() || !user?.expires_at) {
     return res.status(401).json({ message: "No autorizado" });
   }
 

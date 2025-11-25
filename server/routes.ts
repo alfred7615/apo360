@@ -299,6 +299,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================
+  // RUTA DE LOGIN (autenticación local con email/password)
+  // ============================================================
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email y contraseña son requeridos" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Credenciales incorrectas" });
+      }
+
+      // Verificar contraseña
+      const crypto = await import('crypto');
+      const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+
+      if (user.passwordHash !== passwordHash) {
+        return res.status(401).json({ message: "Credenciales incorrectas" });
+      }
+
+      // Verificar estado del usuario
+      if (user.estado === 'inactivo' || user.estado === 'suspendido') {
+        return res.status(403).json({ message: "Tu cuenta está suspendida o inactiva. Contacta al administrador." });
+      }
+
+      if (user.estado === 'pendiente_aprobacion') {
+        return res.status(403).json({ message: "Tu cuenta está pendiente de aprobación por un administrador." });
+      }
+
+      // Crear sesión del usuario
+      if (!req.session) {
+        return res.status(500).json({ message: "Error al crear sesión" });
+      }
+
+      // Guardar datos en sesión (compatible con el sistema existente)
+      const session = req.session as any;
+      session.userId = user.id;
+      session.user = {
+        claims: {
+          sub: user.id,
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          rol: user.rol,
+        }
+      };
+
+      // Persistir la sesión antes de responder
+      session.save((err: any) => {
+        if (err) {
+          console.error("Error al guardar sesión:", err);
+          return res.status(500).json({ message: "Error al crear sesión" });
+        }
+
+        res.json({
+          message: "Login exitoso",
+          user: {
+            id: user.id,
+            nombre: user.firstName && user.lastName 
+              ? `${user.firstName} ${user.lastName}`.trim()
+              : user.firstName || user.lastName || user.alias || 'Usuario',
+            email: user.email,
+            rol: user.rol,
+            nivelUsuario: user.nivelUsuario,
+            estado: user.estado,
+            profileImageUrl: user.profileImageUrl,
+          }
+        });
+      });
+    } catch (error: any) {
+      console.error("Error en login:", error);
+      res.status(500).json({ message: error.message || "Error al iniciar sesión" });
+    }
+  });
+
   app.post('/api/auth/registro', async (req, res) => {
     try {
       const { 

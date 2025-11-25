@@ -633,10 +633,23 @@ export class DatabaseStorage implements IStorage {
   // ============================================================
 
   async getUserRoles(usuarioId: string): Promise<string[]> {
-    const roles = await db.select()
+    const rolesSet = new Set<string>();
+    
+    // Primero obtener el rol principal del usuario desde la tabla usuarios
+    const user = await this.getUser(usuarioId);
+    if (user?.rol) {
+      rolesSet.add(user.rol);
+    }
+    
+    // Luego agregar roles adicionales de la tabla usuarioRoles
+    const additionalRoles = await db.select()
       .from(usuarioRoles)
       .where(eq(usuarioRoles.usuarioId, usuarioId));
-    return roles.map(r => r.rol!);
+    additionalRoles.forEach(r => {
+      if (r.rol) rolesSet.add(r.rol);
+    });
+    
+    return Array.from(rolesSet);
   }
 
   async addUserRole(roleData: InsertUsuarioRol): Promise<UsuarioRol> {
