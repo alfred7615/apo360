@@ -9,6 +9,9 @@ export interface AuthUser {
   ubicacionLongitud?: number;
   modoTaxi: boolean;
   activo: boolean;
+  imagenPerfil?: string;
+  primerNombre?: string;
+  apellido?: string;
 }
 
 export function isUnauthorizedError(error: Error): boolean {

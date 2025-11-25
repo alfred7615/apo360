@@ -100,9 +100,9 @@ export default function Encabezado() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-user-menu">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.imagenPerfil || user?.profileImageUrl} alt={user?.primerNombre || user?.firstName} />
+                      <AvatarImage src={user?.imagenPerfil} alt={user?.primerNombre || user?.nombre} />
                       <AvatarFallback className="bg-white/30 text-white text-sm">
-                        {obtenerIniciales(user?.primerNombre || user?.firstName, user?.apellido || user?.lastName)}
+                        {obtenerIniciales(user?.primerNombre, user?.apellido)}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -110,7 +110,7 @@ export default function Encabezado() {
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="flex flex-col gap-1 px-2 py-1.5">
                     <p className="text-sm font-medium" data-testid="text-user-name">
-                      {user?.primerNombre || user?.firstName} {user?.apellido || user?.lastName}
+                      {user?.primerNombre || user?.nombre} {user?.apellido || ''}
                     </p>
                     <p className="text-xs text-muted-foreground" data-testid="text-user-email">
                       {user?.email}
