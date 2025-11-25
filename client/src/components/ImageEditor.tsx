@@ -223,7 +223,6 @@ export function ImageEditor({
 
     const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
     onSave(dataUrl);
-    onClose();
   };
 
   const renderPreview = () => {

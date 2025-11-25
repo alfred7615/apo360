@@ -22,8 +22,13 @@ import {
   Monitor,
   Tablet,
   Smartphone,
-  PanelLeft
+  PanelLeft,
+  Star,
+  LogOut,
+  User as UserIcon
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -158,13 +163,57 @@ interface AdminSidebarProps {
   setActiveScreen: (screen: AdminScreen) => void;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
+  user: any;
 }
+
+const calcularNivelUsuario = (usuario: any): number => {
+  if (!usuario) return 1;
+  let nivel = 1;
+  if (usuario.firstName && usuario.lastName && usuario.telefono && usuario.dni) nivel = 2;
+  if (nivel >= 2 && usuario.pais && usuario.departamento && usuario.distrito) nivel = 3;
+  if (nivel >= 3 && usuario.direccion && usuario.gpsLatitud && usuario.gpsLongitud) nivel = 4;
+  if (nivel >= 4 && usuario.nombreLocal && usuario.ruc) nivel = 5;
+  return nivel;
+};
+
+const renderEstrellasMini = (nivel: number) => {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          className={`h-2.5 w-2.5 ${n <= nivel ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'}`}
+        />
+      ))}
+    </div>
+  );
+};
+
+const getRolLabel = (rol: string) => {
+  const roles: Record<string, string> = {
+    super_admin: "Super Admin",
+    admin_cartera: "Admin Cartera",
+    admin_operaciones: "Admin Operaciones",
+    admin_publicidad: "Admin Publicidad",
+    admin_radio: "Admin Radio",
+    supervisor: "Supervisor",
+    usuario: "Usuario",
+    conductor: "Conductor",
+    local: "Local",
+    serenazgo: "Serenazgo",
+    policia: "Policía",
+    bombero: "Bombero",
+    samu: "SAMU",
+  };
+  return roles[rol] || rol;
+};
 
 function AdminSidebar({ 
   activeScreen, 
   setActiveScreen,
   viewMode,
-  setViewMode
+  setViewMode,
+  user
 }: AdminSidebarProps) {
   const [gestionesOpen, setGestionesOpen] = useState(true);
   const { setOpenMobile } = useSidebar();
@@ -173,6 +222,10 @@ function AdminSidebar({
     setActiveScreen(id);
     setOpenMobile(false);
   };
+
+  const nombreCompleto = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.nombre || "Usuario";
+  const iniciales = nombreCompleto.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+  const nivelUsuario = calcularNivelUsuario(user);
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -236,6 +289,81 @@ function AdminSidebar({
             </CollapsibleContent>
           </Collapsible>
         </SidebarGroup>
+
+        <div className="mt-auto" />
+        
+        <SidebarGroup className="mt-auto border-t pt-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div 
+                className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                data-testid="menu-perfil-usuario"
+              >
+                <Avatar className="h-8 w-8 border border-primary/20">
+                  <AvatarImage src={user?.profileImageUrl} alt={nombreCompleto} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                    {iniciales || <UserIcon className="h-3 w-3" />}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+                  <p className="text-xs font-medium truncate">{nombreCompleto}</p>
+                  <div className="flex items-center gap-1">
+                    <Badge className="h-4 px-1 text-[9px] bg-primary/10 text-primary border-0">
+                      {getRolLabel(user?.rol || "usuario")}
+                    </Badge>
+                    {renderEstrellasMini(nivelUsuario)}
+                  </div>
+                </div>
+                <ChevronDown className="h-3 w-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-2 py-1.5">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={user?.profileImageUrl} alt={nombreCompleto} />
+                    <AvatarFallback className="bg-primary/10 text-primary">{iniciales}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{nombreCompleto}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <Badge className="text-[10px]">{getRolLabel(user?.rol || "usuario")}</Badge>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        className={`h-3 w-3 ${n <= nivelUsuario ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <a href="/perfil" className="cursor-pointer" data-testid="link-mi-perfil">
+                  <UserIcon className="h-4 w-4 mr-2" />
+                  Mi Perfil
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href="/" className="cursor-pointer" data-testid="link-inicio">
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Ir al Inicio
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <a href="/api/logout" className="cursor-pointer text-red-600" data-testid="link-cerrar-sesion">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );
@@ -271,6 +399,7 @@ function AdminPanelContent() {
         setActiveScreen={setActiveScreen}
         viewMode={viewMode}
         setViewMode={setViewMode}
+        user={user}
       />
       
       <div className="flex flex-col flex-1 min-w-0">
