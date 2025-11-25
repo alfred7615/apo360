@@ -33,7 +33,6 @@ import { SiTiktok, SiWhatsapp } from "react-icons/si";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ImageUpload } from "@/components/ImageUpload";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isPublicidadCaducada, getGoogleMapsUrl } from "@/lib/publicidadUtils";
 
@@ -343,9 +342,9 @@ export default function PublicidadSection() {
                 onSubmit={form.handleSubmit(handleSubmit)}
                 className="flex flex-col flex-1 overflow-hidden"
               >
-                <div className="flex-1 px-6 py-4 overflow-hidden">
-                  <Tabs defaultValue="basico" className="h-full flex flex-col">
-                    <TabsList className="grid w-full grid-cols-5 mb-4">
+                <div className="flex-1 px-6 py-4 overflow-y-auto">
+                  <Tabs defaultValue="basico" className="flex flex-col">
+                    <TabsList className="grid w-full grid-cols-5 mb-4 sticky top-0 z-10 bg-background">
                       <TabsTrigger value="basico" data-testid="tab-basico">
                         <Info className="h-4 w-4 mr-1" />
                         Básico
@@ -368,8 +367,7 @@ export default function PublicidadSection() {
                       </TabsTrigger>
                     </TabsList>
 
-                    <ScrollArea className="flex-1">
-                      <TabsContent value="basico" className="space-y-4 mt-0 pr-4">
+                      <TabsContent value="basico" className="space-y-4 mt-0">
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <Label htmlFor="titulo">Título *</Label>
@@ -463,7 +461,7 @@ export default function PublicidadSection() {
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="imagen" className="space-y-4 mt-0 pr-4">
+                      <TabsContent value="imagen" className="space-y-4 mt-0">
                         <div className="space-y-4">
                           <div>
                             <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
@@ -486,7 +484,7 @@ export default function PublicidadSection() {
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="fechas" className="space-y-4 mt-0 pr-4">
+                      <TabsContent value="fechas" className="space-y-4 mt-0">
                         <div className="space-y-4">
                           <div>
                             <h3 className="text-lg font-semibold mb-2">Fechas de Vigencia</h3>
@@ -540,7 +538,7 @@ export default function PublicidadSection() {
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="ubicacion" className="space-y-4 mt-0 pr-4">
+                      <TabsContent value="ubicacion" className="space-y-4 mt-0">
                         <div className="space-y-4">
                           <div>
                             <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
@@ -604,7 +602,7 @@ export default function PublicidadSection() {
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="redes" className="space-y-4 mt-0 pr-4">
+                      <TabsContent value="redes" className="space-y-4 mt-0">
                         <div className="space-y-4">
                           <div>
                             <h3 className="text-lg font-semibold mb-2">Redes Sociales</h3>
@@ -713,7 +711,6 @@ export default function PublicidadSection() {
                           </div>
                         </div>
                       </TabsContent>
-                    </ScrollArea>
                   </Tabs>
                 </div>
 
@@ -757,7 +754,7 @@ export default function PublicidadSection() {
                   No hay publicidades de tipo "{tipo}" aún. Crea una nueva para comenzar.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                   {publicidadesFiltradas.map(pub => (
                     <Card key={pub.id} className="overflow-hidden">
                       {pub.imagenUrl && (
