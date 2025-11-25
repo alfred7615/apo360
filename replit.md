@@ -3,6 +3,21 @@
 ## Overview
 SEG-APO is a comprehensive community security platform designed to enhance safety, connectivity, and local commerce in Tacna, Peru. It integrates real-time messaging, ride-hailing (taxi), delivery services, local advertising, and an emergency panic button system. The project's vision is to become a vital tool for community interaction and emergency response, providing a robust platform for local services and security.
 
+## Recent Changes (November 25, 2025)
+### Mejora Crítica del Formulario de Publicidad
+- **Problema Reportado**: El usuario indicó que el formulario de "Nueva Publicidad" no mostraba campos para imagen, fechas, ubicación GPS ni redes sociales
+- **Solución Implementada**:
+  - **Reorganización con Pestañas**: Implementado sistema de 5 pestañas (Básico, Imagen, Fechas, Ubicación, Redes Sociales) para mejor visibilidad y organización
+  - **Patrón Controlado**: Todos los inputs migrados a patrón controlado usando `form.watch()` + `onChange` + `form.setValue()`
+  - **Fix de Schema**: Agregado `default(sql\`gen_random_uuid()\`)` al campo `id` de publicidad para generación automática de IDs
+  - **Mejoras UX**: Descripciones contextuales, guías visuales, iconos descriptivos, placeholders informativos
+
+- **Archivos Modificados**:
+  - `client/src/components/admin/publicidad-section.tsx` - Reescrito con sistema de pestañas
+  - `shared/schema.ts` - Agregado default al ID de publicidad
+
+- **Resultado**: Todos los campos ahora son visibles y funcionales. La creación/edición de publicidades funciona correctamente sin errores 400.
+
 ## User Preferences
 - **Codebase changes:** All changes to the codebase, including new features, bug fixes, or refactoring, must prioritize the Spanish language for variable names, function names, comments, UI texts, error messages, and database schema elements.
 - **Development Process:** I prefer an iterative development approach, focusing on completing core functionalities before moving to advanced features.
