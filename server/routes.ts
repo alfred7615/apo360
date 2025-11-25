@@ -1662,6 +1662,358 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // CATEGORÍAS DE SERVICIOS LOCALES
+  // ============================================================
+
+  app.get('/api/categorias-servicio', async (req, res) => {
+    try {
+      const categorias = await storage.getCategoriasServicio();
+      res.json(categorias);
+    } catch (error) {
+      console.error("Error al obtener categorías:", error);
+      res.status(500).json({ message: "Error al obtener categorías" });
+    }
+  });
+
+  app.get('/api/categorias-servicio/:id', async (req, res) => {
+    try {
+      const categoria = await storage.getCategoriaServicio(req.params.id);
+      if (!categoria) {
+        return res.status(404).json({ message: "Categoría no encontrada" });
+      }
+      res.json(categoria);
+    } catch (error) {
+      console.error("Error al obtener categoría:", error);
+      res.status(500).json({ message: "Error al obtener categoría" });
+    }
+  });
+
+  app.post('/api/categorias-servicio', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const categoria = await storage.createCategoriaServicio(req.body);
+      res.json(categoria);
+    } catch (error: any) {
+      console.error("Error al crear categoría:", error);
+      res.status(400).json({ message: error.message || "Error al crear categoría" });
+    }
+  });
+
+  app.patch('/api/categorias-servicio/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const categoria = await storage.updateCategoriaServicio(req.params.id, req.body);
+      if (!categoria) {
+        return res.status(404).json({ message: "Categoría no encontrada" });
+      }
+      res.json(categoria);
+    } catch (error: any) {
+      console.error("Error al actualizar categoría:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar categoría" });
+    }
+  });
+
+  app.delete('/api/categorias-servicio/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      await storage.deleteCategoriaServicio(req.params.id);
+      res.json({ message: "Categoría eliminada" });
+    } catch (error) {
+      console.error("Error al eliminar categoría:", error);
+      res.status(500).json({ message: "Error al eliminar categoría" });
+    }
+  });
+
+  // ============================================================
+  // LOGOS DE SERVICIOS (Negocios/Locales)
+  // ============================================================
+
+  app.get('/api/logos-servicio', async (req, res) => {
+    try {
+      const { categoriaId, estado } = req.query;
+      const logos = await storage.getLogosServicio(categoriaId as string, estado as string);
+      res.json(logos);
+    } catch (error) {
+      console.error("Error al obtener logos:", error);
+      res.status(500).json({ message: "Error al obtener logos" });
+    }
+  });
+
+  app.get('/api/logos-servicio/:id', async (req, res) => {
+    try {
+      const logo = await storage.getLogoServicio(req.params.id);
+      if (!logo) {
+        return res.status(404).json({ message: "Logo no encontrado" });
+      }
+      res.json(logo);
+    } catch (error) {
+      console.error("Error al obtener logo:", error);
+      res.status(500).json({ message: "Error al obtener logo" });
+    }
+  });
+
+  app.get('/api/logos-servicio/usuario/:usuarioId', isAuthenticated, async (req: any, res) => {
+    try {
+      const logos = await storage.getLogosServicioPorUsuario(req.params.usuarioId);
+      res.json(logos);
+    } catch (error) {
+      console.error("Error al obtener logos del usuario:", error);
+      res.status(500).json({ message: "Error al obtener logos del usuario" });
+    }
+  });
+
+  app.post('/api/logos-servicio', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const data = { ...req.body, usuarioId: userId };
+      const logo = await storage.createLogoServicio(data);
+      res.json(logo);
+    } catch (error: any) {
+      console.error("Error al crear logo:", error);
+      res.status(400).json({ message: error.message || "Error al crear logo" });
+    }
+  });
+
+  app.patch('/api/logos-servicio/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userRoles = await storage.getUserRoles(userId);
+      const logo = await storage.getLogoServicio(req.params.id);
+      
+      if (!logo) {
+        return res.status(404).json({ message: "Logo no encontrado" });
+      }
+      
+      const esSuperAdmin = userRoles.includes('super_admin');
+      const esPropietario = logo.usuarioId === userId;
+      
+      if (!esSuperAdmin && !esPropietario) {
+        return res.status(403).json({ message: "No tienes permiso para modificar este logo" });
+      }
+      
+      const updatedLogo = await storage.updateLogoServicio(req.params.id, req.body);
+      res.json(updatedLogo);
+    } catch (error: any) {
+      console.error("Error al actualizar logo:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar logo" });
+    }
+  });
+
+  app.delete('/api/logos-servicio/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userRoles = await storage.getUserRoles(userId);
+      const logo = await storage.getLogoServicio(req.params.id);
+      
+      if (!logo) {
+        return res.status(404).json({ message: "Logo no encontrado" });
+      }
+      
+      const esSuperAdmin = userRoles.includes('super_admin');
+      
+      if (!esSuperAdmin) {
+        return res.status(403).json({ message: "Solo el super administrador puede eliminar logos" });
+      }
+      
+      await storage.deleteLogoServicio(req.params.id);
+      res.json({ message: "Logo eliminado" });
+    } catch (error) {
+      console.error("Error al eliminar logo:", error);
+      res.status(500).json({ message: "Error al eliminar logo" });
+    }
+  });
+
+  // ============================================================
+  // PRODUCTOS DE SERVICIOS LOCALES
+  // ============================================================
+
+  app.get('/api/productos-servicio', async (req, res) => {
+    try {
+      const { logoServicioId, categoria, disponible } = req.query;
+      const productos = await storage.getProductosServicio(
+        logoServicioId as string, 
+        categoria as string, 
+        disponible === 'true'
+      );
+      res.json(productos);
+    } catch (error) {
+      console.error("Error al obtener productos:", error);
+      res.status(500).json({ message: "Error al obtener productos" });
+    }
+  });
+
+  app.get('/api/productos-servicio/:id', async (req, res) => {
+    try {
+      const producto = await storage.getProductoServicio(req.params.id);
+      if (!producto) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+      res.json(producto);
+    } catch (error) {
+      console.error("Error al obtener producto:", error);
+      res.status(500).json({ message: "Error al obtener producto" });
+    }
+  });
+
+  app.get('/api/logos-servicio/:logoId/productos', async (req, res) => {
+    try {
+      const productos = await storage.getProductosPorLogo(req.params.logoId);
+      res.json(productos);
+    } catch (error) {
+      console.error("Error al obtener productos del logo:", error);
+      res.status(500).json({ message: "Error al obtener productos del logo" });
+    }
+  });
+
+  app.post('/api/productos-servicio', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { logoServicioId } = req.body;
+      
+      const logo = await storage.getLogoServicio(logoServicioId);
+      if (!logo) {
+        return res.status(404).json({ message: "Logo de servicio no encontrado" });
+      }
+      
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      const esPropietario = logo.usuarioId === userId;
+      
+      if (!esSuperAdmin && !esPropietario) {
+        return res.status(403).json({ message: "No tienes permiso para agregar productos a este servicio" });
+      }
+      
+      const resultado = await storage.createProductoServicioConCobro(req.body, userId, esSuperAdmin);
+      res.json(resultado);
+    } catch (error: any) {
+      console.error("Error al crear producto:", error);
+      res.status(400).json({ message: error.message || "Error al crear producto" });
+    }
+  });
+
+  app.patch('/api/productos-servicio/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const producto = await storage.getProductoServicio(req.params.id);
+      
+      if (!producto) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+      
+      const logo = await storage.getLogoServicio(producto.logoServicioId);
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      const esPropietario = logo?.usuarioId === userId;
+      
+      if (!esSuperAdmin && !esPropietario) {
+        return res.status(403).json({ message: "No tienes permiso para modificar este producto" });
+      }
+      
+      const updatedProducto = await storage.updateProductoServicio(req.params.id, req.body);
+      res.json(updatedProducto);
+    } catch (error: any) {
+      console.error("Error al actualizar producto:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar producto" });
+    }
+  });
+
+  app.delete('/api/productos-servicio/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const producto = await storage.getProductoServicio(req.params.id);
+      
+      if (!producto) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+      
+      const logo = await storage.getLogoServicio(producto.logoServicioId);
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      const esPropietario = logo?.usuarioId === userId;
+      
+      if (!esSuperAdmin && !esPropietario) {
+        return res.status(403).json({ message: "No tienes permiso para eliminar este producto" });
+      }
+      
+      await storage.deleteProductoServicio(req.params.id);
+      res.json({ message: "Producto eliminado" });
+    } catch (error) {
+      console.error("Error al eliminar producto:", error);
+      res.status(500).json({ message: "Error al eliminar producto" });
+    }
+  });
+
+  // ============================================================
+  // FAVORITOS DEL USUARIO
+  // ============================================================
+
+  app.get('/api/favoritos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tipo } = req.query;
+      const favoritos = await storage.getFavoritosUsuario(userId, tipo as string);
+      res.json(favoritos);
+    } catch (error) {
+      console.error("Error al obtener favoritos:", error);
+      res.status(500).json({ message: "Error al obtener favoritos" });
+    }
+  });
+
+  // ============================================================
+  // TRANSACCIONES DE SALDO
+  // ============================================================
+
+  app.get('/api/transacciones-saldo', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      
+      if (esSuperAdmin) {
+        const transacciones = await storage.getAllTransaccionesSaldo();
+        res.json(transacciones);
+      } else {
+        const transacciones = await storage.getTransaccionesSaldoUsuario(userId);
+        res.json(transacciones);
+      }
+    } catch (error) {
+      console.error("Error al obtener transacciones:", error);
+      res.status(500).json({ message: "Error al obtener transacciones" });
+    }
+  });
+
+  app.get('/api/transacciones-saldo/usuario/:usuarioId', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const transacciones = await storage.getTransaccionesSaldoUsuario(req.params.usuarioId);
+      res.json(transacciones);
+    } catch (error) {
+      console.error("Error al obtener transacciones del usuario:", error);
+      res.status(500).json({ message: "Error al obtener transacciones del usuario" });
+    }
+  });
+
+  // ============================================================
+  // CONFIGURACIÓN DE COBROS (Super Admin)
+  // ============================================================
+
+  app.get('/api/configuracion-cobros', isAuthenticated, async (req, res) => {
+    try {
+      const config = await storage.getConfiguracionCobros();
+      res.json(config);
+    } catch (error) {
+      console.error("Error al obtener configuración de cobros:", error);
+      res.status(500).json({ message: "Error al obtener configuración" });
+    }
+  });
+
+  app.post('/api/configuracion-cobros', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const config = await storage.updateConfiguracionCobros(req.body);
+      res.json(config);
+    } catch (error: any) {
+      console.error("Error al actualizar configuración de cobros:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar configuración" });
+    }
+  });
+
+  // ============================================================
   // CONFIGURACIÓN DE WEBSOCKET
   // ============================================================
 

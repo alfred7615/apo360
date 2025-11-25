@@ -30,6 +30,10 @@ import {
   avisosEmergencia,
   tiposMoneda,
   tasasCambio,
+  categoriasServicio,
+  logosServicios,
+  productosServicio,
+  transaccionesSaldo,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -92,6 +96,14 @@ import {
   type InsertTipoMoneda,
   type TasaCambio,
   type InsertTasaCambio,
+  type CategoriaServicio,
+  type InsertCategoriaServicio,
+  type LogoServicio,
+  type InsertLogoServicio,
+  type ProductoServicio,
+  type InsertProductoServicio,
+  type TransaccionSaldo,
+  type InsertTransaccionSaldo,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -1329,6 +1341,265 @@ export class DatabaseStorage implements IStorage {
       .where(eq(configuracionSitio.clave, clave))
       .returning();
     return actualizado;
+  }
+
+  // ============================================================
+  // CATEGORÍAS DE SERVICIOS LOCALES
+  // ============================================================
+  async getCategoriasServicio(): Promise<CategoriaServicio[]> {
+    return await db.select().from(categoriasServicio).orderBy(categoriasServicio.orden);
+  }
+
+  async getCategoriaServicio(id: string): Promise<CategoriaServicio | undefined> {
+    const [categoria] = await db.select().from(categoriasServicio).where(eq(categoriasServicio.id, id));
+    return categoria;
+  }
+
+  async createCategoriaServicio(data: InsertCategoriaServicio): Promise<CategoriaServicio> {
+    const [categoria] = await db.insert(categoriasServicio).values(data).returning();
+    return categoria;
+  }
+
+  async updateCategoriaServicio(id: string, data: Partial<InsertCategoriaServicio>): Promise<CategoriaServicio | undefined> {
+    const [actualizada] = await db
+      .update(categoriasServicio)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(categoriasServicio.id, id))
+      .returning();
+    return actualizada;
+  }
+
+  async deleteCategoriaServicio(id: string): Promise<void> {
+    await db.delete(categoriasServicio).where(eq(categoriasServicio.id, id));
+  }
+
+  // ============================================================
+  // LOGOS DE SERVICIOS (Negocios/Locales)
+  // ============================================================
+  async getLogosServicio(categoriaId?: string, estado?: string): Promise<LogoServicio[]> {
+    let query = db.select().from(logosServicios);
+    
+    if (categoriaId) {
+      query = query.where(eq(logosServicios.categoriaId, categoriaId)) as any;
+    }
+    if (estado) {
+      query = query.where(eq(logosServicios.estado, estado)) as any;
+    }
+    
+    return await query.orderBy(desc(logosServicios.createdAt));
+  }
+
+  async getLogoServicio(id: string): Promise<LogoServicio | undefined> {
+    const [logo] = await db.select().from(logosServicios).where(eq(logosServicios.id, id));
+    return logo;
+  }
+
+  async getLogosServicioPorUsuario(usuarioId: string): Promise<LogoServicio[]> {
+    return await db.select().from(logosServicios).where(eq(logosServicios.usuarioId, usuarioId));
+  }
+
+  async createLogoServicio(data: InsertLogoServicio): Promise<LogoServicio> {
+    const [logo] = await db.insert(logosServicios).values(data).returning();
+    return logo;
+  }
+
+  async updateLogoServicio(id: string, data: Partial<InsertLogoServicio>): Promise<LogoServicio | undefined> {
+    const [actualizado] = await db
+      .update(logosServicios)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(logosServicios.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteLogoServicio(id: string): Promise<void> {
+    await db.delete(productosServicio).where(eq(productosServicio.logoServicioId, id));
+    await db.delete(logosServicios).where(eq(logosServicios.id, id));
+  }
+
+  // ============================================================
+  // PRODUCTOS DE SERVICIOS LOCALES
+  // ============================================================
+  async getProductosServicio(logoServicioId?: string, categoria?: string, disponible?: boolean): Promise<ProductoServicio[]> {
+    let query = db.select().from(productosServicio);
+    
+    if (logoServicioId) {
+      query = query.where(eq(productosServicio.logoServicioId, logoServicioId)) as any;
+    }
+    if (categoria) {
+      query = query.where(eq(productosServicio.categoria, categoria)) as any;
+    }
+    if (disponible !== undefined) {
+      query = query.where(eq(productosServicio.disponible, disponible)) as any;
+    }
+    
+    return await query.orderBy(productosServicio.orden);
+  }
+
+  async getProductoServicio(id: string): Promise<ProductoServicio | undefined> {
+    const [producto] = await db.select().from(productosServicio).where(eq(productosServicio.id, id));
+    return producto;
+  }
+
+  async getProductosPorLogo(logoServicioId: string): Promise<ProductoServicio[]> {
+    return await db.select().from(productosServicio)
+      .where(eq(productosServicio.logoServicioId, logoServicioId))
+      .orderBy(productosServicio.orden);
+  }
+
+  async createProductoServicio(data: InsertProductoServicio): Promise<ProductoServicio> {
+    const [producto] = await db.insert(productosServicio).values(data).returning();
+    return producto;
+  }
+
+  async createProductoServicioConCobro(
+    data: InsertProductoServicio, 
+    usuarioId: string, 
+    esSuperAdmin: boolean
+  ): Promise<{ producto: ProductoServicio; transaccion?: TransaccionSaldo; mensaje: string }> {
+    const producto = await this.createProductoServicio(data);
+    
+    if (esSuperAdmin) {
+      return { producto, mensaje: "Producto creado sin cobro (super admin)" };
+    }
+
+    const configCobro = await this.getConfiguracionCobros();
+    if (!configCobro || !configCobro.activo) {
+      return { producto, mensaje: "Producto creado sin cobro (cobro desactivado)" };
+    }
+
+    const user = await this.getUser(usuarioId);
+    if (!user) {
+      return { producto, mensaje: "Producto creado sin cobro (usuario no encontrado)" };
+    }
+
+    let monto = 0;
+    if (configCobro.tipoValor === 'monto') {
+      monto = parseFloat(configCobro.valor || '0');
+    } else if (configCobro.tipoValor === 'porcentaje' && data.precio) {
+      monto = (parseFloat(configCobro.valor || '0') / 100) * parseFloat(data.precio);
+    }
+
+    if (monto <= 0) {
+      return { producto, mensaje: "Producto creado sin cobro (monto cero)" };
+    }
+
+    const transaccion = await this.createTransaccionSaldo({
+      usuarioId,
+      tipo: 'cobro',
+      concepto: `Cobro por agregar producto: ${data.nombre}`,
+      monto: monto.toString(),
+      saldoAnterior: '0',
+      saldoNuevo: (-monto).toString(),
+      referenciaId: producto.id,
+      referenciaTipo: 'producto_servicio',
+      estado: 'completado',
+    });
+
+    return { 
+      producto, 
+      transaccion, 
+      mensaje: `Producto creado. Se descontó S/. ${monto.toFixed(2)} de tu saldo` 
+    };
+  }
+
+  async updateProductoServicio(id: string, data: Partial<InsertProductoServicio>): Promise<ProductoServicio | undefined> {
+    const [actualizado] = await db
+      .update(productosServicio)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(productosServicio.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteProductoServicio(id: string): Promise<void> {
+    await db.delete(productosServicio).where(eq(productosServicio.id, id));
+  }
+
+  // ============================================================
+  // TRANSACCIONES DE SALDO
+  // ============================================================
+  async getAllTransaccionesSaldo(): Promise<TransaccionSaldo[]> {
+    return await db.select().from(transaccionesSaldo).orderBy(desc(transaccionesSaldo.createdAt));
+  }
+
+  async getTransaccionesSaldoUsuario(usuarioId: string): Promise<TransaccionSaldo[]> {
+    return await db.select().from(transaccionesSaldo)
+      .where(eq(transaccionesSaldo.usuarioId, usuarioId))
+      .orderBy(desc(transaccionesSaldo.createdAt));
+  }
+
+  async createTransaccionSaldo(data: InsertTransaccionSaldo): Promise<TransaccionSaldo> {
+    const [transaccion] = await db.insert(transaccionesSaldo).values(data).returning();
+    return transaccion;
+  }
+
+  // ============================================================
+  // FAVORITOS DEL USUARIO
+  // ============================================================
+  async getFavoritosUsuario(usuarioId: string, tipo?: string): Promise<any[]> {
+    let query = db.select().from(interaccionesSociales)
+      .where(
+        and(
+          eq(interaccionesSociales.usuarioId, usuarioId),
+          eq(interaccionesSociales.tipoInteraccion, 'favorito')
+        )
+      );
+    
+    if (tipo) {
+      query = query.where(eq(interaccionesSociales.tipoContenido, tipo)) as any;
+    }
+    
+    const favoritos = await query.orderBy(desc(interaccionesSociales.createdAt));
+    
+    const favoritosConDetalles = await Promise.all(
+      favoritos.map(async (fav) => {
+        let detalle = null;
+        if (fav.tipoContenido === 'producto_servicio') {
+          detalle = await this.getProductoServicio(fav.contenidoId);
+        } else if (fav.tipoContenido === 'logo_servicio') {
+          detalle = await this.getLogoServicio(fav.contenidoId);
+        } else if (fav.tipoContenido === 'popup') {
+          detalle = await this.getPopup(fav.contenidoId);
+        } else if (fav.tipoContenido === 'publicidad') {
+          detalle = await this.getPublicidad(fav.contenidoId);
+        }
+        return { ...fav, detalle };
+      })
+    );
+    
+    return favoritosConDetalles;
+  }
+
+  // ============================================================
+  // CONFIGURACIÓN DE COBROS
+  // ============================================================
+  async getConfiguracionCobros(): Promise<ConfiguracionSaldo | undefined> {
+    const [config] = await db.select().from(configuracionSaldos)
+      .where(eq(configuracionSaldos.tipoOperacion, 'costo_producto_servicio'));
+    return config;
+  }
+
+  async updateConfiguracionCobros(data: Partial<InsertConfiguracionSaldo>): Promise<ConfiguracionSaldo> {
+    const existing = await this.getConfiguracionCobros();
+    
+    if (existing) {
+      const [actualizado] = await db
+        .update(configuracionSaldos)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(configuracionSaldos.id, existing.id))
+        .returning();
+      return actualizado;
+    } else {
+      const [nuevo] = await db.insert(configuracionSaldos).values({
+        tipoOperacion: 'costo_producto_servicio',
+        tipoValor: data.tipoValor || 'monto',
+        valor: data.valor || '0',
+        descripcion: data.descripcion || 'Costo por agregar producto de servicio local',
+        activo: data.activo ?? true,
+      }).returning();
+      return nuevo;
+    }
   }
 }
 

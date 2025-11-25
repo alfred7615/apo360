@@ -59,6 +59,7 @@ import GestionUsuariosScreen from "@/pages/admin/gestiones/gestion-usuarios";
 import GestionCarteraScreen from "@/pages/admin/gestiones/gestion-cartera";
 import GestionEncuestasScreen from "@/pages/admin/gestiones/gestion-encuestas";
 import GestionServiciosScreen from "@/pages/admin/gestiones/gestion-servicios";
+import GestionServiciosLocalesScreen from "@/pages/admin/gestiones/gestion-servicios-locales";
 import GestionEventosScreen from "@/pages/admin/gestiones/gestion-eventos";
 import GestionTaxiScreen from "@/pages/admin/gestiones/gestion-taxi";
 import GestionBusesScreen from "@/pages/admin/gestiones/gestion-buses";
@@ -77,6 +78,7 @@ type AdminScreen =
   | "gestion-cartera"
   | "gestion-encuestas"
   | "gestion-servicios"
+  | "gestion-servicios-locales"
   | "gestion-eventos"
   | "gestion-taxi"
   | "gestion-buses"
@@ -98,6 +100,7 @@ const gestionesMenuItems = [
   { id: "gestion-cartera" as AdminScreen, title: "Cartera", icon: Wallet },
   { id: "gestion-encuestas" as AdminScreen, title: "Encuestas/Popups", icon: ClipboardList },
   { id: "gestion-servicios" as AdminScreen, title: "Servicios", icon: Truck },
+  { id: "gestion-servicios-locales" as AdminScreen, title: "Servicios Locales", icon: Star },
   { id: "gestion-eventos" as AdminScreen, title: "Eventos", icon: Calendar },
   { id: "gestion-taxi" as AdminScreen, title: "Taxi", icon: Car },
   { id: "gestion-buses" as AdminScreen, title: "Buses", icon: Bus },
@@ -117,6 +120,7 @@ const screenComponents: Record<AdminScreen, React.ComponentType> = {
   "gestion-cartera": GestionCarteraScreen,
   "gestion-encuestas": GestionEncuestasScreen,
   "gestion-servicios": GestionServiciosScreen,
+  "gestion-servicios-locales": GestionServiciosLocalesScreen,
   "gestion-eventos": GestionEventosScreen,
   "gestion-taxi": GestionTaxiScreen,
   "gestion-buses": GestionBusesScreen,

@@ -723,6 +723,110 @@ export type InsertTasaCambio = z.infer<typeof insertTasaCambioSchema>;
 export type TasaCambio = typeof tasasCambio.$inferSelect;
 
 // ============================================================
+// CATEGORÍAS DE SERVICIOS LOCALES
+// ============================================================
+export const categoriasServicio = pgTable("categorias_servicio", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  descripcion: text("descripcion"),
+  imagenUrl: varchar("imagen_url"),
+  icono: varchar("icono", { length: 50 }),
+  orden: integer("orden").default(0),
+  estado: varchar("estado", { length: 20 }).default("activo"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCategoriaServicioSchema = createInsertSchema(categoriasServicio).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCategoriaServicio = z.infer<typeof insertCategoriaServicioSchema>;
+export type CategoriaServicio = typeof categoriasServicio.$inferSelect;
+
+// ============================================================
+// LOGOS DE SERVICIOS (Negocios/Locales)
+// ============================================================
+export const logosServicios = pgTable("logos_servicios", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  categoriaId: varchar("categoria_id").references(() => categoriasServicio.id),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id),
+  nombre: varchar("nombre", { length: 255 }).notNull(),
+  descripcion: text("descripcion"),
+  logoUrl: varchar("logo_url"),
+  direccion: text("direccion"),
+  telefono: varchar("telefono", { length: 20 }),
+  whatsapp: varchar("whatsapp", { length: 20 }),
+  email: varchar("email", { length: 255 }),
+  horario: text("horario"),
+  gpsLatitud: real("gps_latitud"),
+  gpsLongitud: real("gps_longitud"),
+  redes: json("redes").$type<{ facebook?: string; instagram?: string; tiktok?: string; twitter?: string; youtube?: string }>(),
+  estado: varchar("estado", { length: 20 }).default("activo"),
+  destacado: boolean("destacado").default(false),
+  verificado: boolean("verificado").default(false),
+  totalLikes: integer("total_likes").default(0),
+  totalFavoritos: integer("total_favoritos").default(0),
+  totalComentarios: integer("total_comentarios").default(0),
+  totalCompartidos: integer("total_compartidos").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertLogoServicioSchema = createInsertSchema(logosServicios).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertLogoServicio = z.infer<typeof insertLogoServicioSchema>;
+export type LogoServicio = typeof logosServicios.$inferSelect;
+
+// ============================================================
+// PRODUCTOS DE SERVICIOS LOCALES
+// ============================================================
+export const productosServicio = pgTable("productos_servicio", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  logoServicioId: varchar("logo_servicio_id").notNull().references(() => logosServicios.id),
+  codigo: varchar("codigo", { length: 50 }),
+  nombre: varchar("nombre", { length: 255 }).notNull(),
+  descripcion: text("descripcion"),
+  precio: decimal("precio", { precision: 10, scale: 2 }),
+  precioOferta: decimal("precio_oferta", { precision: 10, scale: 2 }),
+  imagenUrl: varchar("imagen_url"),
+  categoria: varchar("categoria", { length: 100 }),
+  stock: integer("stock"),
+  disponible: boolean("disponible").default(true),
+  destacado: boolean("destacado").default(false),
+  orden: integer("orden").default(0),
+  totalLikes: integer("total_likes").default(0),
+  totalFavoritos: integer("total_favoritos").default(0),
+  totalComentarios: integer("total_comentarios").default(0),
+  totalCompartidos: integer("total_compartidos").default(0),
+  estado: varchar("estado", { length: 20 }).default("activo"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertProductoServicioSchema = createInsertSchema(productosServicio).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertProductoServicio = z.infer<typeof insertProductoServicioSchema>;
+export type ProductoServicio = typeof productosServicio.$inferSelect;
+
+// ============================================================
+// TRANSACCIONES DE SALDO (Historial de cobros y pagos)
+// ============================================================
+export const transaccionesSaldo = pgTable("transacciones_saldo", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  tipo: varchar("tipo", { length: 50 }).notNull(),
+  concepto: varchar("concepto", { length: 255 }).notNull(),
+  monto: decimal("monto", { precision: 10, scale: 2 }).notNull(),
+  saldoAnterior: decimal("saldo_anterior", { precision: 10, scale: 2 }).default("0"),
+  saldoNuevo: decimal("saldo_nuevo", { precision: 10, scale: 2 }).default("0"),
+  referenciaId: varchar("referencia_id"),
+  referenciaTipo: varchar("referencia_tipo", { length: 50 }),
+  estado: varchar("estado", { length: 20 }).default("completado"),
+  notas: text("notas"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTransaccionSaldoSchema = createInsertSchema(transaccionesSaldo).omit({ id: true, createdAt: true });
+export type InsertTransaccionSaldo = z.infer<typeof insertTransaccionSaldoSchema>;
+export type TransaccionSaldo = typeof transaccionesSaldo.$inferSelect;
+
+// ============================================================
 // ESQUEMAS DE AUTENTICACIÓN PARA FRONTEND
 // ============================================================
 
