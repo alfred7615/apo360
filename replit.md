@@ -4,7 +4,54 @@
 SEG-APO is a comprehensive community security platform designed to enhance safety, connectivity, and local commerce in Tacna, Peru. It integrates real-time messaging, ride-hailing (taxi), delivery services, local advertising, and an emergency panic button system. The project's vision is to become a vital tool for community interaction and emergency response, providing a robust platform for local services and security.
 
 ## Recent Changes (November 25, 2025)
-### Mejora Crítica del Formulario de Publicidad
+
+### Corrección de Bugs Críticos en Sistema de Publicidad (November 25, 2025)
+- **Problemas Reportados por el Usuario**:
+  1. Al editar publicidad, no se puede cambiar la imagen (falta botón de subir)
+  2. No se pueden crear múltiples publicidades (error con fechas vacías)
+  3. Imágenes en grilla no se ven completas (cortadas por object-cover)
+  4. Problemas aplican a todos los sectores: carrusel logos, slider principal, logos servicios, popup emergencia, encuestas apoyo
+
+- **Soluciones Implementadas**:
+  
+  **1. Fix de ImageUpload Component**:
+  - Agregado botón "Cambiar Imagen" visible cuando ya existe una imagen previa
+  - Nueva interfaz con dos botones: "Cambiar Imagen" (outline) y "Eliminar" (destructive)
+  - Ahora es posible reemplazar imágenes directamente durante la edición
+  
+  **2. Fix de Conversión de Fechas**:
+  - Corregida función `convertFormDataToApi` para validar correctamente fechas vacías
+  - Ahora verifica que la fecha no sea string vacío antes de convertir a Date
+  - Validación con `isNaN(date.getTime())` para detectar fechas inválidas
+  - Esto elimina el error "value.toISOString is not a function" al crear/editar
+  
+  **3. Visualización Completa de Imágenes**:
+  - Cambiado de `object-cover` a `object-contain` en TODAS las visualizaciones
+  - **PublicidadSection (Admin)**: object-contain con fondo gris para mejor contraste
+  - **CarruselPublicidad (Principal)**: max-h-full max-w-full object-contain
+  - **CarruselPublicidad (Logos)**: Ya usaba object-contain correctamente
+  - **GaleriaServicios**: object-contain con padding para logos circulares
+  
+  **4. Cobertura Completa en Todos los Sectores**:
+  - ✅ carrusel_logos: Imágenes completas visibles
+  - ✅ carrusel_principal (Slider): Imágenes completas sin recorte
+  - ✅ logos_servicios: Logos completos sin distorsión
+  - ✅ popup_emergencia: Usa mismo sistema de carrusel
+  - ✅ encuestas_apoyo: Usa mismo sistema de carrusel
+
+- **Archivos Modificados**:
+  - `client/src/components/ImageUpload.tsx` - Agregado botón "Cambiar Imagen"
+  - `client/src/components/admin/publicidad-section.tsx` - Fix fechas + object-contain
+  - `client/src/components/CarruselPublicidad.tsx` - object-contain en slider principal
+  - `client/src/components/GaleriaServicios.tsx` - object-contain en logos servicios
+
+- **Resultado**: Sistema de publicidad completamente funcional:
+  - ✅ Crear múltiples publicidades sin errores
+  - ✅ Editar y cambiar imágenes fácilmente
+  - ✅ Imágenes completas visibles en todas las vistas
+  - ✅ Funciona en todas las 5 pestañas de tipos de publicidad
+
+### Mejora Crítica del Formulario de Publicidad (November 25, 2025)
 - **Problema Reportado**: El usuario indicó que el formulario de "Nueva Publicidad" no mostraba campos para imagen, fechas, ubicación GPS ni redes sociales
 - **Solución Implementada**:
   - **Reorganización con Pestañas**: Implementado sistema de 5 pestañas (Básico, Imagen, Fechas, Ubicación, Redes Sociales) para mejor visibilidad y organización
