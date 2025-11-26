@@ -1,128 +1,5 @@
 # SEG-APO - Sistema de Seguridad y Apoyo Comunitario
 
-## Recent Changes (Noviembre 25, 2025)
-
-### Sistema de Chat Comunitario con Layout Dividido
-- **Nuevo Layout Dividido**: Panel izquierdo (320px) con grupos/contactos, panel derecho con conversación
-- **Pestañas Grupos/Contactos**: Tabs para alternar entre grupos de chat y lista de contactos
-- **Buscador Integrado**: Búsqueda en tiempo real de conversaciones
-- **Botones Multimedia**: Adjuntar archivos, fotos, audio y ubicación GPS en cada mensaje
-- **Sistema de Invitaciones**: Ruta /api/invitaciones para invitar contactos no registrados
-- **Lista de Contactos**: Ruta /api/contactos que lista usuarios registrados como contactos potenciales
-- **Esquema BD**: Campos correctos `remitenteId`, `tipo`, `archivoUrl`, `gpsLatitud`, `gpsLongitud`
-- **Datos de Prueba**: 8 grupos (4 emergencia, 4 comunitarios), 6 mensajes
-
-### Botón de Pánico Arrastrable Completo
-- **Arrastre Nativo**: Eventos mouse/touch para arrastre fluido a cualquier posición de pantalla
-- **Persistencia Posición**: Guarda posición en localStorage y la restaura al recargar
-- **Accesos Rápidos Expandibles**: Botones para policía, bomberos, SAMU, serenazgo
-- **GPS Automático**: Obtiene ubicación inmediatamente al abrir modal de emergencia
-- **Selección de Grupos**: Permite elegir grupos de emergencia específicos a notificar
-- **6 Tipos de Emergencia**: Policía, Bomberos, SAMU, Serenazgo, Línea 105, Grúa
-- **Handle de Arrastre**: Botón separado para arrastrar sin activar pánico accidentalmente
-
-### Sistema de Autenticación Local (email/password)
-- **Nueva Ruta POST /api/auth/login**: Login con email y contraseña hasheada (SHA256)
-  - Verificación de estado del usuario (activo, suspendido, pendiente_aprobacion)
-  - Creación de sesión compatible con OIDC existente
-  - Persistencia de sesión con session.save() callback
-- **Middleware isAuthenticated Actualizado**: Ahora soporta AMBOS métodos de autenticación
-  - Primero verifica sesión local (session.user.claims.sub)
-  - Luego verifica autenticación OIDC/Passport
-- **getUserRoles Mejorado**: Ahora combina rol principal de tabla usuarios + roles adicionales de usuarioRoles
-- **Bug Fix Crítico**: Eliminadas rutas duplicadas de /api/usuarios/me que causaban conflictos
-
-### Nuevos Usuarios de Prueba (10 usuarios realistas)
-- **3 Administradores de segundo nivel**: bombero, policía, conductor taxi
-- **2 Usuarios normales**: rol "usuario"
-- **2 Serenazgo**: seguridad municipal
-- **2 SAMU**: emergencias médicas
-- **1 Bombero adicional**
-- **Contraseña común**: Tacna2025! para todos los usuarios de prueba
-- **Script**: server/seed-nuevos-usuarios.ts
-
-### Sistema Completo de Encuestas y Popups Publicitarios
-- **5 Tablas de Base de Datos**:
-  - `encuestas` - Con soporte para múltiples preguntas JSON, fechas inicio/fin, estado, contador de respuestas
-  - `popups_publicitarios` - Imágenes/videos con temporizador obligatorio, tipos (publicidad, persona_desaparecida, mascota_desaparecida, evento)
-  - `interacciones_sociales` - Likes, favoritos, compartir, calendario por contenido
-  - `respuestas_encuesta` - Respuestas de usuarios con índice de pregunta y opción
-  - `comentarios` - Sistema de comentarios para popups y encuestas
-- **Panel de Administración Completo** (gestion-encuestas.tsx):
-  - Tabs para separar encuestas vs popups
-  - CRUD completo con modales de creación/edición
-  - Estadísticas en tiempo real (activos, total respuestas, vistas)
-  - Editor de preguntas dinámico con opciones múltiples
-  - Visualización de resultados con barras de progreso
-- **Componente PopupViewer**:
-  - Temporizador estilo YouTube (segundos obligatorios antes de poder omitir)
-  - Interacciones sociales: likes, favoritos, comentarios, compartir, calendario
-  - Botones de compartir en Facebook, X/Twitter, WhatsApp, copiar enlace
-  - Badges coloridos por tipo de popup
-- **Datos de Prueba Insertados**:
-  - 23 usuarios falsos con roles variados (usuario, conductor, local)
-  - 5 encuestas con 2-3 preguntas cada una
-  - 10 popups (3 personas desaparecidas, 2 mascotas desaparecidas, 5 publicidad)
-- **Script de Seed**: server/seed-encuestas.ts para datos de prueba reproducibles
-
-### Submenú GESTIONES en Panel de Administración
-- **Estructura de navegación mejorada**: Submenú colapsable "GESTIONES" usando Collapsible de shadcn
-- **11 secciones de gestión implementadas**:
-  1. Publicidad - Gestión completa de anuncios y logos
-  2. Radio Online/MP3 - Control de radios y listas de reproducción
-  3. Usuarios/Administradores - Administración de usuarios y roles
-  4. Cartera/Saldos - Sistema de billetera (estructura MVP)
-  5. Encuestas/Popups - Encuestas e imágenes popup (estructura MVP)
-  6. Servicios - Mudanzas, alquileres y servicios locales
-  7. Eventos - Calendario de eventos de la comunidad
-  8. Taxi - Gestión de viajes y conductores
-  9. Buses - Rutas y horarios de buses (estructura MVP)
-  10. Cambio de Moneda - Tipos de cambio (estructura MVP)
-  11. Configuración - Ajustes del sistema
-- **Rutas backend agregadas**: GET /api/taxi/conductores para filtrar conductores
-- **Todas las pantallas incluyen**: data-testid para testing, estados de carga, estados vacíos
-
-### Sistema de Servicios Locales con Interacciones Sociales (Noviembre 25, 2025)
-- **4 Tablas de Base de Datos**:
-  - `categorias_servicio` - Categorías para organizar servicios (nombre, descripción, icono)
-  - `logos_servicios` - Logos de comercios locales con formato circular
-  - `productos_servicio` - Productos con código único, precios, imágenes, y contadores sociales
-  - `transacciones_saldo` - Registro de cobros al agregar productos
-- **Panel de Administración Completo** (gestion-servicios-locales.tsx):
-  - 3 pestañas: Categorías, Logos de Servicios, Productos
-  - CRUD completo para cada entidad con modales de creación/edición
-  - Visualización de productos con badge de categoría e información de precio
-  - Sistema de cobro configurable (monto fijo o porcentaje)
-- **Sistema de Interacciones Sociales Completo**:
-  - Like y Favorito: toggle (agregar/quitar) con contadores actualizados en productos
-  - Compartir: SIEMPRE incrementa contador (registerCompartir separado de toggle)
-  - Comentarios: CRUD completo con GET, POST, PATCH, DELETE y permisos (propietario o super_admin)
-- **Página de Favoritos para Usuarios** (favoritos.tsx):
-  - Vista agrupada por tipo de contenido (servicios, productos)
-  - Acciones: quitar favorito, compartir con registro en BD
-  - Navegación desde el layout principal
-- **Sistema de Cobro al Agregar Productos**:
-  - Configuración por admin: monto fijo (S/ soles) o porcentaje del precio
-  - storage.createProductoServicioConCobro() registra transacción automáticamente
-  - Transacciones tipo 'cobro_producto' con referencia al productoId
-- **Datos de Prueba**: server/seed-servicios-locales.ts con 6 categorías, 5 logos, 11 productos
-
-### Mejoras al Sistema de Carga Múltiple de Imágenes
-- **Persistencia Automática**: Ahora las imágenes subidas se persisten automáticamente en la BD
-  - Callback `onImagesUploaded` crea registros con datos mínimos (imagenUrl, tipo, estado, titulo, orden)
-  - Usa `Promise.allSettled` para manejo granular de errores (evita fallo total si una imagen falla)
-  - Feedback detallado al usuario: "X de Y imágenes guardadas" o "Guardado parcial"
-- **Indicadores Visuales de Información Adicional**: Iconos pequeños debajo de cada imagen en la grilla
-  - GPS (MapPin azul): Coordenadas válidas en rangos -90/90, -180/180
-  - Redes Sociales: Facebook, Instagram, WhatsApp, TikTok, Twitter, YouTube, LinkedIn con validación de formato
-  - Enlaces (ExternalLink morado): URLs válidas con http:// o https://
-  - Fechas (Calendar naranja): Si tiene fechas de inicio/fin/caducidad configuradas
-  - Tooltips con información detallada (coordenadas GPS, URLs de redes sociales)
-- **Validaciones Robustas**:
-  - GPS: Valida rangos de latitud/longitud y != 0
-  - URLs: Verifica formato válido (http/https) y longitud mínima
-  - Redes sociales: Valida que contengan dominio esperado (facebook.com, instagram.com) o formato @ para handles
-
 ## Overview
 SEG-APO is a comprehensive community security platform designed to enhance safety, connectivity, and local commerce in Tacna, Peru. It integrates real-time messaging, ride-hailing (taxi), delivery services, local advertising, and an emergency panic button system. The project's vision is to become a vital tool for community interaction and emergency response, providing a robust platform for local services and security.
 
@@ -150,20 +27,22 @@ SEG-APO is a comprehensive community security platform designed to enhance safet
 - **Internationalization**: The entire system, including codebase, UI, error messages, and database schema, is developed in Spanish.
 
 ### Feature Specifications
-- **Emergency System**: Floating panic button, emergency type selection, automatic GPS location, notifications to community groups and rescue entities, real-time tracking.
-- **Community Chat**: Real-time messaging (WebSocket), community groups, private chats, unread message notifications.
+- **Emergency System**: Floating panic button with drag-and-drop functionality, expandable quick access buttons (police, firefighters, SAMU, serenazgo), automatic GPS location, selection of specific emergency groups to notify, and support for six emergency types.
+- **Community Chat**: Real-time messaging (WebSocket), divided layout with group/contact tabs, integrated search, multimedia attachments (files, photos, audio, GPS location), and an invitation system.
 - **Taxi System**: Driver/passenger modes, ride requests with real-time geolocation, ride status tracking.
 - **Delivery System**: Order listing, local integration, automated local notifications, driver assignment.
 - **Local Advertising**: Carousels for logos and activities, event listings, service galleries, timed ad displays, pop-up information, GPS location linking, social media integration, and an image upload system with multi-image support and visual indicators.
 - **Online Radio & Audio**: Configurable online radio player, MP3 playlist with custom order, playback controls, and a dedicated admin section for management.
 - **Super Administrator Panel**: Features a dashboard (statistics, admin tools for advertising, radio, users, wallet, surveys), Chat Monitoring, Notifications Timeline, Real-time Geolocalization, and an expanded Google Maps view. Includes full CRUD for radios online and MP3 files.
 - **Role-Based Access Control**: Supports various roles including `super_admin`, `admin_cartera`, `admin_operaciones`, `supervisor`, `usuario`, `conductor`, and `local` with specific permissions.
-- **Wallet and Balance System**: Configurable commissions/discounts for various services, including a social media sharing incentive.
-- **Image Upload System**: Secure backend upload system with endpoint-specific configuration, MIME validation, increased size limits (15MB), and a reusable frontend component for previews and error handling, including multi-image uploads and compact grid display with visual indicators.
+- **Wallet and Balance System**: Comprehensive system with user balances, payment methods (bank accounts, Yape, Plin, PayPal), multi-currency support, recharge/withdrawal requests with approval flow, and transaction history. Includes configurable commissions/discounts for various services.
+- **Survey and Promotional Popups System**: Supports dynamic surveys with multiple questions, scheduled popups (advertising, missing persons/pets, events) with mandatory timers, and social interactions (likes, favorites, comments, sharing).
+- **Local Services System**: Management of service categories, local business logos, products/services with social counters (likes, favorites, shares, comments), and an integrated charging system for adding products.
+- **Image Upload System**: Secure backend upload system with endpoint-specific configuration, MIME validation, increased size limits (15MB), and a reusable frontend component for previews and error handling, including multi-image uploads with persistence, visual indicators for GPS, social networks, links, and dates, and robust validations.
 
 ### System Design Choices
 - **Modular Project Structure**: Clear separation between `client` (React), `server` (Express), and `shared` (common schemas/types).
-- **Database Schema**: Comprehensive PostgreSQL schema with 25 tables covering users, advertising, services, products, chat groups, messages, emergencies, taxi trips, delivery orders, audio configurations, and site settings.
+- **Database Schema**: Comprehensive PostgreSQL schema with 25 tables covering users, advertising, services, products, chat groups, messages, emergencies, taxi trips, delivery orders, audio configurations, site settings, wallet, surveys, and social interactions.
 - **Environment Management**: Utilizes environment variables for sensitive data and configuration.
 
 ## External Dependencies
