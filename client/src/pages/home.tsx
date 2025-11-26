@@ -1,40 +1,51 @@
-import { useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell } from "lucide-react";
+import { useLocation } from "wouter";
+import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import FranjaEmergencia from "@/components/FranjaEmergencia";
 import CarruselPublicidad from "@/components/CarruselPublicidad";
 import GaleriaServicios from "@/components/GaleriaServicios";
 import ModuloAudio from "@/components/ModuloAudio";
 import { useQuery } from "@tanstack/react-query";
-import type { Emergencia } from "@shared/schema";
+import type { Emergencia, ContactoFamiliar } from "@shared/schema";
 
 export default function Home() {
   const { toast } = useToast();
   const { user, isLoading } = useAuth();
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      toast({
-        title: "No autenticado",
-        description: "Redirigiendo al inicio de sesión...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/iniciar-sesion";
-      }, 500);
-    }
-  }, [user, isLoading, toast]);
+  const [, setLocation] = useLocation();
+  
+  const [modalAgenda, setModalAgenda] = useState(false);
+  const [modalFamilia, setModalFamilia] = useState(false);
+  const [modalAlertas, setModalAlertas] = useState(false);
 
   const { data: emergenciasRecientes = [] } = useQuery<Emergencia[]>({
     queryKey: ["/api/emergencias/recientes"],
   });
 
-  const { data: estadisticas } = useQuery({
-    queryKey: ["/api/estadisticas/usuario"],
+  const { data: contactosFamiliares = [] } = useQuery<ContactoFamiliar[]>({
+    queryKey: ["/api/contactos-familiares"],
+    enabled: !!user,
+  });
+
+  const { data: alertasFamilia = [] } = useQuery<Emergencia[]>({
+    queryKey: ["/api/emergencias/familia"],
+    enabled: !!user,
+  });
+
+  const { data: alertasComunidad = [] } = useQuery<Emergencia[]>({
+    queryKey: ["/api/emergencias/comunidad"],
+    enabled: !!user,
   });
 
   if (isLoading || !user) {
@@ -48,40 +59,85 @@ export default function Home() {
     );
   }
 
-  const nombreCompleto = user.nombre ?? 'Usuario';
+  const nombreMostrar = user.nombre || user.email?.split('@')[0] || 'Usuario';
+  
+  const contadorAgenda = 2;
+  const contadorFamilia = alertasFamilia.length;
+  const contadorAlertas = alertasComunidad.length || emergenciasRecientes.length;
 
   return (
     <div className="min-h-screen pb-20" data-testid="page-home">
       <FranjaEmergencia />
 
       {/* Bienvenida */}
-      <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-12">
+      <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-8 pb-16">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-welcome">
-                ¡Hola, {nombreCompleto}!
-              </h1>
-              <p className="text-white/90 text-lg">
-                Tu comunidad está segura. {emergenciasRecientes.length > 0 && `${emergenciasRecientes.length} alertas activas en tu zona.`}
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-sm px-3 py-1">
-                {user.rol || 'Usuario'}
-              </Badge>
-              {user.activo && (
-                <Badge variant="secondary" className="bg-success/20 text-white border-success/30 text-sm px-3 py-1">
-                  ● Activo
-                </Badge>
-              )}
-            </div>
+          <div className="text-center">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-welcome">
+              ¡Hola, {nombreMostrar}!
+            </h1>
+            <p className="text-white/95 text-xl font-medium">
+              Tu comunidad está segura
+            </p>
+            <p className="text-white/80 text-lg">
+              Juntos somos invencibles
+            </p>
           </div>
         </div>
       </section>
 
+      {/* Botones de Alertas Pendientes */}
+      <section className="container mx-auto px-4 -mt-10">
+        <div className="grid grid-cols-3 gap-3">
+          <Button
+            onClick={() => setModalAgenda(true)}
+            variant="outline"
+            className="relative h-auto py-4 px-3 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all flex flex-col items-center gap-2 border-2"
+            data-testid="button-agenda"
+          >
+            <Calendar className="h-6 w-6 text-blue-600" />
+            <span className="font-semibold text-sm">AGENDA</span>
+            {contadorAgenda > 0 && (
+              <Badge className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-0.5 min-w-[24px]">
+                {contadorAgenda}
+              </Badge>
+            )}
+          </Button>
+
+          <Button
+            onClick={() => setModalFamilia(true)}
+            variant="outline"
+            className="relative h-auto py-4 px-3 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all flex flex-col items-center gap-2 border-2"
+            data-testid="button-familia"
+          >
+            <Heart className="h-6 w-6 text-pink-600" />
+            <span className="font-semibold text-sm">FAMILIA</span>
+            {contadorFamilia > 0 && (
+              <Badge className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs px-2 py-0.5 min-w-[24px]">
+                {contadorFamilia}
+              </Badge>
+            )}
+          </Button>
+
+          <Button
+            onClick={() => setModalAlertas(true)}
+            variant="outline"
+            className="relative h-auto py-4 px-3 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all flex flex-col items-center gap-2 border-2"
+            data-testid="button-alertas"
+          >
+            <AlertTriangle className="h-6 w-6 text-red-600" />
+            <span className="font-semibold text-sm">ALERTAS</span>
+            {contadorAlertas > 0 && (
+              <Badge className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-0.5 min-w-[24px]">
+                {contadorAlertas}
+              </Badge>
+            )}
+          </Button>
+        </div>
+      </section>
+
       {/* Accesos rápidos */}
-      <section className="container mx-auto px-4 -mt-6">
+      <section className="container mx-auto px-4 mt-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="hover-elevate active-elevate-2 transition-all cursor-pointer shadow-lg" data-testid="card-quick-chat">
             <CardContent className="p-6 text-center">
@@ -191,6 +247,149 @@ export default function Home() {
       <section className="container mx-auto px-4 py-8">
         <ModuloAudio />
       </section>
+
+      {/* Modal Agenda */}
+      <Dialog open={modalAgenda} onOpenChange={setModalAgenda}>
+        <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-blue-600" />
+              Mi Agenda
+            </DialogTitle>
+            <DialogDescription>
+              Próximos eventos y actividades
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-3 py-2">
+            <div className="p-3 rounded-lg border bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+              <p className="font-medium text-sm">Reunión de Vecinos</p>
+              <p className="text-xs text-muted-foreground">Hoy, 18:00 - Plaza Central</p>
+            </div>
+            <div className="p-3 rounded-lg border bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+              <p className="font-medium text-sm">Junta de Seguridad</p>
+              <p className="text-xs text-muted-foreground">Mañana, 10:00 - Municipalidad</p>
+            </div>
+            <p className="text-xs text-center text-muted-foreground pt-4">
+              Próximamente: Sincronización con Google Calendar
+            </p>
+          </div>
+          <div className="pt-2 border-t">
+            <Button onClick={() => setModalAgenda(false)} className="w-full">
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Familia */}
+      <Dialog open={modalFamilia} onOpenChange={setModalFamilia}>
+        <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-pink-600" />
+              Mi Familia
+            </DialogTitle>
+            <DialogDescription>
+              Chat privado con tus contactos familiares
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-3 py-2">
+            {contactosFamiliares.length > 0 ? (
+              contactosFamiliares.map((contacto: any) => (
+                <div
+                  key={contacto.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    setModalFamilia(false);
+                    toast({
+                      title: "Chat privado",
+                      description: `Abriendo chat con ${contacto.nombre}...`,
+                    });
+                  }}
+                >
+                  <div className="h-10 w-10 rounded-full bg-pink-100 dark:bg-pink-900 flex items-center justify-center">
+                    <Heart className="h-5 w-5 text-pink-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{contacto.nombre}</p>
+                    <p className="text-xs text-muted-foreground">{contacto.relacion || 'Familiar'}</p>
+                  </div>
+                  <MessageCircle className="h-5 w-5 text-muted-foreground" />
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No tienes contactos familiares</p>
+                <Button
+                  variant="ghost"
+                  className="mt-2 text-primary"
+                  onClick={() => {
+                    setModalFamilia(false);
+                    setLocation("/perfil");
+                  }}
+                >
+                  Agregar contactos
+                </Button>
+              </div>
+            )}
+          </div>
+          <div className="pt-2 border-t">
+            <Button onClick={() => setModalFamilia(false)} variant="outline" className="w-full">
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Alertas Comunidad */}
+      <Dialog open={modalAlertas} onOpenChange={setModalAlertas}>
+        <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Alertas de la Comunidad
+            </DialogTitle>
+            <DialogDescription>
+              Emergencias activas en tu zona
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-3 py-2">
+            {emergenciasRecientes.length > 0 ? (
+              emergenciasRecientes.map((emergencia: any) => (
+                <div
+                  key={emergencia.id}
+                  className="p-3 rounded-lg border bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-sm capitalize">{emergencia.tipo}</p>
+                      <p className="text-xs text-muted-foreground">{emergencia.direccion || 'Ubicación aproximada'}</p>
+                      {emergencia.descripcion && (
+                        <p className="text-xs mt-1">{emergencia.descripcion}</p>
+                      )}
+                    </div>
+                    <Badge variant={emergencia.estado === 'pendiente' ? 'destructive' : 'secondary'} className="text-xs">
+                      {emergencia.estado}
+                    </Badge>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No hay alertas activas</p>
+                <p className="text-xs text-muted-foreground mt-1">Tu comunidad está tranquila</p>
+              </div>
+            )}
+          </div>
+          <div className="pt-2 border-t">
+            <Button onClick={() => setModalAlertas(false)} variant="outline" className="w-full">
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
