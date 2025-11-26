@@ -41,7 +41,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   }, [publicidadesActivas.length]);
 
   if (publicidadesActivas.length === 0) {
-    const alturaVacia = tipo === "carrusel_principal" ? "400px" : "120px";
+    const alturaVacia = tipo === "carrusel_principal" ? "350px" : "100px";
     return (
       <div
         className="w-full bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 flex items-center justify-center"
@@ -69,7 +69,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     return (
       <div
         className="relative w-full overflow-hidden bg-gray-100 dark:bg-gray-800"
-        style={{ height: "400px" }}
+        style={{ height: "350px" }}
         data-testid="carousel-principal"
       >
         <div className="relative h-full w-full flex items-center justify-center">
@@ -83,7 +83,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
               <img
                 src={publicidadActual.imagenUrl || undefined}
                 alt={publicidadActual.titulo || "Publicidad"}
-                className="h-[400px] w-auto object-contain transition-opacity duration-500"
+                className="h-[350px] w-auto object-contain transition-opacity duration-500"
                 data-testid="img-carousel-principal"
               />
             </a>
@@ -91,7 +91,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
             <img
               src={publicidadActual.imagenUrl || undefined}
               alt={publicidadActual.titulo || "Publicidad"}
-              className="h-[400px] w-auto object-contain transition-opacity duration-500"
+              className="h-[350px] w-auto object-contain transition-opacity duration-500"
               data-testid="img-carousel-principal"
             />
           )}
@@ -118,22 +118,6 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
-
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              {publicidadesActivas.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setIndiceActual(idx)}
-                  className={`h-2 rounded-full transition-all ${
-                    idx === indiceActual 
-                      ? "w-8 bg-purple-600" 
-                      : "w-2 bg-gray-400 dark:bg-gray-600"
-                  }`}
-                  data-testid={`button-carousel-dot-${idx}`}
-                  aria-label={`Ir a imagen ${idx + 1}`}
-                />
-              ))}
-            </div>
           </>
         )}
       </div>
@@ -147,7 +131,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
       <img
         src={pub.imagenUrl || undefined}
         alt={pub.titulo || `Imagen ${idx + 1}`}
-        className="h-[110px] w-auto object-contain flex-shrink-0"
+        className="h-[90px] w-auto object-contain flex-shrink-0"
         style={{ maxWidth: "none" }}
         data-testid={`img-carousel-${tipo}-${idx}`}
       />
@@ -184,7 +168,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   return (
     <div
       className={`w-full overflow-hidden ${fondoClase} border-y border-border/30`}
-      style={{ height: "120px" }}
+      style={{ height: "100px" }}
       data-testid={`carousel-${tipo}`}
     >
       <div className="carrusel-infinito carrusel-lento h-full flex items-center">
