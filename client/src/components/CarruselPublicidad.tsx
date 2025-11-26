@@ -14,6 +14,9 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   const [indiceActual, setIndiceActual] = useState(0);
   const [visualizadorAbierto, setVisualizadorAbierto] = useState(false);
   const [publicidadSeleccionada, setPublicidadSeleccionada] = useState<Publicidad | null>(null);
+  const [pausaAutoScroll, setPausaAutoScroll] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [mouseStartX, setMouseStartX] = useState<number | null>(null);
 
   const { data: publicidades = [] } = useQuery<Publicidad[]>({
     queryKey: ["/api/publicidad"],
@@ -42,6 +45,13 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
       return prev;
     });
   }, [publicidadesActivas.length]);
+
+  useEffect(() => {
+    if (pausaAutoScroll) {
+      const timeout = setTimeout(() => setPausaAutoScroll(false), 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [pausaAutoScroll]);
 
   const abrirVisualizador = (publicidad: Publicidad) => {
     setPublicidadSeleccionada(publicidad);
@@ -134,13 +144,74 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
 
   const itemsMultiplicados = [...publicidadesActivas, ...publicidadesActivas, ...publicidadesActivas, ...publicidadesActivas];
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+    setPausaAutoScroll(true);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    const umbral = 50;
+
+    if (Math.abs(diff) > umbral) {
+      const container = e.currentTarget.querySelector('.carrusel-track') as HTMLElement;
+      if (container) {
+        const scrollAmount = diff > 0 ? 200 : -200;
+        container.style.transform = `translateX(${-scrollAmount}px)`;
+        setTimeout(() => {
+          container.style.transform = '';
+        }, 300);
+      }
+    }
+    setTouchStartX(null);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setMouseStartX(e.clientX);
+    setPausaAutoScroll(true);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (mouseStartX === null) return;
+    const diff = mouseStartX - e.clientX;
+    const umbral = 30;
+
+    if (Math.abs(diff) > umbral) {
+      const container = e.currentTarget.querySelector('.carrusel-track') as HTMLElement;
+      if (container) {
+        const scrollAmount = diff > 0 ? 200 : -200;
+        container.style.transition = 'transform 0.3s ease';
+        container.style.transform = `translateX(${-scrollAmount}px)`;
+        setTimeout(() => {
+          container.style.transition = '';
+          container.style.transform = '';
+        }, 300);
+      }
+    }
+    setMouseStartX(null);
+  };
+
   const renderImagen = (pub: Publicidad, idx: number) => {
+    const esCarruselLogos = tipo === "carrusel_logos";
+    
     const contenido = (
       <img
         src={pub.imagenUrl || undefined}
         alt={pub.titulo || `Imagen ${idx + 1}`}
-        className="h-[90px] w-auto object-contain flex-shrink-0"
-        style={{ maxWidth: "none" }}
+        className={`h-[90px] w-auto object-contain flex-shrink-0 ${
+          esCarruselLogos 
+            ? 'drop-shadow-[0_8px_12px_rgba(0,0,0,0.25)] hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.35)] transition-all duration-300 hover:scale-105 hover:-translate-y-1' 
+            : ''
+        }`}
+        style={{ 
+          maxWidth: "none",
+          ...(esCarruselLogos && {
+            filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.2))',
+            transform: 'perspective(500px) rotateX(2deg)',
+          })
+        }}
         data-testid={`img-carousel-${tipo}-${idx}`}
       />
     );
@@ -152,8 +223,8 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
           href={pub.enlaceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-shrink-0 hover:opacity-80 transition-opacity"
-          style={{ marginLeft: "5px", marginRight: "5px" }}
+          className="flex-shrink-0 hover:opacity-90 transition-all duration-300"
+          style={{ marginLeft: "8px", marginRight: "8px" }}
         >
           {contenido}
         </a>
@@ -164,7 +235,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
       <div
         key={`${pub.id}-${idx}`}
         className="flex-shrink-0"
-        style={{ marginLeft: "5px", marginRight: "5px" }}
+        style={{ marginLeft: "8px", marginRight: "8px" }}
       >
         {contenido}
       </div>
@@ -175,13 +246,31 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     ? "bg-gray-100 dark:bg-gray-800/50" 
     : "bg-white dark:bg-gray-900";
 
+  const esCarruselLogos = tipo === "carrusel_logos";
+
   return (
     <div
-      className={`w-full overflow-hidden ${fondoClase} border-y border-border/30`}
-      style={{ height: "100px" }}
+      className={`w-full overflow-hidden ${fondoClase} ${
+        esCarruselLogos 
+          ? 'shadow-[0_8px_20px_-5px_rgba(0,0,0,0.3)] relative z-10' 
+          : 'border-y border-border/30'
+      }`}
+      style={{ 
+        height: esCarruselLogos ? "110px" : "100px",
+        ...(esCarruselLogos && {
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0.98), rgba(245,245,245,0.95))',
+        })
+      }}
       data-testid={`carousel-${tipo}`}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
     >
-      <div className="carrusel-infinito carrusel-lento h-full flex items-center">
+      <div 
+        className={`carrusel-infinito h-full flex items-center ${pausaAutoScroll ? 'carrusel-pausado' : 'carrusel-lento'}`}
+        style={{ cursor: 'grab' }}
+      >
         <div className="carrusel-track">
           {itemsMultiplicados.map((pub, idx) => renderImagen(pub, idx))}
           {itemsMultiplicados.map((pub, idx) => renderImagen(pub, idx + itemsMultiplicados.length))}

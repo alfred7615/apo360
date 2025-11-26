@@ -32,6 +32,11 @@
   animation-play-state: paused;
 }
 
+/* Pausar animación programáticamente */
+.carrusel-pausado .carrusel-track {
+  animation-play-state: paused;
+}
+
 /* Gradientes suaves en los bordes para efecto de continuidad */
 .carrusel-infinito::before,
 .carrusel-infinito::after {
