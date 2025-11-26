@@ -351,27 +351,70 @@ export default function Home() {
               Alertas de la Comunidad
             </DialogTitle>
             <DialogDescription>
-              Emergencias activas en tu zona
+              Emergencias activas en tu zona y grupos
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-3 py-2">
-            {emergenciasRecientes.length > 0 ? (
-              emergenciasRecientes.map((emergencia: any) => (
+            {(alertasComunidad.length > 0 || emergenciasRecientes.length > 0) ? (
+              [...alertasComunidad, ...emergenciasRecientes.filter(e => 
+                !alertasComunidad.some(a => a.id === e.id)
+              )].map((emergencia) => (
                 <div
                   key={emergencia.id}
+                  data-testid={`row-alerta-${emergencia.id}`}
                   className="p-3 rounded-lg border bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1">
                       <p className="font-medium text-sm capitalize">{emergencia.tipo}</p>
                       <p className="text-xs text-muted-foreground">{emergencia.direccion || 'Ubicación aproximada'}</p>
                       {emergencia.descripcion && (
                         <p className="text-xs mt-1">{emergencia.descripcion}</p>
                       )}
+                      {emergencia.grupoNombre && (
+                        <p className="text-xs text-primary mt-1 flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {emergencia.grupoNombre}
+                        </p>
+                      )}
                     </div>
-                    <Badge variant={emergencia.estado === 'pendiente' ? 'destructive' : 'secondary'} className="text-xs">
+                    <Badge variant={emergencia.estado === 'pendiente' ? 'destructive' : 'secondary'} className="text-xs flex-shrink-0">
                       {emergencia.estado}
                     </Badge>
+                  </div>
+                  <div className="flex gap-2 mt-2 pt-2 border-t border-red-200 dark:border-red-700">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-xs"
+                      data-testid={`button-alerta-ir-chat-${emergencia.id}`}
+                      onClick={() => {
+                        setModalAlertas(false);
+                        if (emergencia.grupoId) {
+                          setLocation(`/chat?grupo=${emergencia.grupoId}`);
+                        } else {
+                          setLocation("/chat");
+                        }
+                      }}
+                    >
+                      <MessageCircle className="h-3 w-3 mr-1" />
+                      Ir al Chat
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs"
+                      data-testid={`button-alerta-ver-${emergencia.id}`}
+                      onClick={() => {
+                        toast({
+                          title: "Ubicación",
+                          description: emergencia.direccion || "Ver en el mapa",
+                        });
+                      }}
+                    >
+                      <MapPin className="h-3 w-3 mr-1" />
+                      Ver
+                    </Button>
                   </div>
                 </div>
               ))
@@ -383,8 +426,24 @@ export default function Home() {
               </div>
             )}
           </div>
-          <div className="pt-2 border-t">
-            <Button onClick={() => setModalAlertas(false)} variant="outline" className="w-full">
+          <div className="pt-2 border-t flex gap-2">
+            <Button 
+              onClick={() => {
+                setModalAlertas(false);
+                setLocation("/chat");
+              }} 
+              variant="default" 
+              className="flex-1"
+              data-testid="button-ver-todos-grupos"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Ver todos los grupos
+            </Button>
+            <Button 
+              onClick={() => setModalAlertas(false)} 
+              variant="outline"
+              data-testid="button-cerrar-alertas"
+            >
               Cerrar
             </Button>
           </div>
