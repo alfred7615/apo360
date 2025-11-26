@@ -565,6 +565,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // RUTAS DE ESTADÍSTICAS PÚBLICAS
+  // ============================================================
+
+  app.get('/api/estadisticas/publicas', async (req, res) => {
+    try {
+      const stats = await storage.getEstadisticasPublicas();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error al obtener estadísticas públicas:", error);
+      res.status(500).json({ message: "Error al obtener estadísticas" });
+    }
+  });
+
+  // ============================================================
   // RUTAS DE PUBLICIDAD
   // ============================================================
 

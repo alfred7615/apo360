@@ -309,6 +309,14 @@ export interface IStorage {
   // Transacciones de saldo
   getTransaccionesSaldo(usuarioId?: string): Promise<TransaccionSaldo[]>;
   createTransaccionSaldo(data: InsertTransaccionSaldo): Promise<TransaccionSaldo>;
+  
+  // Estadísticas públicas
+  getEstadisticasPublicas(): Promise<{
+    usuariosActivos: number;
+    serviciosLocales: number;
+    monitoreo24h: boolean;
+    satisfaccion: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2372,6 +2380,29 @@ export class DatabaseStorage implements IStorage {
   async createTransaccionSaldo(data: InsertTransaccionSaldo): Promise<TransaccionSaldo> {
     const [transaccion] = await db.insert(transaccionesSaldo).values(data).returning();
     return transaccion;
+  }
+
+  // Estadísticas públicas
+  async getEstadisticasPublicas(): Promise<{
+    usuariosActivos: number;
+    serviciosLocales: number;
+    monitoreo24h: boolean;
+    satisfaccion: number;
+  }> {
+    // Contar todos los usuarios
+    const allUsuarios = await db.select().from(usuarios);
+    const usuariosActivos = allUsuarios.filter(u => u.estado === 'activo').length;
+    
+    // Contar todos los servicios activos
+    const allServicios = await db.select().from(servicios);
+    const serviciosActivos = allServicios.filter(s => s.activo === true).length;
+    
+    return {
+      usuariosActivos,
+      serviciosLocales: serviciosActivos,
+      monitoreo24h: true,
+      satisfaccion: 98,
+    };
   }
 }
 

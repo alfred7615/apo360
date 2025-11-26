@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Shield, MessageCircle, Car, ShoppingCart, Radio, AlertTriangle } from "lucide-react";
+import { Shield, MessageCircle, Car, ShoppingCart, Radio, AlertTriangle, Users, Store, Clock, Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import CarruselPublicidad from "@/components/CarruselPublicidad";
 import GaleriaServicios from "@/components/GaleriaServicios";
 import ModuloAudio from "@/components/ModuloAudio";
@@ -7,87 +8,19 @@ import CartillasBeneficios from "@/components/CartillasBeneficios";
 import FranjaEmergencia from "@/components/FranjaEmergencia";
 
 export default function Landing() {
+  const { data: estadisticas } = useQuery<{
+    usuariosActivos: number;
+    serviciosLocales: number;
+    monitoreo24h: boolean;
+    satisfaccion: number;
+  }>({
+    queryKey: ['/api/estadisticas/publicas'],
+  });
+
   return (
     <div className="min-h-screen" data-testid="page-landing">
       {/* Franja de emergencia (si existe) */}
       <FranjaEmergencia />
-
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-purple-600 via-purple-700 to-pink-600 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20" />
-        
-        <div className="container mx-auto px-4 py-20 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="flex justify-center mb-6">
-              <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shadow-2xl">
-                <svg className="h-14 w-14 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2ZM12 11H19C18.86 15.1 16.31 18.7 12.5 20C12.34 20.05 12.17 20.05 12 20C11.83 20.05 11.66 20.05 11.5 20C7.69 18.7 5.14 15.1 5 11H12V4.19L18 7.41V11H12Z"/>
-                </svg>
-              </div>
-            </div>
-
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight" data-testid="text-hero-title">
-              Seguridad y Apoyo para<br />Tu Comunidad
-            </h1>
-            
-            <p className="text-xl md:text-2xl mb-8 text-white/90 leading-relaxed" data-testid="text-hero-subtitle">
-              Conecta con vecinos, servicios de emergencia y comercios locales.<br />
-              Una plataforma integral que cuida de ti las 24 horas.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <Button
-                size="lg"
-                variant="secondary"
-                asChild
-                className="bg-white text-purple-700 hover:bg-white/90 px-8 py-6 text-lg font-semibold shadow-xl"
-                data-testid="button-get-started"
-              >
-                <a href="/iniciar-sesion">
-                  <Shield className="mr-2 h-5 w-5" />
-                  Comenzar Ahora
-                </a>
-              </Button>
-              
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-2 border-white text-white hover:bg-white/10 backdrop-blur-sm px-8 py-6 text-lg font-semibold"
-                data-testid="button-learn-more"
-              >
-                Conocer Más
-              </Button>
-            </div>
-
-            {/* Estadísticas rápidas */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
-              <div className="text-center">
-                <div className="text-4xl font-bold mb-1">1200+</div>
-                <div className="text-sm text-white/80">Usuarios Activos</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold mb-1">50+</div>
-                <div className="text-sm text-white/80">Servicios Locales</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold mb-1">24/7</div>
-                <div className="text-sm text-white/80">Monitoreo</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold mb-1">98%</div>
-                <div className="text-sm text-white/80">Satisfacción</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Wave divider */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-            <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="currentColor" className="text-background"/>
-          </svg>
-        </div>
-      </section>
 
       {/* Carrusel de logos publicitarios */}
       <CarruselPublicidad tipo="carrusel_logos" altura="120px" />
@@ -180,6 +113,38 @@ export default function Landing() {
               Registrarse Gratis
             </a>
           </Button>
+
+          {/* Estadísticas dinámicas */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12 max-w-4xl mx-auto">
+            <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-4" data-testid="stat-usuarios">
+              <div className="flex items-center justify-center mb-2">
+                <Users className="h-6 w-6 mr-2" />
+              </div>
+              <div className="text-4xl font-bold mb-1">{estadisticas?.usuariosActivos || 0}+</div>
+              <div className="text-sm text-white/80">Usuarios Activos</div>
+            </div>
+            <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-4" data-testid="stat-servicios">
+              <div className="flex items-center justify-center mb-2">
+                <Store className="h-6 w-6 mr-2" />
+              </div>
+              <div className="text-4xl font-bold mb-1">{estadisticas?.serviciosLocales || 0}+</div>
+              <div className="text-sm text-white/80">Servicios Locales</div>
+            </div>
+            <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-4" data-testid="stat-monitoreo">
+              <div className="flex items-center justify-center mb-2">
+                <Clock className="h-6 w-6 mr-2" />
+              </div>
+              <div className="text-4xl font-bold mb-1">24/7</div>
+              <div className="text-sm text-white/80">Monitoreo</div>
+            </div>
+            <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-4" data-testid="stat-satisfaccion">
+              <div className="flex items-center justify-center mb-2">
+                <Star className="h-6 w-6 mr-2" />
+              </div>
+              <div className="text-4xl font-bold mb-1">{estadisticas?.satisfaccion || 98}%</div>
+              <div className="text-sm text-white/80">Satisfacción</div>
+            </div>
+          </div>
         </div>
       </section>
     </div>
