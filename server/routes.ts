@@ -2679,9 +2679,323 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
-  // TRANSACCIONES DE SALDO
+  // SISTEMA DE CARTERA Y SALDOS
   // ============================================================
 
+  // --- MÉTODOS DE PAGO ---
+  
+  // Obtener métodos de pago (plataforma o de un usuario)
+  app.get('/api/metodos-pago', isAuthenticated, async (req: any, res) => {
+    try {
+      const { esPlataforma, usuarioId } = req.query;
+      const userId = req.user.claims.sub;
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      
+      // Si busca métodos de plataforma, cualquiera puede verlos
+      if (esPlataforma === 'true') {
+        const metodos = await storage.getMetodosPago(undefined, true);
+        return res.json(metodos);
+      }
+      
+      // Si es super admin, puede ver de cualquier usuario
+      if (esSuperAdmin && usuarioId) {
+        const metodos = await storage.getMetodosPago(usuarioId as string);
+        return res.json(metodos);
+      }
+      
+      // Usuario normal solo ve sus propios métodos
+      const metodos = await storage.getMetodosPago(userId);
+      res.json(metodos);
+    } catch (error) {
+      console.error("Error al obtener métodos de pago:", error);
+      res.status(500).json({ message: "Error al obtener métodos de pago" });
+    }
+  });
+
+  // Crear método de pago
+  app.post('/api/metodos-pago', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      
+      const data = req.body;
+      
+      // Solo super admin puede crear métodos de plataforma
+      if (data.esPlataforma && !esSuperAdmin) {
+        return res.status(403).json({ message: "No autorizado para crear métodos de plataforma" });
+      }
+      
+      // Si no es método de plataforma, asignar al usuario actual
+      if (!data.esPlataforma) {
+        data.usuarioId = userId;
+      }
+      
+      const metodo = await storage.createMetodoPago(data);
+      res.status(201).json(metodo);
+    } catch (error) {
+      console.error("Error al crear método de pago:", error);
+      res.status(500).json({ message: "Error al crear método de pago" });
+    }
+  });
+
+  // Actualizar método de pago
+  app.patch('/api/metodos-pago/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      
+      const metodo = await storage.getMetodoPago(req.params.id);
+      if (!metodo) {
+        return res.status(404).json({ message: "Método de pago no encontrado" });
+      }
+      
+      // Verificar permisos
+      if (!esSuperAdmin && metodo.usuarioId !== userId) {
+        return res.status(403).json({ message: "No autorizado" });
+      }
+      
+      const actualizado = await storage.updateMetodoPago(req.params.id, req.body);
+      res.json(actualizado);
+    } catch (error) {
+      console.error("Error al actualizar método de pago:", error);
+      res.status(500).json({ message: "Error al actualizar método de pago" });
+    }
+  });
+
+  // Eliminar método de pago
+  app.delete('/api/metodos-pago/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      
+      const metodo = await storage.getMetodoPago(req.params.id);
+      if (!metodo) {
+        return res.status(404).json({ message: "Método de pago no encontrado" });
+      }
+      
+      // Verificar permisos
+      if (!esSuperAdmin && metodo.usuarioId !== userId) {
+        return res.status(403).json({ message: "No autorizado" });
+      }
+      
+      await storage.deleteMetodoPago(req.params.id);
+      res.json({ message: "Método de pago eliminado" });
+    } catch (error) {
+      console.error("Error al eliminar método de pago:", error);
+      res.status(500).json({ message: "Error al eliminar método de pago" });
+    }
+  });
+
+  // --- MONEDAS Y TIPOS DE CAMBIO ---
+  
+  // Obtener todas las monedas
+  app.get('/api/monedas', async (req, res) => {
+    try {
+      const monedas = await storage.getMonedas();
+      res.json(monedas);
+    } catch (error) {
+      console.error("Error al obtener monedas:", error);
+      res.status(500).json({ message: "Error al obtener monedas" });
+    }
+  });
+
+  // Crear moneda (solo super admin)
+  app.post('/api/monedas', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const moneda = await storage.createMoneda(req.body);
+      res.status(201).json(moneda);
+    } catch (error) {
+      console.error("Error al crear moneda:", error);
+      res.status(500).json({ message: "Error al crear moneda" });
+    }
+  });
+
+  // Actualizar moneda (solo super admin)
+  app.patch('/api/monedas/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const actualizada = await storage.updateMoneda(req.params.id, req.body);
+      if (!actualizada) {
+        return res.status(404).json({ message: "Moneda no encontrada" });
+      }
+      res.json(actualizada);
+    } catch (error) {
+      console.error("Error al actualizar moneda:", error);
+      res.status(500).json({ message: "Error al actualizar moneda" });
+    }
+  });
+
+  // Eliminar moneda (solo super admin)
+  app.delete('/api/monedas/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      await storage.deleteMoneda(req.params.id);
+      res.json({ message: "Moneda eliminada" });
+    } catch (error) {
+      console.error("Error al eliminar moneda:", error);
+      res.status(500).json({ message: "Error al eliminar moneda" });
+    }
+  });
+
+  // --- SALDOS DE USUARIOS ---
+  
+  // Obtener saldo del usuario actual
+  app.get('/api/saldos/mi-saldo', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      let saldo = await storage.getSaldoUsuario(userId);
+      
+      // Si no existe, crear con saldo 0
+      if (!saldo) {
+        saldo = await storage.upsertSaldoUsuario({
+          usuarioId: userId,
+          saldo: "0",
+          monedaPreferida: "PEN",
+          totalIngresos: "0",
+          totalEgresos: "0",
+        });
+      }
+      
+      res.json(saldo);
+    } catch (error) {
+      console.error("Error al obtener saldo:", error);
+      res.status(500).json({ message: "Error al obtener saldo" });
+    }
+  });
+
+  // Obtener todos los saldos (solo super admin)
+  app.get('/api/saldos', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const saldos = await storage.getAllSaldosUsuarios();
+      res.json(saldos);
+    } catch (error) {
+      console.error("Error al obtener saldos:", error);
+      res.status(500).json({ message: "Error al obtener saldos" });
+    }
+  });
+
+  // Obtener saldo de un usuario específico (solo super admin)
+  app.get('/api/saldos/:usuarioId', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const saldo = await storage.getSaldoUsuario(req.params.usuarioId);
+      if (!saldo) {
+        return res.status(404).json({ message: "Saldo no encontrado" });
+      }
+      res.json(saldo);
+    } catch (error) {
+      console.error("Error al obtener saldo del usuario:", error);
+      res.status(500).json({ message: "Error al obtener saldo del usuario" });
+    }
+  });
+
+  // --- SOLICITUDES DE SALDO (Recargas y Retiros) ---
+  
+  // Obtener solicitudes (super admin ve todas, usuario ve las suyas)
+  app.get('/api/solicitudes-saldo', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      const { estado } = req.query;
+      
+      if (esSuperAdmin) {
+        const solicitudes = await storage.getSolicitudesSaldo(estado as string);
+        res.json(solicitudes);
+      } else {
+        const solicitudes = await storage.getSolicitudesSaldoPorUsuario(userId);
+        res.json(solicitudes);
+      }
+    } catch (error) {
+      console.error("Error al obtener solicitudes de saldo:", error);
+      res.status(500).json({ message: "Error al obtener solicitudes" });
+    }
+  });
+
+  // Crear solicitud de recarga o retiro
+  app.post('/api/solicitudes-saldo', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tipo, monto, metodoPagoId, numeroOperacion, comprobante, notas } = req.body;
+      
+      if (!tipo || !monto) {
+        return res.status(400).json({ message: "Tipo y monto son requeridos" });
+      }
+      
+      // Validar que el monto sea positivo
+      if (parseFloat(monto) <= 0) {
+        return res.status(400).json({ message: "El monto debe ser mayor a 0" });
+      }
+      
+      // Para retiros, verificar que tenga saldo suficiente
+      if (tipo === 'retiro') {
+        const saldo = await storage.getSaldoUsuario(userId);
+        if (!saldo || parseFloat(saldo.saldo) < parseFloat(monto)) {
+          return res.status(400).json({ message: "Saldo insuficiente" });
+        }
+      }
+      
+      const solicitud = await storage.createSolicitudSaldo({
+        usuarioId: userId,
+        tipo,
+        monto,
+        metodoPagoId,
+        numeroOperacion,
+        comprobante,
+        notas,
+        estado: 'pendiente',
+      });
+      
+      res.status(201).json(solicitud);
+    } catch (error) {
+      console.error("Error al crear solicitud de saldo:", error);
+      res.status(500).json({ message: "Error al crear solicitud" });
+    }
+  });
+
+  // Aprobar solicitud (solo super admin)
+  app.post('/api/solicitudes-saldo/:id/aprobar', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const solicitud = await storage.aprobarSolicitudSaldo(req.params.id, adminId);
+      
+      if (!solicitud) {
+        return res.status(404).json({ message: "Solicitud no encontrada" });
+      }
+      
+      res.json(solicitud);
+    } catch (error) {
+      console.error("Error al aprobar solicitud:", error);
+      res.status(500).json({ message: "Error al aprobar solicitud" });
+    }
+  });
+
+  // Rechazar solicitud (solo super admin)
+  app.post('/api/solicitudes-saldo/:id/rechazar', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { motivoRechazo } = req.body;
+      
+      if (!motivoRechazo) {
+        return res.status(400).json({ message: "Motivo de rechazo es requerido" });
+      }
+      
+      const solicitud = await storage.rechazarSolicitudSaldo(req.params.id, motivoRechazo);
+      
+      if (!solicitud) {
+        return res.status(404).json({ message: "Solicitud no encontrada" });
+      }
+      
+      res.json(solicitud);
+    } catch (error) {
+      console.error("Error al rechazar solicitud:", error);
+      res.status(500).json({ message: "Error al rechazar solicitud" });
+    }
+  });
+
+  // --- TRANSACCIONES DE SALDO ---
+  
+  // Obtener transacciones (super admin ve todas, usuario ve las suyas)
   app.get('/api/transacciones-saldo', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -2689,10 +3003,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const esSuperAdmin = userRoles.includes('super_admin');
       
       if (esSuperAdmin) {
-        const transacciones = await storage.getAllTransaccionesSaldo();
+        const transacciones = await storage.getTransaccionesSaldo();
         res.json(transacciones);
       } else {
-        const transacciones = await storage.getTransaccionesSaldoUsuario(userId);
+        const transacciones = await storage.getTransaccionesSaldo(userId);
         res.json(transacciones);
       }
     } catch (error) {
@@ -2701,9 +3015,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener transacciones de un usuario específico (solo super admin)
   app.get('/api/transacciones-saldo/usuario/:usuarioId', isAuthenticated, requireSuperAdmin, async (req, res) => {
     try {
-      const transacciones = await storage.getTransaccionesSaldoUsuario(req.params.usuarioId);
+      const transacciones = await storage.getTransaccionesSaldo(req.params.usuarioId);
       res.json(transacciones);
     } catch (error) {
       console.error("Error al obtener transacciones del usuario:", error);
@@ -2711,26 +3026,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ============================================================
-  // CONFIGURACIÓN DE COBROS (Super Admin)
-  // ============================================================
-
-  app.get('/api/configuracion-cobros', isAuthenticated, async (req, res) => {
+  // --- CONFIGURACIÓN DE SALDOS (Tarifas y comisiones) ---
+  
+  // Obtener todas las configuraciones de tarifas
+  app.get('/api/configuracion-saldos', isAuthenticated, async (req, res) => {
     try {
-      const config = await storage.getConfiguracionCobros();
+      const config = await storage.getConfiguracionesSaldos();
       res.json(config);
     } catch (error) {
-      console.error("Error al obtener configuración de cobros:", error);
+      console.error("Error al obtener configuración de saldos:", error);
       res.status(500).json({ message: "Error al obtener configuración" });
     }
   });
 
-  app.post('/api/configuracion-cobros', isAuthenticated, requireSuperAdmin, async (req, res) => {
+  // Actualizar o crear configuración de tarifa (solo super admin)
+  app.post('/api/configuracion-saldos', isAuthenticated, requireSuperAdmin, async (req, res) => {
     try {
-      const config = await storage.updateConfiguracionCobros(req.body);
+      const config = await storage.upsertConfiguracionSaldo(req.body);
       res.json(config);
     } catch (error: any) {
-      console.error("Error al actualizar configuración de cobros:", error);
+      console.error("Error al actualizar configuración de saldos:", error);
       res.status(400).json({ message: error.message || "Error al actualizar configuración" });
     }
   });
