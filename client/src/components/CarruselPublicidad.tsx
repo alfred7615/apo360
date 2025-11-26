@@ -1,24 +1,48 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Link2, MapPin, Calendar, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Link2, MapPin, Calendar, Info, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { filtrarPublicidadesActivas, type Publicidad } from "@/lib/publicidadUtils";
+import { filtrarPublicidadesActivas, type Publicidad, getGoogleMapsUrl } from "@/lib/publicidadUtils";
 import VisualizadorPantallaCompleta from "./VisualizadorPantallaCompleta";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import "@/styles/carrusel-infinito.css";
 
 interface CarruselPublicidadProps {
   tipo: "carrusel_logos" | "carrusel_principal" | "logos_servicios";
 }
 
+function tieneContenidoAdicional(pub: Publicidad): boolean {
+  return !!(
+    pub.titulo ||
+    pub.descripcion ||
+    pub.enlaceUrl ||
+    pub.latitud ||
+    pub.longitud ||
+    pub.fechaInicio ||
+    pub.fechaFin ||
+    pub.facebook ||
+    pub.instagram ||
+    pub.whatsapp ||
+    pub.tiktok ||
+    pub.twitter ||
+    pub.youtube ||
+    pub.linkedin
+  );
+}
+
 export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   const [indiceActual, setIndiceActual] = useState(0);
   const [visualizadorAbierto, setVisualizadorAbierto] = useState(false);
   const [publicidadSeleccionada, setPublicidadSeleccionada] = useState<Publicidad | null>(null);
-  const [imagenSeleccionadaId, setImagenSeleccionadaId] = useState<string | null>(null);
+  const [modalInfoAbierto, setModalInfoAbierto] = useState(false);
   const [pausaAutoScroll, setPausaAutoScroll] = useState(false);
-  const [arrastrandoX, setArrastrandoX] = useState<number | null>(null);
-  const [desplazamientoManual, setDesplazamientoManual] = useState(0);
+  const [arrastreInicio, setArrastreInicio] = useState<number | null>(null);
+  const [posicionScroll, setPosicionScroll] = useState(0);
+  const [ultimoClick, setUltimoClick] = useState<{ id: string; tiempo: number } | null>(null);
   const contenedorRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   const { data: publicidades = [] } = useQuery<Publicidad[]>({
     queryKey: ["/api/publicidad"],
@@ -48,12 +72,11 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     });
   }, [publicidadesActivas.length]);
 
-  // Reanudar auto-scroll después de 3 segundos de inactividad
+  // Reanudar auto-scroll después de 3 segundos
   useEffect(() => {
     if (pausaAutoScroll) {
       const timeout = setTimeout(() => {
         setPausaAutoScroll(false);
-        setDesplazamientoManual(0);
       }, 3000);
       return () => clearTimeout(timeout);
     }
@@ -69,57 +92,91 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     setPublicidadSeleccionada(null);
   };
 
-  // Manejo de clics: primer clic = efecto 3D, segundo clic = abrir modal
-  const manejarClicImagen = (pub: Publicidad, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (imagenSeleccionadaId === pub.id) {
-      // Segundo clic - abrir modal
-      abrirVisualizador(pub);
-      setImagenSeleccionadaId(null);
-    } else {
-      // Primer clic - seleccionar para efecto 3D
-      setImagenSeleccionadaId(pub.id);
+  const abrirModalInfo = (publicidad: Publicidad) => {
+    if (tieneContenidoAdicional(publicidad)) {
+      setPublicidadSeleccionada(publicidad);
+      setModalInfoAbierto(true);
     }
   };
 
-  // Navegación táctil
+  const cerrarModalInfo = () => {
+    setModalInfoAbierto(false);
+    setPublicidadSeleccionada(null);
+  };
+
+  // Manejo de doble clic
+  const manejarClicImagen = (pub: Publicidad) => {
+    const ahora = Date.now();
+    
+    if (ultimoClick && ultimoClick.id === pub.id && (ahora - ultimoClick.tiempo) < 400) {
+      // Doble clic detectado - abrir modal solo si tiene contenido
+      if (tieneContenidoAdicional(pub)) {
+        abrirModalInfo(pub);
+      }
+      setUltimoClick(null);
+    } else {
+      // Primer clic
+      setUltimoClick({ id: pub.id, tiempo: ahora });
+    }
+  };
+
+  // Navegación con arrastre - Touch
   const handleTouchStart = (e: React.TouchEvent) => {
-    setArrastrandoX(e.touches[0].clientX);
+    setArrastreInicio(e.touches[0].clientX);
     setPausaAutoScroll(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (arrastrandoX === null) return;
-    const diff = arrastrandoX - e.touches[0].clientX;
-    setDesplazamientoManual(diff);
+    if (arrastreInicio === null || !trackRef.current) return;
+    const diff = arrastreInicio - e.touches[0].clientX;
+    trackRef.current.style.transform = `translateX(${-posicionScroll - diff}px)`;
   };
 
-  const handleTouchEnd = () => {
-    setArrastrandoX(null);
-    // El desplazamiento se mantiene y el auto-scroll reanuda después de 3 segundos
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (arrastreInicio === null || !trackRef.current) return;
+    const diff = arrastreInicio - e.changedTouches[0].clientX;
+    const nuevaPosicion = posicionScroll + diff;
+    
+    // Limitar el scroll
+    const maxScroll = trackRef.current.scrollWidth / 2;
+    const posicionFinal = Math.max(0, Math.min(nuevaPosicion, maxScroll));
+    
+    setPosicionScroll(posicionFinal);
+    trackRef.current.style.transform = `translateX(${-posicionFinal}px)`;
+    setArrastreInicio(null);
   };
 
-  // Navegación con mouse
+  // Navegación con arrastre - Mouse
   const handleMouseDown = (e: React.MouseEvent) => {
-    setArrastrandoX(e.clientX);
+    e.preventDefault();
+    setArrastreInicio(e.clientX);
     setPausaAutoScroll(true);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (arrastrandoX === null) return;
-    const diff = arrastrandoX - e.clientX;
-    setDesplazamientoManual(diff);
+    if (arrastreInicio === null || !trackRef.current) return;
+    const diff = arrastreInicio - e.clientX;
+    trackRef.current.style.transform = `translateX(${-posicionScroll - diff}px)`;
   };
 
-  const handleMouseUp = () => {
-    setArrastrandoX(null);
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (arrastreInicio === null || !trackRef.current) return;
+    const diff = arrastreInicio - e.clientX;
+    const nuevaPosicion = posicionScroll + diff;
+    
+    // Limitar el scroll
+    const maxScroll = trackRef.current.scrollWidth / 2;
+    const posicionFinal = Math.max(0, Math.min(nuevaPosicion, maxScroll));
+    
+    setPosicionScroll(posicionFinal);
+    trackRef.current.style.transform = `translateX(${-posicionFinal}px)`;
+    setArrastreInicio(null);
   };
 
   const handleMouseLeave = () => {
-    if (arrastrandoX !== null) {
-      setArrastrandoX(null);
+    if (arrastreInicio !== null && trackRef.current) {
+      trackRef.current.style.transform = `translateX(${-posicionScroll}px)`;
+      setArrastreInicio(null);
     }
   };
 
@@ -202,12 +259,8 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     );
   }
 
-  // Renderizado de imágenes para carrusel de logos
+  // Carrusel de logos
   const itemsMultiplicados = [...publicidadesActivas, ...publicidadesActivas, ...publicidadesActivas, ...publicidadesActivas];
-
-  const tieneInfoAdicional = (pub: Publicidad) => {
-    return pub.enlaceUrl || pub.latitud || pub.longitud || pub.fechaInicio || pub.fechaFin;
-  };
 
   const renderIconosInfo = (pub: Publicidad) => {
     const iconos: JSX.Element[] = [];
@@ -235,7 +288,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
         </div>
       );
     }
-    
+
     if (pub.descripcion) {
       iconos.push(
         <div key="info" className="bg-gray-600 rounded-full p-1" title="Tiene descripción">
@@ -254,58 +307,24 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   };
 
   const renderImagen = (pub: Publicidad, idx: number) => {
-    const esSeleccionada = imagenSeleccionadaId === pub.id;
-    const esCarruselLogos = tipo === "carrusel_logos";
+    const tieneDatos = tieneContenidoAdicional(pub);
     
     return (
       <div
         key={`${pub.id}-${idx}`}
         className="flex-shrink-0 relative"
         style={{ marginLeft: "10px", marginRight: "10px" }}
-        onClick={(e) => manejarClicImagen(pub, e)}
+        onClick={() => manejarClicImagen(pub)}
       >
-        <div 
-          className={`relative transition-all duration-300 cursor-pointer ${
-            esCarruselLogos ? 'logo-3d-container' : ''
-          } ${esSeleccionada ? 'logo-3d-activo' : ''}`}
-          style={{
-            transform: esSeleccionada 
-              ? 'perspective(800px) rotateX(-8deg) rotateY(5deg) translateY(-8px) scale(1.15)' 
-              : esCarruselLogos 
-                ? 'perspective(800px) rotateX(3deg)' 
-                : 'none',
-            transformStyle: 'preserve-3d',
-          }}
-        >
+        <div className={`relative ${tieneDatos ? 'cursor-pointer' : 'cursor-default'}`}>
           <img
             src={pub.imagenUrl || undefined}
             alt={pub.titulo || `Imagen ${idx + 1}`}
-            className={`h-[85px] w-auto object-contain flex-shrink-0 transition-all duration-300 ${
-              esCarruselLogos 
-                ? 'rounded-lg' 
-                : ''
-            }`}
-            style={{ 
-              maxWidth: "none",
-              boxShadow: esSeleccionada
-                ? '0 20px 40px rgba(0,0,0,0.4), 0 10px 20px rgba(0,0,0,0.3)'
-                : esCarruselLogos
-                  ? '0 8px 16px rgba(0,0,0,0.25), 0 4px 8px rgba(0,0,0,0.15)'
-                  : 'none',
-              border: esSeleccionada ? '2px solid rgba(139, 92, 246, 0.6)' : 'none',
-            }}
+            className="h-[85px] w-auto object-contain flex-shrink-0 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200"
+            style={{ maxWidth: "none" }}
             data-testid={`img-carousel-${tipo}-${idx}`}
           />
-          
-          {/* Iconos de información adicional */}
-          {esCarruselLogos && renderIconosInfo(pub)}
-          
-          {/* Indicador visual de "toca de nuevo para ver más" */}
-          {esSeleccionada && (
-            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-purple-600 dark:text-purple-400 whitespace-nowrap font-medium">
-              Toca de nuevo para ver más
-            </div>
-          )}
+          {renderIconosInfo(pub)}
         </div>
       </div>
     );
@@ -313,7 +332,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
 
   const fondoClase = tipo === "logos_servicios" 
     ? "bg-gray-100 dark:bg-gray-800/50" 
-    : "";
+    : "bg-white dark:bg-gray-900";
 
   const esCarruselLogos = tipo === "carrusel_logos";
 
@@ -323,18 +342,10 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
         ref={contenedorRef}
         className={`w-full overflow-hidden ${fondoClase} ${
           esCarruselLogos 
-            ? 'relative z-10' 
+            ? 'shadow-lg relative z-10' 
             : 'border-y border-border/30'
         }`}
-        style={{ 
-          height: esCarruselLogos ? "120px" : "100px",
-          background: esCarruselLogos 
-            ? 'linear-gradient(180deg, #ffffff 0%, #f8f9fa 50%, #f0f0f0 100%)' 
-            : undefined,
-          boxShadow: esCarruselLogos 
-            ? '0 12px 30px -8px rgba(0,0,0,0.35), 0 6px 15px -5px rgba(0,0,0,0.2)' 
-            : undefined,
-        }}
+        style={{ height: esCarruselLogos ? "110px" : "100px" }}
         data-testid={`carousel-${tipo}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -345,16 +356,13 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
         onMouseLeave={handleMouseLeave}
       >
         <div 
-          className={`carrusel-infinito h-full flex items-center ${pausaAutoScroll ? 'carrusel-pausado' : 'carrusel-lento'}`}
-          style={{ 
-            cursor: arrastrandoX !== null ? 'grabbing' : 'grab',
-          }}
+          className={`h-full flex items-center ${!pausaAutoScroll ? 'carrusel-infinito carrusel-lento' : ''}`}
+          style={{ cursor: arrastreInicio !== null ? 'grabbing' : 'grab' }}
         >
           <div 
-            className="carrusel-track"
-            style={{
-              transform: pausaAutoScroll ? `translateX(${-desplazamientoManual}px)` : undefined,
-            }}
+            ref={trackRef}
+            className={!pausaAutoScroll ? 'carrusel-track' : 'flex'}
+            style={pausaAutoScroll ? { transform: `translateX(${-posicionScroll}px)` } : undefined}
           >
             {itemsMultiplicados.map((pub, idx) => renderImagen(pub, idx))}
             {itemsMultiplicados.map((pub, idx) => renderImagen(pub, idx + itemsMultiplicados.length))}
@@ -362,12 +370,108 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
         </div>
       </div>
 
-      {/* Modal para ver información completa */}
-      <VisualizadorPantallaCompleta
-        publicidad={publicidadSeleccionada}
-        isOpen={visualizadorAbierto}
-        onClose={cerrarVisualizador}
-      />
+      {/* Modal de información */}
+      <Dialog open={modalInfoAbierto} onOpenChange={setModalInfoAbierto}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{publicidadSeleccionada?.titulo || "Información"}</DialogTitle>
+          </DialogHeader>
+          
+          {publicidadSeleccionada && (
+            <div className="space-y-4">
+              {publicidadSeleccionada.imagenUrl && (
+                <img 
+                  src={publicidadSeleccionada.imagenUrl} 
+                  alt={publicidadSeleccionada.titulo || "Imagen"} 
+                  className="w-full h-auto rounded-lg"
+                />
+              )}
+              
+              {publicidadSeleccionada.descripcion && (
+                <p className="text-sm text-muted-foreground">
+                  {publicidadSeleccionada.descripcion}
+                </p>
+              )}
+              
+              {(publicidadSeleccionada.fechaInicio || publicidadSeleccionada.fechaFin) && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-orange-500" />
+                  <span>
+                    {publicidadSeleccionada.fechaInicio && format(new Date(publicidadSeleccionada.fechaInicio), "dd MMM yyyy", { locale: es })}
+                    {publicidadSeleccionada.fechaFin && ` - ${format(new Date(publicidadSeleccionada.fechaFin), "dd MMM yyyy", { locale: es })}`}
+                  </span>
+                </div>
+              )}
+              
+              {(publicidadSeleccionada.latitud && publicidadSeleccionada.longitud) && (
+                <a 
+                  href={getGoogleMapsUrl(publicidadSeleccionada.latitud, publicidadSeleccionada.longitud)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-green-600 hover:underline"
+                >
+                  <MapPin className="h-4 w-4" />
+                  Ver ubicación en Google Maps
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+              
+              {publicidadSeleccionada.enlaceUrl && (
+                <a 
+                  href={publicidadSeleccionada.enlaceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                >
+                  <Link2 className="h-4 w-4" />
+                  Visitar sitio web
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+              
+              {/* Redes sociales */}
+              {(publicidadSeleccionada.facebook || publicidadSeleccionada.instagram || 
+                publicidadSeleccionada.whatsapp || publicidadSeleccionada.tiktok ||
+                publicidadSeleccionada.twitter || publicidadSeleccionada.youtube ||
+                publicidadSeleccionada.linkedin) && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground mb-2">Redes sociales:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {publicidadSeleccionada.facebook && (
+                      <a href={publicidadSeleccionada.facebook} target="_blank" rel="noopener noreferrer" 
+                         className="text-xs bg-blue-600 text-white px-2 py-1 rounded">Facebook</a>
+                    )}
+                    {publicidadSeleccionada.instagram && (
+                      <a href={publicidadSeleccionada.instagram} target="_blank" rel="noopener noreferrer"
+                         className="text-xs bg-pink-600 text-white px-2 py-1 rounded">Instagram</a>
+                    )}
+                    {publicidadSeleccionada.whatsapp && (
+                      <a href={`https://wa.me/${publicidadSeleccionada.whatsapp}`} target="_blank" rel="noopener noreferrer"
+                         className="text-xs bg-green-600 text-white px-2 py-1 rounded">WhatsApp</a>
+                    )}
+                    {publicidadSeleccionada.tiktok && (
+                      <a href={publicidadSeleccionada.tiktok} target="_blank" rel="noopener noreferrer"
+                         className="text-xs bg-black text-white px-2 py-1 rounded">TikTok</a>
+                    )}
+                    {publicidadSeleccionada.twitter && (
+                      <a href={publicidadSeleccionada.twitter} target="_blank" rel="noopener noreferrer"
+                         className="text-xs bg-sky-500 text-white px-2 py-1 rounded">Twitter</a>
+                    )}
+                    {publicidadSeleccionada.youtube && (
+                      <a href={publicidadSeleccionada.youtube} target="_blank" rel="noopener noreferrer"
+                         className="text-xs bg-red-600 text-white px-2 py-1 rounded">YouTube</a>
+                    )}
+                    {publicidadSeleccionada.linkedin && (
+                      <a href={publicidadSeleccionada.linkedin} target="_blank" rel="noopener noreferrer"
+                         className="text-xs bg-blue-700 text-white px-2 py-1 rounded">LinkedIn</a>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
