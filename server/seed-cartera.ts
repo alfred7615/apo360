@@ -131,10 +131,10 @@ async function seedCartera() {
           totalIngresos: totalIngresos,
           totalEgresos: totalEgresos,
         });
-        console.log(`  Saldo para ${user.nombre || user.email}: S/ ${saldoInicial}`);
+        console.log(`  Saldo para ${user.firstName || user.email}: S/ ${saldoInicial}`);
       } catch (e: any) {
         if (e.code === "23505") {
-          console.log(`  Saldo para ${user.nombre || user.email} ya existe`);
+          console.log(`  Saldo para ${user.firstName || user.email} ya existe`);
         } else {
           throw e;
         }
@@ -225,7 +225,7 @@ async function seedCartera() {
           saldoNuevo: saldoNuevo,
           estado: "completado",
         });
-        console.log(`  Transaccion ${tipo} de S/ ${monto} para ${user.nombre || user.email}`);
+        console.log(`  Transaccion ${tipo} de S/ ${monto} para ${user.firstName || user.email}`);
       } catch (e: any) {
         console.log(`  Error creando transaccion: ${e.message}`);
       }

@@ -178,7 +178,7 @@ export default function GestionCarteraScreen() {
   const crearMetodoMutation = useMutation({
     mutationFn: (data: typeof nuevoMetodo) => apiRequest("POST", "/api/metodos-pago", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/metodos-pago"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/metodos-pago", { esPlataforma: true }] });
       setShowMetodoModal(false);
       resetMetodoForm();
       toast({ title: "Metodo de pago creado exitosamente" });
@@ -191,7 +191,7 @@ export default function GestionCarteraScreen() {
   const eliminarMetodoMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/metodos-pago/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/metodos-pago"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/metodos-pago", { esPlataforma: true }] });
       toast({ title: "Metodo de pago eliminado" });
     },
     onError: () => {
