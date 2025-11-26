@@ -89,54 +89,66 @@ export default function Home() {
       {/* Botones de Alertas Pendientes - Solo iconos alineados a la izquierda */}
       <section className="container mx-auto px-4 -mt-10">
         <div className="flex justify-start gap-4">
-          <div className="relative">
+          <div className="relative pb-4">
             <Button
               onClick={() => setModalAgenda(true)}
               size="icon"
               variant="outline"
-              className="h-14 w-14 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0"
+              className={`h-14 w-14 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
+                contadorAgenda > 0 
+                  ? 'bg-white dark:bg-card border-blue-300' 
+                  : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
+              }`}
               data-testid="button-agenda"
             >
-              <Calendar className="h-8 w-8 text-blue-600" />
+              <Calendar className={`h-9 w-9 ${contadorAgenda > 0 ? 'text-blue-600' : 'text-gray-500 dark:text-gray-400'}`} />
             </Button>
             {contadorAgenda > 0 && (
-              <Badge className="absolute -bottom-2 -right-2 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center shadow-md">
+              <span className="absolute bottom-0 right-0 text-blue-600 font-bold text-sm">
                 {contadorAgenda}
-              </Badge>
+              </span>
             )}
           </div>
 
-          <div className="relative">
+          <div className="relative pb-4">
             <Button
               onClick={() => setModalFamilia(true)}
               size="icon"
               variant="outline"
-              className="h-14 w-14 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0"
+              className={`h-14 w-14 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
+                contadorFamilia > 0 
+                  ? 'bg-white dark:bg-card border-pink-300' 
+                  : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
+              }`}
               data-testid="button-familia"
             >
-              <UsersRound className="h-8 w-8 text-pink-600" />
+              <UsersRound className={`h-9 w-9 ${contadorFamilia > 0 ? 'text-pink-600' : 'text-gray-500 dark:text-gray-400'}`} />
             </Button>
             {contadorFamilia > 0 && (
-              <Badge className="absolute -bottom-2 -right-2 bg-pink-600 text-white text-[10px] px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center shadow-md">
+              <span className="absolute bottom-0 right-0 text-pink-600 font-bold text-sm">
                 {contadorFamilia}
-              </Badge>
+              </span>
             )}
           </div>
 
-          <div className="relative">
+          <div className="relative pb-4">
             <Button
               onClick={() => setModalAlertas(true)}
               size="icon"
               variant="outline"
-              className="h-14 w-14 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0"
+              className={`h-14 w-14 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
+                contadorAlertas > 0 
+                  ? 'bg-white dark:bg-card border-red-300' 
+                  : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
+              }`}
               data-testid="button-alertas"
             >
-              <Megaphone className="h-8 w-8 text-red-600" />
+              <Megaphone className={`h-9 w-9 ${contadorAlertas > 0 ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}`} />
             </Button>
             {contadorAlertas > 0 && (
-              <Badge className="absolute -bottom-2 -right-2 bg-red-600 text-white text-[10px] px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center shadow-md">
+              <span className="absolute bottom-0 right-0 text-red-600 font-bold text-sm">
                 {contadorAlertas}
-              </Badge>
+              </span>
             )}
           </div>
         </div>
