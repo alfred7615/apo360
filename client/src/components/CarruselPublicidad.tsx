@@ -40,6 +40,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   const [pausaAutoScroll, setPausaAutoScroll] = useState(false);
   const [arrastreInicio, setArrastreInicio] = useState<number | null>(null);
   const [posicionScroll, setPosicionScroll] = useState(0);
+  const [seMovio, setSeMovio] = useState(false);
   const contenedorRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -71,12 +72,13 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     });
   }, [publicidadesActivas.length]);
 
-  // Reanudar auto-scroll después de 3 segundos
+  // Reanudar auto-scroll después de 5 segundos de inactividad
   useEffect(() => {
     if (pausaAutoScroll) {
       const timeout = setTimeout(() => {
         setPausaAutoScroll(false);
-      }, 3000);
+        setPosicionScroll(0);
+      }, 5000);
       return () => clearTimeout(timeout);
     }
   }, [pausaAutoScroll]);
@@ -91,7 +93,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     setPublicidadSeleccionada(null);
   };
 
-  const abrirModalInfo = (publicidad: Publicidad, e: React.MouseEvent) => {
+  const abrirModalInfo = (publicidad: Publicidad, e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     e.preventDefault();
     setPublicidadSeleccionada(publicidad);
@@ -103,61 +105,95 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     setPublicidadSeleccionada(null);
   };
 
+  // Capturar posición actual del track cuando se pausa
+  const capturarPosicionActual = () => {
+    if (trackRef.current && !pausaAutoScroll) {
+      const computedStyle = window.getComputedStyle(trackRef.current);
+      const matrix = new DOMMatrix(computedStyle.transform);
+      const currentX = Math.abs(matrix.m41);
+      setPosicionScroll(currentX);
+    }
+  };
+
   // Navegación con arrastre - Touch
   const handleTouchStart = (e: React.TouchEvent) => {
+    capturarPosicionActual();
     setArrastreInicio(e.touches[0].clientX);
     setPausaAutoScroll(true);
+    setSeMovio(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (arrastreInicio === null || !trackRef.current) return;
+    setSeMovio(true);
     const diff = arrastreInicio - e.touches[0].clientX;
     trackRef.current.style.transform = `translateX(${-posicionScroll - diff}px)`;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (arrastreInicio === null || !trackRef.current) return;
-    const diff = arrastreInicio - e.changedTouches[0].clientX;
-    const nuevaPosicion = posicionScroll + diff;
     
-    const maxScroll = trackRef.current.scrollWidth / 2;
-    const posicionFinal = Math.max(0, Math.min(nuevaPosicion, maxScroll));
+    if (seMovio) {
+      const diff = arrastreInicio - e.changedTouches[0].clientX;
+      const nuevaPosicion = posicionScroll + diff;
+      const maxScroll = trackRef.current.scrollWidth / 2;
+      const posicionFinal = Math.max(0, Math.min(nuevaPosicion, maxScroll));
+      setPosicionScroll(posicionFinal);
+      trackRef.current.style.transform = `translateX(${-posicionFinal}px)`;
+    }
     
-    setPosicionScroll(posicionFinal);
-    trackRef.current.style.transform = `translateX(${-posicionFinal}px)`;
     setArrastreInicio(null);
+    setSeMovio(false);
   };
 
   // Navegación con arrastre - Mouse
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    capturarPosicionActual();
     setArrastreInicio(e.clientX);
     setPausaAutoScroll(true);
+    setSeMovio(false);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (arrastreInicio === null || !trackRef.current) return;
-    const diff = arrastreInicio - e.clientX;
-    trackRef.current.style.transform = `translateX(${-posicionScroll - diff}px)`;
+    const diff = Math.abs(arrastreInicio - e.clientX);
+    if (diff > 5) {
+      setSeMovio(true);
+    }
+    const desplazamiento = arrastreInicio - e.clientX;
+    trackRef.current.style.transform = `translateX(${-posicionScroll - desplazamiento}px)`;
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
     if (arrastreInicio === null || !trackRef.current) return;
-    const diff = arrastreInicio - e.clientX;
-    const nuevaPosicion = posicionScroll + diff;
     
-    const maxScroll = trackRef.current.scrollWidth / 2;
-    const posicionFinal = Math.max(0, Math.min(nuevaPosicion, maxScroll));
+    if (seMovio) {
+      const diff = arrastreInicio - e.clientX;
+      const nuevaPosicion = posicionScroll + diff;
+      const maxScroll = trackRef.current.scrollWidth / 2;
+      const posicionFinal = Math.max(0, Math.min(nuevaPosicion, maxScroll));
+      setPosicionScroll(posicionFinal);
+      trackRef.current.style.transform = `translateX(${-posicionFinal}px)`;
+    }
     
-    setPosicionScroll(posicionFinal);
-    trackRef.current.style.transform = `translateX(${-posicionFinal}px)`;
     setArrastreInicio(null);
+    setSeMovio(false);
   };
 
   const handleMouseLeave = () => {
     if (arrastreInicio !== null && trackRef.current) {
       trackRef.current.style.transform = `translateX(${-posicionScroll}px)`;
       setArrastreInicio(null);
+      setSeMovio(false);
+    }
+  };
+
+  // Click simple para pausar
+  const handleClick = (e: React.MouseEvent) => {
+    if (!seMovio) {
+      capturarPosicionActual();
+      setPausaAutoScroll(true);
     }
   };
 
@@ -260,10 +296,14 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
           data-testid={`img-carousel-${tipo}-${idx}`}
         />
         
-        {/* Icono de información - solo si tiene contenido */}
+        {/* Icono de información - solo si tiene contenido proporcionado por admin */}
         {tieneDatos && (
           <button
             onClick={(e) => abrirModalInfo(pub, e)}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              abrirModalInfo(pub, e);
+            }}
             className="absolute bottom-1 right-1 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-1 shadow-lg transition-all hover:scale-110 z-20"
             title="Ver información"
             data-testid={`btn-info-${pub.id}-${idx}`}
@@ -299,15 +339,18 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
       >
         <div 
-          className={`h-full flex items-center ${!pausaAutoScroll ? 'carrusel-infinito carrusel-lento' : ''}`}
+          className="h-full flex items-center"
           style={{ cursor: arrastreInicio !== null ? 'grabbing' : 'grab' }}
         >
           <div 
             ref={trackRef}
-            className={!pausaAutoScroll ? 'carrusel-track' : 'flex'}
-            style={pausaAutoScroll ? { transform: `translateX(${-posicionScroll}px)` } : undefined}
+            className={`flex items-center ${!pausaAutoScroll ? 'carrusel-track-animado' : ''}`}
+            style={{
+              transform: pausaAutoScroll ? `translateX(${-posicionScroll}px)` : undefined,
+            }}
           >
             {itemsMultiplicados.map((pub, idx) => renderImagen(pub, idx))}
             {itemsMultiplicados.map((pub, idx) => renderImagen(pub, idx + itemsMultiplicados.length))}
