@@ -10,7 +10,12 @@
   display: flex;
   align-items: center;
   width: max-content;
-  animation: desplazar-infinito 40s linear infinite;
+  animation: desplazar-infinito 60s linear infinite;
+}
+
+/* Versión más lenta del carrusel */
+.carrusel-lento .carrusel-track {
+  animation: desplazar-infinito 90s linear infinite;
 }
 
 @keyframes desplazar-infinito {
@@ -56,4 +61,23 @@
 
 .dark .carrusel-infinito::after {
   background: linear-gradient(to left, rgb(17, 24, 39), transparent);
+}
+
+/* Gradientes para fondo gris (logos_servicios) */
+.bg-gray-100 .carrusel-infinito::before {
+  background: linear-gradient(to right, rgb(243, 244, 246), transparent);
+}
+
+.bg-gray-100 .carrusel-infinito::after {
+  background: linear-gradient(to left, rgb(243, 244, 246), transparent);
+}
+
+.dark .bg-gray-100 .carrusel-infinito::before,
+.dark .bg-gray-800\/50 .carrusel-infinito::before {
+  background: linear-gradient(to right, rgba(31, 41, 55, 0.5), transparent);
+}
+
+.dark .bg-gray-100 .carrusel-infinito::after,
+.dark .bg-gray-800\/50 .carrusel-infinito::after {
+  background: linear-gradient(to left, rgba(31, 41, 55, 0.5), transparent);
 }

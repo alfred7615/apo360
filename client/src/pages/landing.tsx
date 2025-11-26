@@ -30,12 +30,8 @@ export default function Landing() {
         <CarruselPublicidad tipo="carrusel_principal" />
       </section>
 
-      {/* Logos de servicios destacados - Carrusel infinito */}
-      <section className="py-4">
-        <div className="container mx-auto px-4 mb-4">
-          <h2 className="text-2xl font-bold text-center">Servicios Destacados</h2>
-          <p className="text-muted-foreground text-center mt-2">Comercios y servicios locales de confianza</p>
-        </div>
+      {/* Logos de servicios - Carrusel infinito */}
+      <section className="py-4 bg-gray-100 dark:bg-gray-800/50">
         <CarruselPublicidad tipo="logos_servicios" />
       </section>
 
