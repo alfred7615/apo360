@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Link2, MapPin, Calendar, Info, X, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, MapPin, Calendar, Link2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { filtrarPublicidadesActivas, type Publicidad, getGoogleMapsUrl } from "@/lib/publicidadUtils";
@@ -40,7 +40,6 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   const [pausaAutoScroll, setPausaAutoScroll] = useState(false);
   const [arrastreInicio, setArrastreInicio] = useState<number | null>(null);
   const [posicionScroll, setPosicionScroll] = useState(0);
-  const [ultimoClick, setUltimoClick] = useState<{ id: string; tiempo: number } | null>(null);
   const contenedorRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -92,32 +91,16 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     setPublicidadSeleccionada(null);
   };
 
-  const abrirModalInfo = (publicidad: Publicidad) => {
-    if (tieneContenidoAdicional(publicidad)) {
-      setPublicidadSeleccionada(publicidad);
-      setModalInfoAbierto(true);
-    }
+  const abrirModalInfo = (publicidad: Publicidad, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setPublicidadSeleccionada(publicidad);
+    setModalInfoAbierto(true);
   };
 
   const cerrarModalInfo = () => {
     setModalInfoAbierto(false);
     setPublicidadSeleccionada(null);
-  };
-
-  // Manejo de doble clic
-  const manejarClicImagen = (pub: Publicidad) => {
-    const ahora = Date.now();
-    
-    if (ultimoClick && ultimoClick.id === pub.id && (ahora - ultimoClick.tiempo) < 400) {
-      // Doble clic detectado - abrir modal solo si tiene contenido
-      if (tieneContenidoAdicional(pub)) {
-        abrirModalInfo(pub);
-      }
-      setUltimoClick(null);
-    } else {
-      // Primer clic
-      setUltimoClick({ id: pub.id, tiempo: ahora });
-    }
   };
 
   // Navegación con arrastre - Touch
@@ -137,7 +120,6 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     const diff = arrastreInicio - e.changedTouches[0].clientX;
     const nuevaPosicion = posicionScroll + diff;
     
-    // Limitar el scroll
     const maxScroll = trackRef.current.scrollWidth / 2;
     const posicionFinal = Math.max(0, Math.min(nuevaPosicion, maxScroll));
     
@@ -164,7 +146,6 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     const diff = arrastreInicio - e.clientX;
     const nuevaPosicion = posicionScroll + diff;
     
-    // Limitar el scroll
     const maxScroll = trackRef.current.scrollWidth / 2;
     const posicionFinal = Math.max(0, Math.min(nuevaPosicion, maxScroll));
     
@@ -262,50 +243,6 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   // Carrusel de logos
   const itemsMultiplicados = [...publicidadesActivas, ...publicidadesActivas, ...publicidadesActivas, ...publicidadesActivas];
 
-  const renderIconosInfo = (pub: Publicidad) => {
-    const iconos: JSX.Element[] = [];
-    
-    if (pub.enlaceUrl) {
-      iconos.push(
-        <div key="url" className="bg-blue-500 rounded-full p-1" title="Tiene enlace">
-          <Link2 className="h-2.5 w-2.5 text-white" />
-        </div>
-      );
-    }
-    
-    if (pub.latitud || pub.longitud) {
-      iconos.push(
-        <div key="gps" className="bg-green-500 rounded-full p-1" title="Tiene ubicación GPS">
-          <MapPin className="h-2.5 w-2.5 text-white" />
-        </div>
-      );
-    }
-    
-    if (pub.fechaInicio || pub.fechaFin) {
-      iconos.push(
-        <div key="fecha" className="bg-orange-500 rounded-full p-1" title="Tiene fechas">
-          <Calendar className="h-2.5 w-2.5 text-white" />
-        </div>
-      );
-    }
-
-    if (pub.descripcion) {
-      iconos.push(
-        <div key="info" className="bg-gray-600 rounded-full p-1" title="Tiene descripción">
-          <Info className="h-2.5 w-2.5 text-white" />
-        </div>
-      );
-    }
-
-    if (iconos.length === 0) return null;
-
-    return (
-      <div className="absolute bottom-1 right-1 flex gap-0.5 z-20">
-        {iconos}
-      </div>
-    );
-  };
-
   const renderImagen = (pub: Publicidad, idx: number) => {
     const tieneDatos = tieneContenidoAdicional(pub);
     
@@ -314,18 +251,26 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
         key={`${pub.id}-${idx}`}
         className="flex-shrink-0 relative"
         style={{ marginLeft: "10px", marginRight: "10px" }}
-        onClick={() => manejarClicImagen(pub)}
       >
-        <div className={`relative ${tieneDatos ? 'cursor-pointer' : 'cursor-default'}`}>
-          <img
-            src={pub.imagenUrl || undefined}
-            alt={pub.titulo || `Imagen ${idx + 1}`}
-            className="h-[85px] w-auto object-contain flex-shrink-0 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200"
-            style={{ maxWidth: "none" }}
-            data-testid={`img-carousel-${tipo}-${idx}`}
-          />
-          {renderIconosInfo(pub)}
-        </div>
+        <img
+          src={pub.imagenUrl || undefined}
+          alt={pub.titulo || `Imagen ${idx + 1}`}
+          className="h-[85px] w-auto object-contain flex-shrink-0 rounded-md shadow-md"
+          style={{ maxWidth: "none" }}
+          data-testid={`img-carousel-${tipo}-${idx}`}
+        />
+        
+        {/* Icono de información - solo si tiene contenido */}
+        {tieneDatos && (
+          <button
+            onClick={(e) => abrirModalInfo(pub, e)}
+            className="absolute bottom-1 right-1 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-1 shadow-lg transition-all hover:scale-110 z-20"
+            title="Ver información"
+            data-testid={`btn-info-${pub.id}-${idx}`}
+          >
+            <Info className="h-3 w-3" />
+          </button>
+        )}
       </div>
     );
   };
