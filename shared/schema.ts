@@ -970,6 +970,102 @@ export function requiereAprobacion(rol: RolRegistro): boolean {
 }
 
 // ============================================================
+// MÉTODOS DE PAGO
+// ============================================================
+export const metodosPago = pgTable("metodos_pago", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id),
+  tipo: varchar("tipo", { length: 50 }).notNull(), // 'banco', 'interbancario', 'paypal', 'plin', 'yape', 'otro'
+  nombre: varchar("nombre", { length: 100 }).notNull(), // Nombre del banco o método
+  numeroCuenta: varchar("numero_cuenta", { length: 100 }),
+  cci: varchar("cci", { length: 30 }), // Código interbancario
+  email: varchar("email"), // Para PayPal
+  telefono: varchar("telefono", { length: 20 }), // Para Plin/Yape
+  titular: varchar("titular", { length: 200 }),
+  moneda: varchar("moneda", { length: 10 }).default("PEN"), // PEN, USD, EUR
+  esPlataforma: boolean("es_plataforma").default(false), // true = cuenta de la plataforma para recibir pagos
+  activo: boolean("activo").default(true),
+  verificado: boolean("verificado").default(false),
+  orden: integer("orden").default(0),
+  notas: text("notas"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMetodoPagoSchema = createInsertSchema(metodosPago).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertMetodoPago = z.infer<typeof insertMetodoPagoSchema>;
+export type MetodoPago = typeof metodosPago.$inferSelect;
+
+// ============================================================
+// MONEDAS Y TIPOS DE CAMBIO
+// ============================================================
+export const monedas = pgTable("monedas", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  codigo: varchar("codigo", { length: 10 }).notNull().unique(), // PEN, USD, EUR
+  nombre: varchar("nombre", { length: 50 }).notNull(), // Soles, Dólares, Euros
+  simbolo: varchar("simbolo", { length: 5 }).notNull(), // S/, $, €
+  tasaCambioAPEN: decimal("tasa_cambio_a_pen", { precision: 10, scale: 4 }).default("1"), // Ej: 1 USD = 3.70 PEN
+  activo: boolean("activo").default(true),
+  esPrincipal: boolean("es_principal").default(false), // PEN es la principal
+  orden: integer("orden").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMonedaSchema = createInsertSchema(monedas).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertMoneda = z.infer<typeof insertMonedaSchema>;
+export type Moneda = typeof monedas.$inferSelect;
+
+// ============================================================
+// SOLICITUDES DE SALDO (Recargas y Retiros)
+// ============================================================
+export const solicitudesSaldo = pgTable("solicitudes_saldo", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  tipo: varchar("tipo", { length: 20 }).notNull(), // 'recarga', 'retiro'
+  monto: decimal("monto", { precision: 10, scale: 2 }).notNull(),
+  moneda: varchar("moneda", { length: 10 }).default("PEN"),
+  metodoPagoId: varchar("metodo_pago_id").references(() => metodosPago.id),
+  metodoPagoDestino: varchar("metodo_pago_destino"), // Descripción del método de destino
+  comprobante: varchar("comprobante"), // URL imagen de comprobante
+  numeroOperacion: varchar("numero_operacion", { length: 100 }),
+  estado: varchar("estado", { length: 20 }).default("pendiente"), // 'pendiente', 'aprobado', 'rechazado', 'cancelado'
+  motivoRechazo: text("motivo_rechazo"),
+  aprobadoPor: varchar("aprobado_por").references(() => usuarios.id),
+  fechaAprobacion: timestamp("fecha_aprobacion"),
+  notas: text("notas"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSolicitudSaldoSchema = createInsertSchema(solicitudesSaldo).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSolicitudSaldo = z.infer<typeof insertSolicitudSaldoSchema>;
+export type SolicitudSaldo = typeof solicitudesSaldo.$inferSelect;
+
+// ============================================================
+// SALDOS DE USUARIOS (caché de saldo actual)
+// ============================================================
+export const saldosUsuarios = pgTable("saldos_usuarios", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id).unique(),
+  saldo: decimal("saldo", { precision: 12, scale: 2 }).default("0").notNull(),
+  monedaPreferida: varchar("moneda_preferida", { length: 10 }).default("PEN"),
+  totalIngresos: decimal("total_ingresos", { precision: 12, scale: 2 }).default("0"),
+  totalEgresos: decimal("total_egresos", { precision: 12, scale: 2 }).default("0"),
+  ultimaActualizacion: timestamp("ultima_actualizacion").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSaldoUsuarioSchema = createInsertSchema(saldosUsuarios).omit({ id: true, createdAt: true });
+export type InsertSaldoUsuario = z.infer<typeof insertSaldoUsuarioSchema>;
+export type SaldoUsuario = typeof saldosUsuarios.$inferSelect;
+
+// Expandir configuración de saldos con más campos
+export const insertConfiguracionSaldosSchema = createInsertSchema(configuracionSaldos).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertConfiguracionSaldos = z.infer<typeof insertConfiguracionSaldosSchema>;
+export type ConfiguracionSaldos = typeof configuracionSaldos.$inferSelect;
+
+// ============================================================
 // TYPE ALIASES (para compatibilidad con código existente)
 // ============================================================
 export type InsertPublicidad = PublicidadInsert;

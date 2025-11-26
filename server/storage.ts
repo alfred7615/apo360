@@ -35,6 +35,10 @@ import {
   productosServicio,
   transaccionesSaldo,
   notificacionesChat,
+  metodosPago,
+  monedas,
+  solicitudesSaldo,
+  saldosUsuarios,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -105,6 +109,14 @@ import {
   type InsertProductoServicio,
   type TransaccionSaldo,
   type InsertTransaccionSaldo,
+  type MetodoPago,
+  type InsertMetodoPago,
+  type Moneda,
+  type InsertMoneda,
+  type SolicitudSaldo,
+  type InsertSolicitudSaldo,
+  type SaldoUsuario,
+  type InsertSaldoUsuario,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -245,6 +257,43 @@ export interface IStorage {
   getCredencialesConductor(usuarioId: string): Promise<CredencialesConductor | undefined>;
   createCredencialesConductor(data: InsertCredencialesConductor): Promise<CredencialesConductor>;
   updateCredencialesConductor(usuarioId: string, data: Partial<InsertCredencialesConductor>): Promise<CredencialesConductor | undefined>;
+  
+  // ============================================================
+  // SISTEMA DE CARTERA Y SALDOS
+  // ============================================================
+  
+  // Métodos de pago
+  getMetodosPago(usuarioId?: string, esPlataforma?: boolean): Promise<MetodoPago[]>;
+  getMetodoPago(id: string): Promise<MetodoPago | undefined>;
+  createMetodoPago(data: InsertMetodoPago): Promise<MetodoPago>;
+  updateMetodoPago(id: string, data: Partial<InsertMetodoPago>): Promise<MetodoPago | undefined>;
+  deleteMetodoPago(id: string): Promise<void>;
+  
+  // Monedas y tipos de cambio
+  getMonedas(): Promise<Moneda[]>;
+  getMoneda(codigo: string): Promise<Moneda | undefined>;
+  createMoneda(data: InsertMoneda): Promise<Moneda>;
+  updateMoneda(id: string, data: Partial<InsertMoneda>): Promise<Moneda | undefined>;
+  deleteMoneda(id: string): Promise<void>;
+  
+  // Saldos de usuarios
+  getSaldoUsuario(usuarioId: string): Promise<SaldoUsuario | undefined>;
+  getAllSaldosUsuarios(): Promise<SaldoUsuario[]>;
+  upsertSaldoUsuario(data: InsertSaldoUsuario): Promise<SaldoUsuario>;
+  actualizarSaldo(usuarioId: string, monto: number, tipo: 'ingreso' | 'egreso'): Promise<SaldoUsuario>;
+  
+  // Solicitudes de saldo (recargas y retiros)
+  getSolicitudesSaldo(estado?: string): Promise<SolicitudSaldo[]>;
+  getSolicitudesSaldoPorUsuario(usuarioId: string): Promise<SolicitudSaldo[]>;
+  getSolicitudSaldo(id: string): Promise<SolicitudSaldo | undefined>;
+  createSolicitudSaldo(data: InsertSolicitudSaldo): Promise<SolicitudSaldo>;
+  updateSolicitudSaldo(id: string, data: Partial<InsertSolicitudSaldo>): Promise<SolicitudSaldo | undefined>;
+  aprobarSolicitudSaldo(id: string, aprobadoPor: string): Promise<SolicitudSaldo | undefined>;
+  rechazarSolicitudSaldo(id: string, motivoRechazo: string): Promise<SolicitudSaldo | undefined>;
+  
+  // Transacciones de saldo
+  getTransaccionesSaldo(usuarioId?: string): Promise<TransaccionSaldo[]>;
+  createTransaccionSaldo(data: InsertTransaccionSaldo): Promise<TransaccionSaldo>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2022,6 +2071,236 @@ export class DatabaseStorage implements IStorage {
 
   async deleteComentario(id: string): Promise<void> {
     await db.delete(comentarios).where(eq(comentarios.id, id));
+  }
+
+  // ============================================================
+  // SISTEMA DE CARTERA Y SALDOS
+  // ============================================================
+
+  // Métodos de pago
+  async getMetodosPago(usuarioId?: string, esPlataforma?: boolean): Promise<MetodoPago[]> {
+    let query = db.select().from(metodosPago);
+    
+    if (usuarioId && esPlataforma !== undefined) {
+      return await db.select().from(metodosPago)
+        .where(and(
+          eq(metodosPago.usuarioId, usuarioId),
+          eq(metodosPago.esPlataforma, esPlataforma)
+        ))
+        .orderBy(metodosPago.orden);
+    } else if (usuarioId) {
+      return await db.select().from(metodosPago)
+        .where(eq(metodosPago.usuarioId, usuarioId))
+        .orderBy(metodosPago.orden);
+    } else if (esPlataforma !== undefined) {
+      return await db.select().from(metodosPago)
+        .where(eq(metodosPago.esPlataforma, esPlataforma))
+        .orderBy(metodosPago.orden);
+    }
+    
+    return await db.select().from(metodosPago).orderBy(metodosPago.orden);
+  }
+
+  async getMetodoPago(id: string): Promise<MetodoPago | undefined> {
+    const [metodo] = await db.select().from(metodosPago).where(eq(metodosPago.id, id));
+    return metodo || undefined;
+  }
+
+  async createMetodoPago(data: InsertMetodoPago): Promise<MetodoPago> {
+    const [metodo] = await db.insert(metodosPago).values(data).returning();
+    return metodo;
+  }
+
+  async updateMetodoPago(id: string, data: Partial<InsertMetodoPago>): Promise<MetodoPago | undefined> {
+    const [actualizado] = await db
+      .update(metodosPago)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(metodosPago.id, id))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  async deleteMetodoPago(id: string): Promise<void> {
+    await db.delete(metodosPago).where(eq(metodosPago.id, id));
+  }
+
+  // Monedas y tipos de cambio
+  async getMonedas(): Promise<Moneda[]> {
+    return await db.select().from(monedas).orderBy(monedas.orden);
+  }
+
+  async getMoneda(codigo: string): Promise<Moneda | undefined> {
+    const [moneda] = await db.select().from(monedas).where(eq(monedas.codigo, codigo));
+    return moneda || undefined;
+  }
+
+  async createMoneda(data: InsertMoneda): Promise<Moneda> {
+    const [moneda] = await db.insert(monedas).values(data).returning();
+    return moneda;
+  }
+
+  async updateMoneda(id: string, data: Partial<InsertMoneda>): Promise<Moneda | undefined> {
+    const [actualizado] = await db
+      .update(monedas)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(monedas.id, id))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  async deleteMoneda(id: string): Promise<void> {
+    await db.delete(monedas).where(eq(monedas.id, id));
+  }
+
+  // Saldos de usuarios
+  async getSaldoUsuario(usuarioId: string): Promise<SaldoUsuario | undefined> {
+    const [saldo] = await db.select().from(saldosUsuarios).where(eq(saldosUsuarios.usuarioId, usuarioId));
+    return saldo || undefined;
+  }
+
+  async getAllSaldosUsuarios(): Promise<SaldoUsuario[]> {
+    return await db.select().from(saldosUsuarios).orderBy(desc(saldosUsuarios.saldo));
+  }
+
+  async upsertSaldoUsuario(data: InsertSaldoUsuario): Promise<SaldoUsuario> {
+    const [saldo] = await db
+      .insert(saldosUsuarios)
+      .values(data)
+      .onConflictDoUpdate({
+        target: saldosUsuarios.usuarioId,
+        set: {
+          saldo: data.saldo,
+          monedaPreferida: data.monedaPreferida,
+          totalIngresos: data.totalIngresos,
+          totalEgresos: data.totalEgresos,
+          ultimaActualizacion: new Date(),
+        },
+      })
+      .returning();
+    return saldo;
+  }
+
+  async actualizarSaldo(usuarioId: string, monto: number, tipo: 'ingreso' | 'egreso'): Promise<SaldoUsuario> {
+    const saldoActual = await this.getSaldoUsuario(usuarioId);
+    
+    const nuevoSaldo = tipo === 'ingreso' 
+      ? (parseFloat(saldoActual?.saldo || '0') + monto)
+      : (parseFloat(saldoActual?.saldo || '0') - monto);
+    
+    const totalIngresos = tipo === 'ingreso'
+      ? (parseFloat(saldoActual?.totalIngresos || '0') + monto)
+      : parseFloat(saldoActual?.totalIngresos || '0');
+    
+    const totalEgresos = tipo === 'egreso'
+      ? (parseFloat(saldoActual?.totalEgresos || '0') + monto)
+      : parseFloat(saldoActual?.totalEgresos || '0');
+
+    return await this.upsertSaldoUsuario({
+      usuarioId,
+      saldo: nuevoSaldo.toFixed(2),
+      totalIngresos: totalIngresos.toFixed(2),
+      totalEgresos: totalEgresos.toFixed(2),
+      monedaPreferida: saldoActual?.monedaPreferida || 'PEN',
+    });
+  }
+
+  // Solicitudes de saldo (recargas y retiros)
+  async getSolicitudesSaldo(estado?: string): Promise<SolicitudSaldo[]> {
+    if (estado) {
+      return await db.select().from(solicitudesSaldo)
+        .where(eq(solicitudesSaldo.estado, estado))
+        .orderBy(desc(solicitudesSaldo.createdAt));
+    }
+    return await db.select().from(solicitudesSaldo).orderBy(desc(solicitudesSaldo.createdAt));
+  }
+
+  async getSolicitudesSaldoPorUsuario(usuarioId: string): Promise<SolicitudSaldo[]> {
+    return await db.select().from(solicitudesSaldo)
+      .where(eq(solicitudesSaldo.usuarioId, usuarioId))
+      .orderBy(desc(solicitudesSaldo.createdAt));
+  }
+
+  async getSolicitudSaldo(id: string): Promise<SolicitudSaldo | undefined> {
+    const [solicitud] = await db.select().from(solicitudesSaldo).where(eq(solicitudesSaldo.id, id));
+    return solicitud || undefined;
+  }
+
+  async createSolicitudSaldo(data: InsertSolicitudSaldo): Promise<SolicitudSaldo> {
+    const [solicitud] = await db.insert(solicitudesSaldo).values(data).returning();
+    return solicitud;
+  }
+
+  async updateSolicitudSaldo(id: string, data: Partial<InsertSolicitudSaldo>): Promise<SolicitudSaldo | undefined> {
+    const [actualizado] = await db
+      .update(solicitudesSaldo)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(solicitudesSaldo.id, id))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  async aprobarSolicitudSaldo(id: string, aprobadoPor: string): Promise<SolicitudSaldo | undefined> {
+    const solicitud = await this.getSolicitudSaldo(id);
+    if (!solicitud) return undefined;
+
+    // Actualizar saldo del usuario
+    const tipoOperacion = solicitud.tipo === 'recarga' ? 'ingreso' : 'egreso';
+    await this.actualizarSaldo(solicitud.usuarioId, parseFloat(solicitud.monto), tipoOperacion as 'ingreso' | 'egreso');
+
+    // Registrar transacción
+    const saldoActual = await this.getSaldoUsuario(solicitud.usuarioId);
+    await this.createTransaccionSaldo({
+      usuarioId: solicitud.usuarioId,
+      tipo: solicitud.tipo,
+      concepto: solicitud.tipo === 'recarga' ? 'Recarga de saldo aprobada' : 'Retiro de saldo aprobado',
+      monto: solicitud.monto,
+      saldoAnterior: (parseFloat(saldoActual?.saldo || '0') - (tipoOperacion === 'ingreso' ? parseFloat(solicitud.monto) : -parseFloat(solicitud.monto))).toFixed(2),
+      saldoNuevo: saldoActual?.saldo || '0',
+      referenciaId: id,
+      referenciaTipo: 'solicitud_saldo',
+      estado: 'completado',
+    });
+
+    // Actualizar solicitud
+    const [actualizado] = await db
+      .update(solicitudesSaldo)
+      .set({
+        estado: 'aprobado',
+        aprobadoPor,
+        fechaAprobacion: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(solicitudesSaldo.id, id))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  async rechazarSolicitudSaldo(id: string, motivoRechazo: string): Promise<SolicitudSaldo | undefined> {
+    const [actualizado] = await db
+      .update(solicitudesSaldo)
+      .set({
+        estado: 'rechazado',
+        motivoRechazo,
+        updatedAt: new Date(),
+      })
+      .where(eq(solicitudesSaldo.id, id))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  // Transacciones de saldo
+  async getTransaccionesSaldo(usuarioId?: string): Promise<TransaccionSaldo[]> {
+    if (usuarioId) {
+      return await db.select().from(transaccionesSaldo)
+        .where(eq(transaccionesSaldo.usuarioId, usuarioId))
+        .orderBy(desc(transaccionesSaldo.createdAt));
+    }
+    return await db.select().from(transaccionesSaldo).orderBy(desc(transaccionesSaldo.createdAt));
+  }
+
+  async createTransaccionSaldo(data: InsertTransaccionSaldo): Promise<TransaccionSaldo> {
+    const [transaccion] = await db.insert(transaccionesSaldo).values(data).returning();
+    return transaccion;
   }
 }
 
