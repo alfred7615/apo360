@@ -59,7 +59,8 @@ export default function Home() {
     );
   }
 
-  const nombreMostrar = user.nombre || user.alias || user.email?.split('@')[0] || 'Usuario';
+  // Prioridad: ALIAS → NOMBRE (sin apellidos) → EMAIL
+  const nombreMostrar = user.alias || user.nombre || user.email || 'Usuario';
   
   const contadorAgenda = 2;
   const contadorFamilia = alertasFamilia.length;
@@ -72,7 +73,7 @@ export default function Home() {
       {/* Bienvenida */}
       <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-8 pb-16">
         <div className="container mx-auto px-4">
-          <div className="text-center">
+          <div className="text-left">
             <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-welcome">
               ¡Hola, {nombreMostrar}!
             </h1>
