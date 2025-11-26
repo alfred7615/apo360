@@ -287,7 +287,10 @@ export default function VisualizadorPantallaCompleta({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[100vw] max-h-[100vh] w-screen h-screen p-0 bg-black/95">
+      <DialogContent className="max-w-[100vw] max-h-[100vh] w-screen h-screen p-0 bg-black/95" aria-describedby={undefined}>
+        <DialogTitle className="sr-only">
+          {publicidad.titulo || "Visualizador de imagen"}
+        </DialogTitle>
         <div className="relative w-full h-full flex flex-col">
           <Button
             variant="ghost"
@@ -503,7 +506,7 @@ export default function VisualizadorPantallaCompleta({
         </div>
 
         <Dialog open={comentariosAbiertos} onOpenChange={setComentariosAbiertos}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>Comentarios</DialogTitle>
             </DialogHeader>
@@ -564,7 +567,7 @@ export default function VisualizadorPantallaCompleta({
         </Dialog>
 
         <Dialog open={compartirAbierto} onOpenChange={setCompartirAbierto}>
-          <DialogContent className="max-w-xs">
+          <DialogContent className="max-w-xs" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>Compartir en</DialogTitle>
             </DialogHeader>
