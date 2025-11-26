@@ -27,7 +27,7 @@ SEG-APO is a comprehensive community security platform designed to enhance safet
 - **Internationalization**: The entire system, including codebase, UI, error messages, and database schema, is developed in Spanish.
 
 ### Feature Specifications
-- **Emergency System**: Floating panic button with drag-and-drop functionality, expandable quick access buttons (police, firefighters, SAMU, serenazgo), automatic GPS location, selection of specific emergency groups to notify, and support for six emergency types.
+- **Emergency System**: Floating panic button with direct drag functionality (tap < 250ms opens modal, hold/drag moves button), icon-only grid selection for emergency services (police, firefighters, SAMU, serenazgo, transit, electric), multi-destination notifications to emergency services, family contacts, and chat groups simultaneously, automatic GPS location with metadata, and optional message field. Includes family contacts management system with emergency notification preferences.
 - **Community Chat**: Real-time messaging (WebSocket), divided layout with group/contact tabs, integrated search, multimedia attachments (files, photos, audio, GPS location), and an invitation system.
 - **Taxi System**: Driver/passenger modes, ride requests with real-time geolocation, ride status tracking.
 - **Delivery System**: Order listing, local integration, automated local notifications, driver assignment.

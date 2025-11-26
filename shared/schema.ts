@@ -470,7 +470,12 @@ export const emergencias = pgTable("emergencias", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertEmergenciaSchema = createInsertSchema(emergencias).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertEmergenciaSchema = createInsertSchema(emergencias).omit({ 
+  id: true, 
+  usuarioId: true, // Se agrega en el backend desde el token de autenticación
+  createdAt: true, 
+  updatedAt: true 
+});
 export type EmergenciaInsert = z.infer<typeof insertEmergenciaSchema>;
 export type Emergencia = typeof emergencias.$inferSelect;
 
