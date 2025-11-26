@@ -70,9 +70,12 @@ export default function Home() {
     <div className="min-h-screen pb-20" data-testid="page-home">
       <FranjaEmergencia />
 
-      {/* Bienvenida */}
-      <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-8 pb-16">
-        <div className="container mx-auto px-4">
+      {/* Carrusel de logos publicitarios - Arriba del saludo */}
+      <CarruselPublicidad tipo="carrusel_logos" />
+
+      {/* Bienvenida - Altura fija 230px */}
+      <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white pb-16" style={{ height: '230px' }}>
+        <div className="container mx-auto px-4 h-full flex items-center">
           <div className="text-left">
             <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-welcome">
               ¡Hola, {nombreMostrar}!
@@ -200,12 +203,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Carrusel de logos publicitarios */}
-      <CarruselPublicidad tipo="carrusel_logos" altura="120px" />
-
       {/* Carrusel principal */}
       <section className="container mx-auto px-4 py-8">
-        <CarruselPublicidad tipo="carrusel_principal" altura="400px" />
+        <CarruselPublicidad tipo="carrusel_principal" />
       </section>
 
       {/* Logos de servicios destacados */}
@@ -213,7 +213,7 @@ export default function Home() {
         <div className="container mx-auto px-4 mb-4">
           <h2 className="text-xl font-bold text-center">Servicios Recomendados</h2>
         </div>
-        <CarruselPublicidad tipo="logos_servicios" altura="140px" />
+        <CarruselPublicidad tipo="logos_servicios" />
       </section>
 
       {/* Alertas recientes */}
