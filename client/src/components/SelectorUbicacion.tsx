@@ -276,17 +276,18 @@ export default function SelectorUbicacion({
       </Button>
 
       <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
-        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] p-0 overflow-hidden">
-          <DialogHeader className="p-4 pb-2">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] p-0 flex flex-col [&>button]:z-[1001]">
+          <DialogHeader className="p-4 pb-2 flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
               Seleccionar Ubicación
             </DialogTitle>
-            <DialogDescription>
-              Mueve el mapa para centrar el marcador en tu ubicación
+            <DialogDescription className="sr-only">
+              Usa el mapa para seleccionar una ubicación
             </DialogDescription>
           </DialogHeader>
 
+          <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain touch-pan-y [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="px-4 space-y-3">
             <div className="flex gap-2">
               <div className="flex-1 relative">
@@ -380,14 +381,10 @@ export default function SelectorUbicacion({
               </div>
             </div>
             
-            <div className="absolute bottom-2 left-2 right-2 z-[1000] pointer-events-none">
-              <p className="text-xs text-center text-muted-foreground bg-background/80 backdrop-blur-sm py-1 px-2 rounded">
-                Arrastra el mapa para mover el marcador
-              </p>
-            </div>
+          </div>
           </div>
 
-          <div className="p-4 pt-3 flex gap-2 justify-end border-t">
+          <div className="p-4 pt-3 flex gap-2 justify-end border-t flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => setModalAbierto(false)}
