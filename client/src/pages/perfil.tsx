@@ -32,6 +32,65 @@ const TIPOS_VEHICULO = [
   { value: "combi", label: "Combi" },
 ];
 
+const CAMPOS_PERFIL = [
+  { campo: 'alias', peso: 5, grupo: 'basico' },
+  { campo: 'firstName', peso: 10, grupo: 'personal' },
+  { campo: 'lastName', peso: 10, grupo: 'personal' },
+  { campo: 'telefono', peso: 10, grupo: 'personal' },
+  { campo: 'dni', peso: 10, grupo: 'personal' },
+  { campo: 'pais', peso: 5, grupo: 'ubicacion' },
+  { campo: 'departamento', peso: 5, grupo: 'ubicacion' },
+  { campo: 'distrito', peso: 5, grupo: 'ubicacion' },
+  { campo: 'direccion', peso: 10, grupo: 'direccion' },
+  { campo: 'gpsLatitud', peso: 5, grupo: 'direccion' },
+  { campo: 'gpsLongitud', peso: 5, grupo: 'direccion' },
+  { campo: 'nombreLocal', peso: 10, grupo: 'negocio' },
+  { campo: 'ruc', peso: 10, grupo: 'negocio' },
+];
+
+const calcularPorcentajeCompletado = (usuario: Partial<Usuario>): number => {
+  let puntos = 0;
+  let total = 0;
+  
+  CAMPOS_PERFIL.forEach(({ campo, peso }) => {
+    total += peso;
+    const valor = (usuario as any)[campo];
+    if (valor !== null && valor !== undefined && valor !== '') {
+      puntos += peso;
+    }
+  });
+  
+  return Math.round((puntos / total) * 100);
+};
+
+const obtenerSugerenciaConfianza = (porcentaje: number): { mensaje: string; color: string } => {
+  if (porcentaje < 25) {
+    return {
+      mensaje: "Completa tu perfil para generar confianza. Los usuarios con perfil completo tienen más éxito en compras y servicios.",
+      color: "text-red-600"
+    };
+  } else if (porcentaje < 50) {
+    return {
+      mensaje: "Buen inicio. Agrega más datos para que otros usuarios confíen en ti al hacer negocios.",
+      color: "text-orange-600"
+    };
+  } else if (porcentaje < 75) {
+    return {
+      mensaje: "Tu perfil está casi listo. Completa los campos faltantes para acceder a todas las funciones.",
+      color: "text-yellow-600"
+    };
+  } else if (porcentaje < 100) {
+    return {
+      mensaje: "Excelente. Solo te faltan algunos datos para tener un perfil completo y confiable.",
+      color: "text-blue-600"
+    };
+  }
+  return {
+    mensaje: "Perfil completo. Los usuarios pueden confiar plenamente en ti para transacciones.",
+    color: "text-green-600"
+  };
+};
+
 const calcularNivelUsuario = (usuario: Partial<Usuario>): number => {
   let nivel = 1;
   
@@ -389,100 +448,127 @@ export default function PerfilPage() {
 
   const nivelActual = calcularNivelUsuario(formData);
   const progresoNivel = (nivelActual / 5) * 100;
+  const porcentajeCompletado = calcularPorcentajeCompletado(formData);
+  const sugerencia = obtenerSugerenciaConfianza(porcentajeCompletado);
   const esConductor = formData.rol === "conductor" || formData.modoTaxi === "conductor";
 
   return (
-    <div className="container mx-auto p-4 max-w-5xl" data-testid="page-perfil">
-      <div className="mb-4">
-        <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-titulo-perfil">
-          <User className="h-5 w-5" />
-          Mi Perfil
-        </h1>
-        <p className="text-sm text-muted-foreground">Completa tu información para desbloquear más funciones</p>
+    <div className="h-[calc(100vh-4rem)] flex flex-col" data-testid="page-perfil">
+      {/* Header fijo */}
+      <div className="flex-shrink-0 bg-background border-b px-4 py-3">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-titulo-perfil">
+                <User className="h-5 w-5" />
+                Mi Perfil
+              </h1>
+              <p className="text-sm text-muted-foreground">Completa tu información para desbloquear más funciones</p>
+            </div>
+            <div className="text-right">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold text-primary">{porcentajeCompletado}%</span>
+                {renderEstrellas(nivelActual)}
+              </div>
+              <p className="text-xs text-muted-foreground">Perfil completado</p>
+            </div>
+          </div>
+          
+          {/* Barra de progreso y sugerencia */}
+          <div className="mt-3">
+            <Progress value={porcentajeCompletado} className="h-2" data-testid="progress-porcentaje" />
+            <p className={`text-xs mt-2 ${sugerencia.color}`} data-testid="text-sugerencia">
+              {sugerencia.mensaje}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1 space-y-4">
-          <Card data-testid="card-foto-perfil">
-            <CardContent className="p-4 flex flex-col items-center">
-              <ProfileImageCapture
-                usuarioId={user.id}
-                imagenActual={formData.profileImageUrl || undefined}
-                nombre={formData.firstName || user.nombre || "Usuario"}
-                size="xl"
-                onImageUpdated={(url) => handleInputChange("profileImageUrl", url)}
-              />
-              <h2 className="mt-3 text-base font-semibold" data-testid="text-nombre-usuario">
-                {formData.firstName || user.nombre || "Usuario"}
-              </h2>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
-              
-              <div className="mt-3 w-full">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium">Nivel</span>
-                  {renderEstrellas(nivelActual)}
-                </div>
-                <Progress value={progresoNivel} className="h-1.5" data-testid="progress-nivel" />
-                <p className="text-[10px] text-muted-foreground mt-1 text-center">
-                  {nivelActual}/5 niveles
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-niveles">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Niveles de Perfil</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1.5">
-              {NIVELES_INFO.map((info) => (
-                <div 
-                  key={info.nivel}
-                  className={`flex items-center gap-2 p-1.5 rounded-md text-sm ${
-                    nivelActual >= info.nivel ? 'bg-green-50 dark:bg-green-950' : 'bg-muted/50'
-                  }`}
-                  data-testid={`nivel-info-${info.nivel}`}
-                >
-                  <div className={`h-5 w-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${
-                    nivelActual >= info.nivel ? 'bg-green-500' : 'bg-muted-foreground/30'
-                  }`}>
-                    {nivelActual >= info.nivel ? <Check className="h-3 w-3" /> : info.nivel}
+      {/* Contenido con scroll */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-5xl mx-auto p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-1 space-y-4">
+              <Card data-testid="card-foto-perfil">
+                <CardContent className="p-4 flex flex-col items-center">
+                  <ProfileImageCapture
+                    usuarioId={user.id}
+                    imagenActual={formData.profileImageUrl || undefined}
+                    nombre={formData.firstName || user.nombre || "Usuario"}
+                    size="xl"
+                    onImageUpdated={(url) => handleInputChange("profileImageUrl", url)}
+                  />
+                  <h2 className="mt-3 text-base font-semibold" data-testid="text-nombre-usuario">
+                    {formData.firstName || user.nombre || "Usuario"}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                  
+                  <div className="mt-3 w-full">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium">Nivel</span>
+                      {renderEstrellas(nivelActual)}
+                    </div>
+                    <Progress value={progresoNivel} className="h-1.5" data-testid="progress-nivel" />
+                    <p className="text-[10px] text-muted-foreground mt-1 text-center">
+                      {nivelActual}/5 niveles
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-xs font-medium">{info.titulo}</p>
-                    <p className="text-[10px] text-muted-foreground">{info.descripcion}</p>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+                </CardContent>
+              </Card>
 
-        <Card className="lg:col-span-2" data-testid="card-formulario-perfil">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Información del Perfil</CardTitle>
-            <CardDescription className="text-xs">Completa cada sección para subir de nivel</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-6 h-auto">
-                <TabsTrigger value="basico" className="text-xs py-1.5 px-1" data-testid="tab-perfil-basico">
-                  <User className="h-3 w-3 mr-1" />
-                  Básico
-                </TabsTrigger>
-                <TabsTrigger value="ubicacion" className="text-xs py-1.5 px-1" data-testid="tab-perfil-ubicacion">
-                  <MapPin className="h-3 w-3 mr-1" />
-                  Ubicación
-                </TabsTrigger>
-                <TabsTrigger value="documentos" className="text-xs py-1.5 px-1" data-testid="tab-perfil-documentos">
-                  <FileText className="h-3 w-3 mr-1" />
-                  Docs
-                </TabsTrigger>
-                <TabsTrigger value="familia" className="text-xs py-1.5 px-1" data-testid="tab-perfil-familia">
-                  <Users className="h-3 w-3 mr-1" />
-                  Familia
-                </TabsTrigger>
-                <TabsTrigger value="conductor" className="text-xs py-1.5 px-1" data-testid="tab-perfil-conductor">
+              <Card data-testid="card-niveles">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Niveles de Perfil</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1.5">
+                  {NIVELES_INFO.map((info) => (
+                    <div 
+                      key={info.nivel}
+                      className={`flex items-center gap-2 p-1.5 rounded-md text-sm ${
+                        nivelActual >= info.nivel ? 'bg-green-50 dark:bg-green-950' : 'bg-muted/50'
+                      }`}
+                      data-testid={`nivel-info-${info.nivel}`}
+                    >
+                      <div className={`h-5 w-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${
+                        nivelActual >= info.nivel ? 'bg-green-500' : 'bg-muted-foreground/30'
+                      }`}>
+                        {nivelActual >= info.nivel ? <Check className="h-3 w-3" /> : info.nivel}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium">{info.titulo}</p>
+                        <p className="text-[10px] text-muted-foreground">{info.descripcion}</p>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="lg:col-span-2" data-testid="card-formulario-perfil">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Información del Perfil</CardTitle>
+                <CardDescription className="text-xs">Completa cada sección para subir de nivel</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="grid w-full grid-cols-6 h-auto">
+                    <TabsTrigger value="basico" className="text-xs py-1.5 px-1" data-testid="tab-perfil-basico">
+                      <User className="h-3 w-3 mr-1" />
+                      Básico
+                    </TabsTrigger>
+                    <TabsTrigger value="ubicacion" className="text-xs py-1.5 px-1" data-testid="tab-perfil-ubicacion">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      Ubicación
+                    </TabsTrigger>
+                    <TabsTrigger value="documentos" className="text-xs py-1.5 px-1" data-testid="tab-perfil-documentos">
+                      <FileText className="h-3 w-3 mr-1" />
+                      Docs
+                    </TabsTrigger>
+                    <TabsTrigger value="familia" className="text-xs py-1.5 px-1" data-testid="tab-perfil-familia">
+                      <Users className="h-3 w-3 mr-1" />
+                      Familia
+                    </TabsTrigger>
+                    <TabsTrigger value="conductor" className="text-xs py-1.5 px-1" data-testid="tab-perfil-conductor">
                   <Car className="h-3 w-3 mr-1" />
                   Conductor
                 </TabsTrigger>
@@ -976,24 +1062,45 @@ export default function PerfilPage() {
                   </CardContent>
                 </Card>
               </TabsContent>
-            </Tabs>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
 
-            <div className="mt-6 flex justify-end gap-2">
-              <Button 
-                onClick={handleGuardar}
-                disabled={updateMutation.isPending}
-                data-testid="button-guardar-perfil"
-              >
-                {updateMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                Guardar Cambios
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Botones fijos en la parte inferior */}
+      <div className="flex-shrink-0 bg-background border-t px-4 py-3 shadow-lg">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">{porcentajeCompletado}% completado</span>
+            <Progress value={porcentajeCompletado} className="w-24 h-2" />
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                if (perfil) setFormData(perfil);
+              }}
+              disabled={updateMutation.isPending}
+              data-testid="button-cancelar-perfil"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleGuardar}
+              disabled={updateMutation.isPending}
+              data-testid="button-guardar-perfil"
+            >
+              {updateMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Guardar Cambios
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
