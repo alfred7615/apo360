@@ -10,6 +10,7 @@ import {
   viajesTaxi,
   pedidosDelivery,
   radiosOnline,
+  listasMp3,
   archivosMp3,
   configuracionSitio,
   usuarioRoles,
@@ -59,6 +60,8 @@ import {
   type InsertPedidoDelivery,
   type RadioOnline,
   type InsertRadioOnline,
+  type ListaMp3,
+  type InsertListaMp3,
   type ArchivoMp3,
   type InsertArchivoMp3,
   type ConfiguracionSitio,
@@ -174,15 +177,27 @@ export interface IStorage {
   createPedidoDelivery(pedido: PedidoDeliveryInsert): Promise<PedidoDelivery>;
   updatePedidoDelivery(id: string, data: Partial<PedidoDeliveryInsert>): Promise<PedidoDelivery | undefined>;
   
-  // Operaciones de radio y audio
+  // Operaciones de radio online
   getRadiosOnline(): Promise<RadioOnline[]>;
-  createRadioOnline(radio: RadioOnlineInsert): Promise<RadioOnline>;
-  updateRadioOnline(id: string, data: Partial<RadioOnlineInsert>): Promise<RadioOnline | undefined>;
-  deleteRadioOnline(id: string): Promise<void>;
+  getRadioOnline(id: number): Promise<RadioOnline | undefined>;
+  getRadioPredeterminada(): Promise<RadioOnline | undefined>;
+  createRadioOnline(radio: InsertRadioOnline): Promise<RadioOnline>;
+  updateRadioOnline(id: number, data: Partial<InsertRadioOnline>): Promise<RadioOnline | undefined>;
+  deleteRadioOnline(id: number): Promise<void>;
+  
+  // Operaciones de listas MP3
+  getListasMp3(): Promise<ListaMp3[]>;
+  getListaMp3(id: number): Promise<ListaMp3 | undefined>;
+  createListaMp3(lista: InsertListaMp3): Promise<ListaMp3>;
+  updateListaMp3(id: number, data: Partial<InsertListaMp3>): Promise<ListaMp3 | undefined>;
+  deleteListaMp3(id: number): Promise<void>;
+  
+  // Operaciones de archivos MP3
   getArchivosMp3(): Promise<ArchivoMp3[]>;
-  createArchivoMp3(archivo: ArchivoMp3Insert): Promise<ArchivoMp3>;
-  updateArchivoMp3(id: string, data: Partial<ArchivoMp3Insert>): Promise<ArchivoMp3 | undefined>;
-  deleteArchivoMp3(id: string): Promise<void>;
+  getArchivosMp3PorLista(listaId: number): Promise<ArchivoMp3[]>;
+  createArchivoMp3(archivo: InsertArchivoMp3): Promise<ArchivoMp3>;
+  updateArchivoMp3(id: number, data: Partial<InsertArchivoMp3>): Promise<ArchivoMp3 | undefined>;
+  deleteArchivoMp3(id: number): Promise<void>;
   
   // Operaciones de configuración
   getConfiguracion(clave: string): Promise<ConfiguracionSitio | undefined>;
@@ -878,13 +893,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ============================================================
-  // RADIO Y AUDIO
+  // RADIOS ONLINE
   // ============================================================
   
   async getRadiosOnline(): Promise<RadioOnline[]> {
     return await db.select()
       .from(radiosOnline)
       .orderBy(radiosOnline.orden);
+  }
+
+  async getRadioOnline(id: number): Promise<RadioOnline | undefined> {
+    const [radio] = await db.select()
+      .from(radiosOnline)
+      .where(eq(radiosOnline.id, id));
+    return radio || undefined;
+  }
+
+  async getRadioPredeterminada(): Promise<RadioOnline | undefined> {
+    const [radio] = await db.select()
+      .from(radiosOnline)
+      .where(eq(radiosOnline.esPredeterminada, true));
+    return radio || undefined;
   }
 
   async createRadioOnline(radioData: InsertRadioOnline): Promise<RadioOnline> {
@@ -895,9 +924,71 @@ export class DatabaseStorage implements IStorage {
     return radio;
   }
 
+  async updateRadioOnline(id: number, data: Partial<InsertRadioOnline>): Promise<RadioOnline | undefined> {
+    const [updated] = await db
+      .update(radiosOnline)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(radiosOnline.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteRadioOnline(id: number): Promise<void> {
+    await db.delete(radiosOnline).where(eq(radiosOnline.id, id));
+  }
+
+  // ============================================================
+  // LISTAS MP3
+  // ============================================================
+  
+  async getListasMp3(): Promise<ListaMp3[]> {
+    return await db.select()
+      .from(listasMp3)
+      .orderBy(listasMp3.orden);
+  }
+
+  async getListaMp3(id: number): Promise<ListaMp3 | undefined> {
+    const [lista] = await db.select()
+      .from(listasMp3)
+      .where(eq(listasMp3.id, id));
+    return lista || undefined;
+  }
+
+  async createListaMp3(listaData: InsertListaMp3): Promise<ListaMp3> {
+    const [lista] = await db
+      .insert(listasMp3)
+      .values(listaData)
+      .returning();
+    return lista;
+  }
+
+  async updateListaMp3(id: number, data: Partial<InsertListaMp3>): Promise<ListaMp3 | undefined> {
+    const [updated] = await db
+      .update(listasMp3)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(listasMp3.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteListaMp3(id: number): Promise<void> {
+    await db.delete(listasMp3).where(eq(listasMp3.id, id));
+  }
+
+  // ============================================================
+  // ARCHIVOS MP3
+  // ============================================================
+  
   async getArchivosMp3(): Promise<ArchivoMp3[]> {
     return await db.select()
       .from(archivosMp3)
+      .orderBy(archivosMp3.orden);
+  }
+
+  async getArchivosMp3PorLista(listaId: number): Promise<ArchivoMp3[]> {
+    return await db.select()
+      .from(archivosMp3)
+      .where(eq(archivosMp3.listaId, listaId))
       .orderBy(archivosMp3.orden);
   }
 
@@ -907,6 +998,19 @@ export class DatabaseStorage implements IStorage {
       .values(archivoData)
       .returning();
     return archivo;
+  }
+
+  async updateArchivoMp3(id: number, data: Partial<InsertArchivoMp3>): Promise<ArchivoMp3 | undefined> {
+    const [updated] = await db
+      .update(archivosMp3)
+      .set(data)
+      .where(eq(archivosMp3.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteArchivoMp3(id: number): Promise<void> {
+    await db.delete(archivosMp3).where(eq(archivosMp3.id, id));
   }
 
   // ============================================================
@@ -1286,39 +1390,6 @@ export class DatabaseStorage implements IStorage {
     await db.delete(servicios).where(eq(servicios.id, id));
   }
 
-  // ============================================================
-  // OPERACIONES ADICIONALES PARA RADIOS
-  // ============================================================
-
-  async updateRadioOnline(id: string, data: Partial<RadioOnlineInsert>): Promise<RadioOnline | undefined> {
-    const [actualizada] = await db
-      .update(radiosOnline)
-      .set(data)
-      .where(eq(radiosOnline.id, id))
-      .returning();
-    return actualizada || undefined;
-  }
-
-  async deleteRadioOnline(id: string): Promise<void> {
-    await db.delete(radiosOnline).where(eq(radiosOnline.id, id));
-  }
-
-  // ============================================================
-  // OPERACIONES ADICIONALES PARA ARCHIVOS MP3
-  // ============================================================
-
-  async updateArchivoMp3(id: string, data: Partial<ArchivoMp3Insert>): Promise<ArchivoMp3 | undefined> {
-    const [actualizado] = await db
-      .update(archivosMp3)
-      .set(data)
-      .where(eq(archivosMp3.id, id))
-      .returning();
-    return actualizado || undefined;
-  }
-
-  async deleteArchivoMp3(id: string): Promise<void> {
-    await db.delete(archivosMp3).where(eq(archivosMp3.id, id));
-  }
 
   // ============================================================
   // UTILIDADES PARA MIGRACIÓN
