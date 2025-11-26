@@ -475,6 +475,27 @@ export type EmergenciaInsert = z.infer<typeof insertEmergenciaSchema>;
 export type Emergencia = typeof emergencias.$inferSelect;
 
 // ============================================================
+// CONTACTOS FAMILIARES DE EMERGENCIA
+// ============================================================
+export const contactosFamiliares = pgTable("contactos_familiares", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  nombre: varchar("nombre", { length: 200 }).notNull(),
+  telefono: varchar("telefono", { length: 30 }),
+  email: varchar("email", { length: 200 }),
+  relacion: varchar("relacion", { length: 50 }), // "padre", "madre", "esposo/a", "hijo/a", "hermano/a", "otro"
+  esContactoPrincipal: boolean("es_contacto_principal").default(false),
+  notificarEmergencias: boolean("notificar_emergencias").default(true),
+  orden: integer("orden").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertContactoFamiliarSchema = createInsertSchema(contactosFamiliares).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertContactoFamiliar = z.infer<typeof insertContactoFamiliarSchema>;
+export type ContactoFamiliar = typeof contactosFamiliares.$inferSelect;
+
+// ============================================================
 // NOTIFICACIONES DE CHAT
 // ============================================================
 export const notificacionesChat = pgTable("notificaciones_chat", {

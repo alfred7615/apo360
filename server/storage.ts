@@ -7,6 +7,7 @@ import {
   miembrosGrupo,
   mensajes,
   emergencias,
+  contactosFamiliares,
   viajesTaxi,
   pedidosDelivery,
   radiosOnline,
@@ -120,6 +121,8 @@ import {
   type InsertSolicitudSaldo,
   type SaldoUsuario,
   type InsertSaldoUsuario,
+  type ContactoFamiliar,
+  type InsertContactoFamiliar,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -166,6 +169,12 @@ export interface IStorage {
   getEmergenciasRecientes(limite?: number): Promise<Emergencia[]>;
   createEmergencia(emergencia: EmergenciaInsert): Promise<Emergencia>;
   updateEmergencia(id: string, data: Partial<EmergenciaInsert>): Promise<Emergencia | undefined>;
+  
+  // Operaciones de contactos familiares
+  getContactosFamiliares(usuarioId: string): Promise<ContactoFamiliar[]>;
+  createContactoFamiliar(contacto: InsertContactoFamiliar): Promise<ContactoFamiliar>;
+  updateContactoFamiliar(id: string, data: Partial<InsertContactoFamiliar>): Promise<ContactoFamiliar | undefined>;
+  deleteContactoFamiliar(id: string): Promise<void>;
   
   // Operaciones de taxi
   getViajesTaxi(usuarioId?: string): Promise<ViajeTaxi[]>;
@@ -1108,6 +1117,38 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emergencias.id, id))
       .returning();
     return actualizada || undefined;
+  }
+
+  // ============================================================
+  // CONTACTOS FAMILIARES
+  // ============================================================
+
+  async getContactosFamiliares(usuarioId: string): Promise<ContactoFamiliar[]> {
+    return await db.select()
+      .from(contactosFamiliares)
+      .where(eq(contactosFamiliares.usuarioId, usuarioId))
+      .orderBy(contactosFamiliares.orden);
+  }
+
+  async createContactoFamiliar(contactoData: InsertContactoFamiliar): Promise<ContactoFamiliar> {
+    const [contacto] = await db
+      .insert(contactosFamiliares)
+      .values(contactoData)
+      .returning();
+    return contacto;
+  }
+
+  async updateContactoFamiliar(id: string, data: Partial<InsertContactoFamiliar>): Promise<ContactoFamiliar | undefined> {
+    const [actualizado] = await db
+      .update(contactosFamiliares)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(contactosFamiliares.id, id))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  async deleteContactoFamiliar(id: string): Promise<void> {
+    await db.delete(contactosFamiliares).where(eq(contactosFamiliares.id, id));
   }
 
   // ============================================================
