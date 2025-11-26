@@ -9,6 +9,7 @@ import { AudioControllerProvider } from "@/contexts/AudioControllerContext";
 import Encabezado from "@/components/Encabezado";
 import BotonPanico from "@/components/BotonPanico";
 import PiePagina from "@/components/PiePagina";
+import SolicitudPermisos from "@/components/SolicitudPermisos";
 import Landing from "@/pages/landing";
 import Home from "@/pages/home";
 import Chat from "@/pages/chat";
@@ -58,6 +59,7 @@ function AppContent() {
       </main>
       <PiePagina />
       {isAuthenticated && <BotonPanico />}
+      {isAuthenticated && <SolicitudPermisos />}
     </div>
   );
 }

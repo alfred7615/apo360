@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
 import SelectorUbicacion from "./SelectorUbicacion";
 
 const TIPOS_EMERGENCIA = [
@@ -48,6 +49,7 @@ const DRAG_THRESHOLD_PX = 8;
 export default function BotonPanico() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   const [modalAbierto, setModalAbierto] = useState(false);
   const [tiposSeleccionados, setTiposSeleccionados] = useState<string[]>([]);
@@ -373,27 +375,48 @@ export default function BotonPanico() {
                 const Icono = emergencia.icono;
                 const estaSeleccionado = tiposSeleccionados.includes(emergencia.tipo);
                 
-                const deshabilitado = 
+                const sinDatos = 
                   (emergencia.tipo === "familia" && !tieneContactosFamiliares) ||
                   (emergencia.tipo === "grupo_chat" && !tieneGruposEmergencia);
+                
+                const handleClick = () => {
+                  if (sinDatos) {
+                    if (emergencia.tipo === "familia") {
+                      toast({
+                        title: "Sin contactos familiares",
+                        description: "Configura tus contactos de emergencia en tu perfil.",
+                        variant: "destructive",
+                      });
+                    } else if (emergencia.tipo === "grupo_chat") {
+                      toast({
+                        title: "Sin grupos de emergencia",
+                        description: "No hay grupos de chat configurados para emergencias.",
+                        variant: "destructive",
+                      });
+                    }
+                    return;
+                  }
+                  toggleTipo(emergencia.tipo);
+                };
                 
                 return (
                   <button
                     key={emergencia.tipo}
-                    onClick={() => !deshabilitado && toggleTipo(emergencia.tipo)}
-                    disabled={deshabilitado}
+                    onClick={handleClick}
                     className={`relative flex items-center justify-center rounded-xl p-3 transition-all ${
-                      deshabilitado
-                        ? 'bg-muted opacity-40 cursor-not-allowed'
+                      sinDatos
+                        ? 'bg-muted opacity-50 cursor-pointer'
                         : estaSeleccionado
                           ? `${emergencia.color} text-white shadow-lg ring-2 ring-white ring-offset-2 ring-offset-background`
                           : `bg-card border border-border ${emergencia.hoverColor} hover:text-white`
                     }`}
                     data-testid={`button-emergency-${emergencia.tipo}`}
                     title={
-                      emergencia.tipo === "familia" ? "Notificar a familia" :
-                      emergencia.tipo === "grupo_chat" ? "Notificar a grupos de chat" :
-                      emergencia.tipo
+                      emergencia.tipo === "familia" 
+                        ? (tieneContactosFamiliares ? "Notificar a familia" : "Configurar contactos familiares")
+                        : emergencia.tipo === "grupo_chat" 
+                          ? (tieneGruposEmergencia ? "Notificar a grupos de chat" : "Sin grupos disponibles")
+                          : emergencia.tipo
                     }
                   >
                     <Icono className="h-7 w-7 sm:h-8 sm:w-8" />
@@ -402,10 +425,38 @@ export default function BotonPanico() {
                         <Check className="h-3 w-3 text-green-600" />
                       </div>
                     )}
+                    {sinDatos && (
+                      <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-0.5 shadow-md">
+                        <AlertTriangle className="h-3 w-3 text-white" />
+                      </div>
+                    )}
                   </button>
                 );
               })}
             </div>
+
+            {(!tieneContactosFamiliares || !tieneGruposEmergencia) && (
+              <div className="text-xs p-2 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <p className="text-yellow-700 dark:text-yellow-300">
+                  {!tieneContactosFamiliares && !tieneGruposEmergencia 
+                    ? "Configura contactos familiares en tu perfil para habilitar alertas a familia."
+                    : !tieneContactosFamiliares 
+                      ? "Configura contactos familiares en tu perfil para habilitar alertas a familia."
+                      : "No hay grupos de emergencia disponibles."}
+                </p>
+                {!tieneContactosFamiliares && (
+                  <button
+                    className="text-xs text-yellow-700 dark:text-yellow-300 underline hover:text-yellow-800 dark:hover:text-yellow-200"
+                    onClick={() => {
+                      cerrarModal();
+                      setLocation("/perfil");
+                    }}
+                  >
+                    Ir a mi perfil
+                  </button>
+                )}
+              </div>
+            )}
 
             <Textarea
               placeholder="Descripción (opcional)"

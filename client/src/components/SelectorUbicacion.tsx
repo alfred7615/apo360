@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
-import { MapPin, Navigation, Search, X, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { MapPin, Navigation, Search, X, Loader2, Crosshair } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,41 +21,57 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-const iconoRojo = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
 interface SelectorUbicacionProps {
   ubicacionActual: { lat: number; lng: number } | null;
   onSeleccionarUbicacion: (ubicacion: { lat: number; lng: number }) => void;
   obteniendoGPS?: boolean;
 }
 
-function MapaEventos({ onUbicacionCambia }: { onUbicacionCambia: (lat: number, lng: number) => void }) {
+function MapaCentroTracker({ 
+  onCentroCambia,
+  onMovimientoManual,
+  centrarEn,
+}: { 
+  onCentroCambia: (lat: number, lng: number) => void;
+  onMovimientoManual: () => void;
+  centrarEn: { lat: number; lng: number } | null;
+}) {
+  const map = useMap();
+  const ultimoCentroRef = useRef<{ lat: number; lng: number } | null>(null);
+  const movimientoProgramaticoRef = useRef(false);
+  
   useMapEvents({
-    click(e) {
-      onUbicacionCambia(e.latlng.lat, e.latlng.lng);
+    moveend: () => {
+      const centro = map.getCenter();
+      onCentroCambia(centro.lat, centro.lng);
+      
+      if (!movimientoProgramaticoRef.current) {
+        onMovimientoManual();
+      }
+      movimientoProgramaticoRef.current = false;
+    },
+    zoomend: () => {
+      const centro = map.getCenter();
+      onCentroCambia(centro.lat, centro.lng);
     },
   });
+  
+  useEffect(() => {
+    if (centrarEn && (
+      !ultimoCentroRef.current ||
+      Math.abs(ultimoCentroRef.current.lat - centrarEn.lat) > 0.0001 ||
+      Math.abs(ultimoCentroRef.current.lng - centrarEn.lng) > 0.0001
+    )) {
+      movimientoProgramaticoRef.current = true;
+      map.setView([centrarEn.lat, centrarEn.lng], map.getZoom(), { animate: true });
+      ultimoCentroRef.current = centrarEn;
+    }
+  }, [centrarEn, map]);
+  
   return null;
 }
 
-function CentrarMapa({ centro }: { centro: [number, number] | null }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (centro) {
-      map.setView(centro, 16);
-    }
-  }, [centro, map]);
-  
-  return null;
-}
+const CENTRO_TACNA: { lat: number; lng: number } = { lat: -18.0146, lng: -70.2536 };
 
 export default function SelectorUbicacion({
   ubicacionActual,
@@ -64,36 +80,52 @@ export default function SelectorUbicacion({
 }: SelectorUbicacionProps) {
   const { toast } = useToast();
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [ubicacionTemporal, setUbicacionTemporal] = useState<{ lat: number; lng: number } | null>(null);
+  const [ubicacionCentro, setUbicacionCentro] = useState<{ lat: number; lng: number }>(CENTRO_TACNA);
+  const [centrarEnUbicacion, setCentrarEnUbicacion] = useState<{ lat: number; lng: number } | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const [buscando, setBuscando] = useState(false);
   const [obteniendoGPSLocal, setObteniendoGPSLocal] = useState(false);
-
-  const centroTacna: [number, number] = [-18.0146, -70.2536];
-  
-  const centroMapa: [number, number] = ubicacionTemporal 
-    ? [ubicacionTemporal.lat, ubicacionTemporal.lng]
-    : ubicacionActual 
-      ? [ubicacionActual.lat, ubicacionActual.lng]
-      : centroTacna;
+  const gpsIntentadoRef = useRef(false);
+  const usuarioMovioMapaRef = useRef(false);
+  const solicitudGPSIdRef = useRef(0);
 
   useEffect(() => {
-    if (modalAbierto && ubicacionActual) {
-      setUbicacionTemporal(ubicacionActual);
+    if (modalAbierto) {
+      usuarioMovioMapaRef.current = false;
+      solicitudGPSIdRef.current += 1;
+      
+      if (ubicacionActual) {
+        setUbicacionCentro(ubicacionActual);
+        setCentrarEnUbicacion(ubicacionActual);
+      } else if (!gpsIntentadoRef.current) {
+        gpsIntentadoRef.current = true;
+        obtenerGPSDispositivo(true);
+      }
+    } else {
+      gpsIntentadoRef.current = false;
+      usuarioMovioMapaRef.current = false;
+      solicitudGPSIdRef.current += 1;
+      setCentrarEnUbicacion(null);
+      setUbicacionCentro(CENTRO_TACNA);
     }
   }, [modalAbierto, ubicacionActual]);
 
-  const obtenerGPSDispositivo = useCallback(() => {
+  const obtenerGPSDispositivo = useCallback((silencioso = false) => {
     if (!navigator.geolocation) {
-      toast({
-        title: "GPS no disponible",
-        description: "Tu dispositivo no soporta geolocalización",
-        variant: "destructive",
-      });
+      if (!silencioso) {
+        toast({
+          title: "GPS no disponible",
+          description: "Tu dispositivo no soporta geolocalización",
+          variant: "destructive",
+        });
+      }
+      setUbicacionCentro(CENTRO_TACNA);
+      setCentrarEnUbicacion(CENTRO_TACNA);
       return;
     }
 
     setObteniendoGPSLocal(true);
+    const solicitudId = solicitudGPSIdRef.current;
 
     const opciones: PositionOptions = {
       enableHighAccuracy: true,
@@ -103,40 +135,64 @@ export default function SelectorUbicacion({
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (solicitudId !== solicitudGPSIdRef.current) {
+          return;
+        }
+        
+        if (usuarioMovioMapaRef.current) {
+          setObteniendoGPSLocal(false);
+          return;
+        }
+        
         const nuevaUbicacion = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         };
-        setUbicacionTemporal(nuevaUbicacion);
+        setUbicacionCentro(nuevaUbicacion);
+        setCentrarEnUbicacion({ ...nuevaUbicacion });
         setObteniendoGPSLocal(false);
-        toast({
-          title: "Ubicación obtenida",
-          description: `Precisión: ${Math.round(position.coords.accuracy)} metros`,
-        });
+        
+        if (!silencioso) {
+          toast({
+            title: "Ubicación GPS obtenida",
+            description: `Precisión: ${Math.round(position.coords.accuracy)} metros`,
+          });
+        }
       },
       (error) => {
-        setObteniendoGPSLocal(false);
-        let mensaje = "No se pudo obtener tu ubicación";
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            mensaje = "Permiso de ubicación denegado. Activa el GPS en tu dispositivo.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            mensaje = "Ubicación no disponible. Verifica que el GPS esté activado.";
-            break;
-          case error.TIMEOUT:
-            mensaje = "Tiempo de espera agotado. Intenta en un lugar con mejor señal.";
-            break;
+        if (solicitudId !== solicitudGPSIdRef.current) {
+          return;
         }
-        toast({
-          title: "Error de GPS",
-          description: mensaje,
-          variant: "destructive",
-        });
+        
+        setObteniendoGPSLocal(false);
+        
+        if (!silencioso) {
+          let mensaje = "No se pudo obtener tu ubicación";
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              mensaje = "Permiso de ubicación denegado. Activa el GPS en tu dispositivo.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              mensaje = "Ubicación no disponible. Verifica que el GPS esté activado.";
+              break;
+            case error.TIMEOUT:
+              mensaje = "Tiempo de espera agotado. Mueve el mapa manualmente.";
+              break;
+          }
+          toast({
+            title: "Error de GPS",
+            description: mensaje,
+            variant: "destructive",
+          });
+        }
+        
+        if (!ubicacionActual && !usuarioMovioMapaRef.current) {
+          setCentrarEnUbicacion(CENTRO_TACNA);
+        }
       },
       opciones
     );
-  }, [toast]);
+  }, [toast, ubicacionActual]);
 
   const buscarDireccion = useCallback(async () => {
     if (!busqueda.trim()) return;
@@ -155,7 +211,9 @@ export default function SelectorUbicacion({
           lat: parseFloat(resultado.lat),
           lng: parseFloat(resultado.lon),
         };
-        setUbicacionTemporal(nuevaUbicacion);
+        setUbicacionCentro(nuevaUbicacion);
+        setCentrarEnUbicacion({ ...nuevaUbicacion });
+        
         toast({
           title: "Ubicación encontrada",
           description: resultado.display_name.substring(0, 50) + "...",
@@ -179,19 +237,21 @@ export default function SelectorUbicacion({
   }, [busqueda, toast]);
 
   const confirmarUbicacion = () => {
-    if (ubicacionTemporal) {
-      onSeleccionarUbicacion(ubicacionTemporal);
-      setModalAbierto(false);
-      toast({
-        title: "Ubicación confirmada",
-        description: `Lat: ${ubicacionTemporal.lat.toFixed(6)}, Lng: ${ubicacionTemporal.lng.toFixed(6)}`,
-      });
-    }
+    onSeleccionarUbicacion(ubicacionCentro);
+    setModalAbierto(false);
+    toast({
+      title: "Ubicación confirmada",
+      description: `Lat: ${ubicacionCentro.lat.toFixed(6)}, Lng: ${ubicacionCentro.lng.toFixed(6)}`,
+    });
   };
 
-  const handleMapClick = (lat: number, lng: number) => {
-    setUbicacionTemporal({ lat, lng });
-  };
+  const handleCentroCambia = useCallback((lat: number, lng: number) => {
+    setUbicacionCentro({ lat, lng });
+  }, []);
+
+  const handleMovimientoManual = useCallback(() => {
+    usuarioMovioMapaRef.current = true;
+  }, []);
 
   return (
     <>
@@ -223,7 +283,7 @@ export default function SelectorUbicacion({
               Seleccionar Ubicación
             </DialogTitle>
             <DialogDescription>
-              Toca en el mapa para marcar tu ubicación o usa el GPS
+              Mueve el mapa para centrar el marcador en tu ubicación
             </DialogDescription>
           </DialogHeader>
 
@@ -261,11 +321,14 @@ export default function SelectorUbicacion({
                 )}
               </Button>
               <Button
-                onClick={obtenerGPSDispositivo}
+                onClick={() => {
+                  usuarioMovioMapaRef.current = false;
+                  obtenerGPSDispositivo(false);
+                }}
                 disabled={obteniendoGPSLocal}
                 size="icon"
                 variant="default"
-                title="Obtener mi ubicación GPS"
+                title="Centrar en mi ubicación GPS"
                 data-testid="button-obtener-gps"
               >
                 {obteniendoGPSLocal ? (
@@ -276,36 +339,52 @@ export default function SelectorUbicacion({
               </Button>
             </div>
 
-            {ubicacionTemporal && (
-              <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded flex items-center gap-2">
-                <MapPin className="h-3 w-3" />
-                <span>
-                  Lat: {ubicacionTemporal.lat.toFixed(6)}, Lng: {ubicacionTemporal.lng.toFixed(6)}
-                </span>
-              </div>
-            )}
+            <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded flex items-center gap-2">
+              <Crosshair className="h-3 w-3 text-red-500" />
+              <span>
+                Lat: {ubicacionCentro.lat.toFixed(6)}, Lng: {ubicacionCentro.lng.toFixed(6)}
+              </span>
+            </div>
           </div>
 
-          <div className="h-[50vh] sm:h-[400px] mx-4 mt-2 rounded-lg overflow-hidden border">
+          <div className="relative h-[50vh] sm:h-[400px] mx-4 mt-2 rounded-lg overflow-hidden border">
             <MapContainer
-              center={centroMapa}
-              zoom={15}
+              center={[ubicacionCentro.lat, ubicacionCentro.lng]}
+              zoom={16}
               style={{ height: "100%", width: "100%" }}
               zoomControl={true}
+              scrollWheelZoom={true}
+              dragging={true}
+              touchZoom={true}
+              doubleClickZoom={true}
+              boxZoom={true}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <MapaEventos onUbicacionCambia={handleMapClick} />
-              <CentrarMapa centro={ubicacionTemporal ? [ubicacionTemporal.lat, ubicacionTemporal.lng] : null} />
-              {ubicacionTemporal && (
-                <Marker
-                  position={[ubicacionTemporal.lat, ubicacionTemporal.lng]}
-                  icon={iconoRojo}
-                />
-              )}
+              <MapaCentroTracker 
+                onCentroCambia={handleCentroCambia}
+                onMovimientoManual={handleMovimientoManual}
+                centrarEn={centrarEnUbicacion}
+              />
             </MapContainer>
+            
+            <div 
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none"
+              style={{ transform: "translate(-50%, -100%)" }}
+            >
+              <div className="flex flex-col items-center">
+                <MapPin className="h-10 w-10 text-red-600 drop-shadow-lg" fill="currentColor" />
+                <div className="w-2 h-2 bg-red-600 rounded-full -mt-1 shadow-lg animate-pulse" />
+              </div>
+            </div>
+            
+            <div className="absolute bottom-2 left-2 right-2 z-[1000] pointer-events-none">
+              <p className="text-xs text-center text-muted-foreground bg-background/80 backdrop-blur-sm py-1 px-2 rounded">
+                Arrastra el mapa para mover el marcador
+              </p>
+            </div>
           </div>
 
           <div className="p-4 pt-3 flex gap-2 justify-end border-t">
@@ -318,10 +397,9 @@ export default function SelectorUbicacion({
             </Button>
             <Button
               onClick={confirmarUbicacion}
-              disabled={!ubicacionTemporal}
               data-testid="button-confirmar-ubicacion"
             >
-              <MapPin className="h-4 w-4 mr-2" />
+              <Crosshair className="h-4 w-4 mr-2" />
               Confirmar ubicación
             </Button>
           </div>
