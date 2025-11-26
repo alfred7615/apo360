@@ -302,11 +302,12 @@ export default function VisualizadorPantallaCompleta({
             <ArrowLeft className="h-6 w-6" />
           </Button>
 
-          <div className="flex-1 flex items-center justify-center overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center px-16 py-4">
             <img
               src={publicidad.imagenUrl || undefined}
               alt={publicidad.titulo || "Imagen"}
-              className="h-full w-auto object-contain"
+              className="max-h-full max-w-full object-contain"
+              style={{ maxHeight: "calc(100vh - 120px)" }}
               data-testid="img-visualizador-completo"
             />
           </div>
