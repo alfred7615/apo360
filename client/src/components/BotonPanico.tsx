@@ -1,17 +1,19 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { AlertTriangle, Shield, Phone, Truck, Ambulance, Flame, MapPin, Send, Users, MessageCircle, Check } from "lucide-react";
+import { AlertTriangle, Shield, Phone, Truck, Ambulance, Flame, MapPin, Send, Users, MessageCircle, Check, Navigation, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import SelectorUbicacion from "./SelectorUbicacion";
 
 const TIPOS_EMERGENCIA = [
   { tipo: "policia", icono: Shield, color: "bg-blue-600", hoverColor: "hover:bg-blue-700" },
@@ -107,13 +109,20 @@ export default function BotonPanico() {
     if (!navigator.geolocation) {
       toast({
         title: "GPS no disponible",
-        description: "Tu navegador no soporta geolocalización",
+        description: "Tu dispositivo no soporta geolocalización. Usa el selector de mapa.",
         variant: "destructive",
       });
       return;
     }
 
     setObteniendoUbicacion(true);
+    
+    const opciones: PositionOptions = {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 0,
+    };
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setUbicacion({
@@ -121,18 +130,38 @@ export default function BotonPanico() {
           lng: position.coords.longitude,
         });
         setObteniendoUbicacion(false);
-      },
-      () => {
-        setObteniendoUbicacion(false);
         toast({
-          title: "Error de ubicación",
-          description: "No se pudo obtener tu ubicación",
+          title: "Ubicación obtenida",
+          description: `Precisión: ${Math.round(position.coords.accuracy)} metros`,
+        });
+      },
+      (error) => {
+        setObteniendoUbicacion(false);
+        let mensaje = "No se pudo obtener tu ubicación. Usa el selector de mapa.";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            mensaje = "Permiso de GPS denegado. Actívalo en configuración o usa el mapa.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            mensaje = "GPS no disponible. Verifica que esté activado o usa el mapa.";
+            break;
+          case error.TIMEOUT:
+            mensaje = "Tiempo agotado. Intenta en mejor señal o usa el selector de mapa.";
+            break;
+        }
+        toast({
+          title: "Error de GPS",
+          description: mensaje,
           variant: "destructive",
         });
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      opciones
     );
   }, [toast]);
+
+  const seleccionarUbicacionManual = useCallback((nuevaUbicacion: { lat: number; lng: number }) => {
+    setUbicacion(nuevaUbicacion);
+  }, []);
 
   const emergenciaMutation = useMutation({
     mutationFn: async (datos: any) => {
@@ -387,23 +416,45 @@ export default function BotonPanico() {
               data-testid="input-emergency-description"
             />
 
-            <div className="flex items-center justify-between p-2 bg-muted rounded-lg text-sm">
-              <div className="flex items-center gap-2">
-                <MapPin className={`h-4 w-4 ${ubicacion ? 'text-green-600' : 'text-muted-foreground'}`} />
-                <span className={ubicacion ? 'text-green-600' : 'text-muted-foreground'} data-testid="text-location-status">
-                  {obteniendoUbicacion ? 'Obteniendo...' : ubicacion ? 'GPS listo' : 'Sin GPS'}
-                </span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-2 bg-muted rounded-lg text-sm">
+                <div className="flex items-center gap-2">
+                  <MapPin className={`h-4 w-4 ${ubicacion ? 'text-green-600' : 'text-muted-foreground'}`} />
+                  <span className={ubicacion ? 'text-green-600' : 'text-muted-foreground'} data-testid="text-location-status">
+                    {obteniendoUbicacion ? (
+                      <span className="flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Obteniendo GPS...
+                      </span>
+                    ) : ubicacion ? (
+                      <span className="text-xs">
+                        {ubicacion.lat.toFixed(5)}, {ubicacion.lng.toFixed(5)}
+                      </span>
+                    ) : (
+                      'Sin ubicación'
+                    )}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={obtenerUbicacion}
+                  disabled={obteniendoUbicacion}
+                  className="h-7 text-xs gap-1"
+                  data-testid="button-refresh-location"
+                >
+                  <Navigation className="h-3 w-3" />
+                  GPS
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={obtenerUbicacion}
-                disabled={obteniendoUbicacion}
-                className="h-7 text-xs"
-                data-testid="button-refresh-location"
-              >
-                Actualizar
-              </Button>
+              
+              <div className="flex justify-center">
+                <SelectorUbicacion
+                  ubicacionActual={ubicacion}
+                  onSeleccionarUbicacion={seleccionarUbicacionManual}
+                  obteniendoGPS={obteniendoUbicacion}
+                />
+              </div>
             </div>
 
             <div className="flex gap-2">
