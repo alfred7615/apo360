@@ -113,65 +113,76 @@ export default function Encabezado() {
                     </div>
                   </div>
                   
-                  {/* Controles de reproducción */}
-                  <div className="flex items-center gap-2">
-                    {audio.tipoFuente === "lista" && (
+                  {/* Reproductor iframe para radios */}
+                  {audio.usandoIframe && audio.iframeCode && (
+                    <div 
+                      className="w-full rounded-lg overflow-hidden mb-2" 
+                      dangerouslySetInnerHTML={{ __html: audio.iframeCode }}
+                      data-testid="iframe-radio-player"
+                    />
+                  )}
+                  
+                  {/* Controles de reproducción para MP3 */}
+                  {!audio.usandoIframe && (
+                    <div className="flex items-center gap-2">
+                      {audio.tipoFuente === "lista" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={audio.anteriorPista}
+                          disabled={audio.archivosDeLista.length === 0}
+                          data-testid="button-prev-track"
+                        >
+                          <SkipBack className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
                       <Button
-                        variant="ghost"
+                        variant="default"
                         size="icon"
-                        onClick={audio.anteriorPista}
-                        disabled={audio.archivosDeLista.length === 0}
-                        data-testid="button-prev-track"
+                        onClick={audio.alternarReproduccion}
+                        disabled={!audio.urlActual}
+                        data-testid="button-play-pause-header"
                       >
-                        <SkipBack className="h-4 w-4" />
+                        {audio.reproduciendo ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </Button>
-                    )}
-                    
-                    <Button
-                      variant="default"
-                      size="icon"
-                      onClick={audio.alternarReproduccion}
-                      disabled={!audio.urlActual}
-                      data-testid="button-play-pause-header"
-                    >
-                      {audio.reproduciendo ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                    </Button>
-                    
-                    {audio.tipoFuente === "lista" && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={audio.siguientePista}
-                        disabled={audio.archivosDeLista.length === 0}
-                        data-testid="button-next-track"
-                      >
-                        <SkipForward className="h-4 w-4" />
-                      </Button>
-                    )}
-                    
-                    <div className="flex items-center gap-1 flex-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={audio.toggleSilencio}
-                        data-testid="button-mute-header"
-                      >
-                        {audio.silenciado || audio.volumen === 0 ? (
-                          <VolumeX className="h-4 w-4" />
-                        ) : (
-                          <Volume2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Slider
-                        value={[audio.volumen]}
-                        onValueChange={(value) => audio.setVolumen(value[0])}
-                        max={100}
-                        step={1}
-                        className="flex-1"
-                        data-testid="slider-volume-header"
-                      />
+                      
+                      {audio.tipoFuente === "lista" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={audio.siguientePista}
+                          disabled={audio.archivosDeLista.length === 0}
+                          data-testid="button-next-track"
+                        >
+                          <SkipForward className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      <div className="flex items-center gap-1 flex-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={audio.toggleSilencio}
+                          data-testid="button-mute-header"
+                        >
+                          {audio.silenciado || audio.volumen === 0 ? (
+                            <VolumeX className="h-4 w-4" />
+                          ) : (
+                            <Volume2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Slider
+                          value={[audio.volumen]}
+                          onValueChange={(value) => audio.setVolumen(value[0])}
+                          max={100}
+                          step={1}
+                          className="flex-1"
+                          data-testid="slider-volume-header"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 
                 {/* Tabs para seleccionar radio o lista */}

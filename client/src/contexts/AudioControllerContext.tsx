@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useRef, useEffect, useCallback, ty
 import { useQuery } from "@tanstack/react-query";
 
 interface RadioOnline {
-  id: number;
+  id: number | string;
   nombre: string;
   url: string;
   iframeCode?: string;
@@ -38,7 +38,7 @@ type TipoFuente = "radio" | "lista";
 
 interface AudioControllerState {
   tipoFuente: TipoFuente;
-  radioSeleccionadaId: number | null;
+  radioSeleccionadaId: number | string | null;
   listaSeleccionadaId: number | null;
   pistaActual: number;
   reproduciendo: boolean;
@@ -53,10 +53,12 @@ interface AudioControllerState {
   tituloActual: string;
   artistaActual: string | null;
   urlActual: string | null;
+  usandoIframe: boolean;
+  iframeCode: string | null;
 }
 
 interface AudioControllerActions {
-  seleccionarRadio: (radioId: number) => void;
+  seleccionarRadio: (radioId: number | string) => void;
   seleccionarLista: (listaId: number) => void;
   reproducir: () => void;
   pausar: () => void;
@@ -80,7 +82,7 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   
   const [tipoFuente, setTipoFuente] = useState<TipoFuente>("radio");
-  const [radioSeleccionadaId, setRadioSeleccionadaId] = useState<number | null>(null);
+  const [radioSeleccionadaId, setRadioSeleccionadaId] = useState<number | string | null>(null);
   const [listaSeleccionadaId, setListaSeleccionadaId] = useState<number | null>(null);
   const [pistaActual, setPistaActual] = useState(0);
   const [reproduciendo, setReproduciendo] = useState(false);
@@ -188,7 +190,7 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
     }
   }, [reproduciendo, pausar, reproducir]);
 
-  const seleccionarRadio = useCallback((radioId: number) => {
+  const seleccionarRadio = useCallback((radioId: number | string) => {
     if (audioRef.current) {
       audioRef.current.pause();
     }
@@ -237,6 +239,9 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
     setReproduciendo(false);
   }, []);
 
+  const usandoIframe = tipoFuente === "radio" && !!radioActual?.iframeCode;
+  const iframeCode = usandoIframe ? radioActual?.iframeCode || null : null;
+
   const value: AudioControllerContextValue = {
     tipoFuente,
     radioSeleccionadaId,
@@ -254,6 +259,8 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
     tituloActual,
     artistaActual,
     urlActual,
+    usandoIframe,
+    iframeCode,
     audioRef,
     seleccionarRadio,
     seleccionarLista,
