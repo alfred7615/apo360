@@ -60,11 +60,7 @@ export default function Home() {
   }
 
   // Prioridad: ALIAS → NOMBRE (solo primer nombre, sin apellidos) → EMAIL
-  const obtenerPrimerNombre = (nombreCompleto: string | null | undefined) => {
-    if (!nombreCompleto) return null;
-    return nombreCompleto.split(' ')[0];
-  };
-  const nombreMostrar = user.alias || obtenerPrimerNombre(user.nombre) || user.email || 'Usuario';
+  const nombreMostrar = user.alias || user.nombre || user.email || 'Usuario';
   
   const contadorAgenda = 2;
   const contadorFamilia = alertasFamilia.length;

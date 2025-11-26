@@ -548,9 +548,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const authUser = {
         id: user.id,
-        nombre: user.firstName && user.lastName 
-          ? `${user.firstName} ${user.lastName}`.trim()
-          : user.firstName || user.lastName || 'Usuario',
+        nombre: user.firstName || user.lastName || 'Usuario',
+        alias: user.alias || undefined,
         email: user.email || '',
         rol: user.rol,
         rolesSuperAdmin: user.rol === 'super_admin',
