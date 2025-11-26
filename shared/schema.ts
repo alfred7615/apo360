@@ -172,6 +172,76 @@ export type PublicidadInsert = z.infer<typeof insertPublicidadSchema>;
 export type Publicidad = typeof publicidad.$inferSelect;
 
 // ============================================================
+// INTERACCIONES DE PUBLICIDAD (likes, favoritos, compartidos, impresiones)
+// ============================================================
+export const interaccionesPublicidad = pgTable("interacciones_publicidad", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publicidadId: varchar("publicidad_id").notNull().references(() => publicidad.id),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id),
+  tipo: varchar("tipo", { length: 50 }).notNull(), // "like", "favorito", "compartido", "impresion", "agenda"
+  redSocial: varchar("red_social", { length: 50 }), // Para compartidos: "facebook", "twitter", "whatsapp", etc.
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueInteraccion: unique().on(table.publicidadId, table.usuarioId, table.tipo),
+}));
+
+export const insertInteraccionPublicidadSchema = createInsertSchema(interaccionesPublicidad).omit({ id: true, createdAt: true });
+export type InsertInteraccionPublicidad = z.infer<typeof insertInteraccionPublicidadSchema>;
+export type InteraccionPublicidad = typeof interaccionesPublicidad.$inferSelect;
+
+// ============================================================
+// COMENTARIOS DE PUBLICIDAD
+// ============================================================
+export const comentariosPublicidad = pgTable("comentarios_publicidad", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publicidadId: varchar("publicidad_id").notNull().references(() => publicidad.id),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  contenido: text("contenido").notNull(),
+  estado: varchar("estado", { length: 20 }).default("activo"), // "activo", "eliminado", "oculto"
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const insertComentarioPublicidadSchema = createInsertSchema(comentariosPublicidad).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertComentarioPublicidad = z.infer<typeof insertComentarioPublicidadSchema>;
+export type ComentarioPublicidad = typeof comentariosPublicidad.$inferSelect;
+
+// ============================================================
+// CONTADORES DE PUBLICIDAD (caché para conteos rápidos)
+// ============================================================
+export const contadoresPublicidad = pgTable("contadores_publicidad", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  publicidadId: varchar("publicidad_id").notNull().references(() => publicidad.id).unique(),
+  likes: integer("likes").default(0),
+  favoritos: integer("favoritos").default(0),
+  compartidos: integer("compartidos").default(0),
+  impresiones: integer("impresiones").default(0),
+  comentarios: integer("comentarios").default(0),
+  agendados: integer("agendados").default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertContadorPublicidadSchema = createInsertSchema(contadoresPublicidad).omit({ id: true, updatedAt: true });
+export type InsertContadorPublicidad = z.infer<typeof insertContadorPublicidadSchema>;
+export type ContadorPublicidad = typeof contadoresPublicidad.$inferSelect;
+
+// ============================================================
+// FAVORITOS DE USUARIO (perfil de favoritos)
+// ============================================================
+export const favoritosUsuario = pgTable("favoritos_usuario", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  publicidadId: varchar("publicidad_id").notNull().references(() => publicidad.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueFavorito: unique().on(table.usuarioId, table.publicidadId),
+}));
+
+export const insertFavoritoUsuarioSchema = createInsertSchema(favoritosUsuario).omit({ id: true, createdAt: true });
+export type InsertFavoritoUsuario = z.infer<typeof insertFavoritoUsuarioSchema>;
+export type FavoritoUsuario = typeof favoritosUsuario.$inferSelect;
+
+// ============================================================
 // RADIOS ONLINE
 // ============================================================
 export const radiosOnline = pgTable("radios_online", {
