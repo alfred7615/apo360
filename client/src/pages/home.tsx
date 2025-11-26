@@ -88,51 +88,57 @@ export default function Home() {
 
       {/* Botones de Alertas Pendientes - Solo iconos alineados a la izquierda */}
       <section className="container mx-auto px-4 -mt-10">
-        <div className="flex justify-start gap-3">
-          <Button
-            onClick={() => setModalAgenda(true)}
-            size="icon"
-            variant="outline"
-            className="relative h-12 w-12 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2"
-            data-testid="button-agenda"
-          >
-            <Calendar className="h-6 w-6 text-blue-600" />
+        <div className="flex justify-start gap-4">
+          <div className="relative">
+            <Button
+              onClick={() => setModalAgenda(true)}
+              size="icon"
+              variant="outline"
+              className="h-14 w-14 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0"
+              data-testid="button-agenda"
+            >
+              <Calendar className="h-8 w-8 text-blue-600" />
+            </Button>
             {contadorAgenda > 0 && (
-              <Badge className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1.5 py-0.5 min-w-[20px] rounded-full">
+              <Badge className="absolute -bottom-2 -right-2 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center shadow-md">
                 {contadorAgenda}
               </Badge>
             )}
-          </Button>
+          </div>
 
-          <Button
-            onClick={() => setModalFamilia(true)}
-            size="icon"
-            variant="outline"
-            className="relative h-12 w-12 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2"
-            data-testid="button-familia"
-          >
-            <UsersRound className="h-6 w-6 text-pink-600" />
+          <div className="relative">
+            <Button
+              onClick={() => setModalFamilia(true)}
+              size="icon"
+              variant="outline"
+              className="h-14 w-14 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0"
+              data-testid="button-familia"
+            >
+              <UsersRound className="h-8 w-8 text-pink-600" />
+            </Button>
             {contadorFamilia > 0 && (
-              <Badge className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs px-1.5 py-0.5 min-w-[20px] rounded-full">
+              <Badge className="absolute -bottom-2 -right-2 bg-pink-600 text-white text-[10px] px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center shadow-md">
                 {contadorFamilia}
               </Badge>
             )}
-          </Button>
+          </div>
 
-          <Button
-            onClick={() => setModalAlertas(true)}
-            size="icon"
-            variant="outline"
-            className="relative h-12 w-12 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2"
-            data-testid="button-alertas"
-          >
-            <Megaphone className="h-6 w-6 text-red-600" />
+          <div className="relative">
+            <Button
+              onClick={() => setModalAlertas(true)}
+              size="icon"
+              variant="outline"
+              className="h-14 w-14 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0"
+              data-testid="button-alertas"
+            >
+              <Megaphone className="h-8 w-8 text-red-600" />
+            </Button>
             {contadorAlertas > 0 && (
-              <Badge className="absolute -top-1 -right-1 bg-red-600 text-white text-xs px-1.5 py-0.5 min-w-[20px] rounded-full">
+              <Badge className="absolute -bottom-2 -right-2 bg-red-600 text-white text-[10px] px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center shadow-md">
                 {contadorAlertas}
               </Badge>
             )}
-          </Button>
+          </div>
         </div>
       </section>
 
