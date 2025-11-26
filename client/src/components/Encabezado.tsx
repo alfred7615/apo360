@@ -45,18 +45,15 @@ export default function Encabezado() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg" data-testid="header-main">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-[40px] items-center justify-between gap-2">
           {/* Logo y nombre */}
-          <Link href="/" className="flex items-center gap-3 hover-elevate active-elevate-2 rounded-md px-2 py-1" data-testid="link-home">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-white/20 backdrop-blur-sm">
-              <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+          <Link href="/" className="flex items-center gap-2 hover-elevate active-elevate-2 rounded-md px-1" data-testid="link-home">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/20 backdrop-blur-sm">
+              <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2ZM12 11H19C18.86 15.1 16.31 18.7 12.5 20C12.34 20.05 12.17 20.05 12 20C11.83 20.05 11.66 20.05 11.5 20C7.69 18.7 5.14 15.1 5 11H12V4.19L18 7.41V11H12Z"/>
               </svg>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold text-white leading-tight" data-testid="text-app-name">SEG-APO</span>
-              <span className="text-xs text-white/90 leading-tight hidden sm:block">Sistema de Seguridad</span>
-            </div>
+            <span className="text-base font-bold text-white leading-tight" data-testid="text-app-name">SEG-APO</span>
           </Link>
 
           {/* Navegación desktop */}
