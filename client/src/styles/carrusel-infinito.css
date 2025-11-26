@@ -1,0 +1,59 @@
+/* Carrusel Infinito - Animaciones CSS */
+
+.carrusel-infinito {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.carrusel-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  animation: desplazar-infinito 40s linear infinite;
+}
+
+@keyframes desplazar-infinito {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Pausar animación en hover */
+.carrusel-infinito:hover .carrusel-track {
+  animation-play-state: paused;
+}
+
+/* Gradientes suaves en los bordes para efecto de continuidad */
+.carrusel-infinito::before,
+.carrusel-infinito::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.carrusel-infinito::before {
+  left: 0;
+  background: linear-gradient(to right, white, transparent);
+}
+
+.carrusel-infinito::after {
+  right: 0;
+  background: linear-gradient(to left, white, transparent);
+}
+
+/* Dark mode gradients */
+.dark .carrusel-infinito::before {
+  background: linear-gradient(to right, rgb(17, 24, 39), transparent);
+}
+
+.dark .carrusel-infinito::after {
+  background: linear-gradient(to left, rgb(17, 24, 39), transparent);
+}

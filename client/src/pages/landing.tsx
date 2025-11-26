@@ -22,21 +22,21 @@ export default function Landing() {
       {/* Franja de emergencia (si existe) */}
       <FranjaEmergencia />
 
-      {/* Carrusel de logos publicitarios */}
-      <CarruselPublicidad tipo="carrusel_logos" altura="120px" />
+      {/* Carrusel infinito de logos publicitarios */}
+      <CarruselPublicidad tipo="carrusel_logos" />
 
-      {/* Carrusel principal de actividades */}
-      <section className="container mx-auto px-4 py-12">
-        <CarruselPublicidad tipo="carrusel_principal" altura="500px" />
+      {/* Carrusel infinito principal de actividades */}
+      <section className="py-4">
+        <CarruselPublicidad tipo="carrusel_principal" />
       </section>
 
-      {/* Logos de servicios destacados */}
-      <section className="py-8">
-        <div className="container mx-auto px-4 mb-6">
+      {/* Logos de servicios destacados - Carrusel infinito */}
+      <section className="py-4">
+        <div className="container mx-auto px-4 mb-4">
           <h2 className="text-2xl font-bold text-center">Servicios Destacados</h2>
           <p className="text-muted-foreground text-center mt-2">Comercios y servicios locales de confianza</p>
         </div>
-        <CarruselPublicidad tipo="logos_servicios" altura="160px" />
+        <CarruselPublicidad tipo="logos_servicios" />
       </section>
 
       {/* Galería de servicios */}
