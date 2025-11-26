@@ -40,8 +40,8 @@ interface ContactoFamiliar {
   notificarEmergencias: boolean;
 }
 
-const HOLD_THRESHOLD_MS = 250;
-const DRAG_THRESHOLD_PX = 10;
+const TAP_THRESHOLD_MS = 300;
+const DRAG_THRESHOLD_PX = 8;
 
 export default function BotonPanico() {
   const { user } = useAuth();
@@ -53,15 +53,15 @@ export default function BotonPanico() {
   const [ubicacion, setUbicacion] = useState<{ lat: number; lng: number } | null>(null);
   const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
   
-  const [posicion, setPosicion] = useState({ x: 0, y: 0 });
+  const [posicion, setPosicion] = useState({ x: 20, y: 20 });
   const [arrastrando, setArrastrando] = useState(false);
-  const botonRef = useRef<HTMLDivElement>(null);
+  const botonRef = useRef<HTMLButtonElement>(null);
   
-  const touchStartTimeRef = useRef<number>(0);
-  const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const isDraggingRef = useRef(false);
-  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const offsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isActiveRef = useRef(false);
+  const startTimeRef = useRef<number>(0);
+  const startPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const hasDraggedRef = useRef(false);
+  const initialButtonPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const { data: gruposEmergencia = [] } = useQuery<GrupoEmergencia[]>({
     queryKey: ["/api/chat/grupos-emergencia"],
@@ -78,17 +78,29 @@ export default function BotonPanico() {
     if (posicionGuardada) {
       try {
         const pos = JSON.parse(posicionGuardada);
-        setPosicion(pos);
+        if (typeof pos.x === 'number' && typeof pos.y === 'number') {
+          const padding = 10;
+          const buttonSize = 64;
+          const maxX = window.innerWidth - buttonSize - padding;
+          const maxY = window.innerHeight - buttonSize - padding;
+          setPosicion({
+            x: Math.max(padding, Math.min(maxX, pos.x)),
+            y: Math.max(padding, Math.min(maxY, pos.y)),
+          });
+        }
       } catch (e) {
         console.error('Error al cargar posición guardada');
       }
+    } else {
+      setPosicion({
+        x: window.innerWidth - 84,
+        y: window.innerHeight - 140,
+      });
     }
   }, []);
 
   useEffect(() => {
-    if (posicion.x !== 0 || posicion.y !== 0) {
-      localStorage.setItem('panicButtonPosition', JSON.stringify(posicion));
-    }
+    localStorage.setItem('panicButtonPosition', JSON.stringify(posicion));
   }, [posicion]);
 
   const obtenerUbicacion = useCallback(() => {
@@ -192,95 +204,91 @@ export default function BotonPanico() {
     emergenciaMutation.mutate(datosEmergencia);
   };
 
-  const calcularNuevaPosicion = (clientX: number, clientY: number) => {
-    const newX = clientX - offsetRef.current.x - (window.innerWidth - 80);
-    const newY = clientY - offsetRef.current.y - (window.innerHeight - 120);
+  const calcularPosicion = useCallback((clientX: number, clientY: number) => {
+    const deltaX = clientX - startPosRef.current.x;
+    const deltaY = clientY - startPosRef.current.y;
     
-    const maxX = 0;
-    const minX = -(window.innerWidth - 100);
-    const maxY = 0;
-    const minY = -(window.innerHeight - 150);
+    const newX = initialButtonPosRef.current.x + deltaX;
+    const newY = initialButtonPosRef.current.y + deltaY;
+    
+    const padding = 10;
+    const buttonSize = 64;
+    const maxX = window.innerWidth - buttonSize - padding;
+    const maxY = window.innerHeight - buttonSize - padding;
     
     return {
-      x: Math.max(minX, Math.min(maxX, newX)),
-      y: Math.max(minY, Math.min(maxY, newY)),
+      x: Math.max(padding, Math.min(maxX, newX)),
+      y: Math.max(padding, Math.min(maxY, newY)),
     };
-  };
+  }, []);
+
+  const handleStart = useCallback((clientX: number, clientY: number, target: HTMLElement, pointerId?: number) => {
+    isActiveRef.current = true;
+    startTimeRef.current = Date.now();
+    startPosRef.current = { x: clientX, y: clientY };
+    hasDraggedRef.current = false;
+    initialButtonPosRef.current = { ...posicion };
+    
+    if (pointerId !== undefined) {
+      try {
+        target.setPointerCapture(pointerId);
+      } catch {}
+    }
+  }, [posicion]);
+
+  const handleMove = useCallback((clientX: number, clientY: number) => {
+    if (!isActiveRef.current) return;
+    
+    const dx = Math.abs(clientX - startPosRef.current.x);
+    const dy = Math.abs(clientY - startPosRef.current.y);
+    
+    if (dx > DRAG_THRESHOLD_PX || dy > DRAG_THRESHOLD_PX) {
+      hasDraggedRef.current = true;
+      setArrastrando(true);
+      setPosicion(calcularPosicion(clientX, clientY));
+    }
+  }, [calcularPosicion]);
+
+  const handleEnd = useCallback((target: HTMLElement, pointerId?: number) => {
+    if (!isActiveRef.current) return;
+    
+    isActiveRef.current = false;
+    const wasDragging = hasDraggedRef.current;
+    const duration = Date.now() - startTimeRef.current;
+    
+    setArrastrando(false);
+    
+    if (pointerId !== undefined) {
+      try {
+        target.releasePointerCapture(pointerId);
+      } catch {}
+    }
+    
+    if (!wasDragging && duration < TAP_THRESHOLD_MS) {
+      abrirModal();
+    }
+  }, []);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (!botonRef.current) return;
-    
-    touchStartTimeRef.current = Date.now();
-    touchStartPosRef.current = { x: e.clientX, y: e.clientY };
-    isDraggingRef.current = false;
-    
-    const rect = botonRef.current.getBoundingClientRect();
-    offsetRef.current = {
-      x: e.clientX - rect.left - posicion.x,
-      y: e.clientY - rect.top - posicion.y,
-    };
-    
-    holdTimerRef.current = setTimeout(() => {
-      isDraggingRef.current = true;
-      setArrastrando(true);
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    }, HOLD_THRESHOLD_MS);
+    e.preventDefault();
+    handleStart(e.clientX, e.clientY, e.currentTarget as HTMLElement, e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    const dx = Math.abs(e.clientX - touchStartPosRef.current.x);
-    const dy = Math.abs(e.clientY - touchStartPosRef.current.y);
-    
-    if (!isDraggingRef.current && (dx > DRAG_THRESHOLD_PX || dy > DRAG_THRESHOLD_PX)) {
-      if (holdTimerRef.current) {
-        clearTimeout(holdTimerRef.current);
-        holdTimerRef.current = null;
-      }
-      isDraggingRef.current = true;
-      setArrastrando(true);
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    }
-    
-    if (isDraggingRef.current) {
-      e.preventDefault();
-      setPosicion(calcularNuevaPosicion(e.clientX, e.clientY));
-    }
+    e.preventDefault();
+    handleMove(e.clientX, e.clientY);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (holdTimerRef.current) {
-      clearTimeout(holdTimerRef.current);
-      holdTimerRef.current = null;
-    }
-    
-    const wasDragging = isDraggingRef.current;
-    isDraggingRef.current = false;
-    setArrastrando(false);
-    
-    try {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {}
-    
-    if (!wasDragging) {
-      const touchDuration = Date.now() - touchStartTimeRef.current;
-      const dx = Math.abs(e.clientX - touchStartPosRef.current.x);
-      const dy = Math.abs(e.clientY - touchStartPosRef.current.y);
-      
-      if (touchDuration < HOLD_THRESHOLD_MS && dx < DRAG_THRESHOLD_PX && dy < DRAG_THRESHOLD_PX) {
-        abrirModal();
-      }
-    }
+    handleEnd(e.currentTarget as HTMLElement, e.pointerId);
   };
 
   const handlePointerCancel = (e: React.PointerEvent) => {
-    if (holdTimerRef.current) {
-      clearTimeout(holdTimerRef.current);
-      holdTimerRef.current = null;
-    }
-    isDraggingRef.current = false;
+    isActiveRef.current = false;
+    hasDraggedRef.current = false;
     setArrastrando(false);
     try {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {}
   };
 
@@ -291,31 +299,29 @@ export default function BotonPanico() {
 
   return (
     <>
-      <div 
+      <button
         ref={botonRef}
-        className="fixed bottom-20 right-4 z-50"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onPointerLeave={handlePointerCancel}
+        className={`fixed z-50 touch-none select-none ${arrastrando ? 'cursor-grabbing' : 'cursor-pointer'}`}
         style={{
-          transform: `translate(${posicion.x}px, ${posicion.y}px)`,
-          transition: arrastrando ? 'none' : 'transform 0.1s ease-out',
-          touchAction: 'none',
+          left: `${posicion.x}px`,
+          top: `${posicion.y}px`,
+          transition: arrastrando ? 'none' : 'left 0.15s ease-out, top 0.15s ease-out',
         }}
-        data-testid="panic-button-container"
+        data-testid="button-panic"
+        aria-label="Botón de pánico - Arrastra para mover, toca rápido para abrir"
       >
-        <button
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          className={`relative touch-none select-none ${arrastrando ? 'cursor-grabbing' : 'cursor-pointer'}`}
-          data-testid="button-panic"
-          aria-label="Botón de pánico - Mantén presionado para mover, toca para abrir"
-        >
+        <div className="relative">
           <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-75" />
-          <div className={`relative bg-gradient-to-br from-red-500 to-red-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center h-16 w-16 transition-transform ${arrastrando ? 'scale-110' : 'hover:scale-105 active:scale-95'}`}>
+          <div className={`relative bg-gradient-to-br from-red-500 to-red-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center h-16 w-16 transition-transform ${arrastrando ? 'scale-110 opacity-90' : 'hover:scale-105 active:scale-95'}`}>
             <AlertTriangle className="h-8 w-8" />
           </div>
-        </button>
-      </div>
+        </div>
+      </button>
 
       <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
         <DialogContent className="max-w-xs sm:max-w-sm p-4" data-testid="dialog-panic-confirmation">
