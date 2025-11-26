@@ -61,6 +61,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       
+      // Campos de sistema que no deben ser modificados por el cliente
+      const camposSistema = ['id', 'createdAt', 'updatedAt', 'ultimaConexion', 'rol', 'estado'];
+      
       // Procesar campos de fecha - convertir strings a Date o null
       const camposFecha = [
         'dniEmision', 'dniCaducidad',
@@ -68,11 +71,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'soatEmision', 'soatCaducidad',
         'revisionTecnicaEmision', 'revisionTecnicaCaducidad',
         'credencialConductorEmision', 'credencialConductorCaducidad',
-        'credencialTaxiEmision', 'credencialTaxiCaducidad',
-        'ultimaConexion', 'createdAt', 'updatedAt'
+        'credencialTaxiEmision', 'credencialTaxiCaducidad'
       ];
       
       const dataProcesada = { ...req.body };
+      
+      // Eliminar campos de sistema que no deben ser modificados por el cliente
+      for (const campo of camposSistema) {
+        delete dataProcesada[campo];
+      }
       
       for (const campo of camposFecha) {
         if (dataProcesada[campo] !== undefined) {
