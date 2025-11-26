@@ -175,31 +175,55 @@ export type Publicidad = typeof publicidad.$inferSelect;
 // RADIOS ONLINE
 // ============================================================
 export const radiosOnline = pgTable("radios_online", {
-  id: varchar("id").primaryKey().default("uuid()"),
-  nombre: varchar("nombre").notNull(),
-  url: varchar("url").notNull(),
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre", { length: 255 }).notNull(),
+  url: varchar("url", { length: 500 }).notNull(),
+  iframeCode: text("iframe_code"),
   descripcion: text("descripcion"),
-  logoUrl: varchar("logo_url"),
-  orden: integer("orden"),
-  estado: varchar("estado").default("activo"),
+  logoUrl: varchar("logo_url", { length: 500 }),
+  orden: integer("orden").default(0),
+  esPredeterminada: boolean("es_predeterminada").default(false),
+  estado: varchar("estado", { length: 20 }).default("activo"), // activo, pausado, suspendido
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertRadioOnlineSchema = createInsertSchema(radiosOnline).omit({ id: true, createdAt: true });
+export const insertRadioOnlineSchema = createInsertSchema(radiosOnline).omit({ id: true, createdAt: true, updatedAt: true });
 export type RadioOnlineInsert = z.infer<typeof insertRadioOnlineSchema>;
 export type RadioOnline = typeof radiosOnline.$inferSelect;
 
 // ============================================================
-// ARCHIVOS MP3
+// LISTAS MP3 (Playlists/Colecciones)
+// ============================================================
+export const listasMp3 = pgTable("listas_mp3", {
+  id: serial("id").primaryKey(),
+  nombre: varchar("nombre", { length: 255 }).notNull(),
+  descripcion: text("descripcion"),
+  rutaCarpeta: varchar("ruta_carpeta", { length: 500 }),
+  imagenUrl: varchar("imagen_url", { length: 500 }),
+  genero: varchar("genero", { length: 100 }),
+  orden: integer("orden").default(0),
+  estado: varchar("estado", { length: 20 }).default("activo"), // activo, pausado, suspendido
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertListaMp3Schema = createInsertSchema(listasMp3).omit({ id: true, createdAt: true, updatedAt: true });
+export type ListaMp3Insert = z.infer<typeof insertListaMp3Schema>;
+export type ListaMp3 = typeof listasMp3.$inferSelect;
+
+// ============================================================
+// ARCHIVOS MP3 (Canciones individuales en listas)
 // ============================================================
 export const archivosMp3 = pgTable("archivos_mp3", {
-  id: varchar("id").primaryKey().default("uuid()"),
-  titulo: varchar("titulo").notNull(),
-  categoria: varchar("categoria"), // "Rock", "Cumbia", "Éxitos", "Mix", "Romántica"
-  archivoUrl: varchar("archivo_url").notNull(),
-  duracion: integer("duracion"), // en segundos
-  orden: integer("orden"),
-  estado: varchar("estado").default("activo"),
+  id: serial("id").primaryKey(),
+  listaId: integer("lista_id").references(() => listasMp3.id),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  artista: varchar("artista", { length: 255 }),
+  archivoUrl: varchar("archivo_url", { length: 500 }).notNull(),
+  duracion: integer("duracion"),
+  orden: integer("orden").default(0),
+  estado: varchar("estado", { length: 20 }).default("activo"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -1076,5 +1100,6 @@ export type InsertEmergencia = EmergenciaInsert;
 export type InsertViajeTaxi = ViajeTaxiInsert;
 export type InsertPedidoDelivery = PedidoDeliveryInsert;
 export type InsertRadioOnline = RadioOnlineInsert;
+export type InsertListaMp3 = ListaMp3Insert;
 export type InsertArchivoMp3 = ArchivoMp3Insert;
 export { viajeTaxi as viajesTaxi };
