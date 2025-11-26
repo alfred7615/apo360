@@ -14,14 +14,15 @@ interface CarruselPublicidadProps {
 }
 
 function tieneContenidoAdicional(pub: Publicidad): boolean {
+  // Solo estos campos cuentan como información:
+  // - Redes sociales (facebook, instagram, tiktok, twitter, youtube, linkedin)
+  // - WhatsApp
+  // - Descripción
+  // - Ubicación GPS
   return !!(
-    pub.titulo ||
     pub.descripcion ||
-    pub.enlaceUrl ||
     pub.latitud ||
     pub.longitud ||
-    pub.fechaInicio ||
-    pub.fechaFin ||
     pub.facebook ||
     pub.instagram ||
     pub.whatsapp ||
