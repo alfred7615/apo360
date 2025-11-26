@@ -1,6 +1,7 @@
 export interface AuthUser {
   id: string;
   nombre: string;
+  alias?: string;
   email: string;
   rol: string;
   rolesSuperAdmin?: boolean;

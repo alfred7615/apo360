@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
-import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X } from "lucide-react";
+import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X, Megaphone, UsersRound } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,7 +59,7 @@ export default function Home() {
     );
   }
 
-  const nombreMostrar = user.nombre || user.email?.split('@')[0] || 'Usuario';
+  const nombreMostrar = user.nombre || user.alias || user.email?.split('@')[0] || 'Usuario';
   
   const contadorAgenda = 2;
   const contadorFamilia = alertasFamilia.length;
@@ -86,19 +86,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Botones de Alertas Pendientes */}
+      {/* Botones de Alertas Pendientes - Solo iconos alineados a la izquierda */}
       <section className="container mx-auto px-4 -mt-10">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="flex justify-start gap-3">
           <Button
             onClick={() => setModalAgenda(true)}
+            size="icon"
             variant="outline"
-            className="relative h-auto py-4 px-3 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all flex flex-col items-center gap-2 border-2"
+            className="relative h-12 w-12 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2"
             data-testid="button-agenda"
           >
             <Calendar className="h-6 w-6 text-blue-600" />
-            <span className="font-semibold text-sm">AGENDA</span>
             {contadorAgenda > 0 && (
-              <Badge className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-0.5 min-w-[24px]">
+              <Badge className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1.5 py-0.5 min-w-[20px] rounded-full">
                 {contadorAgenda}
               </Badge>
             )}
@@ -106,14 +106,14 @@ export default function Home() {
 
           <Button
             onClick={() => setModalFamilia(true)}
+            size="icon"
             variant="outline"
-            className="relative h-auto py-4 px-3 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all flex flex-col items-center gap-2 border-2"
+            className="relative h-12 w-12 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2"
             data-testid="button-familia"
           >
-            <Heart className="h-6 w-6 text-pink-600" />
-            <span className="font-semibold text-sm">FAMILIA</span>
+            <UsersRound className="h-6 w-6 text-pink-600" />
             {contadorFamilia > 0 && (
-              <Badge className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs px-2 py-0.5 min-w-[24px]">
+              <Badge className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs px-1.5 py-0.5 min-w-[20px] rounded-full">
                 {contadorFamilia}
               </Badge>
             )}
@@ -121,14 +121,14 @@ export default function Home() {
 
           <Button
             onClick={() => setModalAlertas(true)}
+            size="icon"
             variant="outline"
-            className="relative h-auto py-4 px-3 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all flex flex-col items-center gap-2 border-2"
+            className="relative h-12 w-12 bg-white dark:bg-card shadow-lg hover:shadow-xl transition-all rounded-full border-2"
             data-testid="button-alertas"
           >
-            <AlertTriangle className="h-6 w-6 text-red-600" />
-            <span className="font-semibold text-sm">ALERTAS</span>
+            <Megaphone className="h-6 w-6 text-red-600" />
             {contadorAlertas > 0 && (
-              <Badge className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-0.5 min-w-[24px]">
+              <Badge className="absolute -top-1 -right-1 bg-red-600 text-white text-xs px-1.5 py-0.5 min-w-[20px] rounded-full">
                 {contadorAlertas}
               </Badge>
             )}
@@ -358,7 +358,7 @@ export default function Home() {
             {(alertasComunidad.length > 0 || emergenciasRecientes.length > 0) ? (
               [...alertasComunidad, ...emergenciasRecientes.filter(e => 
                 !alertasComunidad.some(a => a.id === e.id)
-              )].map((emergencia) => (
+              )].map((emergencia: Emergencia & { grupoId?: string; grupoNombre?: string }) => (
                 <div
                   key={emergencia.id}
                   data-testid={`row-alerta-${emergencia.id}`}
