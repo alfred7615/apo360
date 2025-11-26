@@ -317,6 +317,21 @@ export interface IStorage {
     monitoreo24h: boolean;
     satisfaccion: number;
   }>;
+  
+  // ============================================================
+  // INTERACCIONES DE PUBLICIDAD
+  // ============================================================
+  getContadoresPublicidad(publicidadId: string): Promise<{ likes: number; favoritos: number; compartidos: number; impresiones: number; comentarios: number; agendados: number } | null>;
+  getInteraccionesUsuario(publicidadId: string, usuarioId: string): Promise<{ hasLike: boolean; hasFavorito: boolean }>;
+  toggleLikePublicidad(publicidadId: string, usuarioId: string): Promise<{ liked: boolean; totalLikes: number }>;
+  toggleFavoritoPublicidad(publicidadId: string, usuarioId: string): Promise<{ favorito: boolean; totalFavoritos: number }>;
+  registrarCompartidoPublicidad(publicidadId: string, usuarioId: string, redSocial: string): Promise<{ compartidos: number }>;
+  registrarImpresionPublicidad(publicidadId: string, usuarioId: string): Promise<{ impresiones: number }>;
+  registrarAgendaPublicidad(publicidadId: string, usuarioId: string): Promise<{ agendados: number }>;
+  getComentariosPublicidad(publicidadId: string): Promise<any[]>;
+  crearComentarioPublicidad(publicidadId: string, usuarioId: string, contenido: string): Promise<any>;
+  eliminarComentarioPublicidad(comentarioId: string, usuarioId: string): Promise<void>;
+  getFavoritosUsuario(usuarioId: string): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -409,6 +424,265 @@ export class DatabaseStorage implements IStorage {
 
   async deletePublicidad(id: string): Promise<void> {
     await db.delete(publicidad).where(eq(publicidad.id, id));
+  }
+
+  // ============================================================
+  // INTERACCIONES DE PUBLICIDAD
+  // ============================================================
+
+  async getContadoresPublicidad(publicidadId: string): Promise<{ likes: number; favoritos: number; compartidos: number; impresiones: number; comentarios: number; agendados: number } | null> {
+    const result = await db.execute(sql`
+      SELECT likes, favoritos, compartidos, impresiones, comentarios, agendados 
+      FROM contadores_publicidad 
+      WHERE publicidad_id = ${publicidadId}
+    `);
+    if (result.rows.length === 0) {
+      return { likes: 0, favoritos: 0, compartidos: 0, impresiones: 0, comentarios: 0, agendados: 0 };
+    }
+    const row = result.rows[0] as any;
+    return {
+      likes: row.likes || 0,
+      favoritos: row.favoritos || 0,
+      compartidos: row.compartidos || 0,
+      impresiones: row.impresiones || 0,
+      comentarios: row.comentarios || 0,
+      agendados: row.agendados || 0,
+    };
+  }
+
+  async getInteraccionesUsuario(publicidadId: string, usuarioId: string): Promise<{ hasLike: boolean; hasFavorito: boolean }> {
+    const result = await db.execute(sql`
+      SELECT tipo FROM interacciones_publicidad 
+      WHERE publicidad_id = ${publicidadId} AND usuario_id = ${usuarioId}
+    `);
+    const tipos = (result.rows as any[]).map(r => r.tipo);
+    return {
+      hasLike: tipos.includes('like'),
+      hasFavorito: tipos.includes('favorito'),
+    };
+  }
+
+  private async ensureContadorExists(publicidadId: string): Promise<void> {
+    await db.execute(sql`
+      INSERT INTO contadores_publicidad (publicidad_id) 
+      VALUES (${publicidadId}) 
+      ON CONFLICT (publicidad_id) DO NOTHING
+    `);
+  }
+
+  async toggleLikePublicidad(publicidadId: string, usuarioId: string): Promise<{ liked: boolean; totalLikes: number }> {
+    await this.ensureContadorExists(publicidadId);
+    
+    const existingResult = await db.execute(sql`
+      SELECT id FROM interacciones_publicidad 
+      WHERE publicidad_id = ${publicidadId} AND usuario_id = ${usuarioId} AND tipo = 'like'
+    `);
+    
+    let liked: boolean;
+    if (existingResult.rows.length > 0) {
+      await db.execute(sql`
+        DELETE FROM interacciones_publicidad 
+        WHERE publicidad_id = ${publicidadId} AND usuario_id = ${usuarioId} AND tipo = 'like'
+      `);
+      await db.execute(sql`
+        UPDATE contadores_publicidad SET likes = likes - 1, updated_at = NOW() 
+        WHERE publicidad_id = ${publicidadId}
+      `);
+      liked = false;
+    } else {
+      await db.execute(sql`
+        INSERT INTO interacciones_publicidad (publicidad_id, usuario_id, tipo) 
+        VALUES (${publicidadId}, ${usuarioId}, 'like')
+        ON CONFLICT (publicidad_id, usuario_id, tipo) DO NOTHING
+      `);
+      await db.execute(sql`
+        UPDATE contadores_publicidad SET likes = likes + 1, updated_at = NOW() 
+        WHERE publicidad_id = ${publicidadId}
+      `);
+      liked = true;
+    }
+    
+    const countResult = await db.execute(sql`
+      SELECT likes FROM contadores_publicidad WHERE publicidad_id = ${publicidadId}
+    `);
+    const totalLikes = (countResult.rows[0] as any)?.likes || 0;
+    
+    return { liked, totalLikes };
+  }
+
+  async toggleFavoritoPublicidad(publicidadId: string, usuarioId: string): Promise<{ favorito: boolean; totalFavoritos: number }> {
+    await this.ensureContadorExists(publicidadId);
+    
+    const existingResult = await db.execute(sql`
+      SELECT id FROM interacciones_publicidad 
+      WHERE publicidad_id = ${publicidadId} AND usuario_id = ${usuarioId} AND tipo = 'favorito'
+    `);
+    
+    let favorito: boolean;
+    if (existingResult.rows.length > 0) {
+      await db.execute(sql`
+        DELETE FROM interacciones_publicidad 
+        WHERE publicidad_id = ${publicidadId} AND usuario_id = ${usuarioId} AND tipo = 'favorito'
+      `);
+      await db.execute(sql`
+        DELETE FROM favoritos_usuario 
+        WHERE publicidad_id = ${publicidadId} AND usuario_id = ${usuarioId}
+      `);
+      await db.execute(sql`
+        UPDATE contadores_publicidad SET favoritos = favoritos - 1, updated_at = NOW() 
+        WHERE publicidad_id = ${publicidadId}
+      `);
+      favorito = false;
+    } else {
+      await db.execute(sql`
+        INSERT INTO interacciones_publicidad (publicidad_id, usuario_id, tipo) 
+        VALUES (${publicidadId}, ${usuarioId}, 'favorito')
+        ON CONFLICT (publicidad_id, usuario_id, tipo) DO NOTHING
+      `);
+      await db.execute(sql`
+        INSERT INTO favoritos_usuario (publicidad_id, usuario_id) 
+        VALUES (${publicidadId}, ${usuarioId})
+        ON CONFLICT (usuario_id, publicidad_id) DO NOTHING
+      `);
+      await db.execute(sql`
+        UPDATE contadores_publicidad SET favoritos = favoritos + 1, updated_at = NOW() 
+        WHERE publicidad_id = ${publicidadId}
+      `);
+      favorito = true;
+    }
+    
+    const countResult = await db.execute(sql`
+      SELECT favoritos FROM contadores_publicidad WHERE publicidad_id = ${publicidadId}
+    `);
+    const totalFavoritos = (countResult.rows[0] as any)?.favoritos || 0;
+    
+    return { favorito, totalFavoritos };
+  }
+
+  async registrarCompartidoPublicidad(publicidadId: string, usuarioId: string, redSocial: string): Promise<{ compartidos: number }> {
+    await this.ensureContadorExists(publicidadId);
+    
+    await db.execute(sql`
+      INSERT INTO interacciones_publicidad (publicidad_id, usuario_id, tipo, red_social) 
+      VALUES (${publicidadId}, ${usuarioId}, 'compartido', ${redSocial})
+    `);
+    await db.execute(sql`
+      UPDATE contadores_publicidad SET compartidos = compartidos + 1, updated_at = NOW() 
+      WHERE publicidad_id = ${publicidadId}
+    `);
+    
+    const countResult = await db.execute(sql`
+      SELECT compartidos FROM contadores_publicidad WHERE publicidad_id = ${publicidadId}
+    `);
+    return { compartidos: (countResult.rows[0] as any)?.compartidos || 0 };
+  }
+
+  async registrarImpresionPublicidad(publicidadId: string, usuarioId: string): Promise<{ impresiones: number }> {
+    await this.ensureContadorExists(publicidadId);
+    
+    await db.execute(sql`
+      INSERT INTO interacciones_publicidad (publicidad_id, usuario_id, tipo) 
+      VALUES (${publicidadId}, ${usuarioId}, 'impresion')
+    `);
+    await db.execute(sql`
+      UPDATE contadores_publicidad SET impresiones = impresiones + 1, updated_at = NOW() 
+      WHERE publicidad_id = ${publicidadId}
+    `);
+    
+    const countResult = await db.execute(sql`
+      SELECT impresiones FROM contadores_publicidad WHERE publicidad_id = ${publicidadId}
+    `);
+    return { impresiones: (countResult.rows[0] as any)?.impresiones || 0 };
+  }
+
+  async registrarAgendaPublicidad(publicidadId: string, usuarioId: string): Promise<{ agendados: number }> {
+    await this.ensureContadorExists(publicidadId);
+    
+    const existingResult = await db.execute(sql`
+      SELECT id FROM interacciones_publicidad 
+      WHERE publicidad_id = ${publicidadId} AND usuario_id = ${usuarioId} AND tipo = 'agenda'
+    `);
+    
+    if (existingResult.rows.length === 0) {
+      await db.execute(sql`
+        INSERT INTO interacciones_publicidad (publicidad_id, usuario_id, tipo) 
+        VALUES (${publicidadId}, ${usuarioId}, 'agenda')
+        ON CONFLICT (publicidad_id, usuario_id, tipo) DO NOTHING
+      `);
+      await db.execute(sql`
+        UPDATE contadores_publicidad SET agendados = agendados + 1, updated_at = NOW() 
+        WHERE publicidad_id = ${publicidadId}
+      `);
+    }
+    
+    const countResult = await db.execute(sql`
+      SELECT agendados FROM contadores_publicidad WHERE publicidad_id = ${publicidadId}
+    `);
+    return { agendados: (countResult.rows[0] as any)?.agendados || 0 };
+  }
+
+  async getComentariosPublicidad(publicidadId: string): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT c.*, u.first_name, u.last_name, u.profile_image_url 
+      FROM comentarios_publicidad c
+      LEFT JOIN users u ON c.usuario_id = u.id
+      WHERE c.publicidad_id = ${publicidadId} AND c.estado = 'activo'
+      ORDER BY c.created_at DESC
+    `);
+    return result.rows as any[];
+  }
+
+  async crearComentarioPublicidad(publicidadId: string, usuarioId: string, contenido: string): Promise<any> {
+    await this.ensureContadorExists(publicidadId);
+    
+    const result = await db.execute(sql`
+      INSERT INTO comentarios_publicidad (publicidad_id, usuario_id, contenido) 
+      VALUES (${publicidadId}, ${usuarioId}, ${contenido})
+      RETURNING *
+    `);
+    
+    await db.execute(sql`
+      UPDATE contadores_publicidad SET comentarios = comentarios + 1, updated_at = NOW() 
+      WHERE publicidad_id = ${publicidadId}
+    `);
+    
+    return result.rows[0];
+  }
+
+  async eliminarComentarioPublicidad(comentarioId: string, usuarioId: string): Promise<void> {
+    const comentarioResult = await db.execute(sql`
+      SELECT publicidad_id, usuario_id FROM comentarios_publicidad WHERE id = ${comentarioId}
+    `);
+    
+    if (comentarioResult.rows.length === 0) {
+      throw new Error("Comentario no encontrado");
+    }
+    
+    const comentario = comentarioResult.rows[0] as any;
+    if (comentario.usuario_id !== usuarioId) {
+      throw new Error("No tienes permiso para eliminar este comentario");
+    }
+    
+    await db.execute(sql`
+      UPDATE comentarios_publicidad SET estado = 'eliminado', updated_at = NOW() 
+      WHERE id = ${comentarioId}
+    `);
+    
+    await db.execute(sql`
+      UPDATE contadores_publicidad SET comentarios = comentarios - 1, updated_at = NOW() 
+      WHERE publicidad_id = ${comentario.publicidad_id}
+    `);
+  }
+
+  async getFavoritosUsuario(usuarioId: string): Promise<any[]> {
+    const result = await db.execute(sql`
+      SELECT p.*, f.created_at as fecha_favorito 
+      FROM favoritos_usuario f
+      JOIN publicidad p ON f.publicidad_id = p.id
+      WHERE f.usuario_id = ${usuarioId}
+      ORDER BY f.created_at DESC
+    `);
+    return result.rows as any[];
   }
 
   // ============================================================

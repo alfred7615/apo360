@@ -660,6 +660,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // RUTAS DE INTERACCIONES DE PUBLICIDAD
+  // ============================================================
+
+  // Obtener contadores de una publicidad
+  app.get('/api/publicidad/:id/contadores', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const contadores = await storage.getContadoresPublicidad(id);
+      res.json(contadores || { likes: 0, favoritos: 0, compartidos: 0, impresiones: 0, comentarios: 0, agendados: 0 });
+    } catch (error) {
+      console.error("Error al obtener contadores:", error);
+      res.status(500).json({ message: "Error al obtener contadores" });
+    }
+  });
+
+  // Verificar si el usuario ha interactuado (like, favorito)
+  app.get('/api/publicidad/:id/mis-interacciones', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const interacciones = await storage.getInteraccionesUsuario(id, userId);
+      res.json(interacciones);
+    } catch (error) {
+      console.error("Error al obtener interacciones:", error);
+      res.status(500).json({ message: "Error al obtener interacciones" });
+    }
+  });
+
+  // Toggle like
+  app.post('/api/publicidad/:id/like', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const resultado = await storage.toggleLikePublicidad(id, userId);
+      res.json(resultado);
+    } catch (error) {
+      console.error("Error al dar like:", error);
+      res.status(500).json({ message: "Error al dar like" });
+    }
+  });
+
+  // Toggle favorito
+  app.post('/api/publicidad/:id/favorito', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const resultado = await storage.toggleFavoritoPublicidad(id, userId);
+      res.json(resultado);
+    } catch (error) {
+      console.error("Error al marcar favorito:", error);
+      res.status(500).json({ message: "Error al marcar favorito" });
+    }
+  });
+
+  // Registrar compartido
+  app.post('/api/publicidad/:id/compartir', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const { redSocial } = req.body;
+      const resultado = await storage.registrarCompartidoPublicidad(id, userId, redSocial);
+      res.json(resultado);
+    } catch (error) {
+      console.error("Error al registrar compartido:", error);
+      res.status(500).json({ message: "Error al registrar compartido" });
+    }
+  });
+
+  // Registrar impresión (imprimir)
+  app.post('/api/publicidad/:id/impresion', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const resultado = await storage.registrarImpresionPublicidad(id, userId);
+      res.json(resultado);
+    } catch (error) {
+      console.error("Error al registrar impresión:", error);
+      res.status(500).json({ message: "Error al registrar impresión" });
+    }
+  });
+
+  // Registrar agenda (Google Calendar)
+  app.post('/api/publicidad/:id/agenda', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const resultado = await storage.registrarAgendaPublicidad(id, userId);
+      res.json(resultado);
+    } catch (error) {
+      console.error("Error al registrar agenda:", error);
+      res.status(500).json({ message: "Error al registrar agenda" });
+    }
+  });
+
+  // Obtener comentarios de una publicidad
+  app.get('/api/publicidad/:id/comentarios', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const comentarios = await storage.getComentariosPublicidad(id);
+      res.json(comentarios);
+    } catch (error) {
+      console.error("Error al obtener comentarios:", error);
+      res.status(500).json({ message: "Error al obtener comentarios" });
+    }
+  });
+
+  // Crear comentario
+  app.post('/api/publicidad/:id/comentarios', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const { contenido } = req.body;
+      
+      if (!contenido || contenido.trim().length === 0) {
+        return res.status(400).json({ message: "El comentario no puede estar vacío" });
+      }
+      
+      const comentario = await storage.crearComentarioPublicidad(id, userId, contenido);
+      res.json(comentario);
+    } catch (error) {
+      console.error("Error al crear comentario:", error);
+      res.status(500).json({ message: "Error al crear comentario" });
+    }
+  });
+
+  // Eliminar comentario (solo el autor)
+  app.delete('/api/publicidad/:publicidadId/comentarios/:comentarioId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { comentarioId } = req.params;
+      const userId = req.user.claims.sub;
+      await storage.eliminarComentarioPublicidad(comentarioId, userId);
+      res.json({ message: "Comentario eliminado" });
+    } catch (error: any) {
+      console.error("Error al eliminar comentario:", error);
+      res.status(400).json({ message: error.message || "Error al eliminar comentario" });
+    }
+  });
+
+  // Obtener favoritos del usuario
+  app.get('/api/usuarios/me/favoritos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const favoritos = await storage.getFavoritosUsuario(userId);
+      res.json(favoritos);
+    } catch (error) {
+      console.error("Error al obtener favoritos:", error);
+      res.status(500).json({ message: "Error al obtener favoritos" });
+    }
+  });
+
+  // ============================================================
   // RUTAS DE CHAT COMUNITARIO
   // ============================================================
 
