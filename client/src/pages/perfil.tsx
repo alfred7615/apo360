@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   User, MapPin, FileText, Briefcase, Star, 
   Save, Loader2, Check, Camera, Car, Upload,
-  Image as ImageIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, Users
+  Image as ImageIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, Users, ArrowLeft
 } from "lucide-react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -370,6 +371,7 @@ function VehiculoFoto({ titulo, imagen, onImageChange, testId }: VehiculoFotoPro
 export default function PerfilPage() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("basico");
   const [formData, setFormData] = useState<Partial<Usuario>>({});
 
@@ -458,12 +460,23 @@ export default function PerfilPage() {
       <div className="flex-shrink-0 bg-background border-b px-4 py-3">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-titulo-perfil">
-                <User className="h-5 w-5" />
-                Mi Perfil
-              </h1>
-              <p className="text-sm text-muted-foreground">Completa tu información para desbloquear más funciones</p>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/")}
+                className="h-9 w-9"
+                data-testid="button-regresar-perfil"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold flex items-center gap-2" data-testid="text-titulo-perfil">
+                  <User className="h-5 w-5" />
+                  Mi Perfil
+                </h1>
+                <p className="text-sm text-muted-foreground">Completa tu información para desbloquear más funciones</p>
+              </div>
             </div>
             <div className="text-right">
               <div className="flex items-center gap-2">
@@ -1076,10 +1089,12 @@ export default function PerfilPage() {
             variant="outline"
             onClick={() => {
               if (perfil) setFormData(perfil);
+              navigate("/");
             }}
             disabled={updateMutation.isPending}
             data-testid="button-cancelar-perfil"
           >
+            <ArrowLeft className="h-4 w-4 mr-2" />
             Cancelar
           </Button>
           <Button 

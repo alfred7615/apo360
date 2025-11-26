@@ -60,7 +60,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/usuarios/me', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.updateUser(userId, req.body);
+      
+      // Procesar campos de fecha - convertir strings a Date o null
+      const camposFecha = [
+        'dniEmision', 'dniCaducidad',
+        'breveteEmision', 'breveteCaducidad',
+        'soatEmision', 'soatCaducidad',
+        'revisionTecnicaEmision', 'revisionTecnicaCaducidad',
+        'credencialConductorEmision', 'credencialConductorCaducidad',
+        'credencialTaxiEmision', 'credencialTaxiCaducidad',
+        'ultimaConexion', 'createdAt', 'updatedAt'
+      ];
+      
+      const dataProcesada = { ...req.body };
+      
+      for (const campo of camposFecha) {
+        if (dataProcesada[campo] !== undefined) {
+          const valor = dataProcesada[campo];
+          if (valor === null || valor === '' || valor === undefined) {
+            dataProcesada[campo] = null;
+          } else if (typeof valor === 'string') {
+            const fechaParseada = new Date(valor);
+            dataProcesada[campo] = isNaN(fechaParseada.getTime()) ? null : fechaParseada;
+          } else if (valor instanceof Date) {
+            dataProcesada[campo] = valor;
+          } else {
+            dataProcesada[campo] = null;
+          }
+        }
+      }
+      
+      const user = await storage.updateUser(userId, dataProcesada);
       if (!user) {
         return res.status(404).json({ message: "Usuario no encontrado" });
       }
