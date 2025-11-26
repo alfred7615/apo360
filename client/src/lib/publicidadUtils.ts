@@ -14,6 +14,13 @@ export interface Publicidad {
   latitud: number | null;
   longitud: number | null;
   direccion: string | null;
+  facebook: string | null;
+  instagram: string | null;
+  whatsapp: string | null;
+  tiktok: string | null;
+  twitter: string | null;
+  youtube: string | null;
+  linkedin: string | null;
   createdAt: Date | string | null;
   updatedAt: Date | string | null;
 }

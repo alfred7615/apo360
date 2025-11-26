@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { filtrarPublicidadesActivas, type Publicidad } from "@/lib/publicidadUtils";
+import VisualizadorPantallaCompleta from "./VisualizadorPantallaCompleta";
 import "@/styles/carrusel-infinito.css";
 
 interface CarruselPublicidadProps {
@@ -11,6 +12,8 @@ interface CarruselPublicidadProps {
 
 export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   const [indiceActual, setIndiceActual] = useState(0);
+  const [visualizadorAbierto, setVisualizadorAbierto] = useState(false);
+  const [publicidadSeleccionada, setPublicidadSeleccionada] = useState<Publicidad | null>(null);
 
   const { data: publicidades = [] } = useQuery<Publicidad[]>({
     queryKey: ["/api/publicidad"],
@@ -40,6 +43,16 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     });
   }, [publicidadesActivas.length]);
 
+  const abrirVisualizador = (publicidad: Publicidad) => {
+    setPublicidadSeleccionada(publicidad);
+    setVisualizadorAbierto(true);
+  };
+
+  const cerrarVisualizador = () => {
+    setVisualizadorAbierto(false);
+    setPublicidadSeleccionada(null);
+  };
+
   if (publicidadesActivas.length === 0) {
     const alturaVacia = tipo === "carrusel_principal" ? "350px" : "100px";
     return (
@@ -67,60 +80,55 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     };
 
     return (
-      <div
-        className="relative w-full overflow-hidden bg-gray-100 dark:bg-gray-800"
-        style={{ height: "350px" }}
-        data-testid="carousel-principal"
-      >
-        <div className="relative h-full w-full flex items-center justify-center">
-          {publicidadActual.enlaceUrl ? (
-            <a 
-              href={publicidadActual.enlaceUrl} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="h-full w-full flex items-center justify-center"
-            >
-              <img
-                src={publicidadActual.imagenUrl || undefined}
-                alt={publicidadActual.titulo || "Publicidad"}
-                className="h-[350px] w-auto object-contain transition-opacity duration-500"
-                data-testid="img-carousel-principal"
-              />
-            </a>
-          ) : (
+      <>
+        <div
+          className="relative w-full overflow-hidden bg-gray-100 dark:bg-gray-800"
+          style={{ height: "350px" }}
+          data-testid="carousel-principal"
+        >
+          <div 
+            className="relative h-full w-full flex items-center justify-center cursor-pointer"
+            onClick={() => abrirVisualizador(publicidadActual)}
+          >
             <img
               src={publicidadActual.imagenUrl || undefined}
               alt={publicidadActual.titulo || "Publicidad"}
-              className="h-[350px] w-auto object-contain transition-opacity duration-500"
+              className="h-[350px] w-auto object-contain transition-opacity duration-500 hover:opacity-90"
               data-testid="img-carousel-principal"
             />
+          </div>
+
+          {publicidadesActivas.length > 1 && (
+            <>
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={(e) => { e.stopPropagation(); irAnterior(); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg"
+                data-testid="button-carousel-prev"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={(e) => { e.stopPropagation(); irSiguiente(); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg"
+                data-testid="button-carousel-next"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </>
           )}
         </div>
 
-        {publicidadesActivas.length > 1 && (
-          <>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={irAnterior}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg"
-              data-testid="button-carousel-prev"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={irSiguiente}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg"
-              data-testid="button-carousel-next"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </>
-        )}
-      </div>
+        <VisualizadorPantallaCompleta
+          publicidad={publicidadSeleccionada}
+          isOpen={visualizadorAbierto}
+          onClose={cerrarVisualizador}
+        />
+      </>
     );
   }
 
