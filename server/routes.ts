@@ -16,6 +16,7 @@ import {
   insertViajeTaxiSchema, 
   insertPedidoDeliverySchema, 
   insertRadioOnlineSchema, 
+  insertListaMp3Schema,
   insertArchivoMp3Schema,
   insertRegistroBasicoSchema,
   insertRegistroChatSchema,
@@ -1516,7 +1517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
-  // RUTAS DE RADIO Y AUDIO
+  // RUTAS DE RADIOS ONLINE
   // ============================================================
 
   app.get('/api/radios-online', async (req, res) => {
@@ -1529,20 +1530,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/radios-online/predeterminada', async (req, res) => {
+    try {
+      const radio = await storage.getRadioPredeterminada();
+      res.json(radio || null);
+    } catch (error) {
+      console.error("Error al obtener radio predeterminada:", error);
+      res.status(500).json({ message: "Error al obtener radio predeterminada" });
+    }
+  });
+
+  app.get('/api/radios-online/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const radio = await storage.getRadioOnline(id);
+      if (!radio) {
+        return res.status(404).json({ message: "Radio no encontrada" });
+      }
+      res.json(radio);
+    } catch (error) {
+      console.error("Error al obtener radio:", error);
+      res.status(500).json({ message: "Error al obtener radio" });
+    }
+  });
+
   app.post('/api/radios-online', isAuthenticated, async (req, res) => {
     try {
       const data = insertRadioOnlineSchema.parse(req.body);
       const radio = await storage.createRadioOnline(data);
-      res.json(radio);
+      res.status(201).json(radio);
     } catch (error: any) {
       console.error("Error al crear radio:", error);
       res.status(400).json({ message: error.message || "Error al crear radio" });
     }
   });
 
+  app.patch('/api/radios-online/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const radio = await storage.updateRadioOnline(id, req.body);
+      if (!radio) {
+        return res.status(404).json({ message: "Radio no encontrada" });
+      }
+      res.json(radio);
+    } catch (error: any) {
+      console.error("Error al actualizar radio:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar radio" });
+    }
+  });
+
+  app.delete('/api/radios-online/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteRadioOnline(id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error al eliminar radio:", error);
+      res.status(400).json({ message: error.message || "Error al eliminar radio" });
+    }
+  });
+
+  // ============================================================
+  // RUTAS DE LISTAS MP3
+  // ============================================================
+
+  app.get('/api/listas-mp3', async (req, res) => {
+    try {
+      const listas = await storage.getListasMp3();
+      res.json(listas);
+    } catch (error) {
+      console.error("Error al obtener listas MP3:", error);
+      res.status(500).json({ message: "Error al obtener listas MP3" });
+    }
+  });
+
+  app.get('/api/listas-mp3/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lista = await storage.getListaMp3(id);
+      if (!lista) {
+        return res.status(404).json({ message: "Lista no encontrada" });
+      }
+      res.json(lista);
+    } catch (error) {
+      console.error("Error al obtener lista MP3:", error);
+      res.status(500).json({ message: "Error al obtener lista MP3" });
+    }
+  });
+
+  app.post('/api/listas-mp3', isAuthenticated, async (req, res) => {
+    try {
+      const data = insertListaMp3Schema.parse(req.body);
+      const lista = await storage.createListaMp3(data);
+      res.status(201).json(lista);
+    } catch (error: any) {
+      console.error("Error al crear lista MP3:", error);
+      res.status(400).json({ message: error.message || "Error al crear lista MP3" });
+    }
+  });
+
+  app.patch('/api/listas-mp3/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lista = await storage.updateListaMp3(id, req.body);
+      if (!lista) {
+        return res.status(404).json({ message: "Lista no encontrada" });
+      }
+      res.json(lista);
+    } catch (error: any) {
+      console.error("Error al actualizar lista MP3:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar lista MP3" });
+    }
+  });
+
+  app.delete('/api/listas-mp3/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteListaMp3(id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error al eliminar lista MP3:", error);
+      res.status(400).json({ message: error.message || "Error al eliminar lista MP3" });
+    }
+  });
+
+  // ============================================================
+  // RUTAS DE ARCHIVOS MP3
+  // ============================================================
+
   app.get('/api/archivos-mp3', async (req, res) => {
     try {
-      const archivos = await storage.getArchivosMp3();
+      const { listaId } = req.query;
+      let archivos;
+      if (listaId) {
+        archivos = await storage.getArchivosMp3PorLista(parseInt(listaId as string));
+      } else {
+        archivos = await storage.getArchivosMp3();
+      }
       res.json(archivos);
     } catch (error) {
       console.error("Error al obtener archivos MP3:", error);
@@ -1554,10 +1678,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertArchivoMp3Schema.parse(req.body);
       const archivo = await storage.createArchivoMp3(data);
-      res.json(archivo);
+      res.status(201).json(archivo);
     } catch (error: any) {
       console.error("Error al crear archivo MP3:", error);
       res.status(400).json({ message: error.message || "Error al crear archivo MP3" });
+    }
+  });
+
+  app.patch('/api/archivos-mp3/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const archivo = await storage.updateArchivoMp3(id, req.body);
+      if (!archivo) {
+        return res.status(404).json({ message: "Archivo no encontrado" });
+      }
+      res.json(archivo);
+    } catch (error: any) {
+      console.error("Error al actualizar archivo MP3:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar archivo MP3" });
+    }
+  });
+
+  app.delete('/api/archivos-mp3/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteArchivoMp3(id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error al eliminar archivo MP3:", error);
+      res.status(400).json({ message: error.message || "Error al eliminar archivo MP3" });
     }
   });
 
