@@ -1549,14 +1549,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/emergencias', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const data = insertEmergenciaSchema.parse(req.body);
+      const { 
+        serviciosDestino = [], 
+        notificarFamilia = false, 
+        notificarGrupoChat = false, 
+        contactosFamiliaresIds = [],
+        gruposDestino = [],
+        ...dataEmergencia 
+      } = req.body;
+      
+      const data = insertEmergenciaSchema.parse(dataEmergencia);
       const emergencia = await storage.createEmergencia({
         ...data,
         usuarioId: userId,
       });
       
-      // TODO: Enviar notificaciones a grupos y entidades
-      res.json(emergencia);
+      const usuario = await storage.getUser(userId);
+      const nombreUsuario = usuario?.firstName && usuario?.lastName 
+        ? `${usuario.firstName} ${usuario.lastName}`.trim() 
+        : usuario?.email || 'Usuario';
+      
+      const destinatarios: string[] = [];
+      
+      if (serviciosDestino.length > 0) {
+        destinatarios.push(...serviciosDestino);
+      }
+      
+      if (notificarFamilia) {
+        const contactos = await storage.getContactosFamiliares(userId);
+        const activos = contactos.filter(c => c.notificarEmergencias);
+        if (activos.length > 0) {
+          destinatarios.push('familia');
+          console.log(`[Emergencia] Notificando a ${activos.length} contactos familiares`);
+        }
+      }
+      
+      if (notificarGrupoChat && gruposDestino.length > 0) {
+        destinatarios.push('grupos_chat');
+        console.log(`[Emergencia] Notificando a ${gruposDestino.length} grupos de chat`);
+      }
+      
+      console.log(`[Emergencia] ${nombreUsuario} solicitó ayuda. Destinos: ${destinatarios.join(', ')}`);
+      
+      res.json({
+        ...emergencia,
+        destinatariosNotificados: destinatarios,
+      });
     } catch (error: any) {
       console.error("Error al crear emergencia:", error);
       res.status(400).json({ message: error.message || "Error al crear emergencia" });
@@ -2000,15 +2038,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔄 Iniciando backfill de miembros_grupo...');
       
       // Obtener todos los grupos con miembros JSON legacy
-      const grupos = await storage.getAllGruposConMiembrosLegacy();
+      const grupos = await storage.getAllGruposConMiembrosLegacy() as any[];
       let migrados = 0;
       let errores = 0;
       
       for (const grupo of grupos) {
         try {
-          // Migrar miembros del JSON a la tabla normalizada
-          if (grupo.miembros && Array.isArray(grupo.miembros)) {
-            for (const usuarioId of grupo.miembros) {
+          // Migrar miembros del JSON a la tabla normalizada (campo legacy)
+          const miembrosLegacy = grupo.miembros as string[] | null | undefined;
+          if (miembrosLegacy && Array.isArray(miembrosLegacy)) {
+            for (const usuarioId of miembrosLegacy) {
               try {
                 await storage.agregarMiembroGrupo({
                   grupoId: grupo.id,

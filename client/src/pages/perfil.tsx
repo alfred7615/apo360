@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   User, MapPin, FileText, Briefcase, Star, 
   Save, Loader2, Check, Camera, Car, Upload,
-  Image as ImageIcon, Trash2, RotateCcw, ZoomIn, ZoomOut
+  Image as ImageIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, Users
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { ProfileImageCapture } from "@/components/ProfileImageCapture";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import GestionContactosFamiliares from "@/components/GestionContactosFamiliares";
 import type { Usuario } from "@shared/schema";
 
 const TIPOS_VEHICULO = [
@@ -464,7 +465,7 @@ export default function PerfilPage() {
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-5 h-auto">
+              <TabsList className="grid w-full grid-cols-6 h-auto">
                 <TabsTrigger value="basico" className="text-xs py-1.5 px-1" data-testid="tab-perfil-basico">
                   <User className="h-3 w-3 mr-1" />
                   Básico
@@ -476,6 +477,10 @@ export default function PerfilPage() {
                 <TabsTrigger value="documentos" className="text-xs py-1.5 px-1" data-testid="tab-perfil-documentos">
                   <FileText className="h-3 w-3 mr-1" />
                   Docs
+                </TabsTrigger>
+                <TabsTrigger value="familia" className="text-xs py-1.5 px-1" data-testid="tab-perfil-familia">
+                  <Users className="h-3 w-3 mr-1" />
+                  Familia
                 </TabsTrigger>
                 <TabsTrigger value="conductor" className="text-xs py-1.5 px-1" data-testid="tab-perfil-conductor">
                   <Car className="h-3 w-3 mr-1" />
@@ -747,6 +752,10 @@ export default function PerfilPage() {
                   onCaducidadChange={(fecha) => handleInputChange("dniCaducidad", fecha)}
                   testIdPrefix="dni"
                 />
+              </TabsContent>
+
+              <TabsContent value="familia" className="mt-4">
+                <GestionContactosFamiliares />
               </TabsContent>
 
               <TabsContent value="conductor" className="mt-4 space-y-4">

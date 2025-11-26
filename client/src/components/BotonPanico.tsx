@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect } from "react";
-import { AlertTriangle, Shield, Phone, Truck, Ambulance, Flame, MapPin, Send, ChevronUp, GripVertical } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { AlertTriangle, Shield, Phone, Truck, Ambulance, Flame, MapPin, Send, Users, MessageCircle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -12,16 +11,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 
 const TIPOS_EMERGENCIA = [
-  { tipo: "policia", icono: Shield, label: "Policía", color: "bg-blue-600", descripcion: "Robos, asaltos, delitos" },
-  { tipo: "bomberos", icono: Flame, label: "Bomberos", color: "bg-orange-600", descripcion: "Incendios, rescates" },
-  { tipo: "samu", icono: Ambulance, label: "SAMU", color: "bg-red-600", descripcion: "Emergencias médicas" },
-  { tipo: "serenazgo", icono: Shield, label: "Serenazgo", color: "bg-purple-600", descripcion: "Seguridad municipal" },
-  { tipo: "105", icono: Phone, label: "Línea 105", color: "bg-green-600", descripcion: "Emergencia nacional" },
-  { tipo: "grua", icono: Truck, label: "Grúa", color: "bg-yellow-600", descripcion: "Asistencia vehicular" },
+  { tipo: "policia", icono: Shield, color: "bg-blue-600", hoverColor: "hover:bg-blue-700" },
+  { tipo: "bomberos", icono: Flame, color: "bg-orange-600", hoverColor: "hover:bg-orange-700" },
+  { tipo: "samu", icono: Ambulance, color: "bg-red-600", hoverColor: "hover:bg-red-700" },
+  { tipo: "serenazgo", icono: Shield, color: "bg-purple-600", hoverColor: "hover:bg-purple-700" },
+  { tipo: "105", icono: Phone, color: "bg-green-600", hoverColor: "hover:bg-green-700" },
+  { tipo: "grua", icono: Truck, color: "bg-yellow-600", hoverColor: "hover:bg-yellow-700" },
+  { tipo: "familia", icono: Users, color: "bg-pink-600", hoverColor: "hover:bg-pink-700" },
+  { tipo: "grupo_chat", icono: MessageCircle, color: "bg-cyan-600", hoverColor: "hover:bg-cyan-700" },
 ];
 
 interface GrupoEmergencia {
@@ -32,30 +32,47 @@ interface GrupoEmergencia {
   esEmergencia: boolean;
 }
 
+interface ContactoFamiliar {
+  id: string;
+  nombre: string;
+  telefono?: string;
+  email?: string;
+  notificarEmergencias: boolean;
+}
+
+const HOLD_THRESHOLD_MS = 250;
+const DRAG_THRESHOLD_PX = 10;
+
 export default function BotonPanico() {
   const { user } = useAuth();
   const { toast } = useToast();
   
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [tipoSeleccionado, setTipoSeleccionado] = useState<string>("");
-  const [gruposSeleccionados, setGruposSeleccionados] = useState<string[]>([]);
+  const [tiposSeleccionados, setTiposSeleccionados] = useState<string[]>([]);
   const [descripcion, setDescripcion] = useState("");
   const [ubicacion, setUbicacion] = useState<{ lat: number; lng: number } | null>(null);
   const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
-  const [expandido, setExpandido] = useState(false);
   
-  // Estado para arrastre
   const [posicion, setPosicion] = useState({ x: 0, y: 0 });
   const [arrastrando, setArrastrando] = useState(false);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const botonRef = useRef<HTMLDivElement>(null);
+  
+  const touchStartTimeRef = useRef<number>(0);
+  const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const offsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const { data: gruposEmergencia = [] } = useQuery<GrupoEmergencia[]>({
     queryKey: ["/api/chat/grupos-emergencia"],
     enabled: modalAbierto,
   });
 
-  // Cargar posición guardada
+  const { data: contactosFamiliares = [] } = useQuery<ContactoFamiliar[]>({
+    queryKey: ["/api/contactos-familiares"],
+    enabled: modalAbierto,
+  });
+
   useEffect(() => {
     const posicionGuardada = localStorage.getItem('panicButtonPosition');
     if (posicionGuardada) {
@@ -68,14 +85,13 @@ export default function BotonPanico() {
     }
   }, []);
 
-  // Guardar posición
   useEffect(() => {
     if (posicion.x !== 0 || posicion.y !== 0) {
       localStorage.setItem('panicButtonPosition', JSON.stringify(posicion));
     }
   }, [posicion]);
 
-  const obtenerUbicacion = () => {
+  const obtenerUbicacion = useCallback(() => {
     if (!navigator.geolocation) {
       toast({
         title: "GPS no disponible",
@@ -93,22 +109,18 @@ export default function BotonPanico() {
           lng: position.coords.longitude,
         });
         setObteniendoUbicacion(false);
-        toast({
-          title: "Ubicación obtenida",
-          description: "Se adjuntará tu ubicación GPS a la alerta",
-        });
       },
-      (error) => {
+      () => {
         setObteniendoUbicacion(false);
         toast({
           title: "Error de ubicación",
-          description: "No se pudo obtener tu ubicación. Intenta nuevamente.",
+          description: "No se pudo obtener tu ubicación",
           variant: "destructive",
         });
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  };
+  }, [toast]);
 
   const emergenciaMutation = useMutation({
     mutationFn: async (datos: any) => {
@@ -117,15 +129,15 @@ export default function BotonPanico() {
     onSuccess: () => {
       toast({
         title: "Alerta Enviada",
-        description: "Tu solicitud de auxilio ha sido enviada a las autoridades y grupos comunitarios.",
-        className: "bg-success text-success-foreground",
+        description: "Tu solicitud de auxilio ha sido enviada.",
+        className: "bg-green-600 text-white",
       });
       cerrarModal();
     },
     onError: (error: Error) => {
       toast({
         title: "Error al enviar alerta",
-        description: error.message || "No se pudo enviar la alerta de emergencia. Intenta nuevamente.",
+        description: error.message || "No se pudo enviar la alerta.",
         variant: "destructive",
       });
     },
@@ -138,307 +150,262 @@ export default function BotonPanico() {
 
   const cerrarModal = () => {
     setModalAbierto(false);
-    setTipoSeleccionado("");
-    setGruposSeleccionados([]);
+    setTiposSeleccionados([]);
     setDescripcion("");
-    setExpandido(false);
   };
 
-  const toggleGrupo = (grupoId: string) => {
-    setGruposSeleccionados(prev => 
-      prev.includes(grupoId)
-        ? prev.filter(id => id !== grupoId)
-        : [...prev, grupoId]
+  const toggleTipo = (tipo: string) => {
+    setTiposSeleccionados(prev => 
+      prev.includes(tipo)
+        ? prev.filter(t => t !== tipo)
+        : [...prev, tipo]
     );
   };
 
   const confirmarEmergencia = () => {
-    if (!tipoSeleccionado) {
+    if (tiposSeleccionados.length === 0) {
       toast({
-        title: "Selecciona tipo de emergencia",
-        description: "Por favor selecciona el tipo de auxilio que necesitas.",
+        title: "Selecciona un destino",
+        description: "Por favor selecciona al menos un servicio o destino.",
         variant: "destructive",
       });
       return;
     }
 
+    const enviaFamilia = tiposSeleccionados.includes("familia");
+    const enviaGrupoChat = tiposSeleccionados.includes("grupo_chat");
+    const serviciosSeleccionados = tiposSeleccionados.filter(t => t !== "familia" && t !== "grupo_chat");
+
     const datosEmergencia = {
-      tipo: tipoSeleccionado,
-      descripcion: descripcion || `Solicitud de emergencia: ${tipoSeleccionado}`,
+      tipo: serviciosSeleccionados[0] || "emergencia",
+      descripcion: descripcion || "Solicitud de auxilio",
       latitud: ubicacion?.lat || 0,
       longitud: ubicacion?.lng || 0,
       prioridad: "urgente",
-      gruposDestino: gruposSeleccionados.length > 0 ? gruposSeleccionados : undefined,
+      serviciosDestino: serviciosSeleccionados,
+      notificarFamilia: enviaFamilia,
+      notificarGrupoChat: enviaGrupoChat,
+      gruposDestino: enviaGrupoChat ? gruposEmergencia.map(g => g.id) : [],
+      contactosFamiliares: enviaFamilia ? contactosFamiliares.filter(c => c.notificarEmergencias).map(c => c.id) : [],
     };
 
     emergenciaMutation.mutate(datosEmergencia);
   };
 
-  // Handlers de arrastre - Mouse
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const calcularNuevaPosicion = (clientX: number, clientY: number) => {
+    const newX = clientX - offsetRef.current.x - (window.innerWidth - 80);
+    const newY = clientY - offsetRef.current.y - (window.innerHeight - 120);
+    
+    const maxX = 0;
+    const minX = -(window.innerWidth - 100);
+    const maxY = 0;
+    const minY = -(window.innerHeight - 150);
+    
+    return {
+      x: Math.max(minX, Math.min(maxX, newX)),
+      y: Math.max(minY, Math.min(maxY, newY)),
+    };
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (!botonRef.current) return;
-    e.preventDefault();
-    setArrastrando(true);
+    
+    touchStartTimeRef.current = Date.now();
+    touchStartPosRef.current = { x: e.clientX, y: e.clientY };
+    isDraggingRef.current = false;
+    
     const rect = botonRef.current.getBoundingClientRect();
-    setOffset({
+    offsetRef.current = {
       x: e.clientX - rect.left - posicion.x,
       y: e.clientY - rect.top - posicion.y,
-    });
+    };
+    
+    holdTimerRef.current = setTimeout(() => {
+      isDraggingRef.current = true;
+      setArrastrando(true);
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    }, HOLD_THRESHOLD_MS);
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!arrastrando) return;
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const dx = Math.abs(e.clientX - touchStartPosRef.current.x);
+    const dy = Math.abs(e.clientY - touchStartPosRef.current.y);
     
-    const newX = e.clientX - offset.x - (window.innerWidth - 80);
-    const newY = e.clientY - offset.y - (window.innerHeight - 120);
-    
-    // Limitar dentro de la pantalla
-    const maxX = 0;
-    const minX = -(window.innerWidth - 100);
-    const maxY = 0;
-    const minY = -(window.innerHeight - 150);
-    
-    setPosicion({
-      x: Math.max(minX, Math.min(maxX, newX)),
-      y: Math.max(minY, Math.min(maxY, newY)),
-    });
-  };
-
-  const handleMouseUp = () => {
-    setArrastrando(false);
-  };
-
-  // Handlers de arrastre - Touch
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!botonRef.current) return;
-    const touch = e.touches[0];
-    setArrastrando(true);
-    const rect = botonRef.current.getBoundingClientRect();
-    setOffset({
-      x: touch.clientX - rect.left - posicion.x,
-      y: touch.clientY - rect.top - posicion.y,
-    });
-  };
-
-  const handleTouchMove = (e: TouchEvent) => {
-    if (!arrastrando) return;
-    const touch = e.touches[0];
-    
-    const newX = touch.clientX - offset.x - (window.innerWidth - 80);
-    const newY = touch.clientY - offset.y - (window.innerHeight - 120);
-    
-    const maxX = 0;
-    const minX = -(window.innerWidth - 100);
-    const maxY = 0;
-    const minY = -(window.innerHeight - 150);
-    
-    setPosicion({
-      x: Math.max(minX, Math.min(maxX, newX)),
-      y: Math.max(minY, Math.min(maxY, newY)),
-    });
-  };
-
-  const handleTouchEnd = () => {
-    setArrastrando(false);
-  };
-
-  // Agregar/remover event listeners globales
-  useEffect(() => {
-    if (arrastrando) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      window.addEventListener('touchmove', handleTouchMove);
-      window.addEventListener('touchend', handleTouchEnd);
+    if (!isDraggingRef.current && (dx > DRAG_THRESHOLD_PX || dy > DRAG_THRESHOLD_PX)) {
+      if (holdTimerRef.current) {
+        clearTimeout(holdTimerRef.current);
+        holdTimerRef.current = null;
+      }
+      isDraggingRef.current = true;
+      setArrastrando(true);
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
     }
     
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [arrastrando, offset]);
+    if (isDraggingRef.current) {
+      e.preventDefault();
+      setPosicion(calcularNuevaPosicion(e.clientX, e.clientY));
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    
+    const wasDragging = isDraggingRef.current;
+    isDraggingRef.current = false;
+    setArrastrando(false);
+    
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+    
+    if (!wasDragging) {
+      const touchDuration = Date.now() - touchStartTimeRef.current;
+      const dx = Math.abs(e.clientX - touchStartPosRef.current.x);
+      const dy = Math.abs(e.clientY - touchStartPosRef.current.y);
+      
+      if (touchDuration < HOLD_THRESHOLD_MS && dx < DRAG_THRESHOLD_PX && dy < DRAG_THRESHOLD_PX) {
+        abrirModal();
+      }
+    }
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    isDraggingRef.current = false;
+    setArrastrando(false);
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+  };
 
   if (!user) return null;
+
+  const tieneContactosFamiliares = contactosFamiliares.filter(c => c.notificarEmergencias).length > 0;
+  const tieneGruposEmergencia = gruposEmergencia.length > 0;
 
   return (
     <>
       <div 
         ref={botonRef}
-        className="fixed bottom-20 right-4 z-50 flex flex-col items-end gap-2"
+        className="fixed bottom-20 right-4 z-50"
         style={{
           transform: `translate(${posicion.x}px, ${posicion.y}px)`,
           transition: arrastrando ? 'none' : 'transform 0.1s ease-out',
+          touchAction: 'none',
         }}
         data-testid="panic-button-container"
       >
-        {/* Botones de acceso rápido expandibles */}
-        {expandido && (
-          <div className="flex flex-col gap-2 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-            {TIPOS_EMERGENCIA.slice(0, 4).map((tipo) => (
-              <button
-                key={tipo.tipo}
-                className={`${tipo.color} text-white shadow-lg h-12 w-12 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-transform`}
-                onClick={() => {
-                  setTipoSeleccionado(tipo.tipo);
-                  abrirModal();
-                  setExpandido(false);
-                }}
-                data-testid={`panic-quick-${tipo.tipo}`}
-              >
-                <tipo.icono className="h-6 w-6" />
-              </button>
-            ))}
+        <button
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          className={`relative touch-none select-none ${arrastrando ? 'cursor-grabbing' : 'cursor-pointer'}`}
+          data-testid="button-panic"
+          aria-label="Botón de pánico - Mantén presionado para mover, toca para abrir"
+        >
+          <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-75" />
+          <div className={`relative bg-gradient-to-br from-red-500 to-red-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center h-16 w-16 transition-transform ${arrastrando ? 'scale-110' : 'hover:scale-105 active:scale-95'}`}>
+            <AlertTriangle className="h-8 w-8" />
           </div>
-        )}
-
-        <div className="flex items-center gap-2">
-          {/* Botón expandir */}
-          <button
-            onClick={() => setExpandido(!expandido)}
-            className="bg-gray-700 text-white p-2 rounded-full shadow-lg hover:bg-gray-600 transition-colors"
-            data-testid="panic-expand-toggle"
-          >
-            <ChevronUp className={`h-4 w-4 transition-transform ${expandido ? 'rotate-180' : ''}`} />
-          </button>
-
-          {/* Botón principal de pánico */}
-          <button
-            onClick={abrirModal}
-            className="relative"
-            data-testid="button-panic"
-            aria-label="Botón de pánico - Solicitar ayuda de emergencia"
-          >
-            <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-75" />
-            <div className="relative bg-gradient-to-br from-red-500 to-red-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center h-16 w-16 hover:scale-105 active:scale-95 transition-transform">
-              <AlertTriangle className="h-8 w-8" />
-            </div>
-          </button>
-
-          {/* Handle de arrastre */}
-          <div 
-            onMouseDown={handleMouseDown}
-            onTouchStart={handleTouchStart}
-            className={`cursor-grab active:cursor-grabbing bg-gray-700/80 text-white p-2 rounded-full touch-none select-none ${arrastrando ? 'bg-gray-500' : ''}`}
-            data-testid="panic-drag-handle"
-          >
-            <GripVertical className="h-4 w-4" />
-          </div>
-        </div>
+        </button>
       </div>
 
-      {/* Modal de emergencia */}
       <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" data-testid="dialog-panic-confirmation">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <AlertTriangle className="h-6 w-6 text-destructive" />
+        <DialogContent className="max-w-xs sm:max-w-sm p-4" data-testid="dialog-panic-confirmation">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center justify-center gap-2 text-lg">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
               <span data-testid="text-panic-title">Solicitar Auxilio</span>
             </DialogTitle>
-            <DialogDescription data-testid="text-panic-description">
-              Selecciona el tipo de emergencia que necesitas. Tu ubicación y alerta serán enviadas inmediatamente.
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="rounded-lg bg-destructive/10 p-3 border border-destructive/30">
-              <p className="text-sm text-destructive font-medium" data-testid="text-panic-warning">
-                ADVERTENCIA: Usar el botón de pánico sin una emergencia real está penalizado.
+          <div className="space-y-4">
+            <div className="rounded-lg bg-destructive/10 p-2 border border-destructive/30">
+              <p className="text-xs text-destructive font-medium text-center" data-testid="text-panic-warning">
+                Uso indebido está penalizado
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-4 gap-2">
               {TIPOS_EMERGENCIA.map((emergencia) => {
                 const Icono = emergencia.icono;
-                const estaSeleccionado = tipoSeleccionado === emergencia.tipo;
+                const estaSeleccionado = tiposSeleccionados.includes(emergencia.tipo);
+                
+                const deshabilitado = 
+                  (emergencia.tipo === "familia" && !tieneContactosFamiliares) ||
+                  (emergencia.tipo === "grupo_chat" && !tieneGruposEmergencia);
                 
                 return (
                   <button
                     key={emergencia.tipo}
-                    onClick={() => setTipoSeleccionado(emergencia.tipo)}
-                    className={`flex flex-col items-center gap-2 rounded-lg p-4 transition-all border-2 ${
-                      estaSeleccionado
-                        ? `${emergencia.color} text-white border-transparent shadow-lg scale-105`
-                        : 'bg-card border-border hover-elevate active-elevate-2'
+                    onClick={() => !deshabilitado && toggleTipo(emergencia.tipo)}
+                    disabled={deshabilitado}
+                    className={`relative flex items-center justify-center rounded-xl p-3 transition-all ${
+                      deshabilitado
+                        ? 'bg-muted opacity-40 cursor-not-allowed'
+                        : estaSeleccionado
+                          ? `${emergencia.color} text-white shadow-lg ring-2 ring-white ring-offset-2 ring-offset-background`
+                          : `bg-card border border-border ${emergencia.hoverColor} hover:text-white`
                     }`}
                     data-testid={`button-emergency-${emergencia.tipo}`}
+                    title={
+                      emergencia.tipo === "familia" ? "Notificar a familia" :
+                      emergencia.tipo === "grupo_chat" ? "Notificar a grupos de chat" :
+                      emergencia.tipo
+                    }
                   >
-                    <Icono className="h-8 w-8" />
-                    <span className="text-sm font-semibold">{emergencia.label}</span>
-                    <span className={`text-xs ${estaSeleccionado ? 'text-white/80' : 'text-muted-foreground'}`}>
-                      {emergencia.descripcion}
-                    </span>
+                    <Icono className="h-7 w-7 sm:h-8 sm:w-8" />
+                    {estaSeleccionado && (
+                      <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow-md">
+                        <Check className="h-3 w-3 text-green-600" />
+                      </div>
+                    )}
                   </button>
                 );
               })}
             </div>
 
-            {gruposEmergencia.length > 0 && (
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Grupos a Notificar (opcional)</label>
-                <div className="flex flex-wrap gap-2">
-                  {gruposEmergencia.map((grupo) => (
-                    <Badge
-                      key={grupo.id}
-                      variant={gruposSeleccionados.includes(grupo.id) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => toggleGrupo(grupo.id)}
-                      data-testid={`panic-group-${grupo.id}`}
-                    >
-                      {grupo.nombre}
-                    </Badge>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Si no seleccionas ninguno, se notificará a todos los grupos de emergencia
-                </p>
-              </div>
-            )}
+            <Textarea
+              placeholder="Descripción (opcional)"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              rows={2}
+              className="text-sm resize-none"
+              data-testid="input-emergency-description"
+            />
 
-            <div className="space-y-2">
-              <label htmlFor="descripcion-emergencia" className="text-sm font-medium">
-                Descripción adicional (opcional):
-              </label>
-              <Textarea
-                id="descripcion-emergencia"
-                placeholder="Ej: Accidente de tránsito en la Av. Cultura cerca al parque central"
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                rows={3}
-                data-testid="input-emergency-description"
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+            <div className="flex items-center justify-between p-2 bg-muted rounded-lg text-sm">
               <div className="flex items-center gap-2">
-                <MapPin className={`h-5 w-5 ${ubicacion ? 'text-green-600' : 'text-muted-foreground'}`} />
-                <div>
-                  <p className="text-sm font-medium" data-testid="text-location-status">
-                    {obteniendoUbicacion ? 'Obteniendo ubicación...' : ubicacion ? 'Ubicación obtenida' : 'Sin ubicación'}
-                  </p>
-                  {ubicacion && (
-                    <p className="text-xs text-muted-foreground">
-                      {ubicacion.lat.toFixed(6)}, {ubicacion.lng.toFixed(6)}
-                    </p>
-                  )}
-                </div>
+                <MapPin className={`h-4 w-4 ${ubicacion ? 'text-green-600' : 'text-muted-foreground'}`} />
+                <span className={ubicacion ? 'text-green-600' : 'text-muted-foreground'} data-testid="text-location-status">
+                  {obteniendoUbicacion ? 'Obteniendo...' : ubicacion ? 'GPS listo' : 'Sin GPS'}
+                </span>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={obtenerUbicacion}
                 disabled={obteniendoUbicacion}
+                className="h-7 text-xs"
                 data-testid="button-refresh-location"
               >
-                {obteniendoUbicacion ? 'Obteniendo...' : 'Actualizar'}
+                Actualizar
               </Button>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={cerrarModal}
                 className="flex-1"
+                size="sm"
                 data-testid="button-cancel-emergency"
               >
                 Cancelar
@@ -446,23 +413,27 @@ export default function BotonPanico() {
               <Button
                 variant="destructive"
                 onClick={confirmarEmergencia}
-                disabled={!tipoSeleccionado || emergenciaMutation.isPending}
+                disabled={tiposSeleccionados.length === 0 || emergenciaMutation.isPending}
                 className="flex-1"
+                size="sm"
                 data-testid="button-confirm-emergency"
               >
                 {emergenciaMutation.isPending ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Enviando...
-                  </>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    <Send className="h-4 w-4 mr-2" />
-                    ENVIAR ALERTA
+                    <Send className="h-4 w-4 mr-1" />
+                    ENVIAR
                   </>
                 )}
               </Button>
             </div>
+
+            {tiposSeleccionados.length > 0 && (
+              <p className="text-xs text-center text-muted-foreground">
+                {tiposSeleccionados.length} destino{tiposSeleccionados.length > 1 ? 's' : ''} seleccionado{tiposSeleccionados.length > 1 ? 's' : ''}
+              </p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
