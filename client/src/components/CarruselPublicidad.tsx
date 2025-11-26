@@ -144,7 +144,8 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
           href={pub.enlaceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-shrink-0 mx-6 hover:opacity-80 transition-opacity"
+          className="flex-shrink-0 hover:opacity-80 transition-opacity"
+          style={{ marginLeft: "5px", marginRight: "5px" }}
         >
           {contenido}
         </a>
@@ -154,7 +155,8 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     return (
       <div
         key={`${pub.id}-${idx}`}
-        className="flex-shrink-0 mx-6"
+        className="flex-shrink-0"
+        style={{ marginLeft: "5px", marginRight: "5px" }}
       >
         {contenido}
       </div>
