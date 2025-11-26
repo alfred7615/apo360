@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
+import { AudioControllerProvider } from "@/contexts/AudioControllerContext";
 import Encabezado from "@/components/Encabezado";
 import BotonPanico from "@/components/BotonPanico";
 import PiePagina from "@/components/PiePagina";
@@ -66,8 +67,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ViewModeProvider>
-          <AppContent />
-          <Toaster />
+          <AudioControllerProvider>
+            <AppContent />
+            <Toaster />
+          </AudioControllerProvider>
         </ViewModeProvider>
       </TooltipProvider>
     </QueryClientProvider>
