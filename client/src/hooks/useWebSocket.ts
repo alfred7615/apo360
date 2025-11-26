@@ -22,14 +22,39 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const [isConnected, setIsConnected] = useState(false);
   const queryClient = useQueryClient();
+  
+  // Usar refs para los callbacks para evitar reconexiones cuando cambian
+  const onMessageRef = useRef(onMessage);
+  const onUserTypingRef = useRef(onUserTyping);
+  const onErrorRef = useRef(onError);
+  const grupoIdRef = useRef(grupoId);
+  
+  // Actualizar refs cuando cambien los valores
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+  
+  useEffect(() => {
+    onUserTypingRef.current = onUserTyping;
+  }, [onUserTyping]);
+  
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+  
+  useEffect(() => {
+    grupoIdRef.current = grupoId;
+  }, [grupoId]);
 
   const connect = useCallback(() => {
     // No conectar si no hay grupoId
-    if (!grupoId) {
+    if (!grupoIdRef.current) {
       return;
     }
 
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
+    // Si ya hay conexión abierta o conectando, no crear otra
+    if (wsRef.current?.readyState === WebSocket.OPEN || 
+        wsRef.current?.readyState === WebSocket.CONNECTING) {
       return;
     }
 
@@ -43,10 +68,10 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
       console.log('✅ WebSocket conectado');
       setIsConnected(true);
 
-      // Unirse al grupo (usuarioId viene de la sesión del servidor)
+      // Unirse al grupo
       ws.send(JSON.stringify({
         type: 'join',
-        grupoId,
+        grupoId: grupoIdRef.current,
       }));
     };
 
@@ -58,15 +83,15 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
         switch (data.type) {
           case 'new_message':
             if (data.mensaje) {
-              // Invalidar cache de mensajes para actualizar UI (usar queryKey correcto)
-              queryClient.invalidateQueries({ queryKey: ['/api/chat/mensajes', grupoId] });
-              onMessage?.(data.mensaje);
+              // Invalidar cache de mensajes para actualizar UI
+              queryClient.invalidateQueries({ queryKey: ['/api/chat/mensajes', grupoIdRef.current] });
+              onMessageRef.current?.(data.mensaje);
             }
             break;
 
           case 'user_typing':
             if (data.usuarioId) {
-              onUserTyping?.(data.usuarioId);
+              onUserTypingRef.current?.(data.usuarioId);
             }
             break;
 
@@ -80,7 +105,7 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
 
           case 'error':
             console.error('❌ Error del servidor:', data.message);
-            onError?.(data.message || 'Error desconocido');
+            onErrorRef.current?.(data.message || 'Error desconocido');
             break;
         }
       } catch (error) {
@@ -96,6 +121,7 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
     ws.onclose = () => {
       console.log('🔌 WebSocket desconectado');
       setIsConnected(false);
+      wsRef.current = null;
 
       // Intentar reconectar después de 3 segundos
       reconnectTimeoutRef.current = setTimeout(() => {
@@ -105,13 +131,15 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
     };
 
     wsRef.current = ws;
-  }, [grupoId, queryClient, onMessage, onUserTyping, onError]);
+  }, [queryClient]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = undefined;
     }
     if (wsRef.current) {
+      wsRef.current.onclose = null; // Evitar reconexión automática
       wsRef.current.close();
       wsRef.current = null;
     }
@@ -124,7 +152,6 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
       return false;
     }
 
-    // No enviamos grupoId ni usuarioId - el servidor ya los tiene
     wsRef.current.send(JSON.stringify({
       type: 'message',
       contenido,
@@ -139,17 +166,22 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
       return;
     }
 
-    // Servidor usa ws.grupoId y ws.usuarioId
     wsRef.current.send(JSON.stringify({
       type: 'typing',
     }));
   }, []);
 
+  // Efecto principal para conectar/desconectar
   useEffect(() => {
     if (grupoId) {
       connect();
+    } else {
+      disconnect();
     }
-    return () => disconnect();
+    
+    return () => {
+      disconnect();
+    };
   }, [grupoId, connect, disconnect]);
 
   return {

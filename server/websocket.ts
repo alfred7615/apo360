@@ -129,6 +129,13 @@ export function setupWebSocket(httpServer: Server) {
               }
 
               // SEGURIDAD: Verificar que el usuario es miembro del grupo
+              if (!ws.usuarioId) {
+                ws.send(JSON.stringify({
+                  type: 'error',
+                  message: 'Usuario no autenticado',
+                }));
+                return;
+              }
               const esMiembro = await storage.verificarMiembroGrupo(data.grupoId, ws.usuarioId);
               if (!esMiembro) {
                 ws.send(JSON.stringify({
@@ -291,8 +298,8 @@ export function setupWebSocket(httpServer: Server) {
                 usuarioId: ws.usuarioId,
                 tipo: data.tipoEmergencia || 'general',
                 descripcion: data.contenido || 'Alerta de emergencia activada',
-                latitud: data.latitud,
-                longitud: data.longitud,
+                latitud: data.latitud ?? 0,
+                longitud: data.longitud ?? 0,
                 estado: 'activa',
               };
 
