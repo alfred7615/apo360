@@ -302,17 +302,17 @@ export default function VisualizadorPantallaCompleta({
             <ArrowLeft className="h-6 w-6" />
           </Button>
 
-          <div className="absolute inset-0 flex items-center justify-center px-16 py-4">
+          <div className="absolute inset-0 flex items-center justify-center px-16 py-4 z-10 pointer-events-none">
             <img
               src={publicidad.imagenUrl || undefined}
               alt={publicidad.titulo || "Imagen"}
-              className="max-h-full max-w-full object-contain"
+              className="max-h-full max-w-full object-contain pointer-events-auto"
               style={{ maxHeight: "calc(100vh - 120px)" }}
               data-testid="img-visualizador-completo"
             />
           </div>
 
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 bg-black/50 rounded-full p-3">
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 bg-black/50 rounded-full p-3 z-50">
             <div className="flex flex-col items-center">
               <Button
                 variant="ghost"
@@ -393,7 +393,7 @@ export default function VisualizadorPantallaCompleta({
           </div>
 
           {(tieneRedesSociales || tieneUbicacion) && (
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 bg-black/50 rounded-full p-3">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 bg-black/50 rounded-full p-3 z-50">
               {tieneUbicacion && (
                 <Button
                   variant="ghost"
