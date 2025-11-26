@@ -189,20 +189,18 @@ export default function SolicitudPermisos() {
   }, []);
 
   const handleCerrarModal = useCallback((open: boolean) => {
-    const gpsPermiso = permisos.find(p => p.nombre === "Ubicación GPS");
-    const gpsOK = gpsPermiso?.estado === "concedido";
-    
-    if (!open && !gpsOK) {
-      toast({
-        title: "GPS es obligatorio",
-        description: "Debes activar el GPS para usar SEG-APO. Esta función es necesaria para emergencias y verificación de ubicación.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setModalAbierto(open);
-  }, [permisos, toast]);
+  }, []);
+
+  const continuarSinGPS = useCallback(() => {
+    toast({
+      title: "GPS no activado",
+      description: "Algunas funciones como emergencias y verificación de ubicación no estarán disponibles. Puedes activar el GPS más tarde en la configuración de tu navegador.",
+      variant: "destructive",
+    });
+    localStorage.setItem("permisosModalVisto", "true");
+    setModalAbierto(false);
+  }, [toast]);
 
   const getIconoEstado = (estado: EstadoPermiso) => {
     switch (estado) {
@@ -245,15 +243,7 @@ export default function SolicitudPermisos() {
 
   return (
     <Dialog open={modalAbierto} onOpenChange={handleCerrarModal}>
-      <DialogContent 
-        className="max-w-sm" 
-        onPointerDownOutside={(e) => {
-          if (!gpsOK) e.preventDefault();
-        }}
-        onEscapeKeyDown={(e) => {
-          if (!gpsOK) e.preventDefault();
-        }}
-      >
+      <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
@@ -331,25 +321,37 @@ export default function SolicitudPermisos() {
 
         <div className="flex flex-col gap-2 pt-2">
           {!gpsOK ? (
-            <Button
-              onClick={forzarActivacionGPS}
-              disabled={solicitandoGPS || verificando}
-              className="w-full gap-2"
-              size="lg"
-              data-testid="button-activar-gps"
-            >
-              {solicitandoGPS ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Solicitando acceso GPS...
-                </>
-              ) : (
-                <>
-                  <MapPin className="h-5 w-5" />
-                  Activar GPS Ahora
-                </>
-              )}
-            </Button>
+            <>
+              <Button
+                onClick={forzarActivacionGPS}
+                disabled={solicitandoGPS || verificando}
+                className="w-full gap-2"
+                size="lg"
+                data-testid="button-activar-gps"
+              >
+                {solicitandoGPS ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Solicitando acceso GPS...
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="h-5 w-5" />
+                    Activar GPS Ahora
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={continuarSinGPS}
+                variant="ghost"
+                className="w-full text-muted-foreground"
+                disabled={solicitandoGPS}
+                data-testid="button-mas-tarde"
+              >
+                Más tarde
+              </Button>
+            </>
           ) : (
             <>
               {permisos.find(p => p.nombre === "Notificaciones")?.estado !== "concedido" && (
@@ -377,7 +379,7 @@ export default function SolicitudPermisos() {
 
         {!gpsOK && (
           <p className="text-xs text-center text-muted-foreground">
-            El GPS es obligatorio para todas las funciones de SEG-APO
+            El GPS es necesario para emergencias y verificación de ubicación
           </p>
         )}
       </DialogContent>
