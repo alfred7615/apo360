@@ -66,7 +66,7 @@ const calcularPorcentajeCompletado = (usuario: Partial<Usuario>): number => {
 const obtenerSugerenciaConfianza = (porcentaje: number): { mensaje: string; color: string } => {
   if (porcentaje < 25) {
     return {
-      mensaje: "Completa tu perfil para generar confianza. Los usuarios con perfil completo tienen más éxito en compras y servicios.",
+      mensaje: "Los usuarios con perfil completo tienen más éxito en venta, compras, y servicios...",
       color: "text-red-600"
     };
   } else if (porcentaje < 50) {
@@ -1071,35 +1071,29 @@ export default function PerfilPage() {
 
       {/* Botones fijos en la parte inferior */}
       <div className="flex-shrink-0 bg-background border-t px-4 py-3 shadow-lg">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{porcentajeCompletado}% completado</span>
-            <Progress value={porcentajeCompletado} className="w-24 h-2" />
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline"
-              onClick={() => {
-                if (perfil) setFormData(perfil);
-              }}
-              disabled={updateMutation.isPending}
-              data-testid="button-cancelar-perfil"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleGuardar}
-              disabled={updateMutation.isPending}
-              data-testid="button-guardar-perfil"
-            >
-              {updateMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              Guardar Cambios
-            </Button>
-          </div>
+        <div className="max-w-5xl mx-auto flex justify-end gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => {
+              if (perfil) setFormData(perfil);
+            }}
+            disabled={updateMutation.isPending}
+            data-testid="button-cancelar-perfil"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleGuardar}
+            disabled={updateMutation.isPending}
+            data-testid="button-guardar-perfil"
+          >
+            {updateMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Guardar Cambios
+          </Button>
         </div>
       </div>
     </div>
