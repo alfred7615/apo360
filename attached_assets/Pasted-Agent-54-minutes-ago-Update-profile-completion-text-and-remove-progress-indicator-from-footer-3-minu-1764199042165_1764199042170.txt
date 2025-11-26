@@ -1,0 +1,78 @@
+Agent
+54 minutes ago
+Update profile completion text and remove progress indicator from footer
+3 minutes of work
+Ese mensaje de errores sale pero ahora sale ya registrado mi alias ingreso. A tros campos sigue con el mismo problema sigue elmmismo error... Verificar campo por campo de todo el perfil subir imágenes tomar fotos todo comprobar si están funcionando los campos con la base de datos el botón de cancelar no o funciona crear un icono de regresar ala anterior pantalla revisar si hay dos formularios de registro de personal quizás aya algún formulario similar verificar y corregir todos esos errores
+
+47 minutes ago
+37 minutes ago
+Saved progress at the end of the loop
+9 minutes of work
+¡Hola, Alfredo Apomayta Ramos!
+Tu comunidad está segura
+
+Juntos somos invencibles
+
+Eliminar apellidos solo que salga en primera opción el EMAIL si no tiene alias ni nombre si tiene alias o el nombre el primero que se ingresa se visualizar si tiene todos los datos solo se verá el nombre.... Apellidos no...
+
+Todo este texto alinear al lado izquierdo
+
+24 minutes ago
+22 minutes ago
+Update welcome message to prioritize alias and align text left
+1 minute of work
+¡Hola, Alfredo Apomayta Ramos!
+Tu comunidad está segura
+
+Juntos somos invencibles.
+
+Eliminar apellidos
+
+21 minutes ago
+20 minutes ago
+Update greeting to display alias, first name, or email address
+32 seconds of work
+Verificar que el nombre, apellidos, alias, etc etc en cada campo en la base de datos debe tener cada campo para cada campo q esta en el formulario
+
+19 minutes ago
+17 minutes ago
+Prioritize alias for greetings and adjust name display
+1 minute of work
+Ajustar la altura del componente del saludo a 230 PC de altura....
+El carrusel de imágenes subirlo encima del componente de saludo
+
+14 minutes ago
+13 minutes ago
+Adjust welcome component height and move image carousel above
+1 minute of work
+Hacer cambios en Carrusel de logos publicitarios
+Saludo (190px de altura
+
+Las.imagenes que tenga un efecto de sombra hacia abajo y quenlaminagenntenga un aspecto que sobresalga...
+
+La hacer clic mouse o táctil está se pueda visualizar a la izquierda o derecha segunel táctil lo lleva..... Luego seguirá con el efecto predeterminado de carrusel infinito
+
+6 minutes ago
+Ahora modifico el componente del carrusel de logos con los efectos de sombra 3D y navegación táctil:
+
+Ahora reemplazo la sección del renderizado de logos con los efectos 3D y navegación táctil:
+
+Listo. He realizado los cambios en el carrusel de logos publicitarios:
+
+Cambios realizados:
+
+Altura del saludo: Ajustada a 190px
+
+Efecto de sombra 3D: Las imágenes del carrusel de logos ahora tienen:
+
+Sombra hacia abajo (drop-shadow)
+Efecto 3D con perspectiva que hace que "sobresalgan"
+Al pasar el mouse: se agranda ligeramente y se eleva
+Navegación táctil/click:
+
+Al arrastrar con el dedo (móvil) o mouse hacia izquierda/derecha, el carrusel se desplaza en esa dirección
+Después de 3 segundos sin interacción, vuelve al auto-scroll infinito
+Contenedor mejorado:
+
+Sombra pronunciada hacia abajo en el contenedor
+Fondo degradado sutil para destacar las imágenes

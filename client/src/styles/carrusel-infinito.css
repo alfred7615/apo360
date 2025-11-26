@@ -86,3 +86,23 @@
 .dark .bg-gray-800\/50 .carrusel-infinito::after {
   background: linear-gradient(to left, rgba(31, 41, 55, 0.5), transparent);
 }
+
+/* Estilos para contenedor de logos 3D */
+.logo-3d-container {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform-style: preserve-3d;
+}
+
+.logo-3d-container:hover {
+  transform: perspective(800px) rotateX(-5deg) translateY(-4px) scale(1.08) !important;
+}
+
+.logo-3d-activo {
+  transform: perspective(800px) rotateX(-8deg) rotateY(5deg) translateY(-8px) scale(1.15) !important;
+  z-index: 50;
+}
+
+/* Dark mode para carrusel de logos */
+.dark [data-testid="carousel-carrusel_logos"] {
+  background: linear-gradient(180deg, #1f2937 0%, #111827 50%, #0f172a 100%) !important;
+}

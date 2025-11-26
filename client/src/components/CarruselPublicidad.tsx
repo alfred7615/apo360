@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight, Link2, MapPin, Calendar, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { filtrarPublicidadesActivas, type Publicidad } from "@/lib/publicidadUtils";
@@ -14,9 +14,11 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   const [indiceActual, setIndiceActual] = useState(0);
   const [visualizadorAbierto, setVisualizadorAbierto] = useState(false);
   const [publicidadSeleccionada, setPublicidadSeleccionada] = useState<Publicidad | null>(null);
+  const [imagenSeleccionadaId, setImagenSeleccionadaId] = useState<string | null>(null);
   const [pausaAutoScroll, setPausaAutoScroll] = useState(false);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [mouseStartX, setMouseStartX] = useState<number | null>(null);
+  const [arrastrandoX, setArrastrandoX] = useState<number | null>(null);
+  const [desplazamientoManual, setDesplazamientoManual] = useState(0);
+  const contenedorRef = useRef<HTMLDivElement>(null);
 
   const { data: publicidades = [] } = useQuery<Publicidad[]>({
     queryKey: ["/api/publicidad"],
@@ -46,9 +48,13 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     });
   }, [publicidadesActivas.length]);
 
+  // Reanudar auto-scroll después de 3 segundos de inactividad
   useEffect(() => {
     if (pausaAutoScroll) {
-      const timeout = setTimeout(() => setPausaAutoScroll(false), 3000);
+      const timeout = setTimeout(() => {
+        setPausaAutoScroll(false);
+        setDesplazamientoManual(0);
+      }, 3000);
       return () => clearTimeout(timeout);
     }
   }, [pausaAutoScroll]);
@@ -61,6 +67,60 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   const cerrarVisualizador = () => {
     setVisualizadorAbierto(false);
     setPublicidadSeleccionada(null);
+  };
+
+  // Manejo de clics: primer clic = efecto 3D, segundo clic = abrir modal
+  const manejarClicImagen = (pub: Publicidad, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (imagenSeleccionadaId === pub.id) {
+      // Segundo clic - abrir modal
+      abrirVisualizador(pub);
+      setImagenSeleccionadaId(null);
+    } else {
+      // Primer clic - seleccionar para efecto 3D
+      setImagenSeleccionadaId(pub.id);
+    }
+  };
+
+  // Navegación táctil
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setArrastrandoX(e.touches[0].clientX);
+    setPausaAutoScroll(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (arrastrandoX === null) return;
+    const diff = arrastrandoX - e.touches[0].clientX;
+    setDesplazamientoManual(diff);
+  };
+
+  const handleTouchEnd = () => {
+    setArrastrandoX(null);
+    // El desplazamiento se mantiene y el auto-scroll reanuda después de 3 segundos
+  };
+
+  // Navegación con mouse
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setArrastrandoX(e.clientX);
+    setPausaAutoScroll(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (arrastrandoX === null) return;
+    const diff = arrastrandoX - e.clientX;
+    setDesplazamientoManual(diff);
+  };
+
+  const handleMouseUp = () => {
+    setArrastrandoX(null);
+  };
+
+  const handleMouseLeave = () => {
+    if (arrastrandoX !== null) {
+      setArrastrandoX(null);
+    }
   };
 
   if (publicidadesActivas.length === 0) {
@@ -142,140 +202,172 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     );
   }
 
+  // Renderizado de imágenes para carrusel de logos
   const itemsMultiplicados = [...publicidadesActivas, ...publicidadesActivas, ...publicidadesActivas, ...publicidadesActivas];
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.touches[0].clientX);
-    setPausaAutoScroll(true);
+  const tieneInfoAdicional = (pub: Publicidad) => {
+    return pub.enlaceUrl || pub.latitud || pub.longitud || pub.fechaInicio || pub.fechaFin;
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX === null) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
-    const umbral = 50;
-
-    if (Math.abs(diff) > umbral) {
-      const container = e.currentTarget.querySelector('.carrusel-track') as HTMLElement;
-      if (container) {
-        const scrollAmount = diff > 0 ? 200 : -200;
-        container.style.transform = `translateX(${-scrollAmount}px)`;
-        setTimeout(() => {
-          container.style.transform = '';
-        }, 300);
-      }
-    }
-    setTouchStartX(null);
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setMouseStartX(e.clientX);
-    setPausaAutoScroll(true);
-  };
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (mouseStartX === null) return;
-    const diff = mouseStartX - e.clientX;
-    const umbral = 30;
-
-    if (Math.abs(diff) > umbral) {
-      const container = e.currentTarget.querySelector('.carrusel-track') as HTMLElement;
-      if (container) {
-        const scrollAmount = diff > 0 ? 200 : -200;
-        container.style.transition = 'transform 0.3s ease';
-        container.style.transform = `translateX(${-scrollAmount}px)`;
-        setTimeout(() => {
-          container.style.transition = '';
-          container.style.transform = '';
-        }, 300);
-      }
-    }
-    setMouseStartX(null);
-  };
-
-  const renderImagen = (pub: Publicidad, idx: number) => {
-    const esCarruselLogos = tipo === "carrusel_logos";
+  const renderIconosInfo = (pub: Publicidad) => {
+    const iconos: JSX.Element[] = [];
     
-    const contenido = (
-      <img
-        src={pub.imagenUrl || undefined}
-        alt={pub.titulo || `Imagen ${idx + 1}`}
-        className={`h-[90px] w-auto object-contain flex-shrink-0 ${
-          esCarruselLogos 
-            ? 'drop-shadow-[0_8px_12px_rgba(0,0,0,0.25)] hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.35)] transition-all duration-300 hover:scale-105 hover:-translate-y-1' 
-            : ''
-        }`}
-        style={{ 
-          maxWidth: "none",
-          ...(esCarruselLogos && {
-            filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.2))',
-            transform: 'perspective(500px) rotateX(2deg)',
-          })
-        }}
-        data-testid={`img-carousel-${tipo}-${idx}`}
-      />
-    );
-
     if (pub.enlaceUrl) {
-      return (
-        <a
-          key={`${pub.id}-${idx}`}
-          href={pub.enlaceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-shrink-0 hover:opacity-90 transition-all duration-300"
-          style={{ marginLeft: "8px", marginRight: "8px" }}
-        >
-          {contenido}
-        </a>
+      iconos.push(
+        <div key="url" className="bg-blue-500 rounded-full p-1" title="Tiene enlace">
+          <Link2 className="h-2.5 w-2.5 text-white" />
+        </div>
+      );
+    }
+    
+    if (pub.latitud || pub.longitud) {
+      iconos.push(
+        <div key="gps" className="bg-green-500 rounded-full p-1" title="Tiene ubicación GPS">
+          <MapPin className="h-2.5 w-2.5 text-white" />
+        </div>
+      );
+    }
+    
+    if (pub.fechaInicio || pub.fechaFin) {
+      iconos.push(
+        <div key="fecha" className="bg-orange-500 rounded-full p-1" title="Tiene fechas">
+          <Calendar className="h-2.5 w-2.5 text-white" />
+        </div>
+      );
+    }
+    
+    if (pub.descripcion) {
+      iconos.push(
+        <div key="info" className="bg-gray-600 rounded-full p-1" title="Tiene descripción">
+          <Info className="h-2.5 w-2.5 text-white" />
+        </div>
       );
     }
 
+    if (iconos.length === 0) return null;
+
+    return (
+      <div className="absolute bottom-1 right-1 flex gap-0.5 z-20">
+        {iconos}
+      </div>
+    );
+  };
+
+  const renderImagen = (pub: Publicidad, idx: number) => {
+    const esSeleccionada = imagenSeleccionadaId === pub.id;
+    const esCarruselLogos = tipo === "carrusel_logos";
+    
     return (
       <div
         key={`${pub.id}-${idx}`}
-        className="flex-shrink-0"
-        style={{ marginLeft: "8px", marginRight: "8px" }}
+        className="flex-shrink-0 relative"
+        style={{ marginLeft: "10px", marginRight: "10px" }}
+        onClick={(e) => manejarClicImagen(pub, e)}
       >
-        {contenido}
+        <div 
+          className={`relative transition-all duration-300 cursor-pointer ${
+            esCarruselLogos ? 'logo-3d-container' : ''
+          } ${esSeleccionada ? 'logo-3d-activo' : ''}`}
+          style={{
+            transform: esSeleccionada 
+              ? 'perspective(800px) rotateX(-8deg) rotateY(5deg) translateY(-8px) scale(1.15)' 
+              : esCarruselLogos 
+                ? 'perspective(800px) rotateX(3deg)' 
+                : 'none',
+            transformStyle: 'preserve-3d',
+          }}
+        >
+          <img
+            src={pub.imagenUrl || undefined}
+            alt={pub.titulo || `Imagen ${idx + 1}`}
+            className={`h-[85px] w-auto object-contain flex-shrink-0 transition-all duration-300 ${
+              esCarruselLogos 
+                ? 'rounded-lg' 
+                : ''
+            }`}
+            style={{ 
+              maxWidth: "none",
+              boxShadow: esSeleccionada
+                ? '0 20px 40px rgba(0,0,0,0.4), 0 10px 20px rgba(0,0,0,0.3)'
+                : esCarruselLogos
+                  ? '0 8px 16px rgba(0,0,0,0.25), 0 4px 8px rgba(0,0,0,0.15)'
+                  : 'none',
+              border: esSeleccionada ? '2px solid rgba(139, 92, 246, 0.6)' : 'none',
+            }}
+            data-testid={`img-carousel-${tipo}-${idx}`}
+          />
+          
+          {/* Iconos de información adicional */}
+          {esCarruselLogos && renderIconosInfo(pub)}
+          
+          {/* Indicador visual de "toca de nuevo para ver más" */}
+          {esSeleccionada && (
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-purple-600 dark:text-purple-400 whitespace-nowrap font-medium">
+              Toca de nuevo para ver más
+            </div>
+          )}
+        </div>
       </div>
     );
   };
 
   const fondoClase = tipo === "logos_servicios" 
     ? "bg-gray-100 dark:bg-gray-800/50" 
-    : "bg-white dark:bg-gray-900";
+    : "";
 
   const esCarruselLogos = tipo === "carrusel_logos";
 
   return (
-    <div
-      className={`w-full overflow-hidden ${fondoClase} ${
-        esCarruselLogos 
-          ? 'shadow-[0_8px_20px_-5px_rgba(0,0,0,0.3)] relative z-10' 
-          : 'border-y border-border/30'
-      }`}
-      style={{ 
-        height: esCarruselLogos ? "110px" : "100px",
-        ...(esCarruselLogos && {
-          background: 'linear-gradient(to bottom, rgba(255,255,255,0.98), rgba(245,245,245,0.95))',
-        })
-      }}
-      data-testid={`carousel-${tipo}`}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-    >
-      <div 
-        className={`carrusel-infinito h-full flex items-center ${pausaAutoScroll ? 'carrusel-pausado' : 'carrusel-lento'}`}
-        style={{ cursor: 'grab' }}
+    <>
+      <div
+        ref={contenedorRef}
+        className={`w-full overflow-hidden ${fondoClase} ${
+          esCarruselLogos 
+            ? 'relative z-10' 
+            : 'border-y border-border/30'
+        }`}
+        style={{ 
+          height: esCarruselLogos ? "120px" : "100px",
+          background: esCarruselLogos 
+            ? 'linear-gradient(180deg, #ffffff 0%, #f8f9fa 50%, #f0f0f0 100%)' 
+            : undefined,
+          boxShadow: esCarruselLogos 
+            ? '0 12px 30px -8px rgba(0,0,0,0.35), 0 6px 15px -5px rgba(0,0,0,0.2)' 
+            : undefined,
+        }}
+        data-testid={`carousel-${tipo}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
       >
-        <div className="carrusel-track">
-          {itemsMultiplicados.map((pub, idx) => renderImagen(pub, idx))}
-          {itemsMultiplicados.map((pub, idx) => renderImagen(pub, idx + itemsMultiplicados.length))}
+        <div 
+          className={`carrusel-infinito h-full flex items-center ${pausaAutoScroll ? 'carrusel-pausado' : 'carrusel-lento'}`}
+          style={{ 
+            cursor: arrastrandoX !== null ? 'grabbing' : 'grab',
+          }}
+        >
+          <div 
+            className="carrusel-track"
+            style={{
+              transform: pausaAutoScroll ? `translateX(${-desplazamientoManual}px)` : undefined,
+            }}
+          >
+            {itemsMultiplicados.map((pub, idx) => renderImagen(pub, idx))}
+            {itemsMultiplicados.map((pub, idx) => renderImagen(pub, idx + itemsMultiplicados.length))}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Modal para ver información completa */}
+      <VisualizadorPantallaCompleta
+        publicidad={publicidadSeleccionada}
+        isOpen={visualizadorAbierto}
+        onClose={cerrarVisualizador}
+      />
+    </>
   );
 }
