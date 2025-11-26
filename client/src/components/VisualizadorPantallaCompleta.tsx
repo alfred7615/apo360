@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import {
   Heart,
-  Star,
+  ThumbsUp,
   MessageCircle,
   Calendar,
   Share2,
@@ -70,6 +70,10 @@ export default function VisualizadorPantallaCompleta({
   const [comentariosAbiertos, setComentariosAbiertos] = useState(false);
   const [nuevoComentario, setNuevoComentario] = useState("");
   const [compartirAbierto, setCompartirAbierto] = useState(false);
+  
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: contadores, refetch: refetchContadores } = useQuery<Contadores>({
     queryKey: ["/api/publicidad", publicidad?.id, "contadores"],
@@ -101,6 +105,32 @@ export default function VisualizadorPantallaCompleta({
     },
     enabled: !!publicidad?.id && isOpen && comentariosAbiertos,
   });
+
+  useEffect(() => {
+    if (!isOpen) {
+      setZoomLevel(1);
+      setZoomOrigin({ x: 50, y: 50 });
+    }
+  }, [isOpen]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imageContainerRef.current) return;
+    
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    setZoomOrigin({ x, y });
+  };
+
+  const handleMouseEnter = () => {
+    setZoomLevel(2);
+  };
+
+  const handleMouseLeave = () => {
+    setZoomLevel(1);
+    setZoomOrigin({ x: 50, y: 50 });
+  };
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -292,106 +322,47 @@ export default function VisualizadorPantallaCompleta({
           {publicidad.titulo || "Visualizador de imagen"}
         </DialogTitle>
         <div className="relative w-full h-full flex flex-col">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="absolute top-4 left-4 z-50 text-white hover:bg-white/20 rounded-full"
-            data-testid="button-cerrar-visualizador"
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
+          
+          {/* Header: Botón salir + Título centrado */}
+          <div className="absolute top-0 left-0 right-0 flex items-center gap-4 px-4 py-3 bg-gradient-to-b from-black/80 to-transparent z-50">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="text-white hover:bg-white/20 rounded-full shrink-0"
+              data-testid="button-cerrar-visualizador"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+            
+            {publicidad.titulo && (
+              <h3 className="flex-1 text-white font-semibold text-lg text-center pr-10" data-testid="titulo-publicidad">
+                {publicidad.titulo}
+              </h3>
+            )}
+          </div>
 
-          <div className="absolute inset-0 flex items-center justify-center px-16 py-4 z-10 pointer-events-none">
+          {/* Imagen con zoom - autoajustable a los bordes */}
+          <div 
+            ref={imageContainerRef}
+            className="absolute inset-0 top-14 bottom-24 flex items-center justify-center overflow-hidden cursor-zoom-in z-10"
+            onMouseMove={handleMouseMove}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
             <img
               src={publicidad.imagenUrl || undefined}
               alt={publicidad.titulo || "Imagen"}
-              className="max-h-full max-w-full object-contain pointer-events-auto"
-              style={{ maxHeight: "calc(100vh - 120px)" }}
+              className="w-full h-full object-contain transition-transform duration-200 ease-out"
+              style={{ 
+                transform: `scale(${zoomLevel})`,
+                transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%`
+              }}
               data-testid="img-visualizador-completo"
             />
           </div>
 
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 bg-black/50 rounded-full p-3 z-50">
-            <div className="flex flex-col items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => likeMutation.mutate()}
-                className={`text-white hover:bg-white/20 rounded-full ${misInteracciones?.hasLike ? "text-red-500" : ""}`}
-                data-testid="button-like"
-              >
-                <Heart className={`h-6 w-6 ${misInteracciones?.hasLike ? "fill-red-500" : ""}`} />
-              </Button>
-              <span className="text-white text-xs" data-testid="contador-likes">{contadores?.likes || 0}</span>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => favoritoMutation.mutate()}
-                className={`text-white hover:bg-white/20 rounded-full ${misInteracciones?.hasFavorito ? "text-yellow-400" : ""}`}
-                data-testid="button-favorito"
-              >
-                <Star className={`h-6 w-6 ${misInteracciones?.hasFavorito ? "fill-yellow-400" : ""}`} />
-              </Button>
-              <span className="text-white text-xs" data-testid="contador-favoritos">{contadores?.favoritos || 0}</span>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setComentariosAbiertos(true)}
-                className="text-white hover:bg-white/20 rounded-full"
-                data-testid="button-comentarios"
-              >
-                <MessageCircle className="h-6 w-6" />
-              </Button>
-              <span className="text-white text-xs" data-testid="contador-comentarios">{contadores?.comentarios || 0}</span>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleAgendar}
-                className="text-white hover:bg-white/20 rounded-full"
-                data-testid="button-agenda"
-              >
-                <Calendar className="h-6 w-6" />
-              </Button>
-              <span className="text-white text-xs" data-testid="contador-agendados">{contadores?.agendados || 0}</span>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCompartirAbierto(true)}
-                className="text-white hover:bg-white/20 rounded-full"
-                data-testid="button-compartir"
-              >
-                <Share2 className="h-6 w-6" />
-              </Button>
-              <span className="text-white text-xs" data-testid="contador-compartidos">{contadores?.compartidos || 0}</span>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleImprimir}
-                className="text-white hover:bg-white/20 rounded-full"
-                data-testid="button-imprimir"
-              >
-                <Printer className="h-6 w-6" />
-              </Button>
-              <span className="text-white text-xs" data-testid="contador-impresiones">{contadores?.impresiones || 0}</span>
-            </div>
-          </div>
-
+          {/* Panel izquierdo: Redes sociales y ubicación */}
           {(tieneRedesSociales || tieneUbicacion) && (
             <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 bg-black/50 rounded-full p-3 z-50">
               {tieneUbicacion && (
@@ -492,20 +463,116 @@ export default function VisualizadorPantallaCompleta({
             </div>
           )}
 
-          {publicidad.titulo && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 px-6 py-3 rounded-lg max-w-lg text-center">
-              <h3 className="text-white font-semibold text-lg" data-testid="titulo-publicidad">
-                {publicidad.titulo}
-              </h3>
-              {publicidad.descripcion && (
-                <p className="text-gray-300 text-sm mt-1" data-testid="descripcion-publicidad">
-                  {publicidad.descripcion}
-                </p>
+          {/* Barra inferior: Iconos de interacción */}
+          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-6 px-4 py-4 bg-gradient-to-t from-black/80 to-transparent z-50">
+            {/* Me gusta - Manito con pulgar arriba */}
+            <div className="flex flex-col items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => likeMutation.mutate()}
+                className={`text-white hover:bg-white/20 rounded-full ${misInteracciones?.hasLike ? "text-blue-500" : ""}`}
+                data-testid="button-like"
+              >
+                <ThumbsUp className={`h-6 w-6 ${misInteracciones?.hasLike ? "fill-blue-500" : ""}`} />
+              </Button>
+              {(contadores?.likes ?? 0) > 0 && (
+                <span className="text-white text-xs" data-testid="contador-likes">{contadores?.likes}</span>
               )}
+            </div>
+
+            {/* Favorito - Corazón */}
+            <div className="flex flex-col items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => favoritoMutation.mutate()}
+                className={`text-white hover:bg-white/20 rounded-full ${misInteracciones?.hasFavorito ? "text-red-500" : ""}`}
+                data-testid="button-favorito"
+              >
+                <Heart className={`h-6 w-6 ${misInteracciones?.hasFavorito ? "fill-red-500" : ""}`} />
+              </Button>
+              {(contadores?.favoritos ?? 0) > 0 && (
+                <span className="text-white text-xs" data-testid="contador-favoritos">{contadores?.favoritos}</span>
+              )}
+            </div>
+
+            {/* Comentarios */}
+            <div className="flex flex-col items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setComentariosAbiertos(true)}
+                className="text-white hover:bg-white/20 rounded-full"
+                data-testid="button-comentarios"
+              >
+                <MessageCircle className="h-6 w-6" />
+              </Button>
+              {(contadores?.comentarios ?? 0) > 0 && (
+                <span className="text-white text-xs" data-testid="contador-comentarios">{contadores?.comentarios}</span>
+              )}
+            </div>
+
+            {/* Agenda */}
+            <div className="flex flex-col items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleAgendar}
+                className="text-white hover:bg-white/20 rounded-full"
+                data-testid="button-agenda"
+              >
+                <Calendar className="h-6 w-6" />
+              </Button>
+              {(contadores?.agendados ?? 0) > 0 && (
+                <span className="text-white text-xs" data-testid="contador-agendados">{contadores?.agendados}</span>
+              )}
+            </div>
+
+            {/* Compartir */}
+            <div className="flex flex-col items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCompartirAbierto(true)}
+                className="text-white hover:bg-white/20 rounded-full"
+                data-testid="button-compartir"
+              >
+                <Share2 className="h-6 w-6" />
+              </Button>
+              {(contadores?.compartidos ?? 0) > 0 && (
+                <span className="text-white text-xs" data-testid="contador-compartidos">{contadores?.compartidos}</span>
+              )}
+            </div>
+
+            {/* Imprimir */}
+            <div className="flex flex-col items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleImprimir}
+                className="text-white hover:bg-white/20 rounded-full"
+                data-testid="button-imprimir"
+              >
+                <Printer className="h-6 w-6" />
+              </Button>
+              {(contadores?.impresiones ?? 0) > 0 && (
+                <span className="text-white text-xs" data-testid="contador-impresiones">{contadores?.impresiones}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Descripción (si existe) */}
+          {publicidad.descripcion && (
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-black/70 px-6 py-2 rounded-lg max-w-lg text-center z-40">
+              <p className="text-gray-300 text-sm" data-testid="descripcion-publicidad">
+                {publicidad.descripcion}
+              </p>
             </div>
           )}
         </div>
 
+        {/* Modal de comentarios */}
         <Dialog open={comentariosAbiertos} onOpenChange={setComentariosAbiertos}>
           <DialogContent className="max-w-md" aria-describedby={undefined}>
             <DialogHeader>
@@ -567,6 +634,7 @@ export default function VisualizadorPantallaCompleta({
           </DialogContent>
         </Dialog>
 
+        {/* Modal de compartir */}
         <Dialog open={compartirAbierto} onOpenChange={setCompartirAbierto}>
           <DialogContent className="max-w-xs" aria-describedby={undefined}>
             <DialogHeader>
@@ -610,7 +678,7 @@ export default function VisualizadorPantallaCompleta({
                 onClick={() => handleCompartir("linkedin")}
                 data-testid="compartir-linkedin"
               >
-                <SiLinkedin className="h-8 w-8 text-blue-700" />
+                <SiLinkedin className="h-8 w-8 text-blue-600" />
                 <span className="text-xs">LinkedIn</span>
               </Button>
             </div>
