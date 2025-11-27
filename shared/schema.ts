@@ -102,6 +102,8 @@ export const usuarios = pgTable("users", {
   vehiculoFotoLateralIzq: varchar("vehiculo_foto_lateral_izq"),
   vehiculoFotoLateralDer: varchar("vehiculo_foto_lateral_der"),
   
+  fotoDomicilio: varchar("foto_domicilio"),
+  
   passwordHash: varchar("password_hash"),
   
   motivoSuspension: text("motivo_suspension"),
@@ -113,6 +115,23 @@ export const usuarios = pgTable("users", {
 export const insertUsuarioSchema = createInsertSchema(usuarios).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertUsuario = z.infer<typeof insertUsuarioSchema>;
 export type Usuario = typeof usuarios.$inferSelect;
+
+// ============================================================
+// SECTORES (historial para autocompletado)
+// ============================================================
+export const sectores = pgTable("sectores", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nombre: varchar("nombre", { length: 200 }).notNull(),
+  departamento: varchar("departamento", { length: 100 }),
+  distrito: varchar("distrito", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueSector: unique().on(table.nombre, table.departamento, table.distrito),
+}));
+
+export const insertSectorSchema = createInsertSchema(sectores).omit({ id: true, createdAt: true });
+export type InsertSector = z.infer<typeof insertSectorSchema>;
+export type Sector = typeof sectores.$inferSelect;
 
 // ============================================================
 // ROLES MÚLTIPLES POR USUARIO
