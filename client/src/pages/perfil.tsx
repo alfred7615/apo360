@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   User, MapPin, FileText, Briefcase, Star, 
   Save, Loader2, Check, Camera, Car, Upload,
-  Image as ImageIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, Users, ArrowLeft
+  Image as ImageIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, Users, ArrowLeft, Map
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -20,7 +20,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { ProfileImageCapture } from "@/components/ProfileImageCapture";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import GestionContactosFamiliares from "@/components/GestionContactosFamiliares";
-import type { Usuario } from "@shared/schema";
+import { AutocompleteInput } from "@/components/AutocompleteInput";
+import type { Usuario, Sector } from "@shared/schema";
 
 const TIPOS_VEHICULO = [
   { value: "auto", label: "Automóvil" },
@@ -380,6 +381,37 @@ export default function PerfilPage() {
     enabled: !!user,
   });
 
+  const { data: departamentos = [] } = useQuery<string[]>({
+    queryKey: ["/api/ubicaciones/departamentos", formData.pais || "Perú"],
+    enabled: true,
+  });
+
+  const { data: distritos = [] } = useQuery<string[]>({
+    queryKey: ["/api/ubicaciones/distritos", formData.departamento],
+    queryFn: async () => {
+      if (!formData.departamento) return [];
+      const response = await fetch(`/api/ubicaciones/distritos?departamento=${encodeURIComponent(formData.departamento)}`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!formData.departamento,
+  });
+
+  const { data: sectores = [] } = useQuery<Sector[]>({
+    queryKey: ["/api/sectores", formData.departamento, formData.distrito],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (formData.departamento) params.append("departamento", formData.departamento);
+      if (formData.distrito) params.append("distrito", formData.distrito);
+      const response = await fetch(`/api/sectores?${params.toString()}`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: true,
+  });
+
+  const opcionesSectores = sectores.map((s: Sector) => s.nombre);
+
   useEffect(() => {
     if (perfil) {
       setFormData(perfil);
@@ -409,10 +441,26 @@ export default function PerfilPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleGuardar = () => {
+  const handleGuardar = async () => {
     if (!formData || Object.keys(formData).length === 0) {
       toast({ title: "Error", description: "No hay datos para guardar", variant: "destructive" });
       return;
+    }
+    
+    if (formData.sector && formData.departamento && formData.distrito) {
+      const sectorExiste = sectores.find(s => s.nombre.toLowerCase() === formData.sector?.toLowerCase());
+      if (!sectorExiste) {
+        try {
+          await apiRequest("POST", "/api/sectores", {
+            nombre: formData.sector,
+            departamento: formData.departamento,
+            distrito: formData.distrito,
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/sectores"] });
+        } catch (error) {
+          console.log("Sector ya existe o error al crear");
+        }
+      }
     }
     
     const nivelCalculado = calcularNivelUsuario(formData);
@@ -730,43 +778,53 @@ export default function PerfilPage() {
                   <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="space-y-1">
                       <Label htmlFor="pais" className={`text-xs ${tieneValor('pais') ? 'font-bold' : ''}`}>País</Label>
-                      <Input
+                      <AutocompleteInput
                         id="pais"
                         value={formData.pais || "Perú"}
-                        onChange={(e) => handleInputChange("pais", e.target.value)}
+                        onChange={(value) => handleInputChange("pais", value)}
+                        options={["Perú"]}
                         className={`h-8 ${tieneValor('pais') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-pais"
                       />
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="departamento" className={`text-xs ${tieneValor('departamento') ? 'font-bold' : ''}`}>Departamento</Label>
-                      <Input
+                      <AutocompleteInput
                         id="departamento"
                         value={formData.departamento || ""}
-                        onChange={(e) => handleInputChange("departamento", e.target.value)}
-                        placeholder="Tacna"
+                        onChange={(value) => {
+                          handleInputChange("departamento", value);
+                          if (formData.departamento !== value) {
+                            handleInputChange("distrito", "");
+                          }
+                        }}
+                        options={departamentos}
+                        placeholder="Escribe para buscar..."
                         className={`h-8 ${tieneValor('departamento') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-departamento"
                       />
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="distrito" className={`text-xs ${tieneValor('distrito') ? 'font-bold' : ''}`}>Distrito</Label>
-                      <Input
+                      <AutocompleteInput
                         id="distrito"
                         value={formData.distrito || ""}
-                        onChange={(e) => handleInputChange("distrito", e.target.value)}
-                        placeholder="Tacna"
+                        onChange={(value) => handleInputChange("distrito", value)}
+                        options={distritos}
+                        placeholder={formData.departamento ? "Escribe para buscar..." : "Selecciona departamento"}
+                        disabled={!formData.departamento}
                         className={`h-8 ${tieneValor('distrito') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-distrito"
                       />
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="sector" className={`text-xs ${tieneValor('sector') ? 'font-bold' : ''}`}>Sector</Label>
-                      <Input
+                      <AutocompleteInput
                         id="sector"
                         value={formData.sector || ""}
-                        onChange={(e) => handleInputChange("sector", e.target.value)}
-                        placeholder="Centro"
+                        onChange={(value) => handleInputChange("sector", value)}
+                        options={opcionesSectores}
+                        placeholder="Escribe o selecciona..."
                         className={`h-8 ${tieneValor('sector') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-sector"
                       />
