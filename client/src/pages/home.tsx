@@ -199,9 +199,9 @@ export default function Home() {
           )}
         </div>
 
-        <div className="container mx-auto px-4 h-full flex items-end justify-start" style={{ paddingBottom: '30px' }}>
+        <div className="container mx-auto px-4 h-full flex items-center justify-start pt-4">
           <div className="text-left">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-welcome">
+            <h1 className="text-3xl md:text-4xl font-bold mb-1" data-testid="text-welcome">
               ¡Hola, {nombreMostrar}!
             </h1>
             <p className="text-white/95 text-xl font-medium">
