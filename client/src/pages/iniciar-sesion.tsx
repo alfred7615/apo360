@@ -134,9 +134,10 @@ export default function IniciarSesion() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      const nombreCompleto = data.user?.nombre || data.nombre || data.user?.email || data.email || "Usuario";
       toast({
         title: "Inicio de sesión exitoso",
-        description: `Bienvenido de nuevo, ${data.nombre || data.email}`,
+        description: `Bienvenido de nuevo, ${nombreCompleto}`,
       });
       setLocation("/home");
     },
