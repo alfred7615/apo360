@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Shield, MessageCircle, Car, ShoppingCart, Radio, AlertTriangle, Users, Store, Clock, Star, Bus, Coins, Megaphone, UserPlus, Heart } from "lucide-react";
+import { Shield, MessageCircle, Car, ShoppingCart, Radio, AlertTriangle, Users, Store, Clock, Star, Bus, Coins, Megaphone, UserPlus, Heart, Accessibility, CircleDot } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
@@ -173,6 +173,32 @@ export default function Landing() {
               </div>
               <h3 className="font-semibold mb-1 text-sm sm:text-base">Radio Online</h3>
               <p className="text-xs text-muted-foreground">Música y noticias locales 24/7</p>
+            </div>
+
+            {/* Discapacidad */}
+            <div 
+              onClick={() => abrirModalRegistro("Servicios para Discapacidad")}
+              className="text-center group cursor-pointer hover-elevate active-elevate-2 p-4 rounded-xl transition-all"
+              data-testid="servicio-discapacidad"
+            >
+              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-white mx-auto mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                <Accessibility className="h-8 w-8 sm:h-10 sm:w-10" />
+              </div>
+              <h3 className="font-semibold mb-1 text-sm sm:text-base">Discapacidad</h3>
+              <p className="text-xs text-muted-foreground">Servicios, oportunidades y descuentos</p>
+            </div>
+
+            {/* Deportes */}
+            <div 
+              onClick={() => abrirModalRegistro("Deportes y Campeonatos")}
+              className="text-center group cursor-pointer hover-elevate active-elevate-2 p-4 rounded-xl transition-all"
+              data-testid="servicio-deportes"
+            >
+              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-lime-500 to-lime-600 text-white mx-auto mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                <CircleDot className="h-8 w-8 sm:h-10 sm:w-10" />
+              </div>
+              <h3 className="font-semibold mb-1 text-sm sm:text-base">Deportes</h3>
+              <p className="text-xs text-muted-foreground">Envía info de tus campeonatos</p>
             </div>
           </div>
         </div>
