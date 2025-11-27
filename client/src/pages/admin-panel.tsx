@@ -25,7 +25,9 @@ import {
   PanelLeft,
   Star,
   LogOut,
-  User as UserIcon
+  User as UserIcon,
+  Menu,
+  Shield
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -410,26 +412,29 @@ function AdminPanelContent() {
         <header className="flex items-center justify-between gap-2 p-2 border-b bg-card flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <SidebarTrigger data-testid="button-menu">
-              <PanelLeft className="h-5 w-5" />
+              <Menu className="h-5 w-5" />
               <span className="sr-only">Menú</span>
             </SidebarTrigger>
             
-            <div className="min-w-0 flex-1">
-              <h1 className="text-sm font-bold truncate flex items-center gap-2">
-                <ViewModeIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <span>{currentScreenTitle}</span>
-              </h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">
-                Panel Super Administrador
-              </p>
+            <div className="flex items-center gap-2">
+              <Shield className="h-6 w-6 text-primary flex-shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-sm font-bold truncate">SEG-APO</h1>
+                <p className="text-xs text-muted-foreground hidden sm:block">
+                  {currentScreenTitle}
+                </p>
+              </div>
             </div>
           </div>
-          <Badge 
-            className="bg-primary text-primary-foreground flex-shrink-0 text-xs" 
-            data-testid="badge-role"
-          >
-            Admin
-          </Badge>
+          <div className="flex items-center gap-2">
+            <ViewModeIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <Badge 
+              className="bg-primary text-primary-foreground flex-shrink-0 text-xs" 
+              data-testid="badge-role"
+            >
+              Admin
+            </Badge>
+          </div>
         </header>
 
         <main 
