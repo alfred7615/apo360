@@ -214,8 +214,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Accesos rápidos - 6 escritorio, 4 tablet, 3 celular - Altura 100px, 10px encima del saludo */}
-      <section className="container mx-auto px-4" style={{ marginTop: '-10px' }}>
+      {/* Accesos rápidos - 6 escritorio, 4 tablet, 3 celular - Altura 100px, 20px debajo del saludo */}
+      <section className="container mx-auto px-4" style={{ marginTop: '20px' }}>
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
           {/* Chat */}
           <div 
