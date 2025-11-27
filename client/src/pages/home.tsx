@@ -214,14 +214,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Accesos rápidos - 6 escritorio, 4 tablet, 3 celular - Altura 100px, 90px encima del saludo */}
-      <section className="container mx-auto px-4" style={{ marginTop: '-90px' }}>
+      {/* Accesos rápidos - 6 escritorio, 4 tablet, 3 celular - Altura 100px, 10px encima del saludo */}
+      <section className="container mx-auto px-4" style={{ marginTop: '-10px' }}>
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
           {/* Chat */}
           <div 
             onClick={() => setLocation("/chat")}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-chat"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white mb-1">
@@ -233,8 +233,8 @@ export default function Home() {
           {/* Taxi */}
           <div 
             onClick={() => setModalTaxi(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-taxi"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 text-white mb-1">
@@ -246,8 +246,8 @@ export default function Home() {
           {/* Delivery */}
           <div 
             onClick={() => setModalDelivery(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-delivery"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white mb-1">
@@ -259,8 +259,8 @@ export default function Home() {
           {/* Buses */}
           <div 
             onClick={() => setModalBuses(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-buses"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white mb-1">
@@ -272,8 +272,8 @@ export default function Home() {
           {/* Moneda */}
           <div 
             onClick={() => setLocation("/billetera")}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-moneda"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white mb-1">
@@ -285,8 +285,8 @@ export default function Home() {
           {/* Avisos */}
           <div 
             onClick={() => setModalAvisos(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-avisos"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white mb-1">
