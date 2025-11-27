@@ -264,63 +264,137 @@ export function CameraCapture({
   };
 
   const handleConfirm = () => {
-    if (capturedImage) {
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext("2d");
-      
-      if (canvas && ctx) {
-        const img = new Image();
-        img.onload = () => {
-          let targetWidth = 800;
-          let targetHeight = targetWidth / aspectRatio;
-          
-          if (img.width < targetWidth) {
-            targetWidth = img.width;
-            targetHeight = img.height;
-          }
-          
-          canvas.width = targetWidth;
-          canvas.height = targetHeight;
-          
-          ctx.fillStyle = "#000";
-          ctx.fillRect(0, 0, targetWidth, targetHeight);
-          
-          ctx.save();
-          ctx.translate(targetWidth / 2, targetHeight / 2);
-          ctx.rotate((rotation * Math.PI) / 180);
-          ctx.scale(flipH ? -zoom : zoom, flipV ? -zoom : zoom);
-          
-          const imgAspect = img.width / img.height;
-          const canvasAspect = targetWidth / targetHeight;
-          
-          let drawWidth, drawHeight;
-          if (imgAspect > canvasAspect) {
-            drawHeight = targetHeight;
-            drawWidth = targetHeight * imgAspect;
-          } else {
-            drawWidth = targetWidth;
-            drawHeight = targetWidth / imgAspect;
-          }
-          
-          ctx.drawImage(
-            img,
-            -drawWidth / 2 + offsetX * zoom,
-            -drawHeight / 2 + offsetY * zoom,
-            drawWidth,
-            drawHeight
-          );
-          ctx.restore();
-          
-          const finalDataUrl = canvas.toDataURL("image/jpeg", 0.9);
-          onCapture(finalDataUrl);
-          handleClose();
-        };
-        img.src = capturedImage;
-      } else {
+    if (!capturedImage) return;
+    
+    const canvas = canvasRef.current;
+    const cropCanvas = cropCanvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    const cropCtx = cropCanvas?.getContext("2d");
+    
+    if (!canvas || !ctx) {
+      onCapture(capturedImage);
+      handleClose();
+      return;
+    }
+    
+    const img = new Image();
+    img.onload = () => {
+      const containerRect = imageContainerRef.current?.getBoundingClientRect();
+      if (!containerRect) {
         onCapture(capturedImage);
         handleClose();
+        return;
       }
-    }
+      
+      const containerWidth = containerRect.width;
+      const containerHeight = containerRect.height;
+      
+      // PASO 1: Renderizar la imagen con TODAS las transformaciones aplicadas en un canvas temporal
+      // Este canvas representa exactamente lo que el usuario ve en pantalla
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      if (!tempCtx) {
+        onCapture(capturedImage);
+        handleClose();
+        return;
+      }
+      
+      // El canvas temporal tiene el mismo tamaño que el contenedor visual
+      tempCanvas.width = containerWidth;
+      tempCanvas.height = containerHeight;
+      
+      // Calcular el tamaño de la imagen mostrada con object-fit: contain
+      const imgAspect = img.width / img.height;
+      const containerAspect = containerWidth / containerHeight;
+      
+      let displayedWidth, displayedHeight, displayOffsetX, displayOffsetY;
+      
+      if (imgAspect > containerAspect) {
+        displayedWidth = containerWidth;
+        displayedHeight = containerWidth / imgAspect;
+        displayOffsetX = 0;
+        displayOffsetY = (containerHeight - displayedHeight) / 2;
+      } else {
+        displayedHeight = containerHeight;
+        displayedWidth = containerHeight * imgAspect;
+        displayOffsetX = (containerWidth - displayedWidth) / 2;
+        displayOffsetY = 0;
+      }
+      
+      // Aplicar las mismas transformaciones CSS al canvas temporal
+      tempCtx.fillStyle = "#000";
+      tempCtx.fillRect(0, 0, containerWidth, containerHeight);
+      
+      tempCtx.save();
+      tempCtx.translate(containerWidth / 2, containerHeight / 2);
+      tempCtx.scale(flipH ? -zoom : zoom, flipV ? -zoom : zoom);
+      tempCtx.rotate((rotation * Math.PI) / 180);
+      tempCtx.translate(offsetX, offsetY);
+      
+      // Dibujar la imagen centrada
+      tempCtx.drawImage(
+        img,
+        -displayedWidth / 2,
+        -displayedHeight / 2,
+        displayedWidth,
+        displayedHeight
+      );
+      tempCtx.restore();
+      
+      // PASO 2: Si hay área de recorte, extraer esa porción del canvas transformado
+      if (cropArea && cropArea.width > 10 && cropArea.height > 10 && cropCanvas && cropCtx) {
+        // El área de recorte está en coordenadas del contenedor, 
+        // que coinciden exactamente con las coordenadas del canvas temporal
+        const cropX = Math.max(0, Math.min(cropArea.x, containerWidth - 1));
+        const cropY = Math.max(0, Math.min(cropArea.y, containerHeight - 1));
+        const cropW = Math.min(cropArea.width, containerWidth - cropX);
+        const cropH = Math.min(cropArea.height, containerHeight - cropY);
+        
+        // Calcular el tamaño final manteniendo la proporción
+        const maxWidth = 800;
+        const scale = cropW > maxWidth ? maxWidth / cropW : 1;
+        const finalWidth = Math.round(cropW * scale);
+        const finalHeight = Math.round(cropH * scale);
+        
+        cropCanvas.width = finalWidth;
+        cropCanvas.height = finalHeight;
+        
+        // Extraer el área recortada del canvas transformado
+        cropCtx.drawImage(
+          tempCanvas,
+          cropX, cropY, cropW, cropH,  // Área fuente del canvas transformado
+          0, 0, finalWidth, finalHeight  // Destino en el canvas final
+        );
+        
+        const finalDataUrl = cropCanvas.toDataURL("image/jpeg", 0.9);
+        onCapture(finalDataUrl);
+        handleClose();
+      } else {
+        // Sin área de recorte, usar el canvas transformado completo
+        // Pero redimensionar al tamaño objetivo
+        let targetWidth = 800;
+        let targetHeight = targetWidth / aspectRatio;
+        
+        if (containerWidth < targetWidth) {
+          targetWidth = containerWidth;
+          targetHeight = containerHeight;
+        }
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        ctx.drawImage(
+          tempCanvas,
+          0, 0, containerWidth, containerHeight,
+          0, 0, targetWidth, targetHeight
+        );
+        
+        const finalDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+        onCapture(finalDataUrl);
+        handleClose();
+      }
+    };
+    img.src = capturedImage;
   };
 
   const handleClose = () => {
@@ -415,20 +489,46 @@ export function CameraCapture({
                   draggable={false}
                 />
                 
-                {isCropping && (
-                  <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+                {(isCropping || cropArea) && (
+                  <div className="absolute inset-0 bg-black/50 pointer-events-none" />
                 )}
                 
                 {cropArea && cropArea.width > 0 && cropArea.height > 0 && (
-                  <div
-                    className="absolute border-2 border-white border-dashed bg-white/10"
-                    style={{
-                      left: cropArea.x,
-                      top: cropArea.y,
-                      width: cropArea.width,
-                      height: cropArea.height,
-                    }}
-                  />
+                  <>
+                    <div
+                      className={`absolute border-2 ${isCropping ? 'border-white border-dashed' : 'border-green-500 border-solid'} shadow-lg pointer-events-none`}
+                      style={{
+                        left: cropArea.x,
+                        top: cropArea.y,
+                        width: cropArea.width,
+                        height: cropArea.height,
+                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
+                        backgroundColor: 'transparent',
+                      }}
+                    >
+                      <div className="absolute inset-0 overflow-hidden">
+                        <img
+                          src={capturedImage}
+                          alt="Área seleccionada"
+                          className="absolute"
+                          style={{
+                            transform: `scale(${flipH ? -zoom : zoom}, ${flipV ? -zoom : zoom}) rotate(${rotation}deg) translate(${offsetX}px, ${offsetY}px)`,
+                            left: -cropArea.x,
+                            top: -cropArea.y,
+                            width: imageContainerRef.current?.clientWidth || 'auto',
+                            height: imageContainerRef.current?.clientHeight || 'auto',
+                            objectFit: 'contain',
+                          }}
+                          draggable={false}
+                        />
+                      </div>
+                    </div>
+                    {!isCropping && (
+                      <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded">
+                        Área a recortar
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -499,13 +599,10 @@ export function CameraCapture({
                 </Button>
                 <Button
                   size="sm"
-                  variant={isCropping ? "default" : "outline"}
-                  onClick={() => {
-                    setIsCropping(!isCropping);
-                    if (isCropping) setCropArea(null);
-                  }}
+                  variant={isCropping ? "default" : cropArea ? "secondary" : "outline"}
+                  onClick={() => setIsCropping(!isCropping)}
                   data-testid="button-recortar"
-                  title="Recortar área"
+                  title={cropArea ? "Área seleccionada - Click para editar" : "Recortar área"}
                 >
                   <Crop className="h-4 w-4" />
                 </Button>
@@ -524,14 +621,40 @@ export function CameraCapture({
                 <div className="flex items-center justify-center gap-2 p-2 bg-primary/10 rounded text-sm">
                   <Square className="h-4 w-4 text-primary" />
                   <span className="text-muted-foreground">
-                    Dibuja un rectángulo para seleccionar el área
+                    {cropArea && cropArea.width > 10 
+                      ? "Área seleccionada - Dibuja de nuevo para cambiar"
+                      : "Dibuja un rectángulo para seleccionar el área"
+                    }
                   </span>
                   {cropArea && cropArea.width > 10 && (
-                    <Button size="sm" onClick={applyCrop} data-testid="button-aplicar-recorte">
-                      <Check className="h-3 w-3 mr-1" />
-                      Aplicar
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => setCropArea(null)} 
+                      data-testid="button-limpiar-recorte"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Limpiar
                     </Button>
                   )}
+                </div>
+              )}
+              
+              {!isCropping && cropArea && cropArea.width > 10 && (
+                <div className="flex items-center justify-center gap-2 p-2 bg-green-500/10 border border-green-500/30 rounded text-sm">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-green-700 dark:text-green-400">
+                    Área de recorte seleccionada ({Math.round(cropArea.width)}x{Math.round(cropArea.height)}px)
+                  </span>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => setCropArea(null)} 
+                    className="text-destructive hover:text-destructive"
+                    data-testid="button-eliminar-recorte"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
                 </div>
               )}
               
