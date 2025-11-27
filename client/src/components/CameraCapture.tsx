@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Camera, X, Check, RotateCcw, ZoomIn, ZoomOut, 
-  FlipHorizontal, Move, Upload, Loader2, Video, Crop, Square
+  FlipHorizontal, FlipVertical, Move, Upload, Loader2, Video, Crop, Square
 } from "lucide-react";
 
 interface CameraDevice {
@@ -55,6 +56,7 @@ export function CameraCapture({
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [flipH, setFlipH] = useState(false);
+  const [flipV, setFlipV] = useState(false);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
   
@@ -191,6 +193,7 @@ export function CameraCapture({
     setZoom(1);
     setRotation(0);
     setFlipH(false);
+    setFlipV(false);
     setOffsetX(0);
     setOffsetY(0);
     setCropArea(null);
@@ -285,7 +288,7 @@ export function CameraCapture({
           ctx.save();
           ctx.translate(targetWidth / 2, targetHeight / 2);
           ctx.rotate((rotation * Math.PI) / 180);
-          ctx.scale(flipH ? -zoom : zoom, zoom);
+          ctx.scale(flipH ? -zoom : zoom, flipV ? -zoom : zoom);
           
           const imgAspect = img.width / img.height;
           const canvasAspect = targetWidth / targetHeight;
@@ -407,7 +410,7 @@ export function CameraCapture({
                   alt="Captura"
                   className="w-full h-full object-contain"
                   style={{
-                    transform: `scale(${flipH ? -zoom : zoom}, ${zoom}) rotate(${rotation}deg) translate(${offsetX}px, ${offsetY}px)`,
+                    transform: `scale(${flipH ? -zoom : zoom}, ${flipV ? -zoom : zoom}) rotate(${rotation}deg) translate(${offsetX}px, ${offsetY}px)`,
                   }}
                   draggable={false}
                 />
@@ -452,6 +455,7 @@ export function CameraCapture({
                   max={3}
                   step={0.1}
                   className="flex-1"
+                  data-testid="slider-zoom"
                 />
                 <ZoomIn className="h-4 w-4 text-muted-foreground" />
               </div>
@@ -479,10 +483,19 @@ export function CameraCapture({
                   size="sm"
                   variant={flipH ? "default" : "outline"}
                   onClick={() => setFlipH(!flipH)}
-                  data-testid="button-voltear"
-                  title="Voltear horizontal"
+                  data-testid="button-voltear-h"
+                  title="Espejo horizontal"
                 >
                   <FlipHorizontal className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant={flipV ? "default" : "outline"}
+                  onClick={() => setFlipV(!flipV)}
+                  data-testid="button-voltear-v"
+                  title="Espejo vertical"
+                >
+                  <FlipVertical className="h-4 w-4" />
                 </Button>
                 <Button
                   size="sm"
@@ -532,6 +545,7 @@ export function CameraCapture({
                     max={100}
                     step={5}
                     className="flex-1"
+                    data-testid="slider-offset-x"
                   />
                 </div>
                 <div className="flex items-center gap-1">
@@ -543,6 +557,7 @@ export function CameraCapture({
                     max={100}
                     step={5}
                     className="flex-1"
+                    data-testid="slider-offset-y"
                   />
                 </div>
               </div>
@@ -610,5 +625,137 @@ export function CameraCapture({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface CameraCaptureButtonProps {
+  usuarioId?: string;
+  imagenActual?: string | null;
+  nombre?: string;
+  onImageCapture: (imageDataUrl: string) => void;
+  size?: "sm" | "md" | "lg" | "xl";
+  isLoading?: boolean;
+  aspectRatio?: number;
+  title?: string;
+}
+
+export function CameraCaptureButton({ 
+  usuarioId, 
+  imagenActual, 
+  nombre = "Usuario",
+  onImageCapture,
+  size = "lg",
+  isLoading = false,
+  aspectRatio = 1,
+  title = "Editar Foto de Perfil"
+}: CameraCaptureButtonProps) {
+  const [editorOpen, setEditorOpen] = useState(false);
+
+  const sizeClasses = {
+    sm: "h-12 w-12",
+    md: "h-16 w-16", 
+    lg: "h-24 w-24",
+    xl: "h-32 w-32"
+  };
+
+  const obtenerIniciales = (nombre: string) => {
+    const partes = nombre.split(' ');
+    if (partes.length >= 2) {
+      return (partes[0][0] + partes[1][0]).toUpperCase();
+    }
+    return nombre.substring(0, 2).toUpperCase();
+  };
+
+  return (
+    <>
+      <div 
+        className="relative group cursor-pointer"
+        onClick={() => setEditorOpen(true)}
+        data-testid="camera-capture-button"
+      >
+        <Avatar className={`${sizeClasses[size]} border-2 border-primary/20 hover:border-primary/50 transition-colors`}>
+          {isLoading ? (
+            <div className="h-full w-full flex items-center justify-center bg-muted">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            <>
+              <AvatarImage src={imagenActual || undefined} alt={nombre} />
+              <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+                {obtenerIniciales(nombre)}
+              </AvatarFallback>
+            </>
+          )}
+        </Avatar>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+          <Camera className="h-6 w-6 text-white" />
+        </div>
+        <div className="absolute -bottom-1 -right-1 p-1.5 bg-primary rounded-full border-2 border-background">
+          <Camera className="h-3 w-3 text-primary-foreground" />
+        </div>
+      </div>
+
+      <CameraCapture
+        open={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        onCapture={onImageCapture}
+        aspectRatio={aspectRatio}
+        title={title}
+        description="Captura o sube tu foto"
+      />
+    </>
+  );
+}
+
+interface ImageUploadWithCameraProps {
+  value?: string | null;
+  onChange: (imageDataUrl: string) => void;
+  placeholder?: string;
+  aspectRatio?: number;
+  className?: string;
+  testId?: string;
+  title?: string;
+}
+
+export function ImageUploadWithCamera({
+  value,
+  onChange,
+  placeholder = "Subir imagen",
+  aspectRatio = 1,
+  className = "",
+  testId = "image-upload",
+  title = "Subir Foto y Editar"
+}: ImageUploadWithCameraProps) {
+  const [editorOpen, setEditorOpen] = useState(false);
+
+  return (
+    <>
+      <div
+        className={`relative border-2 border-dashed rounded-lg p-2 text-center cursor-pointer hover:bg-muted/50 transition-colors ${className}`}
+        onClick={() => setEditorOpen(true)}
+        data-testid={testId}
+      >
+        {value ? (
+          <img 
+            src={value} 
+            alt="Imagen" 
+            className="w-full h-full object-cover rounded"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-4">
+            <Camera className="h-8 w-8 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground mt-1">{placeholder}</span>
+          </div>
+        )}
+      </div>
+
+      <CameraCapture
+        open={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        onCapture={onChange}
+        aspectRatio={aspectRatio}
+        title={title}
+      />
+    </>
   );
 }

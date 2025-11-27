@@ -17,12 +17,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { ProfileImageCapture } from "@/components/ProfileImageCapture";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import GestionContactosFamiliares from "@/components/GestionContactosFamiliares";
 import { AutocompleteInput } from "@/components/AutocompleteInput";
 import { MapPicker } from "@/components/MapPicker";
-import { CameraCapture } from "@/components/CameraCapture";
+import { CameraCapture, CameraCaptureButton, ImageUploadWithCamera } from "@/components/CameraCapture";
 import type { Usuario, Sector } from "@shared/schema";
 
 const TIPOS_VEHICULO = [
@@ -380,6 +379,8 @@ export default function PerfilPage() {
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [showCameraDomicilio, setShowCameraDomicilio] = useState(false);
   const [uploadingDomicilio, setUploadingDomicilio] = useState(false);
+  const [showCameraPerfil, setShowCameraPerfil] = useState(false);
+  const [uploadingPerfil, setUploadingPerfil] = useState(false);
 
   const { data: perfil, isLoading } = useQuery<Usuario>({
     queryKey: ["/api/usuarios/me"],
@@ -580,12 +581,29 @@ export default function PerfilPage() {
             <div className="lg:col-span-1 space-y-4">
               <Card data-testid="card-foto-perfil">
                 <CardContent className="p-4 flex flex-col items-center">
-                  <ProfileImageCapture
+                  <CameraCaptureButton
                     usuarioId={user.id}
                     imagenActual={formData.profileImageUrl || undefined}
                     nombre={formData.firstName || user.nombre || "Usuario"}
                     size="xl"
-                    onImageUpdated={(url) => handleInputChange("profileImageUrl", url)}
+                    isLoading={uploadingPerfil}
+                    aspectRatio={1}
+                    title="Foto de Perfil"
+                    onImageCapture={async (imageDataUrl) => {
+                      try {
+                        setUploadingPerfil(true);
+                        const file = await dataUrlToFile(imageDataUrl, 'foto-perfil.jpg');
+                        const url = await uploadImageToServer(file);
+                        if (url) {
+                          handleInputChange("profileImageUrl", url);
+                          toast({ title: "Foto actualizada", description: "La foto de perfil se guardó correctamente" });
+                        }
+                      } catch (error) {
+                        toast({ title: "Error", description: "No se pudo guardar la foto", variant: "destructive" });
+                      } finally {
+                        setUploadingPerfil(false);
+                      }
+                    }}
                   />
                   <h2 className="mt-3 text-base font-semibold" data-testid="text-nombre-usuario">
                     {formData.firstName || user.nombre || "Usuario"}

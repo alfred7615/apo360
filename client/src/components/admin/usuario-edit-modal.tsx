@@ -19,7 +19,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { ImageEditor } from "@/components/ImageEditor";
+import { CameraCapture, ImageUploadWithCamera } from "@/components/CameraCapture";
 import type { Usuario } from "@shared/schema";
 
 interface UsuarioEditModalProps {
@@ -228,19 +228,21 @@ function DocumentoUploadField({
         </div>
       </div>
 
-      <ImageEditor
+      <CameraCapture
         open={editorOpen === 'frente'}
         onClose={() => setEditorOpen(null)}
-        onSave={(dataUrl) => handleSaveImage('frente', dataUrl)}
+        onCapture={(dataUrl) => handleSaveImage('frente', dataUrl)}
         aspectRatio={1.5}
         title={`${titulo} - Frente`}
+        description="Captura o sube la foto frontal del documento"
       />
-      <ImageEditor
+      <CameraCapture
         open={editorOpen === 'posterior'}
         onClose={() => setEditorOpen(null)}
-        onSave={(dataUrl) => handleSaveImage('posterior', dataUrl)}
+        onCapture={(dataUrl) => handleSaveImage('posterior', dataUrl)}
         aspectRatio={1.5}
         title={`${titulo} - Posterior`}
+        description="Captura o sube la foto posterior del documento"
       />
     </div>
   );
@@ -297,12 +299,13 @@ function FotoVehiculoField({ label, value, onChange, testId }: FotoVehiculoField
           </div>
         )}
       </div>
-      <ImageEditor
+      <CameraCapture
         open={editorOpen}
         onClose={() => setEditorOpen(false)}
-        onSave={handleSaveImage}
+        onCapture={handleSaveImage}
         aspectRatio={1.5}
         title={`Foto - ${label}`}
+        description="Captura o sube la foto del vehículo"
       />
     </>
   );
@@ -522,12 +525,13 @@ export function UsuarioEditModal({ usuario, open, onClose }: UsuarioEditModalPro
           </DialogTitle>
         </DialogHeader>
 
-        <ImageEditor
+        <CameraCapture
           open={profileEditorOpen}
           onClose={() => setProfileEditorOpen(false)}
-          onSave={handleProfileImageSave}
+          onCapture={handleProfileImageSave}
           aspectRatio={1}
           title="Foto de Perfil"
+          description="Captura o sube la foto de perfil del usuario"
         />
 
         <ScrollArea className="h-[60vh] px-4">
