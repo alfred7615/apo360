@@ -77,9 +77,129 @@ export default function Home() {
       {/* Carrusel de logos publicitarios - Arriba del saludo */}
       <CarruselPublicidad tipo="carrusel_logos" />
 
-      {/* Bienvenida - Altura fija 170px con botones de alerta a la derecha */}
-      <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white" style={{ height: '170px' }}>
-        <div className="container mx-auto px-4 h-full flex items-center justify-between">
+      {/* Bienvenida - Altura fija 170px con botones de alerta */}
+      <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white relative" style={{ height: '170px', paddingBottom: '70px' }}>
+        {/* Botones de Alertas - Escritorio: horizontal superior derecha */}
+        <div className="hidden lg:flex absolute top-4 right-4 gap-2">
+          <div className="relative">
+            <Button
+              onClick={() => setModalAgenda(true)}
+              size="icon"
+              variant="outline"
+              className={`h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
+                contadorAgenda > 0 
+                  ? 'bg-white dark:bg-card border-blue-300' 
+                  : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
+              }`}
+              data-testid="button-agenda"
+            >
+              <Calendar className={`h-7 w-7 ${contadorAgenda > 0 ? 'text-blue-600' : 'text-gray-500 dark:text-gray-400'}`} />
+            </Button>
+            {contadorAgenda > 0 && (
+              <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {contadorAgenda}
+              </span>
+            )}
+          </div>
+
+          <div className="relative">
+            <Button
+              onClick={() => setModalFamilia(true)}
+              size="icon"
+              variant="outline"
+              className={`h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
+                contadorFamilia > 0 
+                  ? 'bg-white dark:bg-card border-pink-300' 
+                  : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
+              }`}
+              data-testid="button-familia"
+            >
+              <UsersRound className={`h-7 w-7 ${contadorFamilia > 0 ? 'text-pink-600' : 'text-gray-500 dark:text-gray-400'}`} />
+            </Button>
+            {contadorFamilia > 0 && (
+              <span className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {contadorFamilia}
+              </span>
+            )}
+          </div>
+
+          <div className="relative">
+            <Button
+              onClick={() => setModalAlertas(true)}
+              size="icon"
+              variant="outline"
+              className={`h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
+                contadorAlertas > 0 
+                  ? 'bg-white dark:bg-card border-red-300' 
+                  : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
+              }`}
+              data-testid="button-alertas"
+            >
+              <Megaphone className={`h-7 w-7 ${contadorAlertas > 0 ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}`} />
+            </Button>
+            {contadorAlertas > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {contadorAlertas}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Botones de Alertas - Tablet/Móvil: solo mostrar si contador > 0 */}
+        <div className="lg:hidden absolute top-4 right-4 flex gap-2">
+          {contadorAgenda > 0 && (
+            <div className="relative">
+              <Button
+                onClick={() => setModalAgenda(true)}
+                size="icon"
+                variant="outline"
+                className="h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 bg-white dark:bg-card border-blue-300"
+                data-testid="button-agenda-mobile"
+              >
+                <Calendar className="h-7 w-7 text-blue-600" />
+              </Button>
+              <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {contadorAgenda}
+              </span>
+            </div>
+          )}
+
+          {contadorFamilia > 0 && (
+            <div className="relative">
+              <Button
+                onClick={() => setModalFamilia(true)}
+                size="icon"
+                variant="outline"
+                className="h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 bg-white dark:bg-card border-pink-300"
+                data-testid="button-familia-mobile"
+              >
+                <UsersRound className="h-7 w-7 text-pink-600" />
+              </Button>
+              <span className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {contadorFamilia}
+              </span>
+            </div>
+          )}
+
+          {contadorAlertas > 0 && (
+            <div className="relative">
+              <Button
+                onClick={() => setModalAlertas(true)}
+                size="icon"
+                variant="outline"
+                className="h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 bg-white dark:bg-card border-red-300"
+                data-testid="button-alertas-mobile"
+              >
+                <Megaphone className="h-7 w-7 text-red-600" />
+              </Button>
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {contadorAlertas}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="container mx-auto px-4 h-full flex items-center">
           <div className="text-left">
             <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-welcome">
               ¡Hola, {nombreMostrar}!
@@ -91,77 +211,11 @@ export default function Home() {
               Juntos somos invencibles
             </p>
           </div>
-
-          {/* Botones de Alertas - Vertical a la derecha */}
-          <div className="flex flex-col gap-2">
-            <div className="relative">
-              <Button
-                onClick={() => setModalAgenda(true)}
-                size="icon"
-                variant="outline"
-                className={`h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
-                  contadorAgenda > 0 
-                    ? 'bg-white dark:bg-card border-blue-300' 
-                    : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
-                }`}
-                data-testid="button-agenda"
-              >
-                <Calendar className={`h-7 w-7 ${contadorAgenda > 0 ? 'text-blue-600' : 'text-gray-500 dark:text-gray-400'}`} />
-              </Button>
-              {contadorAgenda > 0 && (
-                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {contadorAgenda}
-                </span>
-              )}
-            </div>
-
-            <div className="relative">
-              <Button
-                onClick={() => setModalFamilia(true)}
-                size="icon"
-                variant="outline"
-                className={`h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
-                  contadorFamilia > 0 
-                    ? 'bg-white dark:bg-card border-pink-300' 
-                    : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
-                }`}
-                data-testid="button-familia"
-              >
-                <UsersRound className={`h-7 w-7 ${contadorFamilia > 0 ? 'text-pink-600' : 'text-gray-500 dark:text-gray-400'}`} />
-              </Button>
-              {contadorFamilia > 0 && (
-                <span className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {contadorFamilia}
-                </span>
-              )}
-            </div>
-
-            <div className="relative">
-              <Button
-                onClick={() => setModalAlertas(true)}
-                size="icon"
-                variant="outline"
-                className={`h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
-                  contadorAlertas > 0 
-                    ? 'bg-white dark:bg-card border-red-300' 
-                    : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
-                }`}
-                data-testid="button-alertas"
-              >
-                <Megaphone className={`h-7 w-7 ${contadorAlertas > 0 ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}`} />
-              </Button>
-              {contadorAlertas > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {contadorAlertas}
-                </span>
-              )}
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* Accesos rápidos - 6 escritorio, 4 tablet, 3 celular - Altura 100px */}
-      <section className="container mx-auto px-4 mt-6">
+      {/* Accesos rápidos - 6 escritorio, 4 tablet, 3 celular - Altura 100px, 20px encima del saludo */}
+      <section className="container mx-auto px-4" style={{ marginTop: '-70px' }}>
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
           {/* Chat */}
           <div 
