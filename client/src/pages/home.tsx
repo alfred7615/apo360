@@ -199,7 +199,7 @@ export default function Home() {
           )}
         </div>
 
-        <div className="container mx-auto px-4 h-full flex items-end justify-start pb-6">
+        <div className="container mx-auto px-4 h-full flex items-end justify-start" style={{ paddingBottom: '30px' }}>
           <div className="text-left">
             <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-welcome">
               ¡Hola, {nombreMostrar}!
