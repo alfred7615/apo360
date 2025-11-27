@@ -167,8 +167,6 @@ function ViewModeSelector({ viewMode, setViewMode }: ViewModeSelectorProps) {
 interface AdminSidebarProps {
   activeScreen: AdminScreen;
   setActiveScreen: (screen: AdminScreen) => void;
-  viewMode: ViewMode;
-  setViewMode: (mode: ViewMode) => void;
   user: any;
 }
 
@@ -217,8 +215,6 @@ const getRolLabel = (rol: string) => {
 function AdminSidebar({ 
   activeScreen, 
   setActiveScreen,
-  viewMode,
-  setViewMode,
   user
 }: AdminSidebarProps) {
   const [gestionesOpen, setGestionesOpen] = useState(true);
@@ -236,9 +232,8 @@ function AdminSidebar({
   return (
     <Sidebar collapsible="icon" className="border-r">
       <SidebarHeader className="p-0">
-        <ViewModeSelector viewMode={viewMode} setViewMode={setViewMode} />
-        <div className="px-3 py-2">
-          <h2 className="text-sm font-bold text-primary group-data-[collapsible=icon]:hidden">SEG-APO Admin</h2>
+        <div className="px-3 py-3 border-b">
+          <h2 className="text-sm font-bold text-primary group-data-[collapsible=icon]:hidden">Panel Admin</h2>
         </div>
       </SidebarHeader>
       
@@ -396,21 +391,17 @@ function AdminPanelContent() {
   const ActiveComponent = screenComponents[activeScreen];
   const currentScreenTitle = [...mainMenuItems, ...gestionesMenuItems].find(item => item.id === activeScreen)?.title || "Dashboard";
 
-  const ViewModeIcon = viewMode === "desktop" ? Monitor : viewMode === "tablet" ? Tablet : Smartphone;
-
   return (
     <div className="flex h-screen w-full" data-testid="admin-panel">
       <AdminSidebar 
         activeScreen={activeScreen}
         setActiveScreen={setActiveScreen}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
         user={user}
       />
       
       <div className="flex flex-col flex-1 min-w-0">
         <header className="flex items-center justify-between gap-2 p-2 border-b bg-card flex-shrink-0">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
             <SidebarTrigger data-testid="button-menu">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Menú</span>
@@ -425,16 +416,33 @@ function AdminPanelContent() {
                 </p>
               </div>
             </div>
+
+            <div className="flex items-center gap-1 border rounded-md p-0.5 bg-muted/30">
+              {[
+                { mode: "desktop" as ViewMode, icon: Monitor, label: "PC" },
+                { mode: "tablet" as ViewMode, icon: Tablet, label: "Tab" },
+                { mode: "mobile" as ViewMode, icon: Smartphone, label: "Cel" },
+              ].map(({ mode, icon: Icon, label }) => (
+                <Button
+                  key={mode}
+                  variant={viewMode === mode ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode(mode)}
+                  className="h-7 px-2 gap-1"
+                  data-testid={`button-header-view-${mode}`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span className="text-xs hidden sm:inline">{label}</span>
+                </Button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <ViewModeIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <Badge 
-              className="bg-primary text-primary-foreground flex-shrink-0 text-xs" 
-              data-testid="badge-role"
-            >
-              Admin
-            </Badge>
-          </div>
+          <Badge 
+            className="bg-primary text-primary-foreground flex-shrink-0 text-xs" 
+            data-testid="badge-role"
+          >
+            Admin
+          </Badge>
         </header>
 
         <main 
