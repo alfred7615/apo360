@@ -1,11 +1,25 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { 
   Camera, X, Check, RotateCcw, ZoomIn, ZoomOut, 
-  FlipHorizontal, Move, Upload, Loader2
+  FlipHorizontal, Move, Upload, Loader2, Video, Crop, Square
 } from "lucide-react";
+
+interface CameraDevice {
+  deviceId: string;
+  label: string;
+}
+
+interface CropArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 interface CameraCaptureProps {
   open: boolean;
@@ -13,6 +27,7 @@ interface CameraCaptureProps {
   onCapture: (imageDataUrl: string) => void;
   aspectRatio?: number;
   title?: string;
+  description?: string;
 }
 
 export function CameraCapture({
@@ -20,31 +35,66 @@ export function CameraCapture({
   onClose,
   onCapture,
   aspectRatio = 4 / 3,
-  title = "Capturar Foto",
+  title = "Subir Foto y Editar",
+  description = "Captura o sube una imagen para editar",
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cropCanvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
   
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  const [cameras, setCameras] = useState<CameraDevice[]>([]);
+  const [selectedCamera, setSelectedCamera] = useState<string>("");
+  
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [flipH, setFlipH] = useState(false);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
+  
+  const [isCropping, setIsCropping] = useState(false);
+  const [cropStart, setCropStart] = useState<{ x: number; y: number } | null>(null);
+  const [cropArea, setCropArea] = useState<CropArea | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const startCamera = useCallback(async () => {
+  const enumerateCameras = useCallback(async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices
+        .filter((device) => device.kind === "videoinput")
+        .map((device, index) => ({
+          deviceId: device.deviceId,
+          label: device.label || `Cámara ${index + 1}`,
+        }));
+      
+      setCameras(videoDevices);
+      
+      if (videoDevices.length > 0 && !selectedCamera) {
+        setSelectedCamera(videoDevices[0].deviceId);
+      }
+    } catch (err) {
+      console.error("Error al enumerar cámaras:", err);
+    }
+  }, [selectedCamera]);
+
+  const startCamera = useCallback(async (deviceId?: string) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      const constraints = {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      
+      const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: { ideal: "environment" },
+          deviceId: deviceId ? { exact: deviceId } : undefined,
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -58,13 +108,17 @@ export function CameraCapture({
         videoRef.current.srcObject = mediaStream;
         await videoRef.current.play();
       }
+      
+      await enumerateCameras();
+      
     } catch (err: any) {
       console.error("Error al acceder a la cámara:", err);
       setError("No se pudo acceder a la cámara. Verifica los permisos o usa 'Subir Archivo'.");
+      await enumerateCameras();
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [stream, enumerateCameras]);
 
   const stopCamera = useCallback(() => {
     if (stream) {
@@ -75,12 +129,20 @@ export function CameraCapture({
 
   useEffect(() => {
     if (open && !capturedImage) {
-      startCamera();
+      startCamera(selectedCamera || undefined);
     }
     return () => {
-      stopCamera();
+      if (!open) {
+        stopCamera();
+      }
     };
-  }, [open, startCamera, stopCamera, capturedImage]);
+  }, [open]);
+
+  useEffect(() => {
+    if (open && selectedCamera && !capturedImage) {
+      startCamera(selectedCamera);
+    }
+  }, [selectedCamera]);
 
   const handleCapture = () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -90,28 +152,12 @@ export function CameraCapture({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const width = 640;
-    const height = width / aspectRatio;
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
 
-    ctx.save();
-    ctx.translate(width / 2, height / 2);
-    ctx.rotate((rotation * Math.PI) / 180);
-    ctx.scale(flipH ? -zoom : zoom, zoom);
-    ctx.drawImage(
-      video,
-      -video.videoWidth / 2 + offsetX,
-      -video.videoHeight / 2 + offsetY,
-      video.videoWidth,
-      video.videoHeight
-    );
-    ctx.restore();
-
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
     setCapturedImage(dataUrl);
     stopCamera();
   };
@@ -127,12 +173,18 @@ export function CameraCapture({
       stopCamera();
     };
     reader.readAsDataURL(file);
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleRetake = () => {
     setCapturedImage(null);
+    setCropArea(null);
+    setIsCropping(false);
     resetEdits();
-    startCamera();
+    startCamera(selectedCamera || undefined);
   };
 
   const resetEdits = () => {
@@ -141,6 +193,71 @@ export function CameraCapture({
     setFlipH(false);
     setOffsetX(0);
     setOffsetY(0);
+    setCropArea(null);
+    setIsCropping(false);
+  };
+
+  const handleCropMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isCropping || !imageContainerRef.current) return;
+    
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setCropStart({ x, y });
+    setCropArea({ x, y, width: 0, height: 0 });
+    setIsDragging(true);
+  };
+
+  const handleCropMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging || !cropStart || !imageContainerRef.current) return;
+    
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const currentX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const currentY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+    
+    const x = Math.min(cropStart.x, currentX);
+    const y = Math.min(cropStart.y, currentY);
+    const width = Math.abs(currentX - cropStart.x);
+    const height = Math.abs(currentY - cropStart.y);
+    
+    setCropArea({ x, y, width, height });
+  };
+
+  const handleCropMouseUp = () => {
+    setIsDragging(false);
+    setCropStart(null);
+  };
+
+  const applyCrop = () => {
+    if (!cropArea || !capturedImage || !cropCanvasRef.current || !imageContainerRef.current) return;
+    
+    const img = new Image();
+    img.onload = () => {
+      const canvas = cropCanvasRef.current!;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      
+      const containerRect = imageContainerRef.current!.getBoundingClientRect();
+      const scaleX = img.width / containerRect.width;
+      const scaleY = img.height / containerRect.height;
+      
+      const cropX = cropArea.x * scaleX;
+      const cropY = cropArea.y * scaleY;
+      const cropW = cropArea.width * scaleX;
+      const cropH = cropArea.height * scaleY;
+      
+      canvas.width = cropW;
+      canvas.height = cropH;
+      
+      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+      
+      const croppedDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      setCapturedImage(croppedDataUrl);
+      setCropArea(null);
+      setIsCropping(false);
+    };
+    img.src = capturedImage;
   };
 
   const handleConfirm = () => {
@@ -151,29 +268,35 @@ export function CameraCapture({
       if (canvas && ctx) {
         const img = new Image();
         img.onload = () => {
-          const width = 640;
-          const height = width / aspectRatio;
-          canvas.width = width;
-          canvas.height = height;
+          let targetWidth = 800;
+          let targetHeight = targetWidth / aspectRatio;
+          
+          if (img.width < targetWidth) {
+            targetWidth = img.width;
+            targetHeight = img.height;
+          }
+          
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
           
           ctx.fillStyle = "#000";
-          ctx.fillRect(0, 0, width, height);
+          ctx.fillRect(0, 0, targetWidth, targetHeight);
           
           ctx.save();
-          ctx.translate(width / 2, height / 2);
+          ctx.translate(targetWidth / 2, targetHeight / 2);
           ctx.rotate((rotation * Math.PI) / 180);
           ctx.scale(flipH ? -zoom : zoom, zoom);
           
           const imgAspect = img.width / img.height;
-          const canvasAspect = width / height;
+          const canvasAspect = targetWidth / targetHeight;
           
           let drawWidth, drawHeight;
           if (imgAspect > canvasAspect) {
-            drawHeight = height;
-            drawWidth = height * imgAspect;
+            drawHeight = targetHeight;
+            drawWidth = targetHeight * imgAspect;
           } else {
-            drawWidth = width;
-            drawHeight = width / imgAspect;
+            drawWidth = targetWidth;
+            drawHeight = targetWidth / imgAspect;
           }
           
           ctx.drawImage(
@@ -200,6 +323,8 @@ export function CameraCapture({
   const handleClose = () => {
     stopCamera();
     setCapturedImage(null);
+    setCropArea(null);
+    setIsCropping(false);
     resetEdits();
     setError(null);
     onClose();
@@ -207,18 +332,45 @@ export function CameraCapture({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-5 w-5 text-primary" />
             {title}
           </DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          {!capturedImage && cameras.length > 1 && (
+            <div className="space-y-1">
+              <Label className="text-xs flex items-center gap-1">
+                <Video className="h-3 w-3" />
+                Seleccionar Cámara
+              </Label>
+              <Select value={selectedCamera} onValueChange={setSelectedCamera}>
+                <SelectTrigger className="h-8" data-testid="select-camera">
+                  <SelectValue placeholder="Selecciona una cámara" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cameras.map((camera) => (
+                    <SelectItem key={camera.deviceId} value={camera.deviceId}>
+                      {camera.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div 
-            className="relative bg-black rounded-lg overflow-hidden"
+            ref={imageContainerRef}
+            className={`relative bg-black rounded-lg overflow-hidden ${isCropping ? 'cursor-crosshair' : ''}`}
             style={{ aspectRatio: aspectRatio.toString() }}
+            onMouseDown={handleCropMouseDown}
+            onMouseMove={handleCropMouseMove}
+            onMouseUp={handleCropMouseUp}
+            onMouseLeave={handleCropMouseUp}
           >
             {!capturedImage && (
               <>
@@ -227,9 +379,6 @@ export function CameraCapture({
                   className="w-full h-full object-cover"
                   playsInline
                   muted
-                  style={{
-                    transform: `scale(${flipH ? -zoom : zoom}, ${zoom}) rotate(${rotation}deg) translate(${offsetX}px, ${offsetY}px)`,
-                  }}
                 />
                 {isLoading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -252,23 +401,42 @@ export function CameraCapture({
             )}
             
             {capturedImage && (
-              <img
-                src={capturedImage}
-                alt="Captura"
-                className="w-full h-full object-cover"
-                style={{
-                  transform: `scale(${flipH ? -zoom : zoom}, ${zoom}) rotate(${rotation}deg) translate(${offsetX}px, ${offsetY}px)`,
-                }}
-              />
+              <>
+                <img
+                  src={capturedImage}
+                  alt="Captura"
+                  className="w-full h-full object-contain"
+                  style={{
+                    transform: `scale(${flipH ? -zoom : zoom}, ${zoom}) rotate(${rotation}deg) translate(${offsetX}px, ${offsetY}px)`,
+                  }}
+                  draggable={false}
+                />
+                
+                {isCropping && (
+                  <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+                )}
+                
+                {cropArea && cropArea.width > 0 && cropArea.height > 0 && (
+                  <div
+                    className="absolute border-2 border-white border-dashed bg-white/10"
+                    style={{
+                      left: cropArea.x,
+                      top: cropArea.y,
+                      width: cropArea.width,
+                      height: cropArea.height,
+                    }}
+                  />
+                )}
+              </>
             )}
           </div>
 
           <canvas ref={canvasRef} className="hidden" />
+          <canvas ref={cropCanvasRef} className="hidden" />
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             className="hidden"
             onChange={handleFileUpload}
           />
@@ -288,12 +456,13 @@ export function CameraCapture({
                 <ZoomIn className="h-4 w-4 text-muted-foreground" />
               </div>
               
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-2 flex-wrap">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setRotation((r) => (r - 90) % 360)}
                   data-testid="button-rotar-izq"
+                  title="Rotar izquierda"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </Button>
@@ -302,6 +471,7 @@ export function CameraCapture({
                   variant="outline"
                   onClick={() => setRotation((r) => (r + 90) % 360)}
                   data-testid="button-rotar-der"
+                  title="Rotar derecha"
                 >
                   <RotateCcw className="h-4 w-4 scale-x-[-1]" />
                 </Button>
@@ -310,18 +480,47 @@ export function CameraCapture({
                   variant={flipH ? "default" : "outline"}
                   onClick={() => setFlipH(!flipH)}
                   data-testid="button-voltear"
+                  title="Voltear horizontal"
                 >
                   <FlipHorizontal className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant={isCropping ? "default" : "outline"}
+                  onClick={() => {
+                    setIsCropping(!isCropping);
+                    if (isCropping) setCropArea(null);
+                  }}
+                  data-testid="button-recortar"
+                  title="Recortar área"
+                >
+                  <Crop className="h-4 w-4" />
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={resetEdits}
                   data-testid="button-reset-edicion"
+                  title="Restablecer"
                 >
                   <Move className="h-4 w-4" />
                 </Button>
               </div>
+              
+              {isCropping && (
+                <div className="flex items-center justify-center gap-2 p-2 bg-primary/10 rounded text-sm">
+                  <Square className="h-4 w-4 text-primary" />
+                  <span className="text-muted-foreground">
+                    Dibuja un rectángulo para seleccionar el área
+                  </span>
+                  {cropArea && cropArea.width > 10 && (
+                    <Button size="sm" onClick={applyCrop} data-testid="button-aplicar-recorte">
+                      <Check className="h-3 w-3 mr-1" />
+                      Aplicar
+                    </Button>
+                  )}
+                </div>
+              )}
               
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-1">
@@ -350,7 +549,7 @@ export function CameraCapture({
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             {!capturedImage ? (
               <>
                 <Button
@@ -359,7 +558,7 @@ export function CameraCapture({
                   data-testid="button-subir-archivo"
                 >
                   <Upload className="h-4 w-4 mr-1" />
-                  Archivo
+                  Subir
                 </Button>
                 <Button
                   onClick={handleCapture}
@@ -372,6 +571,7 @@ export function CameraCapture({
                 </Button>
                 <Button
                   variant="ghost"
+                  size="icon"
                   onClick={handleClose}
                   data-testid="button-cancelar-camara"
                 >
@@ -386,7 +586,15 @@ export function CameraCapture({
                   data-testid="button-retomar-foto"
                 >
                   <RotateCcw className="h-4 w-4 mr-1" />
-                  Retomar
+                  Otra
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  data-testid="button-cambiar-archivo"
+                >
+                  <Upload className="h-4 w-4 mr-1" />
+                  Cambiar
                 </Button>
                 <Button
                   onClick={handleConfirm}
@@ -394,7 +602,7 @@ export function CameraCapture({
                   data-testid="button-confirmar-foto"
                 >
                   <Check className="h-4 w-4 mr-1" />
-                  Usar esta foto
+                  Usar
                 </Button>
               </>
             )}
