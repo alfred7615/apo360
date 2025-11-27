@@ -318,7 +318,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
 
   const fondoClase = tipo === "logos_servicios" 
     ? "bg-gray-100 dark:bg-gray-800/50" 
-    : "bg-white dark:bg-gray-900";
+    : "";
 
   const esCarruselLogos = tipo === "carrusel_logos";
 
@@ -331,7 +331,10 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
             ? 'shadow-lg relative z-10' 
             : 'border-y border-border/30'
         }`}
-        style={{ height: esCarruselLogos ? "110px" : "100px" }}
+        style={{ 
+          height: esCarruselLogos ? "95px" : "100px",
+          backgroundColor: esCarruselLogos ? "rgb(253, 242, 248)" : undefined
+        }}
         data-testid={`carousel-${tipo}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
