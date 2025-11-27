@@ -957,7 +957,7 @@ export default function PerfilPage() {
                         data-testid="button-abrir-mapa"
                       >
                         <Map className="h-3 w-3 mr-1" />
-                        Maps
+                        Mapa
                       </Button>
                     </div>
                     

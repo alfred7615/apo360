@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { AlertTriangle, Shield, Phone, Truck, Ambulance, Flame, MapPin, Send, Users, MessageCircle, Check, Navigation, Loader2 } from "lucide-react";
+import { AlertTriangle, Shield, Phone, Truck, Ambulance, Flame, MapPin, Send, Users, MessageCircle, Check, Navigation, Loader2, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,7 +14,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
-import SelectorUbicacion from "./SelectorUbicacion";
+import { MapPicker } from "./MapPicker";
 
 const TIPOS_EMERGENCIA = [
   { tipo: "policia", icono: Shield, color: "bg-blue-600", hoverColor: "hover:bg-blue-700" },
@@ -56,6 +56,7 @@ export default function BotonPanico() {
   const [descripcion, setDescripcion] = useState("");
   const [ubicacion, setUbicacion] = useState<{ lat: number; lng: number } | null>(null);
   const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   
   const [posicion, setPosicion] = useState({ x: 20, y: 20 });
   const [arrastrando, setArrastrando] = useState(false);
@@ -499,13 +500,16 @@ export default function BotonPanico() {
                 </Button>
               </div>
               
-              <div className="flex justify-center">
-                <SelectorUbicacion
-                  ubicacionActual={ubicacion}
-                  onSeleccionarUbicacion={seleccionarUbicacionManual}
-                  obteniendoGPS={obteniendoUbicacion}
-                />
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMapPicker(true)}
+                className="w-full"
+                data-testid="button-abrir-mapa-emergencia"
+              >
+                <Map className="h-4 w-4 mr-2" />
+                Mapa
+              </Button>
             </div>
 
             <div className="flex gap-2">
@@ -545,6 +549,18 @@ export default function BotonPanico() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <MapPicker
+        open={showMapPicker}
+        onClose={() => setShowMapPicker(false)}
+        onSelectLocation={(lat, lng) => {
+          seleccionarUbicacionManual({ lat, lng });
+          setShowMapPicker(false);
+          toast({ title: "Ubicación seleccionada", description: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}` });
+        }}
+        initialLat={ubicacion?.lat}
+        initialLng={ubicacion?.lng}
+      />
     </>
   );
 }
