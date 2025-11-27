@@ -21,6 +21,7 @@ import { ProfileImageCapture } from "@/components/ProfileImageCapture";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import GestionContactosFamiliares from "@/components/GestionContactosFamiliares";
 import { AutocompleteInput } from "@/components/AutocompleteInput";
+import { MapPicker } from "@/components/MapPicker";
 import type { Usuario, Sector } from "@shared/schema";
 
 const TIPOS_VEHICULO = [
@@ -375,6 +376,7 @@ export default function PerfilPage() {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("basico");
   const [formData, setFormData] = useState<Partial<Usuario>>({});
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   const { data: perfil, isLoading } = useQuery<Usuario>({
     queryKey: ["/api/usuarios/me"],
@@ -902,12 +904,12 @@ export default function PerfilPage() {
                         data-testid="input-perfil-longitud"
                       />
                     </div>
-                    <div className="sm:col-span-2">
+                    <div className="sm:col-span-2 flex gap-2">
                       <Button 
                         type="button" 
                         variant="outline" 
                         size="sm"
-                        className="w-full"
+                        className="flex-1"
                         onClick={() => {
                           if (navigator.geolocation) {
                             navigator.geolocation.getCurrentPosition(
@@ -923,7 +925,18 @@ export default function PerfilPage() {
                         data-testid="button-obtener-gps"
                       >
                         <MapPin className="h-3 w-3 mr-1" />
-                        Obtener mi GPS
+                        Mi GPS
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="default" 
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => setShowMapPicker(true)}
+                        data-testid="button-abrir-mapa"
+                      >
+                        <Map className="h-3 w-3 mr-1" />
+                        Maps
                       </Button>
                     </div>
                   </CardContent>
@@ -1203,6 +1216,18 @@ export default function PerfilPage() {
           </Button>
         </div>
       </div>
+
+      <MapPicker
+        open={showMapPicker}
+        onClose={() => setShowMapPicker(false)}
+        onSelectLocation={(lat, lng) => {
+          handleInputChange("gpsLatitud", lat);
+          handleInputChange("gpsLongitud", lng);
+          toast({ title: "Ubicación seleccionada", description: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}` });
+        }}
+        initialLat={formData.gpsLatitud || undefined}
+        initialLng={formData.gpsLongitud || undefined}
+      />
     </div>
   );
 }
