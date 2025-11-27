@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import GestionContactosFamiliares from "@/components/GestionContactosFamiliares";
 import { AutocompleteInput } from "@/components/AutocompleteInput";
 import { MapPicker } from "@/components/MapPicker";
+import { CameraCapture } from "@/components/CameraCapture";
 import type { Usuario, Sector } from "@shared/schema";
 
 const TIPOS_VEHICULO = [
@@ -377,6 +378,8 @@ export default function PerfilPage() {
   const [activeTab, setActiveTab] = useState("basico");
   const [formData, setFormData] = useState<Partial<Usuario>>({});
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [showCameraDomicilio, setShowCameraDomicilio] = useState(false);
+  const [uploadingDomicilio, setUploadingDomicilio] = useState(false);
 
   const { data: perfil, isLoading } = useQuery<Usuario>({
     queryKey: ["/api/usuarios/me"],
@@ -939,6 +942,43 @@ export default function PerfilPage() {
                         Maps
                       </Button>
                     </div>
+                    
+                    <div className="sm:col-span-2 space-y-2">
+                      <Label className={`text-xs ${tieneValor('fotoDomicilio') ? 'font-bold' : ''}`}>
+                        Foto de Domicilio
+                      </Label>
+                      <div className="flex gap-2">
+                        <div 
+                          className="flex-1 border-2 border-dashed rounded-lg p-2 flex items-center justify-center min-h-[80px] cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => setShowCameraDomicilio(true)}
+                        >
+                          {formData.fotoDomicilio ? (
+                            <img 
+                              src={formData.fotoDomicilio} 
+                              alt="Foto de domicilio" 
+                              className="h-20 w-full object-cover rounded"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center text-muted-foreground">
+                              <Camera className="h-6 w-6 mb-1" />
+                              <span className="text-xs">Tomar foto del domicilio</span>
+                            </div>
+                          )}
+                        </div>
+                        {formData.fotoDomicilio && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleInputChange("fotoDomicilio", null)}
+                            className="h-auto"
+                            data-testid="button-eliminar-foto-domicilio"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -1227,6 +1267,28 @@ export default function PerfilPage() {
         }}
         initialLat={formData.gpsLatitud || undefined}
         initialLng={formData.gpsLongitud || undefined}
+      />
+
+      <CameraCapture
+        open={showCameraDomicilio}
+        onClose={() => setShowCameraDomicilio(false)}
+        onCapture={async (imageDataUrl) => {
+          try {
+            setUploadingDomicilio(true);
+            const file = await dataUrlToFile(imageDataUrl, 'foto-domicilio.jpg');
+            const url = await uploadImageToServer(file);
+            if (url) {
+              handleInputChange("fotoDomicilio", url);
+              toast({ title: "Foto guardada", description: "La foto de domicilio se guardó correctamente" });
+            }
+          } catch (error) {
+            toast({ title: "Error", description: "No se pudo guardar la foto", variant: "destructive" });
+          } finally {
+            setUploadingDomicilio(false);
+          }
+        }}
+        title="Foto de Domicilio"
+        aspectRatio={4 / 3}
       />
     </div>
   );
