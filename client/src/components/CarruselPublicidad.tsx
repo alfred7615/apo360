@@ -333,7 +333,7 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
         }`}
         style={{ 
           height: esCarruselLogos ? "95px" : "100px",
-          backgroundColor: esCarruselLogos ? "rgb(253, 242, 248)" : undefined
+          backgroundColor: esCarruselLogos ? "rgb(219, 182, 200)" : undefined
         }}
         data-testid={`carousel-${tipo}`}
         onTouchStart={handleTouchStart}
