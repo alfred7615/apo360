@@ -1,22 +1,11 @@
-import { useState, useEffect, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useEffect, useCallback } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Navigation, Check, X } from "lucide-react";
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
-import L from "leaflet";
+import { MapPin, Navigation, Check, X, Crosshair } from "lucide-react";
+import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-
-const customIcon = new L.Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
 
 interface MapPickerProps {
   open: boolean;
@@ -26,46 +15,35 @@ interface MapPickerProps {
   initialLng?: number;
 }
 
-function DraggableMarker({ 
-  position, 
-  onPositionChange 
+function MapEventHandler({ 
+  onMove 
 }: { 
-  position: [number, number]; 
-  onPositionChange: (lat: number, lng: number) => void;
+  onMove: (lat: number, lng: number) => void;
 }) {
-  const markerRef = useRef<L.Marker>(null);
+  const map = useMap();
   
   useMapEvents({
-    click(e) {
-      onPositionChange(e.latlng.lat, e.latlng.lng);
+    move() {
+      const center = map.getCenter();
+      onMove(center.lat, center.lng);
     },
+    moveend() {
+      const center = map.getCenter();
+      onMove(center.lat, center.lng);
+    }
   });
 
-  return (
-    <Marker
-      ref={markerRef}
-      position={position}
-      icon={customIcon}
-      draggable={true}
-      eventHandlers={{
-        dragend() {
-          const marker = markerRef.current;
-          if (marker) {
-            const latlng = marker.getLatLng();
-            onPositionChange(latlng.lat, latlng.lng);
-          }
-        },
-      }}
-    />
-  );
+  return null;
 }
 
-function MapCenterUpdater({ center }: { center: [number, number] }) {
+function MapCenterUpdater({ center, shouldUpdate }: { center: [number, number]; shouldUpdate: boolean }) {
   const map = useMap();
   
   useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
+    if (shouldUpdate) {
+      map.setView(center, map.getZoom(), { animate: true });
+    }
+  }, [center, shouldUpdate, map]);
   
   return null;
 }
@@ -78,31 +56,35 @@ export function MapPicker({
   initialLng = -70.2536,
 }: MapPickerProps) {
   const [position, setPosition] = useState<[number, number]>([initialLat, initialLng]);
-  const [latInput, setLatInput] = useState(initialLat.toString());
-  const [lngInput, setLngInput] = useState(initialLng.toString());
+  const [latInput, setLatInput] = useState(initialLat.toFixed(6));
+  const [lngInput, setLngInput] = useState(initialLng.toFixed(6));
   const [isLocating, setIsLocating] = useState(false);
+  const [shouldCenterMap, setShouldCenterMap] = useState(false);
 
   useEffect(() => {
     if (open) {
       const lat = initialLat || -18.0146;
       const lng = initialLng || -70.2536;
       setPosition([lat, lng]);
-      setLatInput(lat.toString());
-      setLngInput(lng.toString());
+      setLatInput(lat.toFixed(6));
+      setLngInput(lng.toFixed(6));
+      setShouldCenterMap(true);
     }
   }, [open, initialLat, initialLng]);
 
-  const handlePositionChange = (lat: number, lng: number) => {
+  const handleMapMove = useCallback((lat: number, lng: number) => {
     setPosition([lat, lng]);
     setLatInput(lat.toFixed(6));
     setLngInput(lng.toFixed(6));
-  };
+    setShouldCenterMap(false);
+  }, []);
 
   const handleInputChange = () => {
     const lat = parseFloat(latInput);
     const lng = parseFloat(lngInput);
-    if (!isNaN(lat) && !isNaN(lng)) {
+    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
       setPosition([lat, lng]);
+      setShouldCenterMap(true);
     }
   };
 
@@ -117,15 +99,18 @@ export function MapPicker({
       (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        handlePositionChange(lat, lng);
+        setPosition([lat, lng]);
+        setLatInput(lat.toFixed(6));
+        setLngInput(lng.toFixed(6));
+        setShouldCenterMap(true);
         setIsLocating(false);
       },
       (error) => {
         console.error("Error obteniendo ubicación:", error);
-        alert("No se pudo obtener la ubicación actual");
+        alert("No se pudo obtener la ubicación actual. Verifica los permisos de ubicación.");
         setIsLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
@@ -134,20 +119,84 @@ export function MapPicker({
     onClose();
   };
 
+  const handleCancel = () => {
+    onClose();
+  };
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-primary" />
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden p-0 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600">
+        <DialogHeader className="px-4 pt-4 pb-2 sm:px-6 sm:pt-6 bg-zinc-200 dark:bg-zinc-700">
+          <DialogTitle className="flex items-center gap-2 text-zinc-800 dark:text-zinc-100">
+            <MapPin className="h-5 w-5 text-zinc-600 dark:text-zinc-300" />
             Seleccionar Ubicación GPS
           </DialogTitle>
+          <DialogDescription className="text-zinc-600 dark:text-zinc-400 text-sm">
+            Arrastra el mapa para ubicar el punto deseado
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <Button
+              variant="outline"
+              onClick={handleGetCurrentLocation}
+              disabled={isLocating}
+              className="flex-1 bg-zinc-50 dark:bg-zinc-600 border-zinc-300 dark:border-zinc-500 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-500"
+              data-testid="button-ubicacion-actual"
+            >
+              <Navigation className={`h-4 w-4 mr-2 ${isLocating ? 'animate-spin' : ''}`} />
+              {isLocating ? "Obteniendo GPS..." : "Usar GPS del Dispositivo"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShouldCenterMap(true)}
+              className="flex-1 bg-zinc-50 dark:bg-zinc-600 border-zinc-300 dark:border-zinc-500 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-500"
+              data-testid="button-centrar-mapa"
+            >
+              <Crosshair className="h-4 w-4 mr-2" />
+              Seleccionar en Mapa
+            </Button>
+          </div>
+
+          <div className="relative">
+            <div className="h-[250px] sm:h-[300px] md:h-[350px] rounded-lg overflow-hidden border-2 border-zinc-300 dark:border-zinc-500">
+              <MapContainer
+                center={position}
+                zoom={16}
+                style={{ height: "100%", width: "100%" }}
+                scrollWheelZoom={true}
+                dragging={true}
+                touchZoom={true}
+                doubleClickZoom={true}
+                zoomControl={true}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <MapEventHandler onMove={handleMapMove} />
+                <MapCenterUpdater center={position} shouldUpdate={shouldCenterMap} />
+              </MapContainer>
+            </div>
+            
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1000]">
+              <div className="flex flex-col items-center">
+                <MapPin className="h-10 w-10 sm:h-12 sm:w-12 text-red-600 drop-shadow-lg" style={{ marginBottom: '-8px' }} />
+                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-600 rounded-full opacity-30 animate-ping" />
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 bg-zinc-200 dark:bg-zinc-700 py-2 px-3 rounded-md">
+            Mueve el mapa para posicionar el marcador rojo en la ubicación deseada
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="space-y-1">
-              <Label htmlFor="map-lat" className="text-xs">Latitud</Label>
+              <Label htmlFor="map-lat" className="text-xs sm:text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Latitud
+              </Label>
               <Input
                 id="map-lat"
                 type="number"
@@ -155,12 +204,16 @@ export function MapPicker({
                 value={latInput}
                 onChange={(e) => setLatInput(e.target.value)}
                 onBlur={handleInputChange}
-                className="h-8"
+                onKeyDown={(e) => e.key === 'Enter' && handleInputChange()}
+                className="h-9 sm:h-10 bg-white dark:bg-zinc-600 border-zinc-300 dark:border-zinc-500 text-zinc-800 dark:text-zinc-100 text-sm"
+                placeholder="-18.014600"
                 data-testid="input-map-latitud"
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="map-lng" className="text-xs">Longitud</Label>
+              <Label htmlFor="map-lng" className="text-xs sm:text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Longitud
+              </Label>
               <Input
                 id="map-lng"
                 type="number"
@@ -168,61 +221,32 @@ export function MapPicker({
                 value={lngInput}
                 onChange={(e) => setLngInput(e.target.value)}
                 onBlur={handleInputChange}
-                className="h-8"
+                onKeyDown={(e) => e.key === 'Enter' && handleInputChange()}
+                className="h-9 sm:h-10 bg-white dark:bg-zinc-600 border-zinc-300 dark:border-zinc-500 text-zinc-800 dark:text-zinc-100 text-sm"
+                placeholder="-70.253600"
                 data-testid="input-map-longitud"
               />
             </div>
           </div>
 
-          <div className="h-[350px] rounded-lg overflow-hidden border">
-            <MapContainer
-              center={position}
-              zoom={16}
-              style={{ height: "100%", width: "100%" }}
-              scrollWheelZoom={true}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <DraggableMarker position={position} onPositionChange={handlePositionChange} />
-              <MapCenterUpdater center={position} />
-            </MapContainer>
-          </div>
-
-          <p className="text-xs text-muted-foreground text-center">
-            Arrastra el marcador o haz clic en el mapa para seleccionar la ubicación
-          </p>
-
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-2">
             <Button
               variant="outline"
-              onClick={handleGetCurrentLocation}
-              disabled={isLocating}
-              className="flex items-center gap-2"
-              data-testid="button-ubicacion-actual"
+              onClick={handleCancel}
+              className="flex-1 h-10 sm:h-11 bg-zinc-200 dark:bg-zinc-600 border-zinc-400 dark:border-zinc-500 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-500"
+              data-testid="button-cancelar-mapa"
             >
-              <Navigation className={`h-4 w-4 ${isLocating ? 'animate-pulse' : ''}`} />
-              {isLocating ? "Obteniendo..." : "Mi Ubicación"}
+              <X className="h-4 w-4 mr-2" />
+              Cancelar
             </Button>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                onClick={onClose}
-                data-testid="button-cancelar-mapa"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleConfirm}
-                data-testid="button-confirmar-ubicacion"
-              >
-                <Check className="h-4 w-4 mr-1" />
-                Confirmar
-              </Button>
-            </div>
+            <Button
+              onClick={handleConfirm}
+              className="flex-1 h-10 sm:h-11 bg-zinc-700 dark:bg-zinc-500 hover:bg-zinc-800 dark:hover:bg-zinc-400 text-white"
+              data-testid="button-confirmar-ubicacion"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Guardar Coordenadas
+            </Button>
           </div>
         </div>
       </DialogContent>
