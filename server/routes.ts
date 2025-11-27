@@ -14,6 +14,7 @@ import {
   insertMensajeSchema, 
   insertEmergenciaSchema, 
   insertContactoFamiliarSchema,
+  insertLugarUsuarioSchema,
   insertViajeTaxiSchema, 
   insertPedidoDeliverySchema, 
   insertRadioOnlineSchema, 
@@ -191,6 +192,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error al subir documento:', error);
       res.status(500).json({ message: error.message || 'Error al subir documento' });
+    }
+  });
+
+  app.post('/api/upload/perfil-imagenes', isAuthenticated, createUploadMiddleware('locales', 'imagen'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
+      }
+
+      const url = getPublicUrl(req.file.path);
+      res.json({ 
+        url, 
+        path: req.file.path,
+        filename: req.file.filename,
+        size: req.file.size,
+      });
+    } catch (error: any) {
+      console.error('Error al subir imagen de local:', error);
+      res.status(500).json({ message: error.message || 'Error al subir imagen' });
+    }
+  });
+
+  app.post('/api/upload/perfil-videos', isAuthenticated, createUploadMiddleware('videos', 'video'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
+      }
+
+      const url = getPublicUrl(req.file.path);
+      res.json({ 
+        url, 
+        path: req.file.path,
+        filename: req.file.filename,
+        size: req.file.size,
+      });
+    } catch (error: any) {
+      console.error('Error al subir video:', error);
+      res.status(500).json({ message: error.message || 'Error al subir video' });
     }
   });
 
@@ -1805,6 +1844,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al eliminar contacto familiar:", error);
       res.status(500).json({ message: "Error al eliminar contacto familiar" });
+    }
+  });
+
+  // ============================================================
+  // RUTAS DE LUGARES FRECUENTES DEL USUARIO
+  // ============================================================
+
+  app.get('/api/lugares-usuario', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const lugares = await storage.getLugaresUsuario(userId);
+      res.json(lugares);
+    } catch (error) {
+      console.error("Error al obtener lugares del usuario:", error);
+      res.status(500).json({ message: "Error al obtener lugares del usuario" });
+    }
+  });
+
+  app.post('/api/lugares-usuario', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const data = insertLugarUsuarioSchema.parse(req.body);
+      const lugar = await storage.createLugarUsuario({
+        ...data,
+        usuarioId: userId,
+      });
+      res.json(lugar);
+    } catch (error: any) {
+      console.error("Error al crear lugar:", error);
+      res.status(400).json({ message: error.message || "Error al crear lugar" });
+    }
+  });
+
+  app.patch('/api/lugares-usuario/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Verificar que el lugar pertenece al usuario
+      const lugares = await storage.getLugaresUsuario(userId);
+      const lugar = lugares.find(l => l.id === id);
+      if (!lugar) {
+        return res.status(404).json({ message: "Lugar no encontrado" });
+      }
+      
+      const actualizado = await storage.updateLugarUsuario(id, req.body);
+      res.json(actualizado);
+    } catch (error) {
+      console.error("Error al actualizar lugar:", error);
+      res.status(500).json({ message: "Error al actualizar lugar" });
+    }
+  });
+
+  app.delete('/api/lugares-usuario/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Verificar que el lugar pertenece al usuario
+      const lugares = await storage.getLugaresUsuario(userId);
+      const lugar = lugares.find(l => l.id === id);
+      if (!lugar) {
+        return res.status(404).json({ message: "Lugar no encontrado" });
+      }
+      
+      await storage.deleteLugarUsuario(id);
+      res.json({ message: "Lugar eliminado exitosamente" });
+    } catch (error) {
+      console.error("Error al eliminar lugar:", error);
+      res.status(500).json({ message: "Error al eliminar lugar" });
     }
   });
 

@@ -42,6 +42,7 @@ import {
   solicitudesSaldo,
   saldosUsuarios,
   sectores,
+  lugaresUsuario,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -126,6 +127,8 @@ import {
   type InsertContactoFamiliar,
   type Sector,
   type InsertSector,
+  type LugarUsuario,
+  type InsertLugarUsuario,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -178,6 +181,13 @@ export interface IStorage {
   createContactoFamiliar(contacto: InsertContactoFamiliar): Promise<ContactoFamiliar>;
   updateContactoFamiliar(id: string, data: Partial<InsertContactoFamiliar>): Promise<ContactoFamiliar | undefined>;
   deleteContactoFamiliar(id: string): Promise<void>;
+  
+  // Operaciones de lugares frecuentes del usuario
+  getLugaresUsuario(usuarioId: string): Promise<LugarUsuario[]>;
+  getLugarUsuario(id: string): Promise<LugarUsuario | undefined>;
+  createLugarUsuario(lugar: InsertLugarUsuario): Promise<LugarUsuario>;
+  updateLugarUsuario(id: string, data: Partial<InsertLugarUsuario>): Promise<LugarUsuario | undefined>;
+  deleteLugarUsuario(id: string): Promise<void>;
   
   // Operaciones de taxi
   getViajesTaxi(usuarioId?: string): Promise<ViajeTaxi[]>;
@@ -1159,6 +1169,45 @@ export class DatabaseStorage implements IStorage {
 
   async deleteContactoFamiliar(id: string): Promise<void> {
     await db.delete(contactosFamiliares).where(eq(contactosFamiliares.id, id));
+  }
+
+  // ============================================================
+  // LUGARES FRECUENTES DEL USUARIO
+  // ============================================================
+
+  async getLugaresUsuario(usuarioId: string): Promise<LugarUsuario[]> {
+    return await db.select()
+      .from(lugaresUsuario)
+      .where(eq(lugaresUsuario.usuarioId, usuarioId))
+      .orderBy(lugaresUsuario.orden);
+  }
+
+  async getLugarUsuario(id: string): Promise<LugarUsuario | undefined> {
+    const [lugar] = await db.select()
+      .from(lugaresUsuario)
+      .where(eq(lugaresUsuario.id, id));
+    return lugar || undefined;
+  }
+
+  async createLugarUsuario(lugarData: InsertLugarUsuario): Promise<LugarUsuario> {
+    const [lugar] = await db
+      .insert(lugaresUsuario)
+      .values(lugarData)
+      .returning();
+    return lugar;
+  }
+
+  async updateLugarUsuario(id: string, data: Partial<InsertLugarUsuario>): Promise<LugarUsuario | undefined> {
+    const [actualizado] = await db
+      .update(lugaresUsuario)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(lugaresUsuario.id, id))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  async deleteLugarUsuario(id: string): Promise<void> {
+    await db.delete(lugaresUsuario).where(eq(lugaresUsuario.id, id));
   }
 
   // ============================================================

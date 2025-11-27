@@ -39,6 +39,8 @@ SEG-APO is a comprehensive community security platform designed to enhance safet
 - **Survey and Promotional Popups System**: Supports dynamic surveys with multiple questions, scheduled popups (advertising, missing persons/pets, events) with mandatory timers, and social interactions (likes, favorites, comments, sharing).
 - **Local Services System**: Management of service categories, local business logos, products/services with social counters (likes, favorites, shares, comments), and an integrated charging system for adding products.
 - **Image Upload System**: Secure backend upload system with endpoint-specific configuration, MIME validation, increased size limits (15MB), and a reusable frontend component for previews and error handling, including multi-image uploads with persistence, visual indicators for GPS, social networks, links, and dates, and robust validations.
+- **User Profile - Business Section**: Extended business section with fields for 4 photos (using CameraCapture), 2 videos (file explorer), and GPS location of the business (using MapPicker). Uploads via `/api/upload/perfil-imagenes` and `/api/upload/perfil-videos` endpoints.
+- **User Locations (Lugares)**: Users can save multiple GPS locations with custom names (home, work, pharmacy, etc.) for use with taxi and delivery services. Stored in `lugares_usuario` table with API endpoints at `/api/lugares-usuario`.
 
 ### System Design Choices
 - **Modular Project Structure**: Clear separation between `client` (React), `server` (Express), and `shared` (common schemas/types).

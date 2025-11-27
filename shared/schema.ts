@@ -110,6 +110,13 @@ export const usuarios = pgTable("users", {
   fechaSuspension: timestamp("fecha_suspension"),
   motivoBloqueo: text("motivo_bloqueo"),
   fechaBloqueo: timestamp("fecha_bloqueo"),
+  
+  localFoto1: varchar("local_foto_1"),
+  localFoto2: varchar("local_foto_2"),
+  localFoto3: varchar("local_foto_3"),
+  localFoto4: varchar("local_foto_4"),
+  localVideo1: varchar("local_video_1"),
+  localVideo2: varchar("local_video_2"),
 });
 
 export const insertUsuarioSchema = createInsertSchema(usuarios).omit({ id: true, createdAt: true, updatedAt: true });
@@ -132,6 +139,25 @@ export const sectores = pgTable("sectores", {
 export const insertSectorSchema = createInsertSchema(sectores).omit({ id: true, createdAt: true });
 export type InsertSector = z.infer<typeof insertSectorSchema>;
 export type Sector = typeof sectores.$inferSelect;
+
+// ============================================================
+// LUGARES FRECUENTES DEL USUARIO
+// ============================================================
+export const lugaresUsuario = pgTable("lugares_usuario", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id).notNull(),
+  nombre: varchar("nombre", { length: 200 }).notNull(),
+  latitud: real("latitud").notNull(),
+  longitud: real("longitud").notNull(),
+  direccion: text("direccion"),
+  orden: integer("orden").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertLugarUsuarioSchema = createInsertSchema(lugaresUsuario).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertLugarUsuario = z.infer<typeof insertLugarUsuarioSchema>;
+export type LugarUsuario = typeof lugaresUsuario.$inferSelect;
 
 // ============================================================
 // ROLES MÚLTIPLES POR USUARIO

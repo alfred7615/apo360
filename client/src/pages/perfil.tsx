@@ -22,7 +22,8 @@ import GestionContactosFamiliares from "@/components/GestionContactosFamiliares"
 import { AutocompleteInput } from "@/components/AutocompleteInput";
 import { MapPicker } from "@/components/MapPicker";
 import { CameraCapture, CameraCaptureButton, ImageUploadWithCamera } from "@/components/CameraCapture";
-import type { Usuario, Sector } from "@shared/schema";
+import type { Usuario, Sector, LugarUsuario } from "@shared/schema";
+import { Plus } from "lucide-react";
 
 const TIPOS_VEHICULO = [
   { value: "auto", label: "Automóvil" },
@@ -377,15 +378,36 @@ export default function PerfilPage() {
   const [activeTab, setActiveTab] = useState("basico");
   const [formData, setFormData] = useState<Partial<Usuario>>({});
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [showMapPickerLocal, setShowMapPickerLocal] = useState(false);
   const [showCameraDomicilio, setShowCameraDomicilio] = useState(false);
   const [uploadingDomicilio, setUploadingDomicilio] = useState(false);
   const [showCameraPerfil, setShowCameraPerfil] = useState(false);
   const [uploadingPerfil, setUploadingPerfil] = useState(false);
+  const [lugares, setLugares] = useState<Array<{ id?: string; nombre: string; latitud: number | null; longitud: number | null; direccion?: string; editando?: boolean }>>([]);
+  const [showMapPickerLugar, setShowMapPickerLugar] = useState(false);
+  const [lugarEditandoIndex, setLugarEditandoIndex] = useState<number | null>(null);
 
   const { data: perfil, isLoading } = useQuery<Usuario>({
     queryKey: ["/api/usuarios/me"],
     enabled: !!user,
   });
+
+  const { data: lugaresData = [], refetch: refetchLugares } = useQuery<LugarUsuario[]>({
+    queryKey: ["/api/lugares-usuario"],
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (lugaresData.length > 0) {
+      setLugares(lugaresData.map(l => ({
+        id: l.id,
+        nombre: l.nombre,
+        latitud: l.latitud,
+        longitud: l.longitud,
+        direccion: l.direccion || undefined,
+      })));
+    }
+  }, [lugaresData]);
 
   const { data: departamentos = [] } = useQuery<string[]>({
     queryKey: ["/api/ubicaciones/departamentos", formData.pais || "Perú"],
@@ -682,6 +704,10 @@ export default function PerfilPage() {
                 <TabsTrigger value="negocio" className="text-xs py-1.5 px-1" data-testid="tab-perfil-negocio">
                   <Briefcase className="h-3 w-3 mr-1" />
                   Negocio
+                </TabsTrigger>
+                <TabsTrigger value="lugares" className="text-xs py-1.5 px-1" data-testid="tab-perfil-lugares">
+                  <MapPin className="h-3 w-3 mr-1" />
+                  Lugares
                 </TabsTrigger>
               </TabsList>
 
@@ -1237,6 +1263,341 @@ export default function PerfilPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Ubicación GPS del Local
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Latitud GPS</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={formData.gpsLocalLatitud || ""}
+                          onChange={(e) => handleInputChange("gpsLocalLatitud", e.target.value ? parseFloat(e.target.value) : null)}
+                          placeholder="-18.014600"
+                          className="h-8"
+                          data-testid="input-perfil-gps-local-lat"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Longitud GPS</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={formData.gpsLocalLongitud || ""}
+                          onChange={(e) => handleInputChange("gpsLocalLongitud", e.target.value ? parseFloat(e.target.value) : null)}
+                          placeholder="-70.253600"
+                          className="h-8"
+                          data-testid="input-perfil-gps-local-lng"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowMapPickerLocal(true)}
+                      className="w-full"
+                      data-testid="button-abrir-mapa-local"
+                    >
+                      <Map className="h-4 w-4 mr-2" />
+                      Mapa
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4" />
+                      Fotos del Local
+                    </CardTitle>
+                    <CardDescription className="text-xs">Sube hasta 4 fotos de tu negocio</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[1, 2, 3, 4].map((num) => {
+                        const fotoKey = `localFoto${num}` as keyof typeof formData;
+                        const foto = formData[fotoKey] as string | null;
+                        return (
+                          <div key={num} className="space-y-1">
+                            <Label className="text-xs">Foto {num}</Label>
+                            <div className="relative aspect-square border rounded-lg overflow-hidden bg-muted">
+                              {foto ? (
+                                <>
+                                  <img src={foto} alt={`Foto ${num}`} className="w-full h-full object-cover" />
+                                  <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-6 w-6"
+                                    onClick={() => handleInputChange(fotoKey as string, null)}
+                                    data-testid={`button-eliminar-foto-local-${num}`}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <CameraCaptureButton
+                                  onCapture={async (imageDataUrl) => {
+                                    try {
+                                      const response = await fetch(imageDataUrl);
+                                      const blob = await response.blob();
+                                      const formDataUpload = new FormData();
+                                      formDataUpload.append('imagen', blob, `local_foto_${num}.jpg`);
+                                      const uploadRes = await fetch('/api/upload/perfil-imagenes', {
+                                        method: 'POST',
+                                        body: formDataUpload,
+                                        credentials: 'include'
+                                      });
+                                      if (uploadRes.ok) {
+                                        const result = await uploadRes.json();
+                                        handleInputChange(fotoKey as string, result.url);
+                                        toast({ title: "Foto subida", description: `Foto ${num} guardada exitosamente` });
+                                      }
+                                    } catch (error) {
+                                      toast({ title: "Error", description: "No se pudo subir la foto", variant: "destructive" });
+                                    }
+                                  }}
+                                  className="w-full h-full flex items-center justify-center"
+                                  data-testid={`button-subir-foto-local-${num}`}
+                                >
+                                  <Camera className="h-6 w-6 text-muted-foreground" />
+                                </CameraCaptureButton>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Videos del Local
+                    </CardTitle>
+                    <CardDescription className="text-xs">Sube hasta 2 videos de tu negocio</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[1, 2].map((num) => {
+                        const videoKey = `localVideo${num}` as keyof typeof formData;
+                        const video = formData[videoKey] as string | null;
+                        return (
+                          <div key={num} className="space-y-1">
+                            <Label className="text-xs">Video {num}</Label>
+                            <div className="relative aspect-video border rounded-lg overflow-hidden bg-muted">
+                              {video ? (
+                                <>
+                                  <video src={video} controls className="w-full h-full object-cover" />
+                                  <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-6 w-6"
+                                    onClick={() => handleInputChange(videoKey as string, null)}
+                                    data-testid={`button-eliminar-video-local-${num}`}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors">
+                                  <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                                  <span className="text-xs text-muted-foreground">Seleccionar video</span>
+                                  <input
+                                    type="file"
+                                    accept="video/*"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        try {
+                                          const formDataUpload = new FormData();
+                                          formDataUpload.append('video', file);
+                                          const uploadRes = await fetch('/api/upload/perfil-videos', {
+                                            method: 'POST',
+                                            body: formDataUpload,
+                                            credentials: 'include'
+                                          });
+                                          if (uploadRes.ok) {
+                                            const result = await uploadRes.json();
+                                            handleInputChange(videoKey as string, result.url);
+                                            toast({ title: "Video subido", description: `Video ${num} guardado exitosamente` });
+                                          }
+                                        } catch (error) {
+                                          toast({ title: "Error", description: "No se pudo subir el video", variant: "destructive" });
+                                        }
+                                      }
+                                    }}
+                                    data-testid={`input-video-local-${num}`}
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="lugares" className="mt-4 space-y-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Mis Lugares Frecuentes
+                    </CardTitle>
+                    <CardDescription className="text-xs">Guarda ubicaciones GPS para usar en taxi, delivery y otros servicios</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {lugares.map((lugar, index) => (
+                      <div key={index} className="border rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <Input
+                            value={lugar.nombre}
+                            onChange={(e) => {
+                              const newLugares = [...lugares];
+                              newLugares[index].nombre = e.target.value;
+                              setLugares(newLugares);
+                            }}
+                            placeholder="Nombre del lugar (ej: Casa, Trabajo)"
+                            className="h-8 flex-1"
+                            data-testid={`input-lugar-nombre-${index}`}
+                          />
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-8 w-8 flex-shrink-0"
+                            onClick={async () => {
+                              if (lugar.id) {
+                                try {
+                                  await fetch(`/api/lugares-usuario/${lugar.id}`, {
+                                    method: 'DELETE',
+                                    credentials: 'include'
+                                  });
+                                  refetchLugares();
+                                  toast({ title: "Lugar eliminado", description: "El lugar ha sido eliminado" });
+                                } catch (error) {
+                                  toast({ title: "Error", description: "No se pudo eliminar el lugar", variant: "destructive" });
+                                }
+                              }
+                              const newLugares = lugares.filter((_, i) => i !== index);
+                              setLugares(newLugares);
+                            }}
+                            data-testid={`button-eliminar-lugar-${index}`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Latitud</Label>
+                            <Input
+                              type="number"
+                              step="any"
+                              value={lugar.latitud || ""}
+                              onChange={(e) => {
+                                const newLugares = [...lugares];
+                                newLugares[index].latitud = e.target.value ? parseFloat(e.target.value) : null;
+                                setLugares(newLugares);
+                              }}
+                              placeholder="-18.014600"
+                              className="h-7 text-xs"
+                              data-testid={`input-lugar-lat-${index}`}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Longitud</Label>
+                            <Input
+                              type="number"
+                              step="any"
+                              value={lugar.longitud || ""}
+                              onChange={(e) => {
+                                const newLugares = [...lugares];
+                                newLugares[index].longitud = e.target.value ? parseFloat(e.target.value) : null;
+                                setLugares(newLugares);
+                              }}
+                              placeholder="-70.253600"
+                              className="h-7 text-xs"
+                              data-testid={`input-lugar-lng-${index}`}
+                            />
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setLugarEditandoIndex(index);
+                            setShowMapPickerLugar(true);
+                          }}
+                          className="w-full h-7 text-xs"
+                          data-testid={`button-mapa-lugar-${index}`}
+                        >
+                          <Map className="h-3 w-3 mr-1" />
+                          Seleccionar en Mapa
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={async () => {
+                            if (!lugar.nombre || !lugar.latitud || !lugar.longitud) {
+                              toast({ title: "Error", description: "Complete nombre y coordenadas", variant: "destructive" });
+                              return;
+                            }
+                            try {
+                              if (lugar.id) {
+                                await fetch(`/api/lugares-usuario/${lugar.id}`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ nombre: lugar.nombre, latitud: lugar.latitud, longitud: lugar.longitud }),
+                                  credentials: 'include'
+                                });
+                                toast({ title: "Lugar actualizado", description: `${lugar.nombre} guardado correctamente` });
+                              } else {
+                                await fetch('/api/lugares-usuario', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ nombre: lugar.nombre, latitud: lugar.latitud, longitud: lugar.longitud }),
+                                  credentials: 'include'
+                                });
+                                toast({ title: "Lugar guardado", description: `${lugar.nombre} guardado correctamente` });
+                              }
+                              refetchLugares();
+                            } catch (error) {
+                              toast({ title: "Error", description: "No se pudo guardar el lugar", variant: "destructive" });
+                            }
+                          }}
+                          className="w-full h-7 text-xs"
+                          data-testid={`button-guardar-lugar-${index}`}
+                        >
+                          <Save className="h-3 w-3 mr-1" />
+                          Guardar Lugar
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setLugares([...lugares, { nombre: "", latitud: null, longitud: null }]);
+                      }}
+                      className="w-full"
+                      data-testid="button-agregar-lugar"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar Lugar
+                    </Button>
+                  </CardContent>
+                </Card>
               </TabsContent>
                 </Tabs>
               </CardContent>
@@ -1285,6 +1646,37 @@ export default function PerfilPage() {
         }}
         initialLat={formData.gpsLatitud || undefined}
         initialLng={formData.gpsLongitud || undefined}
+      />
+
+      <MapPicker
+        open={showMapPickerLocal}
+        onClose={() => setShowMapPickerLocal(false)}
+        onSelectLocation={(lat, lng) => {
+          handleInputChange("gpsLocalLatitud", lat);
+          handleInputChange("gpsLocalLongitud", lng);
+          toast({ title: "Ubicación del local seleccionada", description: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}` });
+        }}
+        initialLat={formData.gpsLocalLatitud || undefined}
+        initialLng={formData.gpsLocalLongitud || undefined}
+      />
+
+      <MapPicker
+        open={showMapPickerLugar}
+        onClose={() => {
+          setShowMapPickerLugar(false);
+          setLugarEditandoIndex(null);
+        }}
+        onSelectLocation={(lat, lng) => {
+          if (lugarEditandoIndex !== null) {
+            const newLugares = [...lugares];
+            newLugares[lugarEditandoIndex].latitud = lat;
+            newLugares[lugarEditandoIndex].longitud = lng;
+            setLugares(newLugares);
+            toast({ title: "Ubicación seleccionada", description: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}` });
+          }
+        }}
+        initialLat={lugarEditandoIndex !== null && lugares[lugarEditandoIndex]?.latitud ? lugares[lugarEditandoIndex].latitud! : undefined}
+        initialLng={lugarEditandoIndex !== null && lugares[lugarEditandoIndex]?.longitud ? lugares[lugarEditandoIndex].longitud! : undefined}
       />
 
       <CameraCapture
