@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,19 +125,16 @@ export function MapPicker({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden p-0 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600">
-        <DialogHeader className="px-4 pt-4 pb-2 sm:px-6 sm:pt-6 bg-zinc-200 dark:bg-zinc-700">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col p-0 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600">
+        <DialogHeader className="px-4 pt-3 pb-2 sm:px-5 sm:pt-4 bg-zinc-200 dark:bg-zinc-700 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-zinc-800 dark:text-zinc-100">
             <MapPin className="h-5 w-5 text-zinc-600 dark:text-zinc-300" />
             Seleccionar Ubicación GPS
           </DialogTitle>
-          <DialogDescription className="text-zinc-600 dark:text-zinc-400 text-sm">
-            Arrastra el mapa para ubicar el punto deseado
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="overflow-y-auto flex-1 space-y-2 p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={handleGetCurrentLocation}
@@ -160,7 +157,7 @@ export function MapPicker({
           </div>
 
           <div className="relative">
-            <div className="h-[250px] sm:h-[300px] md:h-[350px] rounded-lg overflow-hidden border-2 border-zinc-300 dark:border-zinc-500">
+            <div className="h-[200px] sm:h-[280px] md:h-[320px] rounded-lg overflow-hidden border-2 border-zinc-300 dark:border-zinc-500">
               <MapContainer
                 center={position}
                 zoom={16}
@@ -188,11 +185,7 @@ export function MapPicker({
             </div>
           </div>
 
-          <div className="text-center text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 bg-zinc-200 dark:bg-zinc-700 py-2 px-3 rounded-md">
-            Mueve el mapa para posicionar el marcador rojo en la ubicación deseada
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <Label htmlFor="map-lat" className="text-xs sm:text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Latitud
@@ -229,11 +222,11 @@ export function MapPicker({
             </div>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 pt-1">
             <Button
               variant="outline"
               onClick={handleCancel}
-              className="flex-1 h-10 sm:h-11 bg-zinc-200 dark:bg-zinc-600 border-zinc-400 dark:border-zinc-500 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-500"
+              className="flex-1 h-9 sm:h-10 bg-zinc-200 dark:bg-zinc-600 border-zinc-400 dark:border-zinc-500 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-500"
               data-testid="button-cancelar-mapa"
             >
               <X className="h-4 w-4 mr-2" />
@@ -241,7 +234,7 @@ export function MapPicker({
             </Button>
             <Button
               onClick={handleConfirm}
-              className="flex-1 h-10 sm:h-11 bg-zinc-700 dark:bg-zinc-500 hover:bg-zinc-800 dark:hover:bg-zinc-400 text-white"
+              className="flex-1 h-9 sm:h-10 bg-zinc-700 dark:bg-zinc-500 hover:bg-zinc-800 dark:hover:bg-zinc-400 text-white"
               data-testid="button-confirmar-ubicacion"
             >
               <Check className="h-4 w-4 mr-2" />
