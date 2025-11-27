@@ -199,8 +199,8 @@ export default function Home() {
           )}
         </div>
 
-        <div className="container mx-auto px-4 h-full flex items-center">
-          <div className="text-left">
+        <div className="container mx-auto px-4 h-full flex items-center justify-start">
+          <div className="text-center">
             <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-welcome">
               ¡Hola, {nombreMostrar}!
             </h1>
