@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
-import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X, Megaphone, UsersRound } from "lucide-react";
+import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X, Megaphone, UsersRound, Bus, Coins, Construction } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,10 @@ export default function Home() {
   const [modalAgenda, setModalAgenda] = useState(false);
   const [modalFamilia, setModalFamilia] = useState(false);
   const [modalAlertas, setModalAlertas] = useState(false);
+  const [modalTaxi, setModalTaxi] = useState(false);
+  const [modalBuses, setModalBuses] = useState(false);
+  const [modalDelivery, setModalDelivery] = useState(false);
+  const [modalAvisos, setModalAvisos] = useState(false);
 
   const { data: emergenciasRecientes = [] } = useQuery<Emergencia[]>({
     queryKey: ["/api/emergencias/recientes"],
@@ -158,48 +162,86 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Accesos rápidos */}
+      {/* Accesos rápidos - 6 escritorio, 4 tablet, 3 celular */}
       <section className="container mx-auto px-4 mt-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="hover-elevate active-elevate-2 transition-all cursor-pointer shadow-lg" data-testid="card-quick-chat">
-            <CardContent className="p-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white mx-auto mb-3">
-                <MessageCircle className="h-7 w-7" />
-              </div>
-              <h3 className="font-semibold mb-1">Chat</h3>
-              <p className="text-xs text-muted-foreground">Mensajes</p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+          {/* Chat */}
+          <div 
+            onClick={() => setLocation("/chat")}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            data-testid="card-quick-chat"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white mx-auto mb-2">
+              <MessageCircle className="h-7 w-7" />
+            </div>
+            <h3 className="font-semibold text-sm">Chat</h3>
+          </div>
 
-          <Card className="hover-elevate active-elevate-2 transition-all cursor-pointer shadow-lg" data-testid="card-quick-taxi">
-            <CardContent className="p-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 text-white mx-auto mb-3">
-                <Car className="h-7 w-7" />
-              </div>
-              <h3 className="font-semibold mb-1">Taxi</h3>
-              <p className="text-xs text-muted-foreground">Solicitar</p>
-            </CardContent>
-          </Card>
+          {/* Taxi */}
+          <div 
+            onClick={() => setModalTaxi(true)}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            data-testid="card-quick-taxi"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 text-white mx-auto mb-2">
+              <Car className="h-7 w-7" />
+            </div>
+            <h3 className="font-semibold text-sm">Taxi</h3>
+          </div>
 
-          <Card className="hover-elevate active-elevate-2 transition-all cursor-pointer shadow-lg" data-testid="card-quick-delivery">
-            <CardContent className="p-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white mx-auto mb-3">
-                <ShoppingCart className="h-7 w-7" />
-              </div>
-              <h3 className="font-semibold mb-1">Delivery</h3>
-              <p className="text-xs text-muted-foreground">Pedir</p>
-            </CardContent>
-          </Card>
+          {/* Delivery */}
+          <div 
+            onClick={() => setModalDelivery(true)}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            data-testid="card-quick-delivery"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white mx-auto mb-2">
+              <ShoppingCart className="h-7 w-7" />
+            </div>
+            <h3 className="font-semibold text-sm">Delivery</h3>
+          </div>
 
-          <Card className="hover-elevate active-elevate-2 transition-all cursor-pointer shadow-lg" data-testid="card-quick-groups">
-            <CardContent className="p-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white mx-auto mb-3">
-                <Users className="h-7 w-7" />
-              </div>
-              <h3 className="font-semibold mb-1">Grupos</h3>
-              <p className="text-xs text-muted-foreground">Comunidad</p>
-            </CardContent>
-          </Card>
+          {/* Buses */}
+          <div 
+            onClick={() => setModalBuses(true)}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            data-testid="card-quick-buses"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white mx-auto mb-2">
+              <Bus className="h-7 w-7" />
+            </div>
+            <h3 className="font-semibold text-sm">Buses</h3>
+          </div>
+
+          {/* Moneda */}
+          <div 
+            onClick={() => setLocation("/billetera")}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            data-testid="card-quick-moneda"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white mx-auto mb-2">
+              <Coins className="h-7 w-7" />
+            </div>
+            <h3 className="font-semibold text-sm">Moneda</h3>
+          </div>
+
+          {/* Avisos */}
+          <div 
+            onClick={() => setModalAvisos(true)}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            data-testid="card-quick-avisos"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white mx-auto mb-2">
+              <Megaphone className="h-7 w-7" />
+            </div>
+            <h3 className="font-semibold text-sm">Avisos</h3>
+          </div>
         </div>
       </section>
 
@@ -466,6 +508,144 @@ export default function Home() {
               Cerrar
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Taxi - Selección de Rol */}
+      <Dialog open={modalTaxi} onOpenChange={setModalTaxi}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 justify-center">
+              <Car className="h-6 w-6 text-yellow-600" />
+              Taxi
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Selecciona tu rol
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <Button
+              onClick={() => {
+                setModalTaxi(false);
+                setLocation("/taxi-conductor");
+              }}
+              variant="outline"
+              className="h-24 flex-col gap-2"
+              data-testid="button-taxi-conductor"
+            >
+              <Car className="h-8 w-8 text-yellow-600" />
+              <span>Conductor</span>
+            </Button>
+            <Button
+              onClick={() => {
+                setModalTaxi(false);
+                setLocation("/taxi-pasajero");
+              }}
+              variant="outline"
+              className="h-24 flex-col gap-2"
+              data-testid="button-taxi-pasajero"
+            >
+              <Users className="h-8 w-8 text-yellow-600" />
+              <span>Pasajero</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Buses - Selección de Rol */}
+      <Dialog open={modalBuses} onOpenChange={setModalBuses}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 justify-center">
+              <Bus className="h-6 w-6 text-orange-600" />
+              Buses
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Selecciona tu rol
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <Button
+              onClick={() => {
+                setModalBuses(false);
+                setLocation("/buses-conductor");
+              }}
+              variant="outline"
+              className="h-24 flex-col gap-2"
+              data-testid="button-buses-conductor"
+            >
+              <Bus className="h-8 w-8 text-orange-600" />
+              <span>Conductor</span>
+            </Button>
+            <Button
+              onClick={() => {
+                setModalBuses(false);
+                setLocation("/buses-pasajero");
+              }}
+              variant="outline"
+              className="h-24 flex-col gap-2"
+              data-testid="button-buses-pasajero"
+            >
+              <Users className="h-8 w-8 text-orange-600" />
+              <span>Pasajero</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Delivery - En Construcción */}
+      <Dialog open={modalDelivery} onOpenChange={setModalDelivery}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 justify-center">
+              <ShoppingCart className="h-6 w-6 text-blue-600" />
+              Delivery
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-6">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white mx-auto mb-4">
+              <Construction className="h-10 w-10" />
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-1">
+                EN CONSTRUCCIÓN
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Pronto a su servicio
+              </p>
+            </div>
+          </div>
+          <Button onClick={() => setModalDelivery(false)} className="w-full" data-testid="button-cerrar-delivery">
+            Cerrar
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Avisos - En Construcción */}
+      <Dialog open={modalAvisos} onOpenChange={setModalAvisos}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 justify-center">
+              <Megaphone className="h-6 w-6 text-purple-600" />
+              Avisos
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-6">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white mx-auto mb-4">
+              <Construction className="h-10 w-10" />
+            </div>
+            <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+              <p className="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-1">
+                EN CONSTRUCCIÓN
+              </p>
+              <p className="text-sm text-muted-foreground">
+                GRACIAS, pronto a su servicio
+              </p>
+            </div>
+          </div>
+          <Button onClick={() => setModalAvisos(false)} className="w-full" data-testid="button-cerrar-avisos">
+            Cerrar
+          </Button>
         </DialogContent>
       </Dialog>
     </div>

@@ -18,6 +18,11 @@ import Registro from "@/pages/registro";
 import IniciarSesion from "@/pages/iniciar-sesion";
 import AdminPanel from "@/pages/admin-panel";
 import Favoritos from "@/pages/favoritos";
+import TaxiConductor from "@/pages/taxi-conductor";
+import TaxiPasajero from "@/pages/taxi-pasajero";
+import BusesConductor from "@/pages/buses-conductor";
+import BusesPasajero from "@/pages/buses-pasajero";
+import Billetera from "@/pages/billetera";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -43,6 +48,11 @@ function Router() {
       <Route path="/perfil" component={Perfil} />
       <Route path="/favoritos" component={Favoritos} />
       <Route path="/admin" component={AdminPanel} />
+      <Route path="/taxi-conductor" component={TaxiConductor} />
+      <Route path="/taxi-pasajero" component={TaxiPasajero} />
+      <Route path="/buses-conductor" component={BusesConductor} />
+      <Route path="/buses-pasajero" component={BusesPasajero} />
+      <Route path="/billetera" component={Billetera} />
       <Route component={NotFound} />
     </Switch>
   );
