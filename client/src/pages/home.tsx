@@ -32,13 +32,6 @@ export default function Home() {
   const [modalBuses, setModalBuses] = useState(false);
   const [modalDelivery, setModalDelivery] = useState(false);
   const [modalAvisos, setModalAvisos] = useState(false);
-  const [modalRegistro, setModalRegistro] = useState(false);
-  const [servicioSeleccionado, setServicioSeleccionado] = useState("");
-
-  const abrirModalRegistro = (servicio: string) => {
-    setServicioSeleccionado(servicio);
-    setModalRegistro(true);
-  };
 
   const { data: emergenciasRecientes = [] } = useQuery<Emergencia[]>({
     queryKey: ["/api/emergencias/recientes"],
