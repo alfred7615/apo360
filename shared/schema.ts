@@ -26,6 +26,7 @@ export const usuarios = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email"),
   telefono: varchar("telefono", { length: 20 }),
+  imeiDispositivo: varchar("imei_dispositivo", { length: 20 }),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),

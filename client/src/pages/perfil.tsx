@@ -454,8 +454,31 @@ export default function PerfilPage() {
   const sugerencia = obtenerSugerenciaConfianza(porcentajeCompletado);
   const esConductor = formData.rol === "conductor" || formData.modoTaxi === "conductor";
 
+  const tieneValor = (campo: string) => {
+    const valor = (formData as any)[campo];
+    return valor !== null && valor !== undefined && valor !== '';
+  };
+
+  const handleTelefonoChange = (value: string) => {
+    let telefono = value;
+    if (!telefono.startsWith('+51')) {
+      telefono = '+51' + telefono.replace(/^\+51/, '').replace(/[^0-9]/g, '');
+    }
+    handleInputChange("telefono", telefono);
+    
+    if (telefono.length >= 12 && navigator && 'userAgent' in navigator) {
+      const userAgent = navigator.userAgent;
+      const hash = userAgent.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+      }, 0);
+      const imeiGenerado = Math.abs(hash).toString().padStart(15, '0').slice(0, 15);
+      handleInputChange("imeiDispositivo", imeiGenerado);
+    }
+  };
+
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col" data-testid="page-perfil">
+    <div className="h-[calc(100vh-4rem)] flex flex-col bg-gray-800/30 dark:bg-gray-900/50" data-testid="page-perfil">
       {/* Header fijo */}
       <div className="flex-shrink-0 bg-background border-b px-4 py-3">
         <div className="max-w-5xl mx-auto">
@@ -601,25 +624,47 @@ export default function PerfilPage() {
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label htmlFor="alias" className="text-xs">Alias</Label>
+                      <Label htmlFor="alias" className={`text-xs ${tieneValor('alias') ? 'font-bold' : ''}`}>Alias</Label>
                       <Input
                         id="alias"
                         value={formData.alias || ""}
                         onChange={(e) => handleInputChange("alias", e.target.value)}
                         placeholder="Tu nombre de usuario"
-                        className="h-8"
+                        className={`h-8 ${tieneValor('alias') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-alias"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="email" className="text-xs">Email</Label>
+                      <Label htmlFor="email" className={`text-xs ${tieneValor('email') ? 'font-bold' : ''}`}>Email</Label>
                       <Input
                         id="email"
                         type="email"
                         value={formData.email || user.email || ""}
                         disabled
-                        className="h-8 bg-muted"
+                        className={`h-8 bg-muted ${tieneValor('email') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-email"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="telefono" className={`text-xs ${tieneValor('telefono') ? 'font-bold' : ''}`}>Teléfono Celular</Label>
+                      <Input
+                        id="telefono"
+                        value={formData.telefono || "+51"}
+                        onChange={(e) => handleTelefonoChange(e.target.value)}
+                        placeholder="+51 999 999 999"
+                        className={`h-8 ${tieneValor('telefono') ? 'font-bold' : ''}`}
+                        data-testid="input-perfil-telefono-basico"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="imeiDispositivo" className={`text-xs ${tieneValor('imeiDispositivo') ? 'font-bold' : ''}`}>IMEI Dispositivo</Label>
+                      <Input
+                        id="imeiDispositivo"
+                        value={formData.imeiDispositivo || ""}
+                        disabled
+                        placeholder="Se genera automáticamente"
+                        className={`h-8 bg-muted ${tieneValor('imeiDispositivo') ? 'font-bold' : ''}`}
+                        data-testid="input-perfil-imei"
                       />
                     </div>
                   </CardContent>
@@ -635,47 +680,36 @@ export default function PerfilPage() {
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label htmlFor="firstName" className="text-xs">Nombres</Label>
+                      <Label htmlFor="firstName" className={`text-xs ${tieneValor('firstName') ? 'font-bold' : ''}`}>Nombres</Label>
                       <Input
                         id="firstName"
                         value={formData.firstName || ""}
                         onChange={(e) => handleInputChange("firstName", e.target.value)}
                         placeholder="Tus nombres"
-                        className="h-8"
+                        className={`h-8 ${tieneValor('firstName') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-nombres"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="lastName" className="text-xs">Apellidos</Label>
+                      <Label htmlFor="lastName" className={`text-xs ${tieneValor('lastName') ? 'font-bold' : ''}`}>Apellidos</Label>
                       <Input
                         id="lastName"
                         value={formData.lastName || ""}
                         onChange={(e) => handleInputChange("lastName", e.target.value)}
                         placeholder="Tus apellidos"
-                        className="h-8"
+                        className={`h-8 ${tieneValor('lastName') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-apellidos"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="telefono" className="text-xs">Teléfono</Label>
-                      <Input
-                        id="telefono"
-                        value={formData.telefono || ""}
-                        onChange={(e) => handleInputChange("telefono", e.target.value)}
-                        placeholder="+51 999 999 999"
-                        className="h-8"
-                        data-testid="input-perfil-telefono"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="dni" className="text-xs">DNI</Label>
+                      <Label htmlFor="dni" className={`text-xs ${tieneValor('dni') ? 'font-bold' : ''}`}>DNI</Label>
                       <Input
                         id="dni"
                         value={formData.dni || ""}
                         onChange={(e) => handleInputChange("dni", e.target.value)}
                         placeholder="12345678"
                         maxLength={8}
-                        className="h-8"
+                        className={`h-8 ${tieneValor('dni') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-dni"
                       />
                     </div>
@@ -695,45 +729,45 @@ export default function PerfilPage() {
                   </CardHeader>
                   <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="space-y-1">
-                      <Label htmlFor="pais" className="text-xs">País</Label>
+                      <Label htmlFor="pais" className={`text-xs ${tieneValor('pais') ? 'font-bold' : ''}`}>País</Label>
                       <Input
                         id="pais"
                         value={formData.pais || "Perú"}
                         onChange={(e) => handleInputChange("pais", e.target.value)}
-                        className="h-8"
+                        className={`h-8 ${tieneValor('pais') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-pais"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="departamento" className="text-xs">Departamento</Label>
+                      <Label htmlFor="departamento" className={`text-xs ${tieneValor('departamento') ? 'font-bold' : ''}`}>Departamento</Label>
                       <Input
                         id="departamento"
                         value={formData.departamento || ""}
                         onChange={(e) => handleInputChange("departamento", e.target.value)}
                         placeholder="Tacna"
-                        className="h-8"
+                        className={`h-8 ${tieneValor('departamento') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-departamento"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="distrito" className="text-xs">Distrito</Label>
+                      <Label htmlFor="distrito" className={`text-xs ${tieneValor('distrito') ? 'font-bold' : ''}`}>Distrito</Label>
                       <Input
                         id="distrito"
                         value={formData.distrito || ""}
                         onChange={(e) => handleInputChange("distrito", e.target.value)}
                         placeholder="Tacna"
-                        className="h-8"
+                        className={`h-8 ${tieneValor('distrito') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-distrito"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="sector" className="text-xs">Sector</Label>
+                      <Label htmlFor="sector" className={`text-xs ${tieneValor('sector') ? 'font-bold' : ''}`}>Sector</Label>
                       <Input
                         id="sector"
                         value={formData.sector || ""}
                         onChange={(e) => handleInputChange("sector", e.target.value)}
                         placeholder="Centro"
-                        className="h-8"
+                        className={`h-8 ${tieneValor('sector') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-sector"
                       />
                     </div>
@@ -752,40 +786,40 @@ export default function PerfilPage() {
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label htmlFor="avenidaCalle" className="text-xs">Avenida / Calle</Label>
+                      <Label htmlFor="avenidaCalle" className={`text-xs ${tieneValor('avenidaCalle') ? 'font-bold' : ''}`}>Avenida / Calle</Label>
                       <Input
                         id="avenidaCalle"
                         value={formData.avenidaCalle || ""}
                         onChange={(e) => handleInputChange("avenidaCalle", e.target.value)}
                         placeholder="Av. Principal"
-                        className="h-8"
+                        className={`h-8 ${tieneValor('avenidaCalle') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-avenida"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="manzanaLote" className="text-xs">Mza / Lote</Label>
+                      <Label htmlFor="manzanaLote" className={`text-xs ${tieneValor('manzanaLote') ? 'font-bold' : ''}`}>Mza / Lote</Label>
                       <Input
                         id="manzanaLote"
                         value={formData.manzanaLote || ""}
                         onChange={(e) => handleInputChange("manzanaLote", e.target.value)}
                         placeholder="Mz. A Lt. 10"
-                        className="h-8"
+                        className={`h-8 ${tieneValor('manzanaLote') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-manzana"
                       />
                     </div>
                     <div className="sm:col-span-2 space-y-1">
-                      <Label htmlFor="direccion" className="text-xs">Dirección Completa</Label>
+                      <Label htmlFor="direccion" className={`text-xs ${tieneValor('direccion') ? 'font-bold' : ''}`}>Dirección Completa</Label>
                       <Input
                         id="direccion"
                         value={formData.direccion || ""}
                         onChange={(e) => handleInputChange("direccion", e.target.value)}
                         placeholder="Dirección completa"
-                        className="h-8"
+                        className={`h-8 ${tieneValor('direccion') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-direccion"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="gpsLatitud" className="text-xs">Latitud GPS</Label>
+                      <Label htmlFor="gpsLatitud" className={`text-xs ${tieneValor('gpsLatitud') ? 'font-bold' : ''}`}>Latitud GPS</Label>
                       <Input
                         id="gpsLatitud"
                         type="number"
@@ -793,12 +827,12 @@ export default function PerfilPage() {
                         value={formData.gpsLatitud || ""}
                         onChange={(e) => handleInputChange("gpsLatitud", parseFloat(e.target.value))}
                         placeholder="-18.0065"
-                        className="h-8"
+                        className={`h-8 ${tieneValor('gpsLatitud') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-latitud"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="gpsLongitud" className="text-xs">Longitud GPS</Label>
+                      <Label htmlFor="gpsLongitud" className={`text-xs ${tieneValor('gpsLongitud') ? 'font-bold' : ''}`}>Longitud GPS</Label>
                       <Input
                         id="gpsLongitud"
                         type="number"
@@ -806,7 +840,7 @@ export default function PerfilPage() {
                         value={formData.gpsLongitud || ""}
                         onChange={(e) => handleInputChange("gpsLongitud", parseFloat(e.target.value))}
                         placeholder="-70.2463"
-                        className="h-8"
+                        className={`h-8 ${tieneValor('gpsLongitud') ? 'font-bold' : ''}`}
                         data-testid="input-perfil-longitud"
                       />
                     </div>
