@@ -77,9 +77,9 @@ export default function Home() {
       {/* Carrusel de logos publicitarios - Arriba del saludo */}
       <CarruselPublicidad tipo="carrusel_logos" />
 
-      {/* Bienvenida - Altura fija 170px */}
-      <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white pb-16" style={{ height: '170px' }}>
-        <div className="container mx-auto px-4 h-full flex items-center">
+      {/* Bienvenida - Altura fija 170px con botones de alerta a la derecha */}
+      <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white" style={{ height: '170px' }}>
+        <div className="container mx-auto px-4 h-full flex items-center justify-between">
           <div className="text-left">
             <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-welcome">
               ¡Hola, {nombreMostrar}!
@@ -91,88 +91,86 @@ export default function Home() {
               Juntos somos invencibles
             </p>
           </div>
-        </div>
-      </section>
 
-      {/* Botones de Alertas Pendientes - Solo iconos alineados a la izquierda */}
-      <section className="container mx-auto px-4 -mt-10">
-        <div className="flex justify-start gap-4">
-          <div className="relative pb-4">
-            <Button
-              onClick={() => setModalAgenda(true)}
-              size="icon"
-              variant="outline"
-              className={`h-14 w-14 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
-                contadorAgenda > 0 
-                  ? 'bg-white dark:bg-card border-blue-300' 
-                  : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
-              }`}
-              data-testid="button-agenda"
-            >
-              <Calendar className={`h-9 w-9 ${contadorAgenda > 0 ? 'text-blue-600' : 'text-gray-500 dark:text-gray-400'}`} />
-            </Button>
-            {contadorAgenda > 0 && (
-              <span className="absolute bottom-0 right-0 text-blue-600 font-bold text-sm">
-                {contadorAgenda}
-              </span>
-            )}
-          </div>
+          {/* Botones de Alertas - Vertical a la derecha */}
+          <div className="flex flex-col gap-2">
+            <div className="relative">
+              <Button
+                onClick={() => setModalAgenda(true)}
+                size="icon"
+                variant="outline"
+                className={`h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
+                  contadorAgenda > 0 
+                    ? 'bg-white dark:bg-card border-blue-300' 
+                    : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
+                }`}
+                data-testid="button-agenda"
+              >
+                <Calendar className={`h-7 w-7 ${contadorAgenda > 0 ? 'text-blue-600' : 'text-gray-500 dark:text-gray-400'}`} />
+              </Button>
+              {contadorAgenda > 0 && (
+                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {contadorAgenda}
+                </span>
+              )}
+            </div>
 
-          <div className="relative pb-4">
-            <Button
-              onClick={() => setModalFamilia(true)}
-              size="icon"
-              variant="outline"
-              className={`h-14 w-14 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
-                contadorFamilia > 0 
-                  ? 'bg-white dark:bg-card border-pink-300' 
-                  : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
-              }`}
-              data-testid="button-familia"
-            >
-              <UsersRound className={`h-9 w-9 ${contadorFamilia > 0 ? 'text-pink-600' : 'text-gray-500 dark:text-gray-400'}`} />
-            </Button>
-            {contadorFamilia > 0 && (
-              <span className="absolute bottom-0 right-0 text-pink-600 font-bold text-sm">
-                {contadorFamilia}
-              </span>
-            )}
-          </div>
+            <div className="relative">
+              <Button
+                onClick={() => setModalFamilia(true)}
+                size="icon"
+                variant="outline"
+                className={`h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
+                  contadorFamilia > 0 
+                    ? 'bg-white dark:bg-card border-pink-300' 
+                    : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
+                }`}
+                data-testid="button-familia"
+              >
+                <UsersRound className={`h-7 w-7 ${contadorFamilia > 0 ? 'text-pink-600' : 'text-gray-500 dark:text-gray-400'}`} />
+              </Button>
+              {contadorFamilia > 0 && (
+                <span className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {contadorFamilia}
+                </span>
+              )}
+            </div>
 
-          <div className="relative pb-4">
-            <Button
-              onClick={() => setModalAlertas(true)}
-              size="icon"
-              variant="outline"
-              className={`h-14 w-14 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
-                contadorAlertas > 0 
-                  ? 'bg-white dark:bg-card border-red-300' 
-                  : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
-              }`}
-              data-testid="button-alertas"
-            >
-              <Megaphone className={`h-9 w-9 ${contadorAlertas > 0 ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}`} />
-            </Button>
-            {contadorAlertas > 0 && (
-              <span className="absolute bottom-0 right-0 text-red-600 font-bold text-sm">
-                {contadorAlertas}
-              </span>
-            )}
+            <div className="relative">
+              <Button
+                onClick={() => setModalAlertas(true)}
+                size="icon"
+                variant="outline"
+                className={`h-12 w-12 shadow-lg hover:shadow-xl transition-all rounded-full border-2 flex items-center justify-center p-0 ${
+                  contadorAlertas > 0 
+                    ? 'bg-white dark:bg-card border-red-300' 
+                    : 'bg-gray-200 dark:bg-gray-700 border-gray-400'
+                }`}
+                data-testid="button-alertas"
+              >
+                <Megaphone className={`h-7 w-7 ${contadorAlertas > 0 ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}`} />
+              </Button>
+              {contadorAlertas > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {contadorAlertas}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Accesos rápidos - 6 escritorio, 4 tablet, 3 celular */}
+      {/* Accesos rápidos - 6 escritorio, 4 tablet, 3 celular - Altura 100px */}
       <section className="container mx-auto px-4 mt-6">
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
           {/* Chat */}
           <div 
             onClick={() => setLocation("/chat")}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
             data-testid="card-quick-chat"
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white mx-auto mb-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white mb-1">
               <MessageCircle className="h-7 w-7" />
             </div>
             <h3 className="font-semibold text-sm">Chat</h3>
@@ -181,11 +179,11 @@ export default function Home() {
           {/* Taxi */}
           <div 
             onClick={() => setModalTaxi(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
             data-testid="card-quick-taxi"
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 text-white mx-auto mb-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 text-white mb-1">
               <Car className="h-7 w-7" />
             </div>
             <h3 className="font-semibold text-sm">Taxi</h3>
@@ -194,11 +192,11 @@ export default function Home() {
           {/* Delivery */}
           <div 
             onClick={() => setModalDelivery(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
             data-testid="card-quick-delivery"
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white mx-auto mb-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white mb-1">
               <ShoppingCart className="h-7 w-7" />
             </div>
             <h3 className="font-semibold text-sm">Delivery</h3>
@@ -207,11 +205,11 @@ export default function Home() {
           {/* Buses */}
           <div 
             onClick={() => setModalBuses(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
             data-testid="card-quick-buses"
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white mx-auto mb-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white mb-1">
               <Bus className="h-7 w-7" />
             </div>
             <h3 className="font-semibold text-sm">Buses</h3>
@@ -220,11 +218,11 @@ export default function Home() {
           {/* Moneda */}
           <div 
             onClick={() => setLocation("/billetera")}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
             data-testid="card-quick-moneda"
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white mx-auto mb-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white mb-1">
               <Coins className="h-7 w-7" />
             </div>
             <h3 className="font-semibold text-sm">Moneda</h3>
@@ -233,11 +231,11 @@ export default function Home() {
           {/* Avisos */}
           <div 
             onClick={() => setModalAvisos(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg p-4 text-center shadow-lg"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)" }}
+            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center shadow-lg flex flex-col items-center justify-center"
+            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 4px 12px rgba(30, 64, 175, 0.25)", height: "100px" }}
             data-testid="card-quick-avisos"
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white mx-auto mb-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white mb-1">
               <Megaphone className="h-7 w-7" />
             </div>
             <h3 className="font-semibold text-sm">Avisos</h3>
