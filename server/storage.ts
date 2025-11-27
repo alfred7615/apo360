@@ -41,6 +41,7 @@ import {
   monedas,
   solicitudesSaldo,
   saldosUsuarios,
+  sectores,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -123,6 +124,8 @@ import {
   type InsertSaldoUsuario,
   type ContactoFamiliar,
   type InsertContactoFamiliar,
+  type Sector,
+  type InsertSector,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -341,6 +344,13 @@ export interface IStorage {
   crearComentarioPublicidad(publicidadId: string, usuarioId: string, contenido: string): Promise<any>;
   eliminarComentarioPublicidad(comentarioId: string, usuarioId: string): Promise<void>;
   getFavoritosUsuario(usuarioId: string): Promise<any[]>;
+  
+  // ============================================================
+  // SECTORES (autocompletado)
+  // ============================================================
+  getSectores(departamento?: string, distrito?: string): Promise<Sector[]>;
+  buscarSectores(texto: string, departamento?: string, distrito?: string): Promise<Sector[]>;
+  createSector(data: InsertSector): Promise<Sector>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2718,6 +2728,55 @@ export class DatabaseStorage implements IStorage {
       monitoreo24h: true,
       satisfaccion: 98,
     };
+  }
+
+  // ============================================================
+  // SECTORES (autocompletado)
+  // ============================================================
+  
+  async getSectores(departamento?: string, distrito?: string): Promise<Sector[]> {
+    let query = db.select().from(sectores);
+    
+    if (departamento && distrito) {
+      return await db.select().from(sectores)
+        .where(and(
+          eq(sectores.departamento, departamento),
+          eq(sectores.distrito, distrito)
+        ))
+        .orderBy(sectores.nombre);
+    } else if (departamento) {
+      return await db.select().from(sectores)
+        .where(eq(sectores.departamento, departamento))
+        .orderBy(sectores.nombre);
+    }
+    
+    return await db.select().from(sectores).orderBy(sectores.nombre);
+  }
+
+  async buscarSectores(texto: string, departamento?: string, distrito?: string): Promise<Sector[]> {
+    const textoLower = texto.toLowerCase();
+    const todosSectores = await this.getSectores(departamento, distrito);
+    return todosSectores.filter(s => 
+      s.nombre.toLowerCase().includes(textoLower)
+    );
+  }
+
+  async createSector(data: InsertSector): Promise<Sector> {
+    try {
+      const [sector] = await db.insert(sectores).values(data).returning();
+      return sector;
+    } catch (error: any) {
+      if (error.code === '23505') {
+        const [existente] = await db.select().from(sectores)
+          .where(and(
+            eq(sectores.nombre, data.nombre),
+            eq(sectores.departamento, data.departamento || ''),
+            eq(sectores.distrito, data.distrito || '')
+          ));
+        return existente;
+      }
+      throw error;
+    }
   }
 }
 

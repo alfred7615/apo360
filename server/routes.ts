@@ -27,7 +27,9 @@ import {
   insertCredencialesConductorSchema,
   rolesRegistroValidos,
   rolesConAprobacion,
+  insertSectorSchema,
 } from "@shared/schema";
+import { paises, departamentosPeru, distritosPorDepartamento, obtenerDepartamentos, obtenerDistritos, buscarDepartamentos, buscarDistritos } from "@shared/ubicaciones-peru";
 import { registerAdminRoutes } from "./routes-admin";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -612,6 +614,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al obtener estadísticas públicas:", error);
       res.status(500).json({ message: "Error al obtener estadísticas" });
+    }
+  });
+
+  // ============================================================
+  // RUTAS DE UBICACIONES (países, departamentos, distritos)
+  // ============================================================
+
+  app.get('/api/ubicaciones/paises', async (req, res) => {
+    try {
+      res.json(paises);
+    } catch (error) {
+      console.error("Error al obtener países:", error);
+      res.status(500).json({ message: "Error al obtener países" });
+    }
+  });
+
+  app.get('/api/ubicaciones/departamentos', async (req, res) => {
+    try {
+      const pais = req.query.pais as string || 'Perú';
+      const buscar = req.query.buscar as string;
+      
+      let resultado = obtenerDepartamentos(pais);
+      if (buscar) {
+        resultado = buscarDepartamentos(buscar);
+      }
+      
+      res.json(resultado);
+    } catch (error) {
+      console.error("Error al obtener departamentos:", error);
+      res.status(500).json({ message: "Error al obtener departamentos" });
+    }
+  });
+
+  app.get('/api/ubicaciones/distritos', async (req, res) => {
+    try {
+      const departamento = req.query.departamento as string;
+      const buscar = req.query.buscar as string;
+      
+      if (!departamento) {
+        return res.status(400).json({ message: "Se requiere el departamento" });
+      }
+      
+      let resultado = obtenerDistritos(departamento);
+      if (buscar) {
+        resultado = buscarDistritos(departamento, buscar);
+      }
+      
+      res.json(resultado);
+    } catch (error) {
+      console.error("Error al obtener distritos:", error);
+      res.status(500).json({ message: "Error al obtener distritos" });
+    }
+  });
+
+  // ============================================================
+  // RUTAS DE SECTORES (autocompletado con historial)
+  // ============================================================
+
+  app.get('/api/sectores', async (req, res) => {
+    try {
+      const departamento = req.query.departamento as string;
+      const distrito = req.query.distrito as string;
+      const buscar = req.query.buscar as string;
+      
+      if (buscar) {
+        const sectores = await storage.buscarSectores(buscar, departamento, distrito);
+        return res.json(sectores);
+      }
+      
+      const sectores = await storage.getSectores(departamento, distrito);
+      res.json(sectores);
+    } catch (error) {
+      console.error("Error al obtener sectores:", error);
+      res.status(500).json({ message: "Error al obtener sectores" });
+    }
+  });
+
+  app.post('/api/sectores', isAuthenticated, async (req: any, res) => {
+    try {
+      const data = insertSectorSchema.parse(req.body);
+      const sector = await storage.createSector(data);
+      res.json(sector);
+    } catch (error: any) {
+      console.error("Error al crear sector:", error);
+      res.status(400).json({ message: error.message || "Error al crear sector" });
     }
   });
 
