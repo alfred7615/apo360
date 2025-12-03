@@ -49,10 +49,41 @@ SEG-APO is a comprehensive community security platform designed to enhance safet
 
 ## External Dependencies
 
--   **Hosting & Deployment**: Replit
--   **Database**: Neon (PostgreSQL)
+-   **Hosting & Deployment**: Replit (desarrollo) / KVM propio con PM2 + Nginx (producción)
+-   **Database**: Neon PostgreSQL (desarrollo) / PostgreSQL en Docker (producción)
 -   **Authentication**: Replit Auth (OpenID Connect)
 -   **Real-time Communication**: Socket.io
 -   **Mapping**: Google Maps API
 -   **Email Services**: SMTP (via Gmail SMTP)
 -   **Fonts**: Google Fonts (Inter)
+
+## Deployment Configuration
+
+### Production Server (KVM - apo360.net)
+- **Server**: KVM VPS con acceso root
+- **Process Manager**: PM2 (ecosystem.config.js)
+- **Web Server**: Nginx (nginx.conf)
+- **Database**: PostgreSQL en Docker
+- **SSL**: Let's Encrypt (Certbot)
+
+### Deployment Flow
+```
+[Replit Desarrollo] → [GitHub] → [KVM Producción]
+```
+
+### Key Files
+- `DEPLOYMENT.md` - Guía completa de despliegue
+- `ecosystem.config.js` - Configuración PM2
+- `nginx.conf` - Configuración Nginx
+- `deploy.sh` - Script de actualización automática
+- `setup-server.sh` - Script de configuración inicial
+
+### Update Commands (on KVM)
+```bash
+cd /root/apo360.net
+./deploy.sh
+```
+
+### Database Migrations
+- `npm run db:push` - Sincronizar esquema (seguro, no borra datos)
+- Backups automáticos antes de cada actualización
