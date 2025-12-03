@@ -1,0 +1,76 @@
+sage of /:   16.9% of 47.39GB   Users logged in:       0
+  Memory usage: 20%                IPv4 address for eth0: 72.61.221.16
+  Swap usage:   0%                 IPv6 address for eth0: 2a02:4780:66:9796::1
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+0 updates can be applied immediately.
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+1 updates could not be installed automatically. For more details,
+see /var/log/unattended-upgrades/unattended-upgrades.log
+
+Last login: Wed Dec  3 03:30:23 2025 from 181.66.181.231
+root@srv1170282:~# # Clonar proyecto
+root@srv1170282:~# cd /root
+root@srv1170282:~# git clone https://github.com/TU_USUARIO/apo360.git apo360.net
+rver.sh
+
+# Ejecutar configuración inicial (solo una vez)
+./setup-server.shfatal: destination path 'apo360.net' already exists and is not an empty directory.
+root@srv1170282:~# cd apo360.net
+root@srv1170282:~/apo360.net#
+root@srv1170282:~/apo360.net# # Dar permisos a scripts
+root@srv1170282:~/apo360.net# chmod +x deploy.sh setup-server.sh
+chmod: cannot access 'deploy.sh': No such file or directory
+chmod: cannot access 'setup-server.sh': No such file or directory
+root@srv1170282:~/apo360.net#
+root@srv1170282:~/apo360.net# # Ejecutar configuración inicial (solo una vez)
+root@srv1170282:~/apo360.net# ./setup-server.sh
+-bash: ./setup-server.sh: No such file or directory
+root@srv1170282:~/apo360.net# nano /root/apo360.net/.env
+root@srv1170282:~/apo360.net# cd /root
+root@srv1170282:~# git clone https://github.com/alfred7615/apo360.git apo360.net
+fatal: destination path 'apo360.net' already exists and is not an empty directory.
+root@srv1170282:~# cd apo360.netchmod +x deploy.sh setup-server.sh
+-bash: cd: too many arguments
+root@srv1170282:~# ./setup-server.sh
+-bash: ./setup-server.sh: No such file or directory
+root@srv1170282:~# cd /root
+root@srv1170282:~# rm -rf apo360.net
+root@srv1170282:~# ls -la
+total 104
+drwx------  9 root root  4096 Dec  3 14:00 .
+drwxr-xr-x 22 root root  4096 Dec  1 22:12 ..
+-rw-------  1 root root 27087 Dec  3 05:39 .bash_history
+-rw-r--r--  1 root root  3106 Apr 22  2024 .bashrc
+drwx------  2 root root  4096 Dec  1 21:56 .cache
+drwx------  5 root root  4096 Dec  1 23:45 .config
+drwxr-xr-x  6 root root  4096 Dec  1 23:45 .git
+-rw-------  1 root root    20 Dec  2 18:20 .lesshst
+drwxr-xr-x  3 root root  4096 Dec  2 00:20 .local
+drwxr-xr-x  5 root root  4096 Dec  2 19:33 .npm
+drwxr-xr-x  5 root root  4096 Dec  2 04:44 .pm2
+-rw-r--r--  1 root root   161 Apr 22  2024 .profile
+drwx------  2 root root  4096 Dec  1 23:29 .ssh
+-rw-r--r--  1 root root   133 Dec  2 05:21 backup_segapo_2025-12-02.sql
+root@srv1170282:~# https://github.com/alfred7615/apo360.git apo360.net
+-bash: https://github.com/alfred7615/apo360.git: No such file or directory
+root@srv1170282:~# git clone https://github.com/alfred7615/apo360.git apo360.net
+Cloning into 'apo360.net'...
+etup-server.shwarning: You appear to have cloned an empty repository.
+root@srv1170282:~# cd apo360.net
+root@srv1170282:~/apo360.net# chmod +x deploy.sh setup-server.sh
+chmod: cannot access 'deploy.sh': No such file or directory
+chmod: cannot access 'setup-server.sh': No such file or directory
+root@srv1170282:~/apo360.net# ./setup-server.sh
+-bash: ./setup-server.sh: No such file or directory
+root@srv1170282:~/apo360.net#
