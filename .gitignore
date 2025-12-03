@@ -1,6 +1,58 @@
+# Dependencias
 node_modules
+.npm
+
+# Build
 dist
-.DS_Store
+build
 server/public
+
+# Variables de entorno (IMPORTANTE: no subir a GitHub)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos temporales
+tmp/
+temp/
+*.tmp
 vite.config.ts.*
+
+# Archivos comprimidos
 *.tar.gz
+
+# Archivos de respaldo
+*.bak
+*.backup
+
+# Archivos de Replit
+.replit
+replit.nix
+.cache/
+.upm/
+.config/
+
+# Archivos de base de datos local
+*.sqlite
+*.db
+
+# Certificados (nunca subir)
+*.pem
+*.key
+*.crt
