@@ -1,0 +1,20 @@
+{
+  "name": "APO-360 - Seguridad y Servicios Comunitarios",
+  "short_name": "APO-360",
+  "description": "Plataforma de Seguridad y Servicios Comunitarios de Tacna",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#8B5CF6",
+  "theme_color": "#8B5CF6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["security", "community", "services"],
+  "lang": "es"
+}

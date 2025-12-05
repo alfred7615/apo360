@@ -823,13 +823,58 @@ export default function PublicidadSection() {
 
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="carrusel_logos">Carrusel Logos</TabsTrigger>
-            <TabsTrigger value="carrusel_principal">Slider Principal</TabsTrigger>
-            <TabsTrigger value="logos_servicios">Logos Servicios</TabsTrigger>
-            <TabsTrigger value="popup_emergencia">Popup Emergencia</TabsTrigger>
-            <TabsTrigger value="encuestas_apoyo">Encuestas/Apoyo</TabsTrigger>
-          </TabsList>
+          <div className="flex flex-wrap gap-2 mb-4 p-2 bg-muted/30 rounded-lg">
+            <Button
+              variant={activeTab === "carrusel_logos" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("carrusel_logos")}
+              className="flex-1 min-w-[120px] h-10 font-medium shadow-sm"
+              data-testid="tab-carrusel-logos"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Carrusel Logos
+            </Button>
+            <Button
+              variant={activeTab === "carrusel_principal" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("carrusel_principal")}
+              className="flex-1 min-w-[120px] h-10 font-medium shadow-sm"
+              data-testid="tab-slider-principal"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Slider Principal
+            </Button>
+            <Button
+              variant={activeTab === "logos_servicios" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("logos_servicios")}
+              className="flex-1 min-w-[120px] h-10 font-medium shadow-sm"
+              data-testid="tab-logos-servicios"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Logos Servicios
+            </Button>
+            <Button
+              variant={activeTab === "popup_emergencia" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("popup_emergencia")}
+              className="flex-1 min-w-[120px] h-10 font-medium shadow-sm"
+              data-testid="tab-popup-emergencia"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Popup Emergencia
+            </Button>
+            <Button
+              variant={activeTab === "encuestas_apoyo" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("encuestas_apoyo")}
+              className="flex-1 min-w-[120px] h-10 font-medium shadow-sm"
+              data-testid="tab-encuestas-apoyo"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Encuestas/Apoyo
+            </Button>
+          </div>
 
           {["carrusel_logos", "carrusel_principal", "logos_servicios", "popup_emergencia", "encuestas_apoyo"].map(tipo => (
             <TabsContent key={tipo} value={tipo} className="mt-4">

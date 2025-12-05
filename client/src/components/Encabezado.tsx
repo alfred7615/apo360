@@ -75,8 +75,12 @@ export default function Encabezado() {
             <Button
               variant="ghost"
               size="icon"
-              className={`text-white hover:bg-white/20 relative ${audio.reproduciendo ? '' : ''}`}
+              className={`text-white hover:bg-white/20 relative touch-manipulation ${audio.reproduciendo ? '' : ''}`}
               onClick={() => setSelectorAudioAbierto(true)}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                setSelectorAudioAbierto(true);
+              }}
               data-testid="button-audio-selector"
               title="Selector de audio"
             >
