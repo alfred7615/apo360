@@ -100,6 +100,7 @@ function getStoredState(): Partial<{
 export function AudioControllerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const inicializadoRef = useRef(false);
+  const interaccionUsuarioRef = useRef(false);
   const storedState = getStoredState();
   
   const [tipoFuente, setTipoFuente] = useState<TipoFuente>(storedState.tipoFuente || "radio");
@@ -111,6 +112,22 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   const [silenciado, setSilenciado] = useState(storedState.silenciado || false);
   const [autoReproducir, setAutoReproducir] = useState(false);
   const [primeraVez, setPrimeraVez] = useState(true);
+
+  useEffect(() => {
+    const habilitarAutoplay = () => {
+      interaccionUsuarioRef.current = true;
+    };
+    
+    document.addEventListener("click", habilitarAutoplay, { once: true });
+    document.addEventListener("touchstart", habilitarAutoplay, { once: true });
+    document.addEventListener("keydown", habilitarAutoplay, { once: true });
+    
+    return () => {
+      document.removeEventListener("click", habilitarAutoplay);
+      document.removeEventListener("touchstart", habilitarAutoplay);
+      document.removeEventListener("keydown", habilitarAutoplay);
+    };
+  }, []);
 
   const { data: radios = [] } = useQuery<RadioOnline[]>({
     queryKey: ["/api/radios-online"],
@@ -236,16 +253,26 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   const seleccionarRadio = useCallback((radioId: number | string) => {
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current.load();
     }
     setTipoFuente("radio");
     setRadioSeleccionadaId(radioId);
     setReproduciendo(false);
-    setAutoReproducir(true);
-  }, []);
+    
+    const radioSeleccionada = radiosActivas.find(r => r.id === radioId);
+    if (radioSeleccionada?.iframeCode) {
+      setReproduciendo(true);
+    } else {
+      setAutoReproducir(true);
+    }
+  }, [radiosActivas]);
 
   const seleccionarLista = useCallback((listaId: number) => {
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current.load();
     }
     setTipoFuente("lista");
     setListaSeleccionadaId(listaId);
@@ -320,7 +347,7 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   return (
     <AudioControllerContext.Provider value={value}>
       {children}
-      {urlActual && (
+      {urlActual && !usandoIframe && (
         <audio
           id={AUDIO_PLAYER_ID}
           ref={audioRef}
