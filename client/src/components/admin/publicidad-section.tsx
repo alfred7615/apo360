@@ -296,8 +296,6 @@ export default function PublicidadSection() {
     return <Badge variant="outline" data-testid={`badge-tipo-${tipo}`}>{labels[tipo || ""] || tipo}</Badge>;
   };
 
-  const publicidadesFiltradas = publicidades.filter(p => !activeTab || p.tipo === activeTab);
-
   if (isLoading) {
     return <div className="text-center py-8">Cargando publicidad...</div>;
   }
@@ -823,68 +821,60 @@ export default function PublicidadSection() {
 
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex flex-wrap gap-2 mb-4 p-2 bg-muted/30 rounded-lg">
-            <Button
-              variant={activeTab === "carrusel_logos" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveTab("carrusel_logos")}
-              className="flex-1 min-w-[120px] h-10 font-medium shadow-sm"
+          <TabsList className="flex flex-wrap h-auto gap-2 p-2 bg-muted/30 rounded-lg w-full">
+            <TabsTrigger 
+              value="carrusel_logos"
+              className="flex-1 min-w-[140px] h-10 font-medium shadow-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border data-[state=inactive]:bg-background data-[state=inactive]:hover:bg-muted gap-2"
               data-testid="tab-carrusel-logos"
             >
-              <ImageIcon className="h-4 w-4 mr-2" />
+              <ImageIcon className="h-4 w-4" />
               Carrusel Logos
-            </Button>
-            <Button
-              variant={activeTab === "carrusel_principal" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveTab("carrusel_principal")}
-              className="flex-1 min-w-[120px] h-10 font-medium shadow-sm"
+            </TabsTrigger>
+            <TabsTrigger 
+              value="carrusel_principal"
+              className="flex-1 min-w-[140px] h-10 font-medium shadow-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border data-[state=inactive]:bg-background data-[state=inactive]:hover:bg-muted gap-2"
               data-testid="tab-slider-principal"
             >
-              <ImageIcon className="h-4 w-4 mr-2" />
+              <ImageIcon className="h-4 w-4" />
               Slider Principal
-            </Button>
-            <Button
-              variant={activeTab === "logos_servicios" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveTab("logos_servicios")}
-              className="flex-1 min-w-[120px] h-10 font-medium shadow-sm"
+            </TabsTrigger>
+            <TabsTrigger 
+              value="logos_servicios"
+              className="flex-1 min-w-[140px] h-10 font-medium shadow-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border data-[state=inactive]:bg-background data-[state=inactive]:hover:bg-muted gap-2"
               data-testid="tab-logos-servicios"
             >
-              <ImageIcon className="h-4 w-4 mr-2" />
+              <ImageIcon className="h-4 w-4" />
               Logos Servicios
-            </Button>
-            <Button
-              variant={activeTab === "popup_emergencia" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveTab("popup_emergencia")}
-              className="flex-1 min-w-[120px] h-10 font-medium shadow-sm"
+            </TabsTrigger>
+            <TabsTrigger 
+              value="popup_emergencia"
+              className="flex-1 min-w-[140px] h-10 font-medium shadow-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border data-[state=inactive]:bg-background data-[state=inactive]:hover:bg-muted gap-2"
               data-testid="tab-popup-emergencia"
             >
-              <ImageIcon className="h-4 w-4 mr-2" />
+              <ImageIcon className="h-4 w-4" />
               Popup Emergencia
-            </Button>
-            <Button
-              variant={activeTab === "encuestas_apoyo" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveTab("encuestas_apoyo")}
-              className="flex-1 min-w-[120px] h-10 font-medium shadow-sm"
+            </TabsTrigger>
+            <TabsTrigger 
+              value="encuestas_apoyo"
+              className="flex-1 min-w-[140px] h-10 font-medium shadow-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border data-[state=inactive]:bg-background data-[state=inactive]:hover:bg-muted gap-2"
               data-testid="tab-encuestas-apoyo"
             >
-              <ImageIcon className="h-4 w-4 mr-2" />
+              <ImageIcon className="h-4 w-4" />
               Encuestas/Apoyo
-            </Button>
-          </div>
+            </TabsTrigger>
+          </TabsList>
 
-          {["carrusel_logos", "carrusel_principal", "logos_servicios", "popup_emergencia", "encuestas_apoyo"].map(tipo => (
+          {["carrusel_logos", "carrusel_principal", "logos_servicios", "popup_emergencia", "encuestas_apoyo"].map(tipo => {
+            const publicidadesDelTipo = publicidades.filter(p => p.tipo === tipo);
+            return (
             <TabsContent key={tipo} value={tipo} className="mt-4">
-              {publicidadesFiltradas.length === 0 ? (
+              {publicidadesDelTipo.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No hay publicidades de tipo "{tipo}" aún. Crea una nueva para comenzar.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {publicidadesFiltradas.map(pub => (
+                  {publicidadesDelTipo.map(pub => (
                     <Card key={pub.id} className="group overflow-hidden relative">
                       {/* Imagen a pantalla completa */}
                       <div className="aspect-square overflow-hidden bg-muted flex items-center justify-center relative">
@@ -1016,7 +1006,8 @@ export default function PublicidadSection() {
                 </div>
               )}
             </TabsContent>
-          ))}
+          );
+          })}
         </Tabs>
       </CardContent>
     </Card>
