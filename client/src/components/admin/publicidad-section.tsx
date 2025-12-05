@@ -1430,19 +1430,19 @@ export default function PublicidadSection() {
           </TabsContent>
         </Tabs>
 
-        {/* Modal para Radio */}
+        {/* Modal para Radio - Scrollable y responsivo para móvil */}
         <Dialog open={showRadioModal} onOpenChange={setShowRadioModal}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
+          <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle className="flex items-center gap-2">
-                <Radio className="h-5 w-5" />
+                <Radio className="h-5 w-5 text-purple-600" />
                 {selectedRadio ? "Editar Radio" : "Nueva Radio"}
               </DialogTitle>
               <DialogDescription>
                 {selectedRadio ? "Modifica los datos de la radio" : "Agrega una nueva radio online"}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto flex-1 pr-2">
               <div>
                 <Label htmlFor="radio-nombre">Nombre *</Label>
                 <Input
@@ -1451,6 +1451,7 @@ export default function PublicidadSection() {
                   onChange={(e) => setRadioForm({ ...radioForm, nombre: e.target.value })}
                   placeholder="Nombre de la radio"
                   data-testid="input-radio-nombre"
+                  className="touch-manipulation"
                 />
               </div>
               <div>
@@ -1461,6 +1462,7 @@ export default function PublicidadSection() {
                   onChange={(e) => setRadioForm({ ...radioForm, url: e.target.value })}
                   placeholder="https://..."
                   data-testid="input-radio-url"
+                  className="touch-manipulation"
                 />
               </div>
               <div>
@@ -1470,7 +1472,7 @@ export default function PublicidadSection() {
                   value={radioForm.iframeCode}
                   onChange={(e) => setRadioForm({ ...radioForm, iframeCode: e.target.value })}
                   placeholder="<iframe>...</iframe>"
-                  className="min-h-[80px]"
+                  className="min-h-[80px] touch-manipulation"
                   data-testid="input-radio-iframe"
                 />
               </div>
@@ -1481,6 +1483,7 @@ export default function PublicidadSection() {
                   value={radioForm.descripcion}
                   onChange={(e) => setRadioForm({ ...radioForm, descripcion: e.target.value })}
                   placeholder="Descripcion de la radio"
+                  className="touch-manipulation"
                   data-testid="input-radio-descripcion"
                 />
               </div>
@@ -1492,6 +1495,7 @@ export default function PublicidadSection() {
                   onChange={(e) => setRadioForm({ ...radioForm, logoUrl: e.target.value })}
                   placeholder="https://..."
                   data-testid="input-radio-logo"
+                  className="touch-manipulation"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1503,6 +1507,7 @@ export default function PublicidadSection() {
                     value={radioForm.orden}
                     onChange={(e) => setRadioForm({ ...radioForm, orden: parseInt(e.target.value) || 0 })}
                     data-testid="input-radio-orden"
+                    className="touch-manipulation"
                   />
                 </div>
                 <div>
@@ -1511,7 +1516,7 @@ export default function PublicidadSection() {
                     value={radioForm.estado}
                     onValueChange={(value) => setRadioForm({ ...radioForm, estado: value })}
                   >
-                    <SelectTrigger data-testid="select-radio-estado">
+                    <SelectTrigger data-testid="select-radio-estado" className="touch-manipulation">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1531,14 +1536,15 @@ export default function PublicidadSection() {
                 <Label htmlFor="radio-predeterminada">Es predeterminada</Label>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowRadioModal(false)}>
+            <DialogFooter className="flex-shrink-0 pt-4 border-t mt-4 gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setShowRadioModal(false)} className="touch-manipulation">
                 Cancelar
               </Button>
               <Button 
                 onClick={handleSubmitRadio}
                 disabled={!radioForm.nombre || createRadioMutation.isPending || updateRadioMutation.isPending}
                 data-testid="button-guardar-radio"
+                className="touch-manipulation"
               >
                 {createRadioMutation.isPending || updateRadioMutation.isPending ? "Guardando..." : "Guardar"}
               </Button>
@@ -1546,19 +1552,19 @@ export default function PublicidadSection() {
           </DialogContent>
         </Dialog>
 
-        {/* Modal para Lista MP3 */}
+        {/* Modal para Lista MP3 - Scrollable y responsivo para móvil */}
         <Dialog open={showListaModal} onOpenChange={setShowListaModal}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
+          <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle className="flex items-center gap-2">
-                <Music className="h-5 w-5" />
+                <Music className="h-5 w-5 text-purple-600" />
                 {selectedLista ? "Editar Lista" : "Nueva Lista MP3"}
               </DialogTitle>
               <DialogDescription>
                 {selectedLista ? "Modifica los datos de la lista" : "Agrega una nueva lista de MP3"}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto flex-1 pr-2">
               <div>
                 <Label htmlFor="lista-nombre">Nombre *</Label>
                 <Input
@@ -1567,6 +1573,7 @@ export default function PublicidadSection() {
                   onChange={(e) => setListaForm({ ...listaForm, nombre: e.target.value })}
                   placeholder="Nombre de la lista"
                   data-testid="input-lista-nombre"
+                  className="touch-manipulation"
                 />
               </div>
               <div>
@@ -1577,6 +1584,7 @@ export default function PublicidadSection() {
                   onChange={(e) => setListaForm({ ...listaForm, genero: e.target.value })}
                   placeholder="Rock, Pop, Jazz..."
                   data-testid="input-lista-genero"
+                  className="touch-manipulation"
                 />
               </div>
               <div>
@@ -1587,6 +1595,7 @@ export default function PublicidadSection() {
                   onChange={(e) => setListaForm({ ...listaForm, descripcion: e.target.value })}
                   placeholder="Descripcion de la lista"
                   data-testid="input-lista-descripcion"
+                  className="touch-manipulation"
                 />
               </div>
               <div>
@@ -1597,6 +1606,7 @@ export default function PublicidadSection() {
                   onChange={(e) => setListaForm({ ...listaForm, rutaCarpeta: e.target.value })}
                   placeholder="/musica/rock/"
                   data-testid="input-lista-carpeta"
+                  className="touch-manipulation"
                 />
               </div>
               <div>
@@ -1607,6 +1617,7 @@ export default function PublicidadSection() {
                   onChange={(e) => setListaForm({ ...listaForm, imagenUrl: e.target.value })}
                   placeholder="https://..."
                   data-testid="input-lista-imagen"
+                  className="touch-manipulation"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1618,6 +1629,7 @@ export default function PublicidadSection() {
                     value={listaForm.orden}
                     onChange={(e) => setListaForm({ ...listaForm, orden: parseInt(e.target.value) || 0 })}
                     data-testid="input-lista-orden"
+                    className="touch-manipulation"
                   />
                 </div>
                 <div>
@@ -1626,7 +1638,7 @@ export default function PublicidadSection() {
                     value={listaForm.estado}
                     onValueChange={(value) => setListaForm({ ...listaForm, estado: value })}
                   >
-                    <SelectTrigger data-testid="select-lista-estado">
+                    <SelectTrigger data-testid="select-lista-estado" className="touch-manipulation">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1637,14 +1649,15 @@ export default function PublicidadSection() {
                 </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowListaModal(false)}>
+            <DialogFooter className="flex-shrink-0 pt-4 border-t mt-4 gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setShowListaModal(false)} className="touch-manipulation">
                 Cancelar
               </Button>
               <Button 
                 onClick={handleSubmitLista}
                 disabled={!listaForm.nombre || createListaMutation.isPending || updateListaMutation.isPending}
                 data-testid="button-guardar-lista"
+                className="touch-manipulation"
               >
                 {createListaMutation.isPending || updateListaMutation.isPending ? "Guardando..." : "Guardar"}
               </Button>
