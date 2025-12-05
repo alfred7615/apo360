@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Radio, Music, Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, X, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { useAudioController } from "@/contexts/AudioControllerContext";
@@ -34,6 +34,9 @@ export default function SelectorAudio({ abierto, onClose }: SelectorAudioProps) 
               Audio APO-360
             </DialogTitle>
           </div>
+          <DialogDescription className="sr-only">
+            Selecciona y controla la reproducción de radios online y listas de música MP3
+          </DialogDescription>
         </DialogHeader>
 
         {mostrarControles && audio.urlActual && (
