@@ -63,7 +63,9 @@ export default function GestorArchivosMp3({ lista, onBack }: GestorArchivosMp3Pr
     },
   });
 
-  const archivosOrdenados = ordenTemporal.length > 0 ? ordenTemporal : archivos.sort((a, b) => (a.orden || 0) - (b.orden || 0));
+  const archivosOrdenados = ordenTemporal.length > 0 
+    ? ordenTemporal 
+    : [...archivos].sort((a, b) => (a.orden || 0) - (b.orden || 0));
 
   const updateArchivoMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
@@ -231,57 +233,60 @@ export default function GestorArchivosMp3({ lista, onBack }: GestorArchivosMp3Pr
     <div className="space-y-4">
       <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
       
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Button 
             variant="outline" 
+            size="sm"
             onClick={onBack}
             className="touch-manipulation"
             data-testid="button-volver-listas"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
+            <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">Volver</span>
           </Button>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-full bg-green-500/10">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="p-2 rounded-full bg-green-500/10 flex-shrink-0">
               <Music className="h-5 w-5 text-green-500" />
             </div>
-            <div>
-              <h3 className="font-semibold">{lista.nombre}</h3>
+            <div className="min-w-0">
+              <h3 className="font-semibold text-sm sm:text-base truncate">{lista.nombre}</h3>
               {lista.rutaCarpeta && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <FolderOpen className="h-3 w-3" />
-                  <span>/assets/mp3/{lista.rutaCarpeta}</span>
+                  <FolderOpen className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">/assets/mp3/{lista.rutaCarpeta}</span>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {ordenTemporal.length > 0 && (
             <>
               <Button 
                 variant="outline" 
+                size="sm"
                 onClick={handleCancelarOrden}
                 className="touch-manipulation"
                 data-testid="button-cancelar-orden"
               >
-                <X className="h-4 w-4 mr-2" />
-                Cancelar
+                <X className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Cancelar</span>
               </Button>
               <Button 
+                size="sm"
                 onClick={handleGuardarOrden}
                 disabled={reordenarMutation.isPending}
                 className="touch-manipulation"
                 data-testid="button-guardar-orden"
               >
                 {reordenarMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 sm:mr-1 animate-spin" />
                 ) : (
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-4 w-4 sm:mr-1" />
                 )}
-                Guardar Orden
+                <span className="hidden sm:inline">Guardar</span>
               </Button>
             </>
           )}
@@ -296,6 +301,7 @@ export default function GestorArchivosMp3({ lista, onBack }: GestorArchivosMp3Pr
             data-testid="input-subir-archivos"
           />
           <Button 
+            size="sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={subiendo}
             className="touch-manipulation"
@@ -350,68 +356,68 @@ export default function GestorArchivosMp3({ lista, onBack }: GestorArchivosMp3Pr
                   onDrop={(e) => handleDrop(e, archivo)}
                   onDragEnd={handleDragEnd}
                   className={`
-                    flex items-center gap-3 p-3 border rounded-lg transition-all
+                    flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg transition-all
                     ${arrastrando === archivo.id ? "opacity-50 border-primary" : "hover:bg-muted/50"}
                     ${reproduciendo === archivo.id ? "border-green-500 bg-green-500/5" : ""}
                     cursor-grab active:cursor-grabbing touch-manipulation
                   `}
                   data-testid={`archivo-item-${archivo.id}`}
                 >
-                  <div className="flex items-center gap-2 text-muted-foreground cursor-grab">
+                  <div className="flex items-center gap-1 sm:gap-2 text-muted-foreground cursor-grab flex-shrink-0">
                     <GripVertical className="h-4 w-4" />
-                    <span className="text-xs w-6 text-center">{index + 1}</span>
+                    <span className="text-xs w-4 sm:w-6 text-center">{index + 1}</span>
                   </div>
                   
                   <Button
                     size="icon"
                     variant={reproduciendo === archivo.id ? "default" : "outline"}
                     onClick={() => handleReproducir(archivo)}
-                    className="flex-shrink-0 touch-manipulation"
+                    className="flex-shrink-0 touch-manipulation h-8 w-8 sm:h-9 sm:w-9"
                     data-testid={`button-play-${archivo.id}`}
                   >
                     {reproduciendo === archivo.id ? (
-                      <Pause className="h-4 w-4" />
+                      <Pause className="h-3 w-3 sm:h-4 sm:w-4" />
                     ) : (
-                      <Play className="h-4 w-4" />
+                      <Play className="h-3 w-3 sm:h-4 sm:w-4" />
                     )}
                   </Button>
 
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{archivo.titulo}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {archivo.artista && <span>{archivo.artista}</span>}
+                    <p className="font-medium truncate text-sm sm:text-base">{archivo.titulo}</p>
+                    <div className="flex items-center gap-1 sm:gap-2 text-xs text-muted-foreground flex-wrap">
+                      {archivo.artista && <span className="truncate max-w-[100px] sm:max-w-none">{archivo.artista}</span>}
                       {archivo.tamano && (
-                        <Badge variant="secondary" className="text-[10px]">
+                        <Badge variant="secondary" className="text-[10px] hidden xs:inline-flex">
                           {formatBytes(archivo.tamano)}
                         </Badge>
                       )}
                       {reproduciendo === archivo.id && (
                         <Badge variant="default" className="text-[10px] bg-green-500">
-                          <Volume2 className="h-3 w-3 mr-1" />
-                          Reproduciendo
+                          <Volume2 className="h-3 w-3" />
+                          <span className="hidden sm:inline ml-1">Reproduciendo</span>
                         </Badge>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => handleEditarArchivo(archivo)}
-                      className="touch-manipulation"
+                      className="touch-manipulation h-8 w-8 sm:h-9 sm:w-9"
                       data-testid={`button-edit-${archivo.id}`}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => setEliminarArchivo(archivo)}
-                      className="touch-manipulation"
+                      className="touch-manipulation h-8 w-8 sm:h-9 sm:w-9"
                       data-testid={`button-delete-${archivo.id}`}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
                     </Button>
                   </div>
                 </div>
