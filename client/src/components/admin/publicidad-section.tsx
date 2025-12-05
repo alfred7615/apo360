@@ -22,13 +22,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertPublicidadSchema } from "@shared/schema";
+import { insertPublicidadSchema, type RadioOnline, type ListaMp3 } from "@shared/schema";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Pause, Play, ImageIcon, Facebook, Instagram, Twitter, Youtube, Linkedin, MapPin, ExternalLink, Calendar, Info, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Pause, Play, ImageIcon, Facebook, Instagram, Twitter, Youtube, Linkedin, MapPin, ExternalLink, Calendar, Info, Upload, Radio, Music, Volume2, Star, StopCircle, Loader2, Edit } from "lucide-react";
 import { SiTiktok, SiWhatsapp } from "react-icons/si";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -104,6 +106,219 @@ export default function PublicidadSection() {
   const { data: publicidades = [], isLoading } = useQuery<Publicidad[]>({
     queryKey: ["/api/publicidad"],
   });
+
+  const { data: radios = [], isLoading: loadingRadios } = useQuery<RadioOnline[]>({
+    queryKey: ["/api/radios-online"],
+  });
+
+  const { data: listas = [], isLoading: loadingListas } = useQuery<ListaMp3[]>({
+    queryKey: ["/api/listas-mp3"],
+  });
+
+  const [showRadioModal, setShowRadioModal] = useState(false);
+  const [showListaModal, setShowListaModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedRadio, setSelectedRadio] = useState<RadioOnline | null>(null);
+  const [selectedLista, setSelectedLista] = useState<ListaMp3 | null>(null);
+  const [deleteType, setDeleteType] = useState<"radio" | "lista">("radio");
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [radioSubTab, setRadioSubTab] = useState<"radios" | "listas">("radios");
+
+  const [radioForm, setRadioForm] = useState({
+    nombre: "",
+    url: "",
+    iframeCode: "",
+    descripcion: "",
+    logoUrl: "",
+    orden: 0,
+    esPredeterminada: false,
+    estado: "activo" as string,
+  });
+
+  const [listaForm, setListaForm] = useState({
+    nombre: "",
+    descripcion: "",
+    rutaCarpeta: "",
+    imagenUrl: "",
+    genero: "",
+    orden: 0,
+    estado: "activo" as string,
+  });
+
+  const resetRadioForm = () => {
+    setRadioForm({
+      nombre: "",
+      url: "",
+      iframeCode: "",
+      descripcion: "",
+      logoUrl: "",
+      orden: 0,
+      esPredeterminada: false,
+      estado: "activo",
+    });
+    setSelectedRadio(null);
+  };
+
+  const resetListaForm = () => {
+    setListaForm({
+      nombre: "",
+      descripcion: "",
+      rutaCarpeta: "",
+      imagenUrl: "",
+      genero: "",
+      orden: 0,
+      estado: "activo",
+    });
+    setSelectedLista(null);
+  };
+
+  const createRadioMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/radios-online", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/radios-online"] });
+      setShowRadioModal(false);
+      resetRadioForm();
+      toast({ title: "Radio creada", description: "La radio se ha creado correctamente" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Error al crear la radio", variant: "destructive" });
+    },
+  });
+
+  const updateRadioMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => 
+      apiRequest("PATCH", `/api/radios-online/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/radios-online"] });
+      setShowRadioModal(false);
+      setSelectedRadio(null);
+      resetRadioForm();
+      toast({ title: "Radio actualizada", description: "La radio se ha actualizado correctamente" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Error al actualizar la radio", variant: "destructive" });
+    },
+  });
+
+  const deleteRadioMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/radios-online/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/radios-online"] });
+      setShowDeleteDialog(false);
+      setDeleteId(null);
+      toast({ title: "Radio eliminada", description: "La radio se ha eliminado correctamente" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Error al eliminar la radio", variant: "destructive" });
+    },
+  });
+
+  const createListaMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/listas-mp3", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/listas-mp3"] });
+      setShowListaModal(false);
+      resetListaForm();
+      toast({ title: "Lista creada", description: "La lista MP3 se ha creado correctamente" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Error al crear la lista", variant: "destructive" });
+    },
+  });
+
+  const updateListaMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => 
+      apiRequest("PATCH", `/api/listas-mp3/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/listas-mp3"] });
+      setShowListaModal(false);
+      setSelectedLista(null);
+      resetListaForm();
+      toast({ title: "Lista actualizada", description: "La lista MP3 se ha actualizado correctamente" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Error al actualizar la lista", variant: "destructive" });
+    },
+  });
+
+  const deleteListaMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/listas-mp3/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/listas-mp3"] });
+      setShowDeleteDialog(false);
+      setDeleteId(null);
+      toast({ title: "Lista eliminada", description: "La lista MP3 se ha eliminado correctamente" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Error al eliminar la lista", variant: "destructive" });
+    },
+  });
+
+  const handleEditRadio = (radio: RadioOnline) => {
+    setSelectedRadio(radio);
+    setRadioForm({
+      nombre: radio.nombre,
+      url: radio.url || "",
+      iframeCode: radio.iframeCode || "",
+      descripcion: radio.descripcion || "",
+      logoUrl: radio.logoUrl || "",
+      orden: radio.orden || 0,
+      esPredeterminada: radio.esPredeterminada || false,
+      estado: radio.estado || "activo",
+    });
+    setShowRadioModal(true);
+  };
+
+  const handleEditLista = (lista: ListaMp3) => {
+    setSelectedLista(lista);
+    setListaForm({
+      nombre: lista.nombre,
+      descripcion: lista.descripcion || "",
+      rutaCarpeta: lista.rutaCarpeta || "",
+      imagenUrl: lista.imagenUrl || "",
+      genero: lista.genero || "",
+      orden: lista.orden || 0,
+      estado: lista.estado || "activo",
+    });
+    setShowListaModal(true);
+  };
+
+  const handleDeleteRadio = (id: number) => {
+    setDeleteType("radio");
+    setDeleteId(id);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteLista = (id: number) => {
+    setDeleteType("lista");
+    setDeleteId(id);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (deleteId === null) return;
+    if (deleteType === "radio") {
+      deleteRadioMutation.mutate(deleteId);
+    } else {
+      deleteListaMutation.mutate(deleteId);
+    }
+  };
+
+  const handleSubmitRadio = () => {
+    if (selectedRadio) {
+      updateRadioMutation.mutate({ id: selectedRadio.id, data: radioForm });
+    } else {
+      createRadioMutation.mutate(radioForm);
+    }
+  };
+
+  const handleSubmitLista = () => {
+    if (selectedLista) {
+      updateListaMutation.mutate({ id: selectedLista.id, data: listaForm });
+    } else {
+      createListaMutation.mutate(listaForm);
+    }
+  };
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -862,6 +1077,14 @@ export default function PublicidadSection() {
               <ImageIcon className="h-4 w-4" />
               Encuestas/Apoyo
             </TabsTrigger>
+            <TabsTrigger 
+              value="radio_online"
+              className="flex-1 min-w-[140px] h-10 font-medium shadow-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border data-[state=inactive]:bg-background data-[state=inactive]:hover:bg-muted gap-2"
+              data-testid="tab-radio-online"
+            >
+              <Radio className="h-4 w-4" />
+              Radio y Listas
+            </TabsTrigger>
           </TabsList>
 
           {["carrusel_logos", "carrusel_principal", "logos_servicios", "popup_emergencia", "encuestas_apoyo"].map(tipo => {
@@ -1008,7 +1231,448 @@ export default function PublicidadSection() {
             </TabsContent>
           );
           })}
+
+          {/* Tab de Radio Online y Listas MP3 */}
+          <TabsContent value="radio_online" className="mt-4 space-y-4">
+            {/* Sub-tabs para Radios y Listas - Estilo profesional consistente */}
+            <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+              <Button
+                variant={radioSubTab === "radios" ? "default" : "outline"}
+                onClick={() => setRadioSubTab("radios")}
+                className="flex-1 min-w-[140px] h-10 font-medium shadow-sm gap-2"
+                data-testid="subtab-radios"
+              >
+                <Radio className="h-4 w-4" />
+                Radios Online ({radios.length})
+              </Button>
+              <Button
+                variant={radioSubTab === "listas" ? "default" : "outline"}
+                onClick={() => setRadioSubTab("listas")}
+                className="flex-1 min-w-[140px] h-10 font-medium shadow-sm gap-2"
+                data-testid="subtab-listas"
+              >
+                <Music className="h-4 w-4" />
+                Listas MP3 ({listas.length})
+              </Button>
+            </div>
+
+            {/* Contenido de Radios */}
+            {radioSubTab === "radios" && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Radio className="h-5 w-5 text-purple-600" />
+                    Radios Online
+                  </h3>
+                  <Button
+                    onClick={() => {
+                      resetRadioForm();
+                      setShowRadioModal(true);
+                    }}
+                    size="sm"
+                    className="gap-2"
+                    data-testid="button-nueva-radio"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Nueva Radio
+                  </Button>
+                </div>
+
+                {loadingRadios ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : radios.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No hay radios configuradas. Agrega una nueva para comenzar.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {radios.map((radio) => (
+                      <Card key={radio.id} className="group">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {radio.logoUrl ? (
+                                <img src={radio.logoUrl} alt={radio.nombre} className="w-full h-full object-cover" />
+                              ) : (
+                                <Radio className="h-6 w-6 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium truncate">{radio.nombre}</h4>
+                                {radio.esPredeterminada && (
+                                  <Star className="h-4 w-4 text-yellow-500 flex-shrink-0" />
+                                )}
+                              </div>
+                              {radio.descripcion && (
+                                <p className="text-sm text-muted-foreground truncate">{radio.descripcion}</p>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge variant={radio.estado === "activo" ? "default" : "secondary"}>
+                                  {radio.estado}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">Orden: {radio.orden}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditRadio(radio)}
+                              data-testid={`button-editar-radio-${radio.id}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteRadio(radio.id)}
+                              data-testid={`button-eliminar-radio-${radio.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Contenido de Listas MP3 */}
+            {radioSubTab === "listas" && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Music className="h-5 w-5 text-green-600" />
+                    Listas MP3
+                  </h3>
+                  <Button
+                    onClick={() => {
+                      resetListaForm();
+                      setShowListaModal(true);
+                    }}
+                    size="sm"
+                    className="gap-2"
+                    data-testid="button-nueva-lista"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Nueva Lista
+                  </Button>
+                </div>
+
+                {loadingListas ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : listas.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No hay listas MP3 configuradas. Agrega una nueva para comenzar.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {listas.map((lista) => (
+                      <Card key={lista.id} className="group">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {lista.imagenUrl ? (
+                                <img src={lista.imagenUrl} alt={lista.nombre} className="w-full h-full object-cover" />
+                              ) : (
+                                <Music className="h-6 w-6 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium truncate">{lista.nombre}</h4>
+                              {lista.genero && (
+                                <p className="text-sm text-muted-foreground">{lista.genero}</p>
+                              )}
+                              {lista.descripcion && (
+                                <p className="text-sm text-muted-foreground truncate">{lista.descripcion}</p>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge variant={lista.estado === "activo" ? "default" : "secondary"}>
+                                  {lista.estado}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">Orden: {lista.orden}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditLista(lista)}
+                              data-testid={`button-editar-lista-${lista.id}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteLista(lista.id)}
+                              data-testid={`button-eliminar-lista-${lista.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
+
+        {/* Modal para Radio */}
+        <Dialog open={showRadioModal} onOpenChange={setShowRadioModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Radio className="h-5 w-5" />
+                {selectedRadio ? "Editar Radio" : "Nueva Radio"}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedRadio ? "Modifica los datos de la radio" : "Agrega una nueva radio online"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="radio-nombre">Nombre *</Label>
+                <Input
+                  id="radio-nombre"
+                  value={radioForm.nombre}
+                  onChange={(e) => setRadioForm({ ...radioForm, nombre: e.target.value })}
+                  placeholder="Nombre de la radio"
+                  data-testid="input-radio-nombre"
+                />
+              </div>
+              <div>
+                <Label htmlFor="radio-url">URL de Stream</Label>
+                <Input
+                  id="radio-url"
+                  value={radioForm.url}
+                  onChange={(e) => setRadioForm({ ...radioForm, url: e.target.value })}
+                  placeholder="https://..."
+                  data-testid="input-radio-url"
+                />
+              </div>
+              <div>
+                <Label htmlFor="radio-iframe">Código Iframe</Label>
+                <Textarea
+                  id="radio-iframe"
+                  value={radioForm.iframeCode}
+                  onChange={(e) => setRadioForm({ ...radioForm, iframeCode: e.target.value })}
+                  placeholder="<iframe>...</iframe>"
+                  className="min-h-[80px]"
+                  data-testid="input-radio-iframe"
+                />
+              </div>
+              <div>
+                <Label htmlFor="radio-descripcion">Descripcion</Label>
+                <Textarea
+                  id="radio-descripcion"
+                  value={radioForm.descripcion}
+                  onChange={(e) => setRadioForm({ ...radioForm, descripcion: e.target.value })}
+                  placeholder="Descripcion de la radio"
+                  data-testid="input-radio-descripcion"
+                />
+              </div>
+              <div>
+                <Label htmlFor="radio-logo">URL del Logo</Label>
+                <Input
+                  id="radio-logo"
+                  value={radioForm.logoUrl}
+                  onChange={(e) => setRadioForm({ ...radioForm, logoUrl: e.target.value })}
+                  placeholder="https://..."
+                  data-testid="input-radio-logo"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="radio-orden">Orden</Label>
+                  <Input
+                    id="radio-orden"
+                    type="number"
+                    value={radioForm.orden}
+                    onChange={(e) => setRadioForm({ ...radioForm, orden: parseInt(e.target.value) || 0 })}
+                    data-testid="input-radio-orden"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="radio-estado">Estado</Label>
+                  <Select
+                    value={radioForm.estado}
+                    onValueChange={(value) => setRadioForm({ ...radioForm, estado: value })}
+                  >
+                    <SelectTrigger data-testid="select-radio-estado">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="activo">Activo</SelectItem>
+                      <SelectItem value="inactivo">Inactivo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="radio-predeterminada"
+                  checked={radioForm.esPredeterminada}
+                  onCheckedChange={(checked) => setRadioForm({ ...radioForm, esPredeterminada: checked })}
+                  data-testid="switch-radio-predeterminada"
+                />
+                <Label htmlFor="radio-predeterminada">Es predeterminada</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowRadioModal(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleSubmitRadio}
+                disabled={!radioForm.nombre || createRadioMutation.isPending || updateRadioMutation.isPending}
+                data-testid="button-guardar-radio"
+              >
+                {createRadioMutation.isPending || updateRadioMutation.isPending ? "Guardando..." : "Guardar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal para Lista MP3 */}
+        <Dialog open={showListaModal} onOpenChange={setShowListaModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Music className="h-5 w-5" />
+                {selectedLista ? "Editar Lista" : "Nueva Lista MP3"}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedLista ? "Modifica los datos de la lista" : "Agrega una nueva lista de MP3"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="lista-nombre">Nombre *</Label>
+                <Input
+                  id="lista-nombre"
+                  value={listaForm.nombre}
+                  onChange={(e) => setListaForm({ ...listaForm, nombre: e.target.value })}
+                  placeholder="Nombre de la lista"
+                  data-testid="input-lista-nombre"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lista-genero">Genero</Label>
+                <Input
+                  id="lista-genero"
+                  value={listaForm.genero}
+                  onChange={(e) => setListaForm({ ...listaForm, genero: e.target.value })}
+                  placeholder="Rock, Pop, Jazz..."
+                  data-testid="input-lista-genero"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lista-descripcion">Descripcion</Label>
+                <Textarea
+                  id="lista-descripcion"
+                  value={listaForm.descripcion}
+                  onChange={(e) => setListaForm({ ...listaForm, descripcion: e.target.value })}
+                  placeholder="Descripcion de la lista"
+                  data-testid="input-lista-descripcion"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lista-carpeta">Ruta de Carpeta</Label>
+                <Input
+                  id="lista-carpeta"
+                  value={listaForm.rutaCarpeta}
+                  onChange={(e) => setListaForm({ ...listaForm, rutaCarpeta: e.target.value })}
+                  placeholder="/musica/rock/"
+                  data-testid="input-lista-carpeta"
+                />
+              </div>
+              <div>
+                <Label htmlFor="lista-imagen">URL de Imagen</Label>
+                <Input
+                  id="lista-imagen"
+                  value={listaForm.imagenUrl}
+                  onChange={(e) => setListaForm({ ...listaForm, imagenUrl: e.target.value })}
+                  placeholder="https://..."
+                  data-testid="input-lista-imagen"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="lista-orden">Orden</Label>
+                  <Input
+                    id="lista-orden"
+                    type="number"
+                    value={listaForm.orden}
+                    onChange={(e) => setListaForm({ ...listaForm, orden: parseInt(e.target.value) || 0 })}
+                    data-testid="input-lista-orden"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lista-estado">Estado</Label>
+                  <Select
+                    value={listaForm.estado}
+                    onValueChange={(value) => setListaForm({ ...listaForm, estado: value })}
+                  >
+                    <SelectTrigger data-testid="select-lista-estado">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="activo">Activo</SelectItem>
+                      <SelectItem value="inactivo">Inactivo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowListaModal(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleSubmitLista}
+                disabled={!listaForm.nombre || createListaMutation.isPending || updateListaMutation.isPending}
+                data-testid="button-guardar-lista"
+              >
+                {createListaMutation.isPending || updateListaMutation.isPending ? "Guardando..." : "Guardar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog de confirmacion de eliminacion */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar eliminacion</AlertDialogTitle>
+              <AlertDialogDescription>
+                ¿Estas seguro de eliminar {deleteType === "radio" ? "esta radio" : "esta lista"}? Esta accion no se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                data-testid="button-confirmar-eliminar"
+              >
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
