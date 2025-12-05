@@ -1,0 +1,26 @@
+hacer las modificaciones siguientes:
+
+
+PASO 1.- habilitar a todos los usuarios su panel administrativo donde podra tener varias pestañas 1.- Favoritos (donde estara todas las o articulos o eventos cualquiera que haya seleccionado como favoritos por ejemplo cuando haya seleccionado un producto o un producto de la carta de la pizzeria ese articulo aparecera con su imagen, costo actualizado y si tiene descuentos y mas detalles etc etc para poder elegir y pedir inmediatamente) 2.- crear su propio marketplace o VENTA ONLINE (podra crear arituculos que pueda vender algunas cosas de segunda o nuevas esta estara limitada ya que al hacer clic debera contar con saldo inicial para crear nuevos articulos 3.- crear noticias eventos y publicidad (social) poor ejemplo indicar personas desaperecidas o mascotas desaparecidas etc etc (donde colocara el plazo en almanaque  cuantos dias de publicidad y se genera el costo a descontar en su saldo con aprobacion del super administrador que llegara a su panel para su aprobacion y publicacion previo saldo y descuento de su saldo del usuario 4.- pestaña de chat. donde se visualizara los grupos al que se encuentra y de acuerdo a sus roles (un bgrupo dentro de su asociacion) puede ser personal de serenazgo (grupo de serenazgo el que habilita para ser parte del grupo de serenazgo es el adiministrador de segundo nivel que es el jefe de serenazgo y el super administrador u otros que este entregue las funcionalidades)
+
+PASO 2.- cualquier usuario que quiera ingresar al chat  si tiene registrado aunque sea los nombre y apellidos y numero celular esta se habilitara el CHAT en caso de no tener saldra una imagen de que no puede hacer usao del servicio de chat ni del boton de panico hasta que se registre y otros servicios como taxi devera competletar subiendo las imagenes de su perfil y documento DNI si quieres buscar taxi y si quiere ser conductor completara todos los registros de su vbrettte y documentos de vehiculo (y si no los tienes saldra un mensaje que es necesario completar informacion para conductor  debe subir datos del vehiculo y sus documentos.
+
+PASO 3.- en todo los niveles reconfigurar la reproudccion de las radios online 1.- en el panel de super administrador generar una pestaña o creo que ya existe pero noverlo a una pestaña propia de radio online y mp3 con ese nombre el cual debe tener dos secciones una de radio online eliminar todo y crear nuevos campos para colocar la url de la radio url 1 url 2 url 3 etc etc que podra ingresar nuevas compos y tendra botones de modificar eliminar predeterminado (cuando se aplica esa radios sera predeterminada que sonara el sonido automaticamente cuando se encuentre en el sitio otro boton de pausar o visualizacion esta suspendera su emision de la radio o ya no se vera en la lista del selector de audio. 2.- igualmente habra campo para generar una lista de MP3 pata colovar el nombre de la lista ejemplo Musica romantica Musica balada, musica moderna etc etc y se podra cargar una por una o seleccionar varios archivos para subir igual tendra botones de modificar eliminar suspender la lista y asi mismo ta,bien de agregar mas archivos mp3 y eliminanr canciones etc etc.
+
+todos los niveles sin excepcion tendran axceso o se visualizara el selector de la radio online conjunatemanet la slista mp3 que esta en el icono de musica en el encabezado al hacer clic saldra una venetana emergente donde se visualizara todsas las listas sin titulos solo el nombre de la radio y el nombre de la lista por ejemplo
+Radio TacnaFM.apo
+Radio La Juvenil
+Musica Romántica
+Musica Tropical
+Musica Baladas Antiguas
+Musica Baladas
+Musica Moderna
+etc 
+etc
+las que hayan disponibles, la ventana tiene q ser moderna y co los colores del sitio.
+
+al iniciar por primera vez tanto en el escritorio tablet celulares se emitira el audio predeterminado y si minimiza la aplicacion esta seguira emitiendo su sonido aunque sigua bloqueado el celular esta seguira emitiendo el audio en pantalla bloqueada o pagada estara disponible un boton de play y selector de lista que ahi mismo podra acceder a cambiar otro audio o en todo caso pausar el audio)
+
+en toda s las paginas y dispositivos hay una seccion de reproductor de audio esta reconstruir  1.- debe estar sincronizada al icono de musica y seleccion de lista que debe actualizarce inmediatamente y previsualizar en su reproductor de audio las funcionalidades como subir volumen o con las teclas tambien pausar etc etc cuando este en lista de mp3  pueda pausar y poner siguiente cancion porque es lista mp3. debera visualizarce al costado izquierdo la imagen si esta tiene la radio online o las canciones archivos mp3 y los emas botones de reproduccion sea el caso y tambien se visualizara un efecto de siveleso ecualizador segun sea su  audio 
+
+no debe haber dos audio simuñltanea lo que se elegido de feproducirse y los demas segun corresponde debe estar en pausa o simplemente no emitir sonido solo debe estar un audio disponible sea el caso de radio onine o lista mp3 solo uno debe reproducirse segun seleccionado.

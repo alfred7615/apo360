@@ -77,18 +77,40 @@ interface AudioControllerContextValue extends AudioControllerState, AudioControl
 const AudioControllerContext = createContext<AudioControllerContextValue | null>(null);
 
 const AUDIO_PLAYER_ID = "apo-360-global-audio-player";
+const STORAGE_KEY = "apo-360-audio-state";
+
+function getStoredState(): Partial<{
+  volumen: number;
+  silenciado: boolean;
+  tipoFuente: TipoFuente;
+  radioSeleccionadaId: number | string | null;
+  listaSeleccionadaId: number | null;
+}> {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error("Error leyendo estado de audio:", e);
+  }
+  return {};
+}
 
 export function AudioControllerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const inicializadoRef = useRef(false);
+  const storedState = getStoredState();
   
-  const [tipoFuente, setTipoFuente] = useState<TipoFuente>("radio");
-  const [radioSeleccionadaId, setRadioSeleccionadaId] = useState<number | string | null>(null);
-  const [listaSeleccionadaId, setListaSeleccionadaId] = useState<number | null>(null);
+  const [tipoFuente, setTipoFuente] = useState<TipoFuente>(storedState.tipoFuente || "radio");
+  const [radioSeleccionadaId, setRadioSeleccionadaId] = useState<number | string | null>(storedState.radioSeleccionadaId || null);
+  const [listaSeleccionadaId, setListaSeleccionadaId] = useState<number | null>(storedState.listaSeleccionadaId || null);
   const [pistaActual, setPistaActual] = useState(0);
   const [reproduciendo, setReproduciendo] = useState(false);
-  const [volumen, setVolumenState] = useState(70);
-  const [silenciado, setSilenciado] = useState(false);
+  const [volumen, setVolumenState] = useState(storedState.volumen || 70);
+  const [silenciado, setSilenciado] = useState(storedState.silenciado || false);
   const [autoReproducir, setAutoReproducir] = useState(false);
+  const [primeraVez, setPrimeraVez] = useState(true);
 
   const { data: radios = [] } = useQuery<RadioOnline[]>({
     queryKey: ["/api/radios-online"],
@@ -126,9 +148,16 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
         r.nombre.toLowerCase().includes("tacna fm") ||
         r.nombre.toLowerCase().includes("tacna")
       );
-      setRadioSeleccionadaId(predeterminada?.id || tacnaFm?.id || radiosActivas[0].id);
+      const radioInicial = predeterminada?.id || tacnaFm?.id || radiosActivas[0].id;
+      setRadioSeleccionadaId(radioInicial);
+      
+      if (primeraVez && !inicializadoRef.current) {
+        inicializadoRef.current = true;
+        setPrimeraVez(false);
+        setAutoReproducir(true);
+      }
     }
-  }, [radiosActivas, radioSeleccionadaId]);
+  }, [radiosActivas, radioSeleccionadaId, primeraVez]);
 
   useEffect(() => {
     if (listasActivas.length > 0 && listaSeleccionadaId === null) {
@@ -143,6 +172,20 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   }, [volumen, silenciado]);
 
   useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        volumen,
+        silenciado,
+        tipoFuente,
+        radioSeleccionadaId,
+        listaSeleccionadaId,
+      }));
+    } catch (e) {
+      console.error("Error guardando estado de audio:", e);
+    }
+  }, [volumen, silenciado, tipoFuente, radioSeleccionadaId, listaSeleccionadaId]);
+
+  useEffect(() => {
     if (autoReproducir && urlActual && audioRef.current) {
       const audio = audioRef.current;
       audio.src = urlActual;
@@ -153,8 +196,8 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
           setAutoReproducir(false);
         })
         .catch((error) => {
-          console.error("Error al reproducir automáticamente:", error);
           setAutoReproducir(false);
+          setReproduciendo(false);
         });
     }
   }, [autoReproducir, urlActual]);

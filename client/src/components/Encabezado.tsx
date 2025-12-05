@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, User, Music, LogOut, Bell, Shield, Radio, Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, ListMusic } from "lucide-react";
+import { Menu, User, Music, LogOut, Bell, Shield, Volume2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,18 +10,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/hooks/useAuth";
 import { useAudioController } from "@/contexts/AudioControllerContext";
+import SelectorAudio from "./SelectorAudio";
 
 export default function Encabezado() {
   const [location] = useLocation();
   const { user, isAuthenticated } = useAuth();
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const [audioPopoverAbierto, setAudioPopoverAbierto] = useState(false);
+  const [selectorAudioAbierto, setSelectorAudioAbierto] = useState(false);
   
   const audio = useAudioController();
 
@@ -74,205 +71,29 @@ export default function Encabezado() {
 
           {/* Acciones derecha */}
           <div className="flex items-center gap-2">
-            {/* Selector de audio con Popover */}
-            <Popover open={audioPopoverAbierto} onOpenChange={setAudioPopoverAbierto}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`text-white hover:bg-white/20 relative ${audio.reproduciendo ? 'animate-pulse' : ''}`}
-                  data-testid="button-audio-selector"
-                  title="Selector de audio"
-                >
-                  {audio.reproduciendo ? (
-                    <Volume2 className="h-5 w-5" />
-                  ) : (
-                    <Music className="h-5 w-5" />
-                  )}
-                  {audio.reproduciendo && (
-                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-purple-600"></span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end">
-                <div className="p-3 border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" data-testid="text-audio-title">
-                        {audio.tituloActual || "Sin selección"}
-                      </p>
-                      {audio.artistaActual && (
-                        <p className="text-xs text-muted-foreground truncate">{audio.artistaActual}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {audio.tipoFuente === "radio" ? "Radio Online" : `Lista: ${audio.listaActual?.nombre || ""}`}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Reproductor iframe para radios */}
-                  {audio.usandoIframe && audio.iframeCode && (
-                    <div 
-                      className="w-full rounded-lg overflow-hidden mb-2" 
-                      dangerouslySetInnerHTML={{ __html: audio.iframeCode }}
-                      data-testid="iframe-radio-player"
-                    />
-                  )}
-                  
-                  {/* Controles de reproducción para MP3 */}
-                  {!audio.usandoIframe && (
-                    <div className="flex items-center gap-2">
-                      {audio.tipoFuente === "lista" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={audio.anteriorPista}
-                          disabled={audio.archivosDeLista.length === 0}
-                          data-testid="button-prev-track"
-                        >
-                          <SkipBack className="h-4 w-4" />
-                        </Button>
-                      )}
-                      
-                      <Button
-                        variant="default"
-                        size="icon"
-                        onClick={audio.alternarReproduccion}
-                        disabled={!audio.urlActual}
-                        data-testid="button-play-pause-header"
-                      >
-                        {audio.reproduciendo ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                      </Button>
-                      
-                      {audio.tipoFuente === "lista" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={audio.siguientePista}
-                          disabled={audio.archivosDeLista.length === 0}
-                          data-testid="button-next-track"
-                        >
-                          <SkipForward className="h-4 w-4" />
-                        </Button>
-                      )}
-                      
-                      <div className="flex items-center gap-1 flex-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={audio.toggleSilencio}
-                          data-testid="button-mute-header"
-                        >
-                          {audio.silenciado || audio.volumen === 0 ? (
-                            <VolumeX className="h-4 w-4" />
-                          ) : (
-                            <Volume2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Slider
-                          value={[audio.volumen]}
-                          onValueChange={(value) => audio.setVolumen(value[0])}
-                          max={100}
-                          step={1}
-                          className="flex-1"
-                          data-testid="slider-volume-header"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Tabs para seleccionar radio o lista */}
-                <Tabs defaultValue="radios" className="w-full">
-                  <TabsList className="w-full grid grid-cols-2">
-                    <TabsTrigger value="radios" className="gap-1" data-testid="tab-radios">
-                      <Radio className="h-4 w-4" />
-                      Radios
-                    </TabsTrigger>
-                    <TabsTrigger value="listas" className="gap-1" data-testid="tab-listas">
-                      <ListMusic className="h-4 w-4" />
-                      Listas MP3
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="radios" className="m-0">
-                    <ScrollArea className="h-48">
-                      <div className="p-2 space-y-1">
-                        {audio.radiosActivas.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">No hay radios disponibles</p>
-                        ) : (
-                          audio.radiosActivas.map((radio) => (
-                            <button
-                              key={radio.id}
-                              onClick={() => {
-                                audio.seleccionarRadio(radio.id);
-                              }}
-                              className={`w-full flex items-center gap-2 p-2 rounded-md text-left hover-elevate ${
-                                audio.radioSeleccionadaId === radio.id && audio.tipoFuente === "radio"
-                                  ? "bg-primary/10 border border-primary/30"
-                                  : ""
-                              }`}
-                              data-testid={`button-radio-${radio.id}`}
-                            >
-                              <div className="h-8 w-8 rounded-md bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shrink-0">
-                                <Radio className="h-4 w-4" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{radio.nombre}</p>
-                                {radio.esPredeterminada && (
-                                  <span className="text-xs text-green-600">Predeterminada</span>
-                                )}
-                              </div>
-                              {audio.radioSeleccionadaId === radio.id && audio.tipoFuente === "radio" && audio.reproduciendo && (
-                                <span className="text-xs text-green-600 font-medium">En vivo</span>
-                              )}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
-                  
-                  <TabsContent value="listas" className="m-0">
-                    <ScrollArea className="h-48">
-                      <div className="p-2 space-y-1">
-                        {audio.listasActivas.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">No hay listas disponibles</p>
-                        ) : (
-                          audio.listasActivas.map((lista) => (
-                            <button
-                              key={lista.id}
-                              onClick={() => {
-                                audio.seleccionarLista(lista.id);
-                              }}
-                              className={`w-full flex items-center gap-2 p-2 rounded-md text-left hover-elevate ${
-                                audio.listaSeleccionadaId === lista.id && audio.tipoFuente === "lista"
-                                  ? "bg-primary/10 border border-primary/30"
-                                  : ""
-                              }`}
-                              data-testid={`button-lista-${lista.id}`}
-                            >
-                              <div className="h-8 w-8 rounded-md bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-white shrink-0">
-                                <ListMusic className="h-4 w-4" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{lista.nombre}</p>
-                                {lista.genero && (
-                                  <span className="text-xs text-muted-foreground">{lista.genero}</span>
-                                )}
-                              </div>
-                              {audio.listaSeleccionadaId === lista.id && audio.tipoFuente === "lista" && audio.reproduciendo && (
-                                <span className="text-xs text-green-600 font-medium">Reproduciendo</span>
-                              )}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
-                </Tabs>
-              </PopoverContent>
-            </Popover>
+            {/* Selector de audio moderno */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`text-white hover:bg-white/20 relative ${audio.reproduciendo ? '' : ''}`}
+              onClick={() => setSelectorAudioAbierto(true)}
+              data-testid="button-audio-selector"
+              title="Selector de audio"
+            >
+              {audio.reproduciendo ? (
+                <Volume2 className="h-5 w-5" />
+              ) : (
+                <Music className="h-5 w-5" />
+              )}
+              {audio.reproduciendo && (
+                <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-purple-600 animate-pulse"></span>
+              )}
+            </Button>
+            
+            <SelectorAudio 
+              abierto={selectorAudioAbierto} 
+              onClose={() => setSelectorAudioAbierto(false)} 
+            />
 
             {/* Notificaciones (solo si está autenticado) */}
             {isAuthenticated && (
@@ -314,6 +135,12 @@ export default function Encabezado() {
                     <Link href="/perfil" className="cursor-pointer" data-testid="link-profile">
                       <User className="mr-2 h-4 w-4" />
                       Mi Perfil
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/mi-panel" className="cursor-pointer" data-testid="link-mi-panel">
+                      <Star className="mr-2 h-4 w-4" />
+                      Mi Panel
                     </Link>
                   </DropdownMenuItem>
                   {user?.rol?.includes('admin') && (

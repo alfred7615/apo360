@@ -111,6 +111,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Verificar completitud del perfil
+  app.get('/api/verificar-perfil', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      // Campos requeridos para perfil básico
+      const camposBasicos = {
+        nombre: !!(user.firstName || user.lastName),
+        telefono: !!user.telefono,
+        email: !!user.email,
+      };
+      const perfilBasicoCompleto = Object.values(camposBasicos).every(v => v);
+      const porcentajeBasico = Math.round((Object.values(camposBasicos).filter(v => v).length / Object.keys(camposBasicos).length) * 100);
+
+      // Campos requeridos para chat
+      const camposChat = {
+        ...camposBasicos,
+        alias: !!user.alias,
+      };
+      const chatHabilitado = Object.values(camposChat).every(v => v);
+      const porcentajeChat = Math.round((Object.values(camposChat).filter(v => v).length / Object.keys(camposChat).length) * 100);
+
+      // Campos requeridos para taxi pasajero
+      const camposTaxiPasajero = {
+        ...camposBasicos,
+        direccion: !!(user.direccion || user.avenidaCalle),
+      };
+      const taxiPasajeroHabilitado = Object.values(camposTaxiPasajero).every(v => v);
+      const porcentajeTaxiPasajero = Math.round((Object.values(camposTaxiPasajero).filter(v => v).length / Object.keys(camposTaxiPasajero).length) * 100);
+
+      // Campos requeridos para conductor
+      const camposConductor = {
+        ...camposBasicos,
+        dni: !!user.dni,
+        brevete: !!(user.breveteImagenFrente),
+        vehiculo: !!(user.vehiculoModelo && user.vehiculoPlaca),
+        modoTaxi: user.modoTaxi === 'conductor',
+      };
+      const conductorHabilitado = Object.values(camposConductor).every(v => v);
+      const porcentajeConductor = Math.round((Object.values(camposConductor).filter(v => v).length / Object.keys(camposConductor).length) * 100);
+
+      // Campos requeridos para vender (marketplace)
+      const camposVendedor = {
+        ...camposBasicos,
+        dni: !!user.dni,
+      };
+      const vendedorHabilitado = Object.values(camposVendedor).every(v => v);
+      const porcentajeVendedor = Math.round((Object.values(camposVendedor).filter(v => v).length / Object.keys(camposVendedor).length) * 100);
+
+      res.json({
+        perfilBasico: {
+          completo: perfilBasicoCompleto,
+          porcentaje: porcentajeBasico,
+          camposFaltantes: Object.entries(camposBasicos).filter(([, v]) => !v).map(([k]) => k),
+        },
+        chat: {
+          habilitado: chatHabilitado,
+          porcentaje: porcentajeChat,
+          camposFaltantes: Object.entries(camposChat).filter(([, v]) => !v).map(([k]) => k),
+        },
+        taxiPasajero: {
+          habilitado: taxiPasajeroHabilitado,
+          porcentaje: porcentajeTaxiPasajero,
+          camposFaltantes: Object.entries(camposTaxiPasajero).filter(([, v]) => !v).map(([k]) => k),
+        },
+        conductor: {
+          habilitado: conductorHabilitado,
+          porcentaje: porcentajeConductor,
+          camposFaltantes: Object.entries(camposConductor).filter(([, v]) => !v).map(([k]) => k),
+        },
+        vendedor: {
+          habilitado: vendedorHabilitado,
+          porcentaje: porcentajeVendedor,
+          camposFaltantes: Object.entries(camposVendedor).filter(([, v]) => !v).map(([k]) => k),
+        },
+      });
+    } catch (error: any) {
+      console.error("Error al verificar perfil:", error);
+      res.status(500).json({ message: error.message || "Error al verificar perfil" });
+    }
+  });
+
   // Registrar rutas de administración
   registerAdminRoutes(app);
 

@@ -18,6 +18,7 @@ import Registro from "@/pages/registro";
 import IniciarSesion from "@/pages/iniciar-sesion";
 import AdminPanel from "@/pages/admin-panel";
 import Favoritos from "@/pages/favoritos";
+import PanelUsuario from "@/pages/panel-usuario";
 import TaxiConductor from "@/pages/taxi-conductor";
 import TaxiPasajero from "@/pages/taxi-pasajero";
 import BusesConductor from "@/pages/buses-conductor";
@@ -47,6 +48,8 @@ function Router() {
       <Route path="/chat" component={Chat} />
       <Route path="/perfil" component={Perfil} />
       <Route path="/favoritos" component={Favoritos} />
+      <Route path="/mi-panel" component={PanelUsuario} />
+      <Route path="/panel-usuario" component={PanelUsuario} />
       <Route path="/admin" component={AdminPanel} />
       <Route path="/taxi-conductor" component={TaxiConductor} />
       <Route path="/taxi-pasajero" component={TaxiPasajero} />
