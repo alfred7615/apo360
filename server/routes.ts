@@ -1462,7 +1462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Para WhatsApp, generamos el enlace de invitación
         const enlace = `${req.protocol}://${req.get('host')}/registro`;
-        const mensaje = encodeURIComponent(`¡Hola! Te invito a unirte a SEG-APO, la app de seguridad comunitaria de Tacna. Regístrate aquí: ${enlace}`);
+        const mensaje = encodeURIComponent(`¡Hola! Te invito a unirte a APO-360, la app de seguridad comunitaria de Tacna. Regístrate aquí: ${enlace}`);
         const whatsappUrl = `https://wa.me/${numeroLimpio}?text=${mensaje}`;
         
         console.log(`📱 Invitación WhatsApp generada para ${numeroLimpio}`);
@@ -1483,7 +1483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar si ya está registrado
       const usuarioExistente = await storage.getUserByEmail(email);
       if (usuarioExistente) {
-        return res.status(400).json({ message: "Este usuario ya está registrado en SEG-APO" });
+        return res.status(400).json({ message: "Este usuario ya está registrado en APO-360" });
       }
       
       const remitente = await storage.getUser(userId);

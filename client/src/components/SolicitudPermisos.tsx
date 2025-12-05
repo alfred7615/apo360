@@ -250,7 +250,7 @@ export default function SolicitudPermisos() {
             Permisos Requeridos
           </DialogTitle>
           <DialogDescription>
-            SEG-APO requiere acceso a tu ubicación GPS para funcionar correctamente
+            APO-360 requiere acceso a tu ubicación GPS para funcionar correctamente
           </DialogDescription>
         </DialogHeader>
 
@@ -287,7 +287,7 @@ export default function SolicitudPermisos() {
               GPS no disponible en este dispositivo
             </p>
             <p className="text-orange-600 dark:text-orange-400 text-xs">
-              Tu navegador o dispositivo no soporta geolocalización. Para usar SEG-APO necesitas:
+              Tu navegador o dispositivo no soporta geolocalización. Para usar APO-360 necesitas:
               <br />• Un navegador moderno (Chrome, Firefox, Safari, Edge)
               <br />• Un dispositivo con GPS o servicios de ubicación
               <br />• Acceder desde HTTPS (conexión segura)
@@ -371,7 +371,7 @@ export default function SolicitudPermisos() {
                 data-testid="button-continuar"
               >
                 <Check className="h-4 w-4" />
-                Continuar a SEG-APO
+                Continuar a APO-360
               </Button>
             </>
           )}

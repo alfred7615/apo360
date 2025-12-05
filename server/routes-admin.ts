@@ -1,4 +1,4 @@
-// Rutas admin para SEG-APO - Para agregar a server/routes.ts
+// Rutas admin para APO-360 - Para agregar a server/routes.ts
 // Todas las rutas con validación Zod y autorización por roles
 
 import { Express } from 'express';

@@ -264,7 +264,7 @@ export default function Landing() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-4">¿Listo para una Comunidad Más Segura?</h2>
           <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
-            Únete a miles de vecinos que ya confían en SEG-APO para su seguridad y bienestar.
+            Únete a miles de vecinos que ya confían en APO-360 para su seguridad y bienestar.
           </p>
           <Button
             size="lg"

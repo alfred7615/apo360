@@ -53,7 +53,7 @@ export default function Encabezado() {
                 <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2ZM12 11H19C18.86 15.1 16.31 18.7 12.5 20C12.34 20.05 12.17 20.05 12 20C11.83 20.05 11.66 20.05 11.5 20C7.69 18.7 5.14 15.1 5 11H12V4.19L18 7.41V11H12Z"/>
               </svg>
             </div>
-            <span className="text-base font-bold text-white leading-tight" data-testid="text-app-name">SEG-APO</span>
+            <span className="text-base font-bold text-white leading-tight" data-testid="text-app-name">APO-360</span>
           </Link>
 
           {/* Navegación desktop */}

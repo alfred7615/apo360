@@ -39,7 +39,7 @@ export default function CartillasBeneficios() {
     <div className="py-16 bg-gradient-to-b from-muted/30 to-background" data-testid="section-benefits">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-3">¿Por Qué Elegir SEG-APO?</h2>
+          <h2 className="text-3xl font-bold mb-3">¿Por Qué Elegir APO-360?</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Una plataforma integral que integra seguridad, comunicación y servicios para tu comunidad
           </p>

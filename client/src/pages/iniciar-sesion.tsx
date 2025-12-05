@@ -235,7 +235,7 @@ export default function IniciarSesion() {
               </div>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="text-titulo">
-              SEG-APO
+              APO-360
             </h1>
             <p className="text-muted-foreground">
               Seguridad y Apoyo para tu Comunidad

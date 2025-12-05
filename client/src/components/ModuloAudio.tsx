@@ -45,7 +45,7 @@ interface ArchivoMp3 {
   estado: string;
 }
 
-const AUDIO_PLAYER_ID = "seg-apo-audio-player";
+const AUDIO_PLAYER_ID = "apo-360-audio-player";
 
 export default function ModuloAudio() {
   const audioRef = useRef<HTMLAudioElement>(null);

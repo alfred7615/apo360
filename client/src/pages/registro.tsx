@@ -668,7 +668,7 @@ export default function RegistroPage() {
               Crear Cuenta
             </CardTitle>
             <CardDescription>
-              Regístrate para acceder a SEG-APO
+              Regístrate para acceder a APO-360
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">

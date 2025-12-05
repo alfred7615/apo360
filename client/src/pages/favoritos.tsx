@@ -98,7 +98,7 @@ export default function FavoritosPage() {
 
   const handleCompartir = async (item: any) => {
     const url = window.location.origin;
-    const texto = `Mira ${item.detalle?.nombre || 'este contenido'} en SEG-APO`;
+    const texto = `Mira ${item.detalle?.nombre || 'este contenido'} en APO-360`;
     
     try {
       await compartirMutation.mutateAsync({ 

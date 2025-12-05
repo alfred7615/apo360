@@ -13,12 +13,12 @@ const ViewModeContext = createContext<ViewModeContextType | undefined>(undefined
 
 export function ViewModeProvider({ children }: { children: ReactNode }) {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const saved = localStorage.getItem("seg-apo-view-mode");
+    const saved = localStorage.getItem("apo-360-view-mode");
     return (saved as ViewMode) || "desktop";
   });
 
   useEffect(() => {
-    localStorage.setItem("seg-apo-view-mode", viewMode);
+    localStorage.setItem("apo-360-view-mode", viewMode);
   }, [viewMode]);
 
   const getGridCols = (defaultCols: number = 5): string => {

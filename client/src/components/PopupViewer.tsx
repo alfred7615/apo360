@@ -197,7 +197,7 @@ export default function PopupViewer({
     if (!popupActual) return;
     
     const url = window.location.href;
-    const texto = popupActual.titulo || "Mira esto en SEG-APO";
+    const texto = popupActual.titulo || "Mira esto en APO-360";
     
     let shareUrl = "";
     switch (red) {
@@ -226,7 +226,7 @@ export default function PopupViewer({
     if (!popupActual) return;
     
     const evento = {
-      title: popupActual.titulo || "Evento SEG-APO",
+      title: popupActual.titulo || "Evento APO-360",
       description: popupActual.tipoContenido || "",
     };
     
@@ -328,7 +328,7 @@ export default function PopupViewer({
               <Users className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
               <p className="text-xs sm:text-sm text-muted-foreground leading-snug">
                 <span className="font-medium text-foreground">Tu atención hace la diferencia.</span>{" "}
-                Al visualizar este contenido, ayudas a mantener SEG-APO activo como servicio gratuito para toda la comunidad de Tacna.
+                Al visualizar este contenido, ayudas a mantener APO-360 activo como servicio gratuito para toda la comunidad de Tacna.
               </p>
             </div>
           </div>
@@ -339,7 +339,7 @@ export default function PopupViewer({
             <div className="flex items-center gap-2">
               <Info className="h-3 w-3 text-muted-foreground flex-shrink-0" />
               <p className="text-[10px] sm:text-xs text-muted-foreground">
-                Esta publicidad permite mantener SEG-APO gratuito para todos.
+                Esta publicidad permite mantener APO-360 gratuito para todos.
               </p>
             </div>
           </div>

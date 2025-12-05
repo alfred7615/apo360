@@ -1,4 +1,4 @@
-# Guía de Diseño SEG-APO
+# Guía de Diseño APO-360
 
 ## Enfoque de Diseño
 
@@ -10,7 +10,7 @@
 - Organización clara de múltiples servicios (taxi, delivery, radio, publicidad)
 - Paneles administrativos profesionales con visualización de datos en tiempo real
 
-## Identidad Visual SEG-APO
+## Identidad Visual APO-360
 
 ### Esquema de Color Institucional
 - **Gradiente Principal**: Morado a rosa (#8B5CF6 → #EC4899) para encabezados y elementos destacados
@@ -42,7 +42,7 @@ Unidades Tailwind principales: **2, 3, 4, 6, 8, 12, 16**
 
 ### Encabezado (Navbar)
 - Fondo con gradiente morado-rosa institucional
-- Logo SEG-APO a la izquierda (40px altura)
+- Logo APO-360 a la izquierda (40px altura)
 - Menú hamburguesa (móvil) / navegación horizontal (escritorio)
 - Selector de audio integrado (icono musical)
 - Botón de sesión/perfil a la derecha

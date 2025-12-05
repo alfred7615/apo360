@@ -125,7 +125,7 @@ export default function DashboardScreen() {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
         <p className="text-muted-foreground">
-          Panel de control con 12 secciones administrativas de SEG-APO
+          Panel de control con 12 secciones administrativas de APO-360
         </p>
       </div>
 

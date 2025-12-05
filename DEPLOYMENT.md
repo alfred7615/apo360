@@ -1,10 +1,10 @@
-# Guía de Despliegue - SEG-APO / APO360
+# Guía de Despliegue - APO-360
 
 ## 1. Configurar Repositorio GitHub
 
 ### Paso 1: Crear repositorio en GitHub
 1. Ve a https://github.com/new
-2. Nombre: `apo360` o `seg-apo`
+2. Nombre: `apo360`
 3. Privado o Público según prefieras
 4. NO inicializar con README
 
@@ -19,7 +19,7 @@ git config --global user.name "Tu Nombre"
 # Inicializar repositorio
 git init
 git add .
-git commit -m "Versión inicial SEG-APO"
+git commit -m "Versión inicial APO-360"
 
 # Conectar con GitHub
 git remote add origin https://github.com/TU_USUARIO/apo360.git

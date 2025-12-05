@@ -60,7 +60,7 @@ export default function PiePagina() {
     <footer className="bg-gradient-to-br from-gray-900 to-gray-800 text-white mt-16" data-testid="footer-main">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Sección: Sobre SEG-APO */}
+          {/* Sección: Sobre APO-360 */}
           <div className="space-y-4">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-r from-purple-600 to-pink-600">
@@ -68,7 +68,7 @@ export default function PiePagina() {
                   <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z"/>
                 </svg>
               </div>
-              Sobre SEG-APO
+              Sobre APO-360
             </h3>
             <p className="text-sm text-gray-300" data-testid="text-footer-description">
               Sistema integral de seguridad comunitaria que conecta a vecinos, servicios de emergencia y comercios locales para crear comunidades más seguras y conectadas.
@@ -84,7 +84,7 @@ export default function PiePagina() {
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 <Mail className="inline h-3 w-3 mr-1" />
-                contacto@segapo.com
+                contacto@apo360.net
               </p>
             </div>
           </div>
@@ -183,7 +183,7 @@ export default function PiePagina() {
         <div className="border-t border-white/10 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-400" data-testid="text-copyright">
-              © {new Date().getFullYear()} SEG-APO. Todos los derechos reservados.
+              © {new Date().getFullYear()} APO-360. Todos los derechos reservados.
             </p>
             <div className="flex gap-6 text-sm text-gray-400">
               <a href="/terminos" className="hover:text-white transition-colors">Términos de Uso</a>

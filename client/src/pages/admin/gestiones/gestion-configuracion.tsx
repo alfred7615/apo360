@@ -59,7 +59,7 @@ export default function GestionConfiguracionScreen() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="siteName">Nombre del Sitio</Label>
-                  <Input id="siteName" defaultValue="SEG-APO" data-testid="input-site-name" />
+                  <Input id="siteName" defaultValue="APO-360" data-testid="input-site-name" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="siteUrl">URL del Sitio</Label>
@@ -78,7 +78,7 @@ export default function GestionConfiguracionScreen() {
                 <Label htmlFor="description">Descripción del Sitio</Label>
                 <Textarea 
                   id="description" 
-                  placeholder="Descripción de SEG-APO..."
+                  placeholder="Descripción de APO-360..."
                   className="min-h-[100px]"
                   data-testid="textarea-description"
                 />

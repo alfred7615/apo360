@@ -55,7 +55,7 @@ async function seed() {
     await db.insert(configuracionSitio).values([
       {
         clave: "nombre_sitio",
-        valor: "SEG-APO - Seguridad y Apoyo Comunitario",
+        valor: "APO-360 - Seguridad y Apoyo Comunitario",
         tipo: "texto",
       },
       {
@@ -124,9 +124,9 @@ async function seed() {
     await db.insert(publicidad).values([
       {
         tipo: "carrusel_principal",
-        titulo: "Bienvenido a SEG-APO",
+        titulo: "Bienvenido a APO-360",
         descripcion: "Tu comunidad más segura y conectada. Únete hoy y sé parte del cambio.",
-        imagenUrl: "https://placehold.co/1200x500/8B5CF6/FFFFFF/png?text=SEG-APO+Comunidad+Segura",
+        imagenUrl: "https://placehold.co/1200x500/8B5CF6/FFFFFF/png?text=APO-360+Comunidad+Segura",
         enlaceUrl: "/api/login",
         orden: 1,
         estado: "activo",

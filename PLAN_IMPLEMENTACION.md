@@ -1,4 +1,4 @@
-# SEG-APO - Plan de Implementación Completo
+# APO-360 - Plan de Implementación Completo
 
 ## 📋 Fase Actual: Configuración del Panel Super Admin (5 Pantallas)
 

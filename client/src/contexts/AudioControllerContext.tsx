@@ -76,7 +76,7 @@ interface AudioControllerContextValue extends AudioControllerState, AudioControl
 
 const AudioControllerContext = createContext<AudioControllerContextValue | null>(null);
 
-const AUDIO_PLAYER_ID = "seg-apo-global-audio-player";
+const AUDIO_PLAYER_ID = "apo-360-global-audio-player";
 
 export function AudioControllerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null);

@@ -374,7 +374,7 @@ export default function VisualizadorPantallaCompleta({
     
     agendaMutation.mutate();
     
-    const titulo = encodeURIComponent(publicidad.titulo || "Evento SEG-APO");
+    const titulo = encodeURIComponent(publicidad.titulo || "Evento APO-360");
     const descripcion = encodeURIComponent(publicidad.descripcion || "");
     const fechaInicio = publicidad.fechaInicio 
       ? new Date(publicidad.fechaInicio).toISOString().replace(/-|:|\.\d{3}/g, "")
@@ -393,7 +393,7 @@ export default function VisualizadorPantallaCompleta({
     compartirMutation.mutate(redSocial);
     
     const url = encodeURIComponent(window.location.href);
-    const texto = encodeURIComponent(publicidad.titulo || "Mira esto en SEG-APO");
+    const texto = encodeURIComponent(publicidad.titulo || "Mira esto en APO-360");
     
     const urls: Record<string, string> = {
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,

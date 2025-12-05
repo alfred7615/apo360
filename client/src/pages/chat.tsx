@@ -634,7 +634,7 @@ export default function Chat() {
               <div className="p-8 text-center text-muted-foreground">
                 <Globe className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p className="font-medium mb-2">Conecta tu cuenta de Gmail</p>
-                <p className="text-sm mb-4">Importa tus contactos de Google para invitarlos a SEG-APO</p>
+                <p className="text-sm mb-4">Importa tus contactos de Google para invitarlos a APO-360</p>
                 <Button 
                   variant="outline" 
                   className="mb-3"
@@ -1019,7 +1019,7 @@ export default function Chat() {
               Invitar contacto
             </DialogTitle>
             <DialogDescription>
-              Envía una invitación por correo electrónico o WhatsApp para que tu contacto se una a SEG-APO
+              Envía una invitación por correo electrónico o WhatsApp para que tu contacto se una a APO-360
             </DialogDescription>
           </DialogHeader>
 

@@ -1,4 +1,4 @@
-# SEG-APO - Estado Actual del Proyecto
+# APO-360 - Estado Actual del Proyecto
 
 **Fecha**: 24 de Noviembre de 2024  
 **Hosting destino**: tacnafm.com  
@@ -119,7 +119,7 @@ GET  /api/configuracion/:clave   - Obtener configuración
 
 ### 6. Componentes Frontend Principales
 
-- **Encabezado** - Logo SEG-APO, menú, selector de audio, sesión
+- **Encabezado** - Logo APO-360, menú, selector de audio, sesión
 - **BotonPanico** - Flotante, confirmación con 6 tipos de emergencia
 - **CarruselPublicidad** - Auto-scroll pausable para logos
 - **GaleriaServicios** - Logos circulares con modal de información
