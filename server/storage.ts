@@ -217,9 +217,11 @@ export interface IStorage {
   // Operaciones de archivos MP3
   getArchivosMp3(): Promise<ArchivoMp3[]>;
   getArchivosMp3PorLista(listaId: number): Promise<ArchivoMp3[]>;
+  getArchivoMp3(id: string): Promise<ArchivoMp3 | undefined>;
   createArchivoMp3(archivo: InsertArchivoMp3): Promise<ArchivoMp3>;
-  updateArchivoMp3(id: number, data: Partial<InsertArchivoMp3>): Promise<ArchivoMp3 | undefined>;
-  deleteArchivoMp3(id: number): Promise<void>;
+  updateArchivoMp3(id: string, data: Partial<InsertArchivoMp3>): Promise<ArchivoMp3 | undefined>;
+  deleteArchivoMp3(id: string): Promise<void>;
+  reordenarArchivosMp3(listaId: number, orden: { id: string; orden: number }[]): Promise<void>;
   
   // Operaciones de configuración
   getConfiguracion(clave: string): Promise<ConfiguracionSitio | undefined>;
@@ -1374,6 +1376,13 @@ export class DatabaseStorage implements IStorage {
       .orderBy(archivosMp3.orden);
   }
 
+  async getArchivoMp3(id: string): Promise<ArchivoMp3 | undefined> {
+    const [archivo] = await db.select()
+      .from(archivosMp3)
+      .where(eq(archivosMp3.id, id));
+    return archivo || undefined;
+  }
+
   async createArchivoMp3(archivoData: InsertArchivoMp3): Promise<ArchivoMp3> {
     const [archivo] = await db
       .insert(archivosMp3)
@@ -1382,7 +1391,7 @@ export class DatabaseStorage implements IStorage {
     return archivo;
   }
 
-  async updateArchivoMp3(id: number, data: Partial<InsertArchivoMp3>): Promise<ArchivoMp3 | undefined> {
+  async updateArchivoMp3(id: string, data: Partial<InsertArchivoMp3>): Promise<ArchivoMp3 | undefined> {
     const [updated] = await db
       .update(archivosMp3)
       .set(data)
@@ -1391,8 +1400,16 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async deleteArchivoMp3(id: number): Promise<void> {
+  async deleteArchivoMp3(id: string): Promise<void> {
     await db.delete(archivosMp3).where(eq(archivosMp3.id, id));
+  }
+
+  async reordenarArchivosMp3(listaId: number, orden: { id: string; orden: number }[]): Promise<void> {
+    for (const item of orden) {
+      await db.update(archivosMp3)
+        .set({ orden: item.orden })
+        .where(eq(archivosMp3.id, item.id));
+    }
   }
 
   // ============================================================

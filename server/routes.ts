@@ -2214,7 +2214,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/listas-mp3', isAuthenticated, async (req, res) => {
     try {
       const data = insertListaMp3Schema.parse(req.body);
-      const lista = await storage.createListaMp3(data);
+      const { crearCarpetaLista } = await import('./mp3-upload');
+      const rutaCarpeta = crearCarpetaLista(data.nombre);
+      const lista = await storage.createListaMp3({ ...data, rutaCarpeta });
       res.status(201).json(lista);
     } catch (error: any) {
       console.error("Error al crear lista MP3:", error);
@@ -2225,10 +2227,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/listas-mp3/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const lista = await storage.updateListaMp3(id, req.body);
-      if (!lista) {
+      const listaActual = await storage.getListaMp3(id);
+      if (!listaActual) {
         return res.status(404).json({ message: "Lista no encontrada" });
       }
+      
+      if (req.body.nombre && req.body.nombre !== listaActual.nombre && listaActual.rutaCarpeta) {
+        const { renombrarCarpeta, crearCarpetaLista, sanitizeFolderName } = await import('./mp3-upload');
+        const nuevaCarpeta = sanitizeFolderName(req.body.nombre);
+        const exito = renombrarCarpeta(listaActual.rutaCarpeta, req.body.nombre);
+        if (exito) {
+          req.body.rutaCarpeta = nuevaCarpeta;
+        }
+      }
+      
+      const lista = await storage.updateListaMp3(id, req.body);
       res.json(lista);
     } catch (error: any) {
       console.error("Error al actualizar lista MP3:", error);
@@ -2239,11 +2252,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/listas-mp3/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const lista = await storage.getListaMp3(id);
+      if (lista?.rutaCarpeta) {
+        const { eliminarCarpetaLista } = await import('./mp3-upload');
+        eliminarCarpetaLista(lista.rutaCarpeta);
+      }
       await storage.deleteListaMp3(id);
       res.status(204).send();
     } catch (error: any) {
       console.error("Error al eliminar lista MP3:", error);
       res.status(400).json({ message: error.message || "Error al eliminar lista MP3" });
+    }
+  });
+
+  app.post('/api/listas-mp3/:id/subir', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lista = await storage.getListaMp3(id);
+      if (!lista) {
+        return res.status(404).json({ message: "Lista no encontrada" });
+      }
+      
+      if (!lista.rutaCarpeta) {
+        const { crearCarpetaLista } = await import('./mp3-upload');
+        const rutaCarpeta = crearCarpetaLista(lista.nombre);
+        await storage.updateListaMp3(id, { rutaCarpeta });
+        lista.rutaCarpeta = rutaCarpeta;
+      }
+      
+      const { crearUploadMp3Middleware, obtenerUrlPublica, obtenerTamanoArchivo } = await import('./mp3-upload');
+      const uploadMiddleware = crearUploadMp3Middleware(lista.rutaCarpeta!);
+      
+      uploadMiddleware(req, res, async (err: any) => {
+        if (err) {
+          console.error("Error al subir archivos:", err);
+          return res.status(400).json({ message: err.message || "Error al subir archivos" });
+        }
+        
+        const archivos = req.files as Express.Multer.File[];
+        if (!archivos || archivos.length === 0) {
+          return res.status(400).json({ message: "No se recibieron archivos" });
+        }
+        
+        const archivosCreados = [];
+        const archivosExistentes = await storage.getArchivosMp3PorLista(id);
+        let ordenInicial = archivosExistentes.length;
+        
+        for (const archivo of archivos) {
+          const nombreSinExt = archivo.originalname.replace(/\.[^/.]+$/, "");
+          const url = obtenerUrlPublica(lista.rutaCarpeta!, archivo.filename);
+          const tamano = obtenerTamanoArchivo(lista.rutaCarpeta!, archivo.filename);
+          
+          const nuevoArchivo = await storage.createArchivoMp3({
+            listaId: id,
+            titulo: nombreSinExt,
+            nombreArchivo: archivo.filename,
+            archivoUrl: url,
+            tamano,
+            orden: ordenInicial++,
+          });
+          archivosCreados.push(nuevoArchivo);
+        }
+        
+        res.status(201).json(archivosCreados);
+      });
+    } catch (error: any) {
+      console.error("Error al subir archivos MP3:", error);
+      res.status(400).json({ message: error.message || "Error al subir archivos" });
     }
   });
 
@@ -2280,7 +2355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/archivos-mp3/:id', isAuthenticated, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id;
       const archivo = await storage.updateArchivoMp3(id, req.body);
       if (!archivo) {
         return res.status(404).json({ message: "Archivo no encontrado" });
@@ -2294,12 +2369,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/archivos-mp3/:id', isAuthenticated, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id;
+      const archivo = await storage.getArchivoMp3(id);
+      if (archivo && archivo.nombreArchivo) {
+        const lista = await storage.getListaMp3(archivo.listaId!);
+        if (lista?.rutaCarpeta) {
+          const { eliminarArchivoMp3: eliminarArchivo } = await import('./mp3-upload');
+          eliminarArchivo(lista.rutaCarpeta, archivo.nombreArchivo);
+        }
+      }
       await storage.deleteArchivoMp3(id);
       res.status(204).send();
     } catch (error: any) {
       console.error("Error al eliminar archivo MP3:", error);
       res.status(400).json({ message: error.message || "Error al eliminar archivo MP3" });
+    }
+  });
+
+  app.post('/api/archivos-mp3/reordenar', isAuthenticated, async (req, res) => {
+    try {
+      const { listaId, orden } = req.body;
+      if (!listaId || !orden || !Array.isArray(orden)) {
+        return res.status(400).json({ message: "Datos inválidos" });
+      }
+      await storage.reordenarArchivosMp3(listaId, orden);
+      res.json({ message: "Orden actualizado" });
+    } catch (error: any) {
+      console.error("Error al reordenar archivos MP3:", error);
+      res.status(400).json({ message: error.message || "Error al reordenar" });
     }
   });
 

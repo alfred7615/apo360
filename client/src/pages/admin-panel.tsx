@@ -400,24 +400,29 @@ function AdminPanelContent() {
       />
       
       <div className="flex flex-col flex-1 min-w-0">
-        <header className="flex items-center justify-between gap-2 p-2 border-b bg-card flex-shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <SidebarTrigger data-testid="button-menu">
+        <header className="flex items-center justify-between gap-2 p-2 border-b bg-gradient-to-r from-purple-600 to-pink-600 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <SidebarTrigger 
+              className="text-white hover:bg-white/20 h-9 w-9 touch-manipulation" 
+              data-testid="button-sidebar-toggle"
+            >
               <Menu className="h-5 w-5" />
               <span className="sr-only">Menú</span>
             </SidebarTrigger>
             
             <div className="flex items-center gap-2">
-              <Shield className="h-6 w-6 text-primary flex-shrink-0" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/20 backdrop-blur-sm">
+                <Shield className="h-4 w-4 text-white" />
+              </div>
               <div className="min-w-0">
-                <h1 className="text-sm font-bold truncate">APO-360</h1>
-                <p className="text-xs text-muted-foreground hidden sm:block">
+                <h1 className="text-sm font-bold text-white truncate">APO-360</h1>
+                <p className="text-xs text-white/70 hidden sm:block">
                   {currentScreenTitle}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 border rounded-md p-0.5 bg-muted/30">
+            <div className="flex items-center gap-1 border border-white/30 rounded-md p-0.5 bg-white/10 backdrop-blur-sm">
               {[
                 { mode: "desktop" as ViewMode, icon: Monitor, label: "PC" },
                 { mode: "tablet" as ViewMode, icon: Tablet, label: "Tab" },
@@ -425,10 +430,10 @@ function AdminPanelContent() {
               ].map(({ mode, icon: Icon, label }) => (
                 <Button
                   key={mode}
-                  variant={viewMode === mode ? "default" : "ghost"}
+                  variant={viewMode === mode ? "secondary" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode(mode)}
-                  className="h-7 px-2 gap-1"
+                  className={`h-7 px-2 gap-1 touch-manipulation ${viewMode === mode ? 'bg-white/30 text-white' : 'text-white/80 hover:bg-white/20 hover:text-white'}`}
                   data-testid={`button-header-view-${mode}`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -438,7 +443,7 @@ function AdminPanelContent() {
             </div>
           </div>
           <Badge 
-            className="bg-primary text-primary-foreground flex-shrink-0 text-xs" 
+            className="bg-white/20 text-white border border-white/30 flex-shrink-0 text-xs" 
             data-testid="badge-role"
           >
             Admin

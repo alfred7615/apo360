@@ -332,12 +332,14 @@ export type ListaMp3 = typeof listasMp3.$inferSelect;
 // ARCHIVOS MP3 (Canciones individuales en listas)
 // ============================================================
 export const archivosMp3 = pgTable("archivos_mp3", {
-  id: serial("id").primaryKey(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   listaId: integer("lista_id").references(() => listasMp3.id),
   titulo: varchar("titulo", { length: 255 }).notNull(),
+  nombreArchivo: varchar("nombre_archivo", { length: 255 }),
   artista: varchar("artista", { length: 255 }),
   archivoUrl: varchar("archivo_url", { length: 500 }).notNull(),
   duracion: integer("duracion"),
+  tamano: integer("tamano"),
   orden: integer("orden").default(0),
   estado: varchar("estado", { length: 20 }).default("activo"),
   createdAt: timestamp("created_at").defaultNow(),

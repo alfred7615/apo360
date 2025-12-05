@@ -10,11 +10,12 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Radio, Music, Plus, Play, Pause, Edit, Trash2, Star, StopCircle, Volume2, Loader2 } from "lucide-react";
+import { Radio, Music, Plus, Play, Pause, Edit, Trash2, Star, StopCircle, Volume2, Loader2, FolderOpen } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { RadioOnline, ListaMp3 } from "@shared/schema";
+import GestorArchivosMp3 from "@/components/admin/GestorArchivosMp3";
 
 export default function GestionRadioMp3Screen() {
   const [activeTab, setActiveTab] = useState("radios");
@@ -25,6 +26,7 @@ export default function GestionRadioMp3Screen() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedRadio, setSelectedRadio] = useState<RadioOnline | null>(null);
   const [selectedLista, setSelectedLista] = useState<ListaMp3 | null>(null);
+  const [vistaArchivos, setVistaArchivos] = useState<ListaMp3 | null>(null);
   const [deleteType, setDeleteType] = useState<"radio" | "lista">("radio");
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
@@ -254,6 +256,17 @@ export default function GestionRadioMp3Screen() {
   const radiosActivas = radios.filter(r => r.estado === "activo").length;
   const listasActivas = listas.filter(l => l.estado === "activo").length;
 
+  if (vistaArchivos) {
+    return (
+      <div className="space-y-6" data-testid="screen-gestor-archivos-mp3">
+        <GestorArchivosMp3 
+          lista={vistaArchivos} 
+          onBack={() => setVistaArchivos(null)} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6" data-testid="screen-gestion-radio-mp3">
       <div className="flex items-center gap-3">
@@ -461,7 +474,7 @@ export default function GestionRadioMp3Screen() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                         <Badge variant="secondary">Orden: {lista.orden || 0}</Badge>
                         {getEstadoBadge(lista.estado)}
                         <Select
@@ -477,6 +490,16 @@ export default function GestionRadioMp3Screen() {
                             <SelectItem value="suspendido">Suspendido</SelectItem>
                           </SelectContent>
                         </Select>
+                        <Button 
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setVistaArchivos(lista)}
+                          className="touch-manipulation"
+                          data-testid={`button-ver-archivos-${lista.id}`}
+                        >
+                          <FolderOpen className="h-4 w-4 mr-1" />
+                          <span className="hidden sm:inline">Archivos</span>
+                        </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
