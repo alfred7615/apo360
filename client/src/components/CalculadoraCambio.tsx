@@ -30,7 +30,11 @@ const monedasDefault: MonedaInfo[] = [
   { codigo: "BOB", nombre: "Boliviano", simbolo: "Bs", bandera: "🇧🇴", tasaUSD: 6.91 },
 ];
 
-export function CalculadoraCambio() {
+interface CalculadoraCambioProps {
+  sinCard?: boolean;
+}
+
+export function CalculadoraCambio({ sinCard = false }: CalculadoraCambioProps) {
   const [monto, setMonto] = useState<string>("100");
   const [monedaOrigen, setMonedaOrigen] = useState<string>("USD");
   const [monedaDestino, setMonedaDestino] = useState<string>("PEN");
@@ -113,27 +117,42 @@ export function CalculadoraCambio() {
 
   const isLoading = cargandoMonedas || cargandoTasasLocales || cargandoPromedio;
 
-  return (
-    <Card className="w-full max-w-2xl mx-auto" data-testid="card-calculadora-cambio">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-4">
-        <div className="flex items-center gap-2">
-          <Calculator className="h-6 w-6 text-primary" />
-          <CardTitle data-testid="title-calculadora">Calculadora de Cambio</CardTitle>
+  const contenido = (
+    <div className="space-y-6" data-testid="card-calculadora-cambio">
+      {!sinCard && (
+        <div className="flex flex-row items-center justify-between gap-2 pb-2">
+          <div className="flex items-center gap-2">
+            <Calculator className="h-6 w-6 text-primary" />
+            <h3 className="text-lg font-semibold" data-testid="title-calculadora">Calculadora de Cambio</h3>
+          </div>
+          <Badge variant={calcularCambio.fuente === "local" ? "default" : "secondary"}>
+            {calcularCambio.fuente === "local" ? (
+              <span className="flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> Tasa Local
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <DollarSign className="h-3 w-3" /> Tasa Referencia
+              </span>
+            )}
+          </Badge>
         </div>
-        <Badge variant={calcularCambio.fuente === "local" ? "default" : "secondary"}>
-          {calcularCambio.fuente === "local" ? (
-            <span className="flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> Tasa Local
-            </span>
-          ) : (
-            <span className="flex items-center gap-1">
-              <DollarSign className="h-3 w-3" /> Tasa Referencia
-            </span>
-          )}
-        </Badge>
-      </CardHeader>
-      
-      <CardContent className="space-y-6">
+      )}
+      {sinCard && (
+        <div className="flex justify-center mb-2">
+          <Badge variant={calcularCambio.fuente === "local" ? "default" : "secondary"}>
+            {calcularCambio.fuente === "local" ? (
+              <span className="flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> Tasa Local
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <DollarSign className="h-3 w-3" /> Tasa Referencia
+              </span>
+            )}
+          </Badge>
+        </div>
+      )}
         <Tabs value={tipoTasa} onValueChange={(v) => setTipoTasa(v as "compra" | "venta")} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="compra" data-testid="tab-compra">
@@ -362,6 +381,34 @@ export function CalculadoraCambio() {
             </Button>
           ))}
         </div>
+    </div>
+  );
+
+  if (sinCard) {
+    return contenido;
+  }
+
+  return (
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-4">
+        <div className="flex items-center gap-2">
+          <Calculator className="h-6 w-6 text-primary" />
+          <CardTitle data-testid="title-calculadora">Calculadora de Cambio</CardTitle>
+        </div>
+        <Badge variant={calcularCambio.fuente === "local" ? "default" : "secondary"}>
+          {calcularCambio.fuente === "local" ? (
+            <span className="flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" /> Tasa Local
+            </span>
+          ) : (
+            <span className="flex items-center gap-1">
+              <DollarSign className="h-3 w-3" /> Tasa Referencia
+            </span>
+          )}
+        </Badge>
+      </CardHeader>
+      <CardContent>
+        {contenido}
       </CardContent>
     </Card>
   );

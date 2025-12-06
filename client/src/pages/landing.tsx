@@ -14,9 +14,11 @@ import GaleriaServicios from "@/components/GaleriaServicios";
 import ModuloAudio from "@/components/ModuloAudio";
 import CartillasBeneficios from "@/components/CartillasBeneficios";
 import FranjaEmergencia from "@/components/FranjaEmergencia";
+import { CalculadoraCambio } from "@/components/CalculadoraCambio";
 
 export default function Landing() {
   const [modalRegistro, setModalRegistro] = useState(false);
+  const [modalMoneda, setModalMoneda] = useState(false);
   const [servicioSeleccionado, setServicioSeleccionado] = useState("");
 
   const abrirModalRegistro = (servicio: string) => {
@@ -136,9 +138,9 @@ export default function Landing() {
               <p className="text-xs text-muted-foreground">Rutas y horarios en tiempo real</p>
             </div>
 
-            {/* Moneda / Billetera */}
+            {/* Moneda / Calculadora de Cambio - Acceso libre */}
             <div 
-              onClick={() => abrirModalRegistro("Billetera Digital")}
+              onClick={() => setModalMoneda(true)}
               className="text-center group cursor-pointer hover-elevate active-elevate-2 p-4 rounded-xl transition-all"
               data-testid="servicio-moneda"
             >
@@ -146,7 +148,7 @@ export default function Landing() {
                 <Coins className="h-8 w-8 sm:h-10 sm:w-10" />
               </div>
               <h3 className="font-semibold mb-1 text-sm sm:text-base">Moneda</h3>
-              <p className="text-xs text-muted-foreground">Billetera digital y recargas</p>
+              <p className="text-xs text-muted-foreground">Calculadora de cambio</p>
             </div>
 
             {/* Avisos */}
@@ -312,6 +314,24 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* Modal Calculadora de Cambio - Acceso libre para todos */}
+      <Dialog open={modalMoneda} onOpenChange={setModalMoneda}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 sm:p-6">
+          <DialogHeader className="p-4 sm:p-0 pb-0">
+            <DialogTitle className="flex items-center gap-2 justify-center">
+              <Coins className="h-6 w-6 text-emerald-600" />
+              Cambio de Moneda
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Calcula el tipo de cambio entre monedas
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-2 sm:px-0 pb-4">
+            <CalculadoraCambio sinCard />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

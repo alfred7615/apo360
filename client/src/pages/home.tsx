@@ -17,6 +17,7 @@ import FranjaEmergencia from "@/components/FranjaEmergencia";
 import CarruselPublicidad from "@/components/CarruselPublicidad";
 import GaleriaServicios from "@/components/GaleriaServicios";
 import ModuloAudio from "@/components/ModuloAudio";
+import { CalculadoraCambio } from "@/components/CalculadoraCambio";
 import { useQuery } from "@tanstack/react-query";
 import type { Emergencia, ContactoFamiliar } from "@shared/schema";
 
@@ -32,6 +33,7 @@ export default function Home() {
   const [modalBuses, setModalBuses] = useState(false);
   const [modalDelivery, setModalDelivery] = useState(false);
   const [modalAvisos, setModalAvisos] = useState(false);
+  const [modalMoneda, setModalMoneda] = useState(false);
 
   const { data: emergenciasRecientes = [] } = useQuery<Emergencia[]>({
     queryKey: ["/api/emergencias/recientes"],
@@ -271,7 +273,7 @@ export default function Home() {
 
           {/* Moneda */}
           <div 
-            onClick={() => setLocation("/billetera")}
+            onClick={() => setModalMoneda(true)}
             className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
             style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-moneda"
@@ -698,6 +700,24 @@ export default function Home() {
           <Button onClick={() => setModalAvisos(false)} className="w-full" data-testid="button-cerrar-avisos">
             Cerrar
           </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Calculadora de Cambio */}
+      <Dialog open={modalMoneda} onOpenChange={setModalMoneda}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 sm:p-6">
+          <DialogHeader className="p-4 sm:p-0 pb-0">
+            <DialogTitle className="flex items-center gap-2 justify-center">
+              <Coins className="h-6 w-6 text-emerald-600" />
+              Cambio de Moneda
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Calcula el tipo de cambio entre monedas
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-2 sm:px-0 pb-4">
+            <CalculadoraCambio sinCard />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

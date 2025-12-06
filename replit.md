@@ -47,7 +47,9 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 - **Currency Exchange Calculator System**: Complete currency exchange system with 5 currencies (PEN, USD, CLP, ARS, BOB). Features:
   - Database tables: `configuracion_monedas` (currency config with internet rates) and `tasas_cambio_locales` (local exchange rates from cambistas)
   - Role "cambista" for users who can update local exchange rates
-  - Responsive calculator component at `/calculadora-cambio` with buy/sell tabs, quick currency selection, and local rate averaging
+  - Responsive calculator accessible via modal from quick access buttons on both landing page (non-authenticated) and home page (authenticated)
+  - Modal-based UI (no page navigation) with buy/sell tabs, quick currency selection, and local rate averaging
+  - Dedicated page also available at `/calculadora-cambio` with Card wrapper
   - Admin panel section in "Gestión de Moneda" for managing cambistas, viewing currencies, and monitoring rate history
   - API endpoints: GET/PATCH `/api/monedas/configuracion`, GET/POST/PATCH/DELETE `/api/monedas/tasas-locales`, GET `/api/monedas/promedio/:origen/:destino`, GET/POST/DELETE `/api/admin/cambistas/:usuarioId`
 
