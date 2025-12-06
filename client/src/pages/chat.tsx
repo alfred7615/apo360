@@ -212,7 +212,8 @@ export default function Chat() {
 
   const invitarContactoMutation = useMutation({
     mutationFn: async (datos: { email?: string; telefono?: string; metodo: 'email' | 'whatsapp' }) => {
-      return await apiRequest("POST", "/api/invitaciones", datos);
+      const response = await apiRequest("POST", "/api/invitaciones", datos);
+      return await response.json();
     },
     onSuccess: (data: any) => {
       if (data.whatsappUrl) {
@@ -242,16 +243,16 @@ export default function Chat() {
 
   const crearConversacionPrivadaMutation = useMutation({
     mutationFn: async (contactoId: string) => {
-      return await apiRequest("POST", "/api/chat/conversaciones-privadas", { contactoId });
+      const response = await apiRequest("POST", "/api/chat/conversaciones-privadas", { contactoId });
+      return await response.json();
     },
     onSuccess: (data: any) => {
-      // Actualizar lista de grupos y seleccionar el nuevo
       queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
       setGrupoSeleccionado(data.id);
       setMostrarPanelInfo(false);
       toast({
         title: "Conversación abierta",
-        description: `Ahora puedes chatear con ${data.nombreMostrar}`,
+        description: `Ahora puedes chatear con ${data.nombreMostrar || 'este contacto'}`,
       });
     },
     onError: (error: Error) => {
