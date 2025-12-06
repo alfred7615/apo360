@@ -20,6 +20,7 @@ export const rolesEnum = pgEnum("rol", [
   "policia",
   "samu",
   "bombero",
+  "cambista",
 ]);
 
 export const usuarios = pgTable("users", {
@@ -1187,6 +1188,56 @@ export const monedas = pgTable("monedas", {
 export const insertMonedaSchema = createInsertSchema(monedas).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertMoneda = z.infer<typeof insertMonedaSchema>;
 export type Moneda = typeof monedas.$inferSelect;
+
+// ============================================================
+// TASAS DE CAMBIO LOCALES (Cambistas)
+// ============================================================
+export const tasasCambioLocales = pgTable("tasas_cambio_locales", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cambistaId: varchar("cambista_id").notNull().references(() => usuarios.id),
+  monedaOrigenCodigo: varchar("moneda_origen_codigo", { length: 10 }).notNull(), // PEN, USD, CLP, ARS, BOB
+  monedaDestinoCodigo: varchar("moneda_destino_codigo", { length: 10 }).notNull(),
+  tasaCompra: decimal("tasa_compra", { precision: 12, scale: 6 }).notNull(), // Tasa al comprar moneda origen
+  tasaVenta: decimal("tasa_venta", { precision: 12, scale: 6 }).notNull(), // Tasa al vender moneda origen
+  ubicacion: varchar("ubicacion", { length: 200 }), // Ubicación del cambista
+  gpsLatitud: real("gps_latitud"),
+  gpsLongitud: real("gps_longitud"),
+  horarioAtencion: varchar("horario_atencion", { length: 200 }),
+  telefono: varchar("telefono", { length: 20 }),
+  whatsapp: varchar("whatsapp", { length: 20 }),
+  activo: boolean("activo").default(true),
+  verificado: boolean("verificado").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTasaCambioLocalSchema = createInsertSchema(tasasCambioLocales).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTasaCambioLocal = z.infer<typeof insertTasaCambioLocalSchema>;
+export type TasaCambioLocal = typeof tasasCambioLocales.$inferSelect;
+
+// ============================================================
+// CONFIGURACIÓN DE MONEDAS (Calculadora)
+// ============================================================
+export const configuracionMonedas = pgTable("configuracion_monedas", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  codigo: varchar("codigo", { length: 10 }).notNull().unique(), // PEN, USD, CLP, ARS, BOB
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  nombreCorto: varchar("nombre_corto", { length: 50 }).notNull(), // Sol, Dólar, Peso Chileno
+  simbolo: varchar("simbolo", { length: 10 }).notNull(), // S/, $, $CLP, $ARS, Bs
+  banderaUrl: varchar("bandera_url", { length: 255 }), // URL de bandera del país
+  tasaPromedioInternet: decimal("tasa_promedio_internet", { precision: 12, scale: 6 }), // Tasa promedio de internet (vs PEN)
+  tasaPromedioLocal: decimal("tasa_promedio_local", { precision: 12, scale: 6 }), // Promedio de cambistas locales
+  esPrincipal: boolean("es_principal").default(false), // PEN es principal
+  orden: integer("orden").default(0),
+  activo: boolean("activo").default(true),
+  ultimaActualizacion: timestamp("ultima_actualizacion").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertConfiguracionMonedaSchema = createInsertSchema(configuracionMonedas).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertConfiguracionMoneda = z.infer<typeof insertConfiguracionMonedaSchema>;
+export type ConfiguracionMoneda = typeof configuracionMonedas.$inferSelect;
 
 // ============================================================
 // SOLICITUDES DE SALDO (Recargas y Retiros)

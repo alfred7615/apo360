@@ -43,6 +43,8 @@ import {
   saldosUsuarios,
   sectores,
   lugaresUsuario,
+  tasasCambioLocales,
+  configuracionMonedas,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -123,6 +125,10 @@ import {
   type InsertSolicitudSaldo,
   type SaldoUsuario,
   type InsertSaldoUsuario,
+  type TasaCambioLocal,
+  type InsertTasaCambioLocal,
+  type ConfiguracionMoneda,
+  type InsertConfiguracionMoneda,
   type ContactoFamiliar,
   type InsertContactoFamiliar,
   type Sector,
@@ -2855,6 +2861,115 @@ export class DatabaseStorage implements IStorage {
       }
       throw error;
     }
+  }
+
+  // ============================================================
+  // SISTEMA DE CAMBIO DE MONEDA
+  // ============================================================
+
+  async getConfiguracionMonedas(): Promise<ConfiguracionMoneda[]> {
+    return await db.select().from(configuracionMonedas)
+      .where(eq(configuracionMonedas.activo, true))
+      .orderBy(configuracionMonedas.orden);
+  }
+
+  async getConfiguracionMoneda(codigo: string): Promise<ConfiguracionMoneda | undefined> {
+    const [moneda] = await db.select().from(configuracionMonedas)
+      .where(eq(configuracionMonedas.codigo, codigo));
+    return moneda;
+  }
+
+  async updateConfiguracionMoneda(codigo: string, data: Partial<InsertConfiguracionMoneda>): Promise<ConfiguracionMoneda | undefined> {
+    const [actualizada] = await db.update(configuracionMonedas)
+      .set({ ...data, updatedAt: new Date(), ultimaActualizacion: new Date() })
+      .where(eq(configuracionMonedas.codigo, codigo))
+      .returning();
+    return actualizada;
+  }
+
+  async createConfiguracionMoneda(data: InsertConfiguracionMoneda): Promise<ConfiguracionMoneda> {
+    const [moneda] = await db.insert(configuracionMonedas).values(data).returning();
+    return moneda;
+  }
+
+  // Tasas de cambio locales (Cambistas)
+  async getTasasCambioLocales(activo?: boolean): Promise<TasaCambioLocal[]> {
+    if (activo !== undefined) {
+      return await db.select().from(tasasCambioLocales)
+        .where(eq(tasasCambioLocales.activo, activo))
+        .orderBy(desc(tasasCambioLocales.updatedAt));
+    }
+    return await db.select().from(tasasCambioLocales)
+      .orderBy(desc(tasasCambioLocales.updatedAt));
+  }
+
+  async getTasasCambioLocalPorCambista(cambistaId: string): Promise<TasaCambioLocal[]> {
+    return await db.select().from(tasasCambioLocales)
+      .where(eq(tasasCambioLocales.cambistaId, cambistaId))
+      .orderBy(tasasCambioLocales.monedaOrigenCodigo);
+  }
+
+  async getTasaCambioLocal(id: string): Promise<TasaCambioLocal | undefined> {
+    const [tasa] = await db.select().from(tasasCambioLocales)
+      .where(eq(tasasCambioLocales.id, id));
+    return tasa;
+  }
+
+  async createTasaCambioLocal(data: InsertTasaCambioLocal): Promise<TasaCambioLocal> {
+    const [tasa] = await db.insert(tasasCambioLocales).values(data).returning();
+    return tasa;
+  }
+
+  async updateTasaCambioLocal(id: string, data: Partial<InsertTasaCambioLocal>): Promise<TasaCambioLocal | undefined> {
+    const [actualizada] = await db.update(tasasCambioLocales)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(tasasCambioLocales.id, id))
+      .returning();
+    return actualizada;
+  }
+
+  async deleteTasaCambioLocal(id: string): Promise<boolean> {
+    const result = await db.delete(tasasCambioLocales)
+      .where(eq(tasasCambioLocales.id, id));
+    return true;
+  }
+
+  async getPromedioTasasLocales(monedaOrigenCodigo: string, monedaDestinoCodigo: string): Promise<{ promedioCompra: number; promedioVenta: number } | null> {
+    const tasas = await db.select().from(tasasCambioLocales)
+      .where(and(
+        eq(tasasCambioLocales.monedaOrigenCodigo, monedaOrigenCodigo),
+        eq(tasasCambioLocales.monedaDestinoCodigo, monedaDestinoCodigo),
+        eq(tasasCambioLocales.activo, true)
+      ));
+    
+    if (tasas.length === 0) return null;
+    
+    const promedioCompra = tasas.reduce((sum, t) => sum + parseFloat(t.tasaCompra), 0) / tasas.length;
+    const promedioVenta = tasas.reduce((sum, t) => sum + parseFloat(t.tasaVenta), 0) / tasas.length;
+    
+    return { promedioCompra, promedioVenta };
+  }
+
+  // Obtener usuarios con rol cambista
+  async getCambistas(): Promise<Usuario[]> {
+    return await db.select().from(usuarios)
+      .where(eq(usuarios.rol, 'cambista'));
+  }
+
+  async asignarRolCambista(usuarioId: string): Promise<Usuario | undefined> {
+    const [actualizado] = await db.update(usuarios)
+      .set({ rol: 'cambista', updatedAt: new Date() })
+      .where(eq(usuarios.id, usuarioId))
+      .returning();
+    return actualizado;
+  }
+
+  async removerRolCambista(usuarioId: string): Promise<Usuario | undefined> {
+    const [actualizado] = await db.update(usuarios)
+      .set({ rol: 'usuario', updatedAt: new Date() })
+      .where(eq(usuarios.id, usuarioId))
+      .returning();
+    return actualizado;
   }
 }
 

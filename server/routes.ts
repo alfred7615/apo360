@@ -50,6 +50,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Las rutas /api/usuarios/me deben registrarse antes de /api/usuarios/:id
   // ============================================================
 
+  app.get('/api/usuarios', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const roles = await storage.getUserRoles(userId);
+      
+      if (!roles.includes('super_admin')) {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+      
+      const usuarios = await storage.getAllUsers();
+      res.json(usuarios);
+    } catch (error) {
+      console.error("Error al obtener usuarios:", error);
+      res.status(500).json({ message: "Error al obtener usuarios" });
+    }
+  });
+
   app.get('/api/usuarios/me', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -2553,6 +2570,223 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al procesar sugerencia:", error);
       res.status(500).json({ message: "Error al procesar sugerencia" });
+    }
+  });
+
+  // ============================================================
+  // RUTAS DE CAMBIO DE MONEDA (Calculadora)
+  // ============================================================
+
+  // Obtener todas las monedas configuradas (público)
+  app.get('/api/monedas/configuracion', async (req, res) => {
+    try {
+      const monedas = await storage.getConfiguracionMonedas();
+      res.json(monedas);
+    } catch (error) {
+      console.error("Error al obtener configuración de monedas:", error);
+      res.status(500).json({ message: "Error al obtener configuración de monedas" });
+    }
+  });
+
+  // Actualizar configuración de moneda (super_admin o cambista)
+  app.patch('/api/monedas/configuracion/:codigo', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { codigo } = req.params;
+      const user = await storage.getUser(userId);
+      const roles = await storage.getUserRoles(userId);
+      
+      const esSuperAdmin = roles.includes('super_admin');
+      const esCambista = user?.rol === 'cambista';
+      
+      if (!esSuperAdmin && !esCambista) {
+        return res.status(403).json({ message: "No tienes permisos para actualizar monedas" });
+      }
+      
+      const moneda = await storage.updateConfiguracionMoneda(codigo, req.body);
+      if (!moneda) {
+        return res.status(404).json({ message: "Moneda no encontrada" });
+      }
+      res.json(moneda);
+    } catch (error) {
+      console.error("Error al actualizar moneda:", error);
+      res.status(500).json({ message: "Error al actualizar moneda" });
+    }
+  });
+
+  // Obtener todas las tasas de cambio locales (público)
+  app.get('/api/monedas/tasas-locales', async (req, res) => {
+    try {
+      const tasas = await storage.getTasasCambioLocales(true);
+      res.json(tasas);
+    } catch (error) {
+      console.error("Error al obtener tasas locales:", error);
+      res.status(500).json({ message: "Error al obtener tasas locales" });
+    }
+  });
+
+  // Obtener tasas del cambista actual
+  app.get('/api/monedas/mis-tasas', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tasas = await storage.getTasasCambioLocalPorCambista(userId);
+      res.json(tasas);
+    } catch (error) {
+      console.error("Error al obtener mis tasas:", error);
+      res.status(500).json({ message: "Error al obtener mis tasas" });
+    }
+  });
+
+  // Crear/actualizar tasa de cambio local (cambista o super_admin)
+  app.post('/api/monedas/tasas-locales', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      const roles = await storage.getUserRoles(userId);
+      
+      const esSuperAdmin = roles.includes('super_admin');
+      const esCambista = user?.rol === 'cambista';
+      
+      if (!esSuperAdmin && !esCambista) {
+        return res.status(403).json({ message: "No tienes permisos para registrar tasas de cambio" });
+      }
+      
+      const data = {
+        ...req.body,
+        cambistaId: userId,
+      };
+      
+      const tasa = await storage.createTasaCambioLocal(data);
+      res.status(201).json(tasa);
+    } catch (error) {
+      console.error("Error al crear tasa local:", error);
+      res.status(500).json({ message: "Error al crear tasa local" });
+    }
+  });
+
+  // Actualizar tasa de cambio local
+  app.patch('/api/monedas/tasas-locales/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const tasa = await storage.getTasaCambioLocal(id);
+      
+      if (!tasa) {
+        return res.status(404).json({ message: "Tasa no encontrada" });
+      }
+      
+      const roles = await storage.getUserRoles(userId);
+      const esSuperAdmin = roles.includes('super_admin');
+      
+      if (tasa.cambistaId !== userId && !esSuperAdmin) {
+        return res.status(403).json({ message: "No puedes editar esta tasa" });
+      }
+      
+      const actualizada = await storage.updateTasaCambioLocal(id, req.body);
+      res.json(actualizada);
+    } catch (error) {
+      console.error("Error al actualizar tasa local:", error);
+      res.status(500).json({ message: "Error al actualizar tasa local" });
+    }
+  });
+
+  // Eliminar tasa de cambio local
+  app.delete('/api/monedas/tasas-locales/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const tasa = await storage.getTasaCambioLocal(id);
+      
+      if (!tasa) {
+        return res.status(404).json({ message: "Tasa no encontrada" });
+      }
+      
+      const roles = await storage.getUserRoles(userId);
+      const esSuperAdmin = roles.includes('super_admin');
+      
+      if (tasa.cambistaId !== userId && !esSuperAdmin) {
+        return res.status(403).json({ message: "No puedes eliminar esta tasa" });
+      }
+      
+      await storage.deleteTasaCambioLocal(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error al eliminar tasa local:", error);
+      res.status(500).json({ message: "Error al eliminar tasa local" });
+    }
+  });
+
+  // Obtener promedio de tasas locales para un par de monedas
+  app.get('/api/monedas/promedio/:origen/:destino', async (req, res) => {
+    try {
+      const { origen, destino } = req.params;
+      const promedio = await storage.getPromedioTasasLocales(origen, destino);
+      res.json(promedio || { promedioCompra: null, promedioVenta: null });
+    } catch (error) {
+      console.error("Error al obtener promedio:", error);
+      res.status(500).json({ message: "Error al obtener promedio" });
+    }
+  });
+
+  // Obtener lista de cambistas (super_admin)
+  app.get('/api/admin/cambistas', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const roles = await storage.getUserRoles(userId);
+      
+      if (!roles.includes('super_admin')) {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+      
+      const cambistas = await storage.getCambistas();
+      res.json(cambistas);
+    } catch (error) {
+      console.error("Error al obtener cambistas:", error);
+      res.status(500).json({ message: "Error al obtener cambistas" });
+    }
+  });
+
+  // Asignar rol de cambista a usuario
+  app.post('/api/admin/cambistas/:usuarioId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { usuarioId } = req.params;
+      const roles = await storage.getUserRoles(userId);
+      
+      if (!roles.includes('super_admin')) {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+      
+      const usuario = await storage.asignarRolCambista(usuarioId);
+      if (!usuario) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      res.json(usuario);
+    } catch (error) {
+      console.error("Error al asignar rol de cambista:", error);
+      res.status(500).json({ message: "Error al asignar rol de cambista" });
+    }
+  });
+
+  // Remover rol de cambista
+  app.delete('/api/admin/cambistas/:usuarioId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { usuarioId } = req.params;
+      const roles = await storage.getUserRoles(userId);
+      
+      if (!roles.includes('super_admin')) {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+      
+      const usuario = await storage.removerRolCambista(usuarioId);
+      if (!usuario) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      res.json(usuario);
+    } catch (error) {
+      console.error("Error al remover rol de cambista:", error);
+      res.status(500).json({ message: "Error al remover rol de cambista" });
     }
   });
 

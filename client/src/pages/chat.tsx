@@ -98,11 +98,20 @@ interface Contacto {
   registrado: boolean;
 }
 
+interface GrupoSeleccionadoInfo {
+  id: string;
+  nombre: string;
+  avatarUrl?: string;
+  tipo: string;
+  descripcion?: string;
+}
+
 export default function Chat() {
   const { user, isLoading: cargandoAuth } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [grupoSeleccionado, setGrupoSeleccionado] = useState<string | null>(null);
+  const [grupoInfo, setGrupoInfo] = useState<GrupoSeleccionadoInfo | null>(null);
   const [mensajeNuevo, setMensajeNuevo] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [busquedaContactos, setBusquedaContactos] = useState("");
@@ -373,8 +382,25 @@ export default function Chat() {
       return await response.json();
     },
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
+      const nuevoGrupo: GrupoChat = {
+        id: data.id,
+        nombre: data.nombreMostrar || grupoInfo?.nombre || 'Conversación',
+        tipo: 'privado',
+        avatarUrl: data.avatarUrl || grupoInfo?.avatarUrl,
+      };
+      queryClient.setQueryData<GrupoChat[]>(["/api/chat/mis-grupos"], (old) => {
+        if (!old) return [nuevoGrupo];
+        const existe = old.some(g => g.id === data.id);
+        if (existe) return old;
+        return [nuevoGrupo, ...old];
+      });
       setGrupoSeleccionado(data.id);
+      setGrupoInfo({
+        id: data.id,
+        nombre: data.nombreMostrar || grupoInfo?.nombre || 'Conversación',
+        avatarUrl: data.avatarUrl || grupoInfo?.avatarUrl,
+        tipo: 'privado',
+      });
       setMostrarPanelInfo(false);
       toast({
         title: "Conversación abierta",
@@ -382,6 +408,7 @@ export default function Chat() {
       });
     },
     onError: (error: Error) => {
+      setGrupoInfo(null);
       toast({
         title: "Error",
         description: error.message || "No se pudo abrir la conversación",
@@ -403,7 +430,31 @@ export default function Chat() {
     contacto.email.toLowerCase().includes(busquedaContactos.toLowerCase())
   );
 
-  const grupoActual = grupos.find((g) => g.id === grupoSeleccionado);
+  const grupoFromList = grupos.find((g) => g.id === grupoSeleccionado);
+  const grupoActual = grupoFromList || grupoInfo;
+
+  const seleccionarGrupo = (grupo: GrupoChat) => {
+    setGrupoSeleccionado(grupo.id);
+    setGrupoInfo({
+      id: grupo.id,
+      nombre: grupo.nombre,
+      avatarUrl: grupo.avatarUrl,
+      tipo: grupo.tipo,
+      descripcion: grupo.descripcion,
+    });
+    setMostrarPanelInfo(false);
+  };
+
+  const seleccionarContacto = (contacto: Contacto) => {
+    if (!contacto.registrado) return;
+    setGrupoInfo({
+      id: '',
+      nombre: contacto.nombre,
+      avatarUrl: contacto.avatarUrl,
+      tipo: 'privado',
+    });
+    crearConversacionPrivadaMutation.mutate(contacto.id);
+  };
 
   const enviarMensaje = (e: React.FormEvent) => {
     e.preventDefault();
@@ -590,7 +641,7 @@ export default function Chat() {
         </div>
 
         {/* Tabs: Grupos, Contactos y Gmail */}
-        <Tabs defaultValue="grupos" className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <Tabs defaultValue="grupos" className="flex-1 flex flex-col min-h-0">
           <TabsList className="mx-4 mt-2 grid w-[calc(100%-2rem)] grid-cols-3 shrink-0">
             <TabsTrigger value="grupos" data-testid="tab-grupos">
               <MessageCircle className="h-4 w-4 mr-1" />
@@ -606,8 +657,8 @@ export default function Chat() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="grupos" className="flex-1 m-0 min-h-0 overflow-hidden">
-            <ScrollArea className="h-full max-h-full">
+          <TabsContent value="grupos" className="flex-1 m-0 mt-2 data-[state=active]:flex data-[state=active]:flex-col min-h-0 overflow-hidden">
+            <ScrollArea className="flex-1 h-0">
               {cargandoGrupos ? (
                 <div className="p-4 space-y-3">
                   {[...Array(5)].map((_, i) => (
@@ -631,10 +682,7 @@ export default function Chat() {
                   {gruposFiltrados.map((grupo) => (
                     <button
                       key={grupo.id}
-                      onClick={() => {
-                        setGrupoSeleccionado(grupo.id);
-                        setMostrarPanelInfo(false);
-                      }}
+                      onClick={() => seleccionarGrupo(grupo)}
                       className={`w-full flex items-start gap-3 p-3 rounded-lg transition-all hover-elevate active-elevate-2 ${
                         grupoSeleccionado === grupo.id ? 'bg-accent' : ''
                       }`}
@@ -677,9 +725,9 @@ export default function Chat() {
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="contactos" className="flex-1 m-0 min-h-0 overflow-hidden flex flex-col">
-            <div className="p-4 pt-2 shrink-0">
-              <div className="relative mb-3">
+          <TabsContent value="contactos" className="flex-1 m-0 mt-2 data-[state=active]:flex data-[state=active]:flex-col min-h-0 overflow-hidden">
+            <div className="px-4 pb-2 shrink-0">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar contactos registrados..."
@@ -690,7 +738,7 @@ export default function Chat() {
                 />
               </div>
             </div>
-            <ScrollArea className="flex-1 min-h-0">
+            <ScrollArea className="flex-1 h-0">
               {contactosFiltrados.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -710,11 +758,7 @@ export default function Chat() {
                   {contactosFiltrados.map((contacto) => (
                     <button
                       key={contacto.id}
-                      onClick={() => {
-                        if (contacto.registrado) {
-                          crearConversacionPrivadaMutation.mutate(contacto.id);
-                        }
-                      }}
+                      onClick={() => seleccionarContacto(contacto)}
                       disabled={!contacto.registrado || crearConversacionPrivadaMutation.isPending}
                       className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
                         contacto.registrado 
@@ -766,9 +810,9 @@ export default function Chat() {
           </TabsContent>
 
           {/* Pestaña de Gmail/Google Contacts */}
-          <TabsContent value="gmail" className="flex-1 m-0 min-h-0 overflow-hidden flex flex-col">
-            <div className="p-4 pt-2 shrink-0">
-              <div className="relative mb-3">
+          <TabsContent value="gmail" className="flex-1 m-0 mt-2 data-[state=active]:flex data-[state=active]:flex-col min-h-0 overflow-hidden">
+            <div className="px-4 pb-2 shrink-0">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar contactos de Gmail..."
@@ -777,7 +821,7 @@ export default function Chat() {
                 />
               </div>
             </div>
-            <ScrollArea className="flex-1 min-h-0">
+            <ScrollArea className="flex-1 h-0">
               <div className="p-8 text-center text-muted-foreground">
                 <Globe className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p className="font-medium mb-2">Conecta tu cuenta de Gmail</p>
@@ -806,7 +850,7 @@ export default function Chat() {
       </div>
 
       {/* Panel central - Conversación */}
-      {grupoSeleccionado && grupoActual ? (
+      {(grupoSeleccionado || grupoInfo) && grupoActual ? (
         <div className={`flex flex-col flex-1 h-full min-h-0 overflow-hidden ${mostrarPanelInfo ? 'hidden lg:flex' : ''}`}>
           {/* Header del chat */}
           <div className="flex items-center gap-3 p-4 border-b bg-card">
@@ -814,7 +858,10 @@ export default function Chat() {
               variant="ghost"
               size="icon"
               className="md:hidden"
-              onClick={() => setGrupoSeleccionado(null)}
+              onClick={() => {
+                setGrupoSeleccionado(null);
+                setGrupoInfo(null);
+              }}
               data-testid="button-back-to-conversations"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -834,11 +881,24 @@ export default function Chat() {
               <div className="text-left">
                 <p className="font-semibold" data-testid="text-chat-name">{grupoActual.nombre}</p>
                 <p className="text-xs text-muted-foreground">
-                  {miembrosGrupo.length} miembros
-                  {isConnected ? (
-                    <span className="text-green-600 dark:text-green-400 ml-2">En línea</span>
+                  {grupoActual.tipo === 'privado' ? (
+                    <>
+                      Chat privado
+                      {isConnected ? (
+                        <span className="text-green-600 dark:text-green-400 ml-2">En línea</span>
+                      ) : (
+                        <span className="text-muted-foreground ml-2">Desconectado</span>
+                      )}
+                    </>
                   ) : (
-                    <span className="text-muted-foreground ml-2">Desconectado</span>
+                    <>
+                      {miembrosGrupo.length} miembros
+                      {isConnected ? (
+                        <span className="text-green-600 dark:text-green-400 ml-2">En línea</span>
+                      ) : (
+                        <span className="text-muted-foreground ml-2">Desconectado</span>
+                      )}
+                    </>
                   )}
                 </p>
               </div>

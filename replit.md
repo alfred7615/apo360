@@ -44,6 +44,12 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 - **User Locations (Lugares)**: Users can save multiple GPS locations with custom names (home, work, pharmacy, etc.) for use with taxi and delivery services. Stored in `lugares_usuario` table with API endpoints at `/api/lugares-usuario`.
 - **User Panel (Panel de Usuario)**: Consolidated user dashboard accessible via /mi-panel with three tabs: Favoritos (saved content), Marketplace (Mi Tienda Online for selling products), and Conductor (driver management). Uses profile verification system to gate access.
 - **Profile Verification System**: Backend endpoint `/api/verificar-perfil` validates user profile completeness across 5 areas: perfilBasico, chat, taxiPasajero, conductor, vendedor. Each area has specific required fields and returns percentage completion. BloqueoServicio component blocks access to restricted features (Marketplace, Conductor mode) until profile requirements are met, showing progress bar and missing fields list.
+- **Currency Exchange Calculator System**: Complete currency exchange system with 5 currencies (PEN, USD, CLP, ARS, BOB). Features:
+  - Database tables: `configuracion_monedas` (currency config with internet rates) and `tasas_cambio_locales` (local exchange rates from cambistas)
+  - Role "cambista" for users who can update local exchange rates
+  - Responsive calculator component at `/calculadora-cambio` with buy/sell tabs, quick currency selection, and local rate averaging
+  - Admin panel section in "Gestión de Moneda" for managing cambistas, viewing currencies, and monitoring rate history
+  - API endpoints: GET/PATCH `/api/monedas/configuracion`, GET/POST/PATCH/DELETE `/api/monedas/tasas-locales`, GET `/api/monedas/promedio/:origen/:destino`, GET/POST/DELETE `/api/admin/cambistas/:usuarioId`
 
 ### System Design Choices
 - **Modular Project Structure**: Clear separation between `client` (React), `server` (Express), and `shared` (common schemas/types).
