@@ -1289,6 +1289,128 @@ export type InsertConfiguracionSaldos = z.infer<typeof insertConfiguracionSaldos
 export type ConfiguracionSaldos = typeof configuracionSaldos.$inferSelect;
 
 // ============================================================
+// PLANES DE MEMBRESÍA (configurados por super admin)
+// ============================================================
+export const planesMembresia = pgTable("planes_membresia", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  descripcion: text("descripcion"),
+  duracionMeses: integer("duracion_meses").notNull(), // 1, 3, 6, 12
+  precioNormal: decimal("precio_normal", { precision: 10, scale: 2 }).notNull(),
+  precioDescuento: decimal("precio_descuento", { precision: 10, scale: 2 }),
+  porcentajeDescuento: integer("porcentaje_descuento"),
+  beneficios: json("beneficios").$type<string[]>(),
+  productosIncluidos: integer("productos_incluidos").default(0), // Cuántos productos puede crear
+  destacado: boolean("destacado").default(false),
+  orden: integer("orden").default(0),
+  activo: boolean("activo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPlanMembresiaSchema = createInsertSchema(planesMembresia).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPlanMembresia = z.infer<typeof insertPlanMembresiaSchema>;
+export type PlanMembresia = typeof planesMembresia.$inferSelect;
+
+// ============================================================
+// MEMBRESÍAS DE USUARIOS
+// ============================================================
+export const membresiasUsuarios = pgTable("membresias_usuarios", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  planId: varchar("plan_id").notNull().references(() => planesMembresia.id),
+  fechaInicio: timestamp("fecha_inicio").notNull().defaultNow(),
+  fechaFin: timestamp("fecha_fin").notNull(),
+  estado: varchar("estado", { length: 20 }).default("activa"), // 'activa', 'expirada', 'cancelada'
+  productosCreados: integer("productos_creados").default(0),
+  montoTotal: decimal("monto_total", { precision: 10, scale: 2 }).notNull(),
+  metodoPago: varchar("metodo_pago", { length: 50 }),
+  transaccionId: varchar("transaccion_id"),
+  renovacionAutomatica: boolean("renovacion_automatica").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMembresiaUsuarioSchema = createInsertSchema(membresiasUsuarios).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertMembresiaUsuario = z.infer<typeof insertMembresiaUsuarioSchema>;
+export type MembresiaUsuario = typeof membresiasUsuarios.$inferSelect;
+
+// ============================================================
+// CATEGORÍAS DE PRODUCTOS DE USUARIO
+// ============================================================
+export const categoriasProductosUsuario = pgTable("categorias_productos_usuario", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  descripcion: text("descripcion"),
+  icono: varchar("icono", { length: 50 }),
+  imagenUrl: varchar("imagen_url"),
+  categoriaPadreId: varchar("categoria_padre_id").references((): any => categoriasProductosUsuario.id),
+  orden: integer("orden").default(0),
+  activo: boolean("activo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCategoriaProductoUsuarioSchema = createInsertSchema(categoriasProductosUsuario).omit({ id: true, createdAt: true });
+export type InsertCategoriaProductoUsuario = z.infer<typeof insertCategoriaProductoUsuarioSchema>;
+export type CategoriaProductoUsuario = typeof categoriasProductosUsuario.$inferSelect;
+
+// ============================================================
+// PRODUCTOS DE USUARIO (para locales comerciales y vendedores)
+// ============================================================
+export const productosUsuario = pgTable("productos_usuario", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  categoriaId: varchar("categoria_id").references(() => categoriasProductosUsuario.id),
+  subcategoriaId: varchar("subcategoria_id").references(() => categoriasProductosUsuario.id),
+  codigo: varchar("codigo", { length: 50 }),
+  nombre: varchar("nombre", { length: 200 }).notNull(),
+  descripcion: text("descripcion"),
+  precio: decimal("precio", { precision: 10, scale: 2 }).notNull(),
+  precioOferta: decimal("precio_oferta", { precision: 10, scale: 2 }),
+  moneda: varchar("moneda", { length: 10 }).default("PEN"),
+  imagenes: json("imagenes").$type<string[]>(),
+  stock: integer("stock"),
+  disponible: boolean("disponible").default(true),
+  destacado: boolean("destacado").default(false),
+  gpsLatitud: real("gps_latitud"),
+  gpsLongitud: real("gps_longitud"),
+  direccion: text("direccion"),
+  costoCreacion: decimal("costo_creacion", { precision: 10, scale: 2 }).default("0"),
+  likes: integer("likes").default(0),
+  favoritos: integer("favoritos").default(0),
+  compartidos: integer("compartidos").default(0),
+  vistas: integer("vistas").default(0),
+  estado: varchar("estado", { length: 20 }).default("activo"), // 'activo', 'pausado', 'eliminado'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertProductoUsuarioSchema = createInsertSchema(productosUsuario).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertProductoUsuario = z.infer<typeof insertProductoUsuarioSchema>;
+export type ProductoUsuario = typeof productosUsuario.$inferSelect;
+
+// ============================================================
+// CONFIGURACIÓN DE COSTOS (para creación de productos, servicios, etc.)
+// ============================================================
+export const configuracionCostos = pgTable("configuracion_costos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tipoServicio: varchar("tipo_servicio", { length: 50 }).notNull().unique(), // 'crear_producto', 'llamada_taxi', 'delivery', 'publicidad', etc.
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  descripcion: text("descripcion"),
+  montoFijo: decimal("monto_fijo", { precision: 10, scale: 2 }).default("0"),
+  porcentaje: decimal("porcentaje", { precision: 5, scale: 2 }).default("0"), // Porcentaje del precio del producto
+  usarMontoFijo: boolean("usar_monto_fijo").default(true), // true = monto fijo, false = porcentaje
+  saldoMinimo: decimal("saldo_minimo", { precision: 10, scale: 2 }).default("0.50"), // Saldo mínimo requerido
+  activo: boolean("activo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertConfiguracionCostoSchema = createInsertSchema(configuracionCostos).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertConfiguracionCosto = z.infer<typeof insertConfiguracionCostoSchema>;
+export type ConfiguracionCosto = typeof configuracionCostos.$inferSelect;
+
+// ============================================================
 // TYPE ALIASES (para compatibilidad con código existente)
 // ============================================================
 export type InsertPublicidad = PublicidadInsert;
