@@ -1,5 +1,3 @@
-import * as client from "openid-client";
-import { Strategy as ReplitStrategy, type VerifyFunction } from "openid-client/passport";
 import { Strategy as GoogleStrategy, Profile as GoogleProfile, VerifyCallback } from "passport-google-oauth20";
 
 import passport from "passport";
@@ -12,9 +10,25 @@ import { storage } from "./storage";
 const AUTH_MODE = process.env.AUTH_MODE || (process.env.REPL_ID ? "replit" : "google");
 let activeAuthMode = AUTH_MODE;
 
+let oidcClientModule: typeof import("openid-client") | null = null;
+let oidcPassportModule: typeof import("openid-client/passport") | null = null;
+
+async function loadOidcModules() {
+  if (!oidcClientModule) {
+    oidcClientModule = await import("openid-client");
+  }
+  if (!oidcPassportModule) {
+    oidcPassportModule = await import("openid-client/passport");
+  }
+  return { client: oidcClientModule, passport: oidcPassportModule };
+}
+
 const getOidcConfig = memoize(
   async () => {
     if (!process.env.REPL_ID) return null;
+    
+    const { client } = await loadOidcModules();
+    
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
       process.env.REPL_ID!
@@ -45,10 +59,7 @@ export function getSession() {
   });
 }
 
-function updateUserSession(
-  user: any,
-  tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
-) {
+function updateUserSession(user: any, tokens: any) {
   user.claims = tokens.claims();
   user.access_token = tokens.access_token;
   user.refresh_token = tokens.refresh_token;
@@ -132,12 +143,12 @@ async function setupReplitAuth(app: Express) {
     throw new Error("Failed to get Replit OIDC configuration");
   }
   
+  const { client, passport: oidcPassport } = await loadOidcModules();
+  const ReplitStrategy = oidcPassport.Strategy;
+  
   activeAuthMode = "replit";
 
-  const verify: VerifyFunction = async (
-    tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
-  ) => {
+  const verify = async (tokens: any, verified: passport.AuthenticateCallback) => {
     const user = {};
     updateUserSession(user, tokens);
     await upsertUser(tokens.claims());
@@ -236,6 +247,7 @@ async function setupGoogleAuth(app: Express): Promise<boolean> {
   });
 
   console.log("✅ Google OAuth configurado correctamente");
+  activeAuthMode = "google";
   return true;
 }
 
@@ -298,6 +310,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     try {
       const config = await getOidcConfig();
       if (config) {
+        const { client } = await loadOidcModules();
         const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
         updateUserSession(user, tokenResponse);
         return next();
