@@ -16,15 +16,46 @@ import {
   Star, Store, Package, Heart, MapPin,
   Trash2, Share2, Car, CreditCard, ShoppingBag,
   Plus, Edit, Loader2, Crown, CheckCircle,
-  User, Camera, AlertCircle
+  User, Camera, AlertCircle, Wallet, DollarSign,
+  Clock, Check, X, ArrowRight
 } from "lucide-react";
 import { Link } from "wouter";
 import BloqueoServicio, { useVerificarPerfil } from "@/components/BloqueoServicio";
+
+interface PlanMembresia {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  duracionMeses: number;
+  precioNormal: string;
+  precioDescuento: string | null;
+  porcentajeDescuento: number | null;
+  beneficios: string[] | null;
+  productosIncluidos: number;
+  destacado: boolean;
+  activo: boolean;
+  orden: number;
+}
+
+interface SaldoUsuario {
+  id: number;
+  usuarioId: string;
+  saldo: string;
+  totalIngresos: string;
+  totalEgresos: string;
+  monedaPreferida: string;
+}
 
 export default function PanelUsuarioPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("favoritos");
   const [showProductoModal, setShowProductoModal] = useState(false);
+  const [showRecargaModal, setShowRecargaModal] = useState(false);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [planSeleccionado, setPlanSeleccionado] = useState<PlanMembresia | null>(null);
+  const [montoRecarga, setMontoRecarga] = useState("10.00");
+  const [metodoPagoId, setMetodoPagoId] = useState("");
+  const [comprobante, setComprobante] = useState("");
   const { toast } = useToast();
   
   const { 
@@ -55,6 +86,56 @@ export default function PanelUsuarioPage() {
   const { data: membresia, isLoading: loadingMembresia } = useQuery<any>({
     queryKey: ["/api/mi-membresia"],
     enabled: isAuthenticated,
+  });
+
+  const { data: planesMembresia = [], isLoading: loadingPlanes } = useQuery<PlanMembresia[]>({
+    queryKey: ["/api/planes-membresia"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: miSaldo, isLoading: loadingSaldo } = useQuery<SaldoUsuario>({
+    queryKey: ["/api/mi-saldo"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: metodosPago = [], isLoading: loadingMetodos } = useQuery<any[]>({
+    queryKey: ["/api/metodos-pago-plataforma"],
+    enabled: isAuthenticated,
+  });
+
+  const contratarMembresiaMutation = useMutation({
+    mutationFn: (planId: string) => apiRequest("POST", "/api/membresias/contratar", { planId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-membresia"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-saldo"] });
+      setShowPlanModal(false);
+      setPlanSeleccionado(null);
+      toast({ title: "Membresia contratada exitosamente", description: "Tu membresia ha sido registrada y esta pendiente de aprobacion" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al contratar membresia", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const solicitarRecargaMutation = useMutation({
+    mutationFn: (data: { monto: string; metodoPagoId: string; comprobante: string }) => 
+      apiRequest("POST", "/api/solicitudes-saldo", { 
+        tipo: "recarga", 
+        monto: data.monto,
+        metodoPagoId: data.metodoPagoId,
+        comprobante: data.comprobante
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-saldo"] });
+      setShowRecargaModal(false);
+      setMontoRecarga("10.00");
+      setMetodoPagoId("");
+      setComprobante("");
+      toast({ title: "Solicitud de recarga enviada", description: "Tu solicitud sera procesada pronto" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al solicitar recarga", description: error.message, variant: "destructive" });
+    },
   });
 
   const quitarFavoritoMutation = useMutation({
@@ -156,7 +237,7 @@ export default function PanelUsuarioPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <Card>
           <CardContent className="p-4 text-center">
             <Star className="h-6 w-6 text-yellow-500 mx-auto mb-2" />
@@ -182,13 +263,22 @@ export default function PanelUsuarioPage() {
           <CardContent className="p-4 text-center">
             <Crown className="h-6 w-6 text-purple-500 mx-auto mb-2" />
             <span className="text-2xl font-bold">{tieneMembresia ? 'Activa' : '-'}</span>
-            <p className="text-sm text-muted-foreground">Membresía</p>
+            <p className="text-sm text-muted-foreground">Membresia</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+          <CardContent className="p-4 text-center">
+            <Wallet className="h-6 w-6 text-green-600 mx-auto mb-2" />
+            <span className="text-2xl font-bold text-green-700 dark:text-green-400" data-testid="text-mi-saldo">
+              S/ {miSaldo?.saldo || '0.00'}
+            </span>
+            <p className="text-sm text-muted-foreground">Mi Saldo</p>
           </CardContent>
         </Card>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-3 mb-6">
+        <TabsList className="w-full grid grid-cols-4 mb-6">
           <TabsTrigger value="favoritos" className="gap-2" data-testid="tab-favoritos">
             <Star className="h-4 w-4" />
             <span className="hidden sm:inline">Favoritos</span>
@@ -200,6 +290,10 @@ export default function PanelUsuarioPage() {
           <TabsTrigger value="conductor" className="gap-2" data-testid="tab-conductor">
             <Car className="h-4 w-4" />
             <span className="hidden sm:inline">Conductor</span>
+          </TabsTrigger>
+          <TabsTrigger value="membresia" className="gap-2" data-testid="tab-membresia">
+            <Wallet className="h-4 w-4" />
+            <span className="hidden sm:inline">Membresia</span>
           </TabsTrigger>
         </TabsList>
 
@@ -538,7 +632,449 @@ export default function PanelUsuarioPage() {
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="membresia" className="mt-0">
+          <div className="space-y-6">
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
+              <CardHeader className="flex flex-row items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Wallet className="h-5 w-5 text-green-600" />
+                    Mi Saldo
+                  </CardTitle>
+                  <CardDescription>Saldo disponible para servicios</CardDescription>
+                </div>
+                <Button onClick={() => setShowRecargaModal(true)} data-testid="button-recargar-saldo">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Recargar
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {loadingSaldo ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Saldo Actual</p>
+                      <p className="text-3xl font-bold text-green-600" data-testid="text-saldo-actual-membresia">
+                        S/ {miSaldo?.saldo || '0.00'}
+                      </p>
+                      {(() => {
+                        const saldoNum = parseFloat(miSaldo?.saldo || '0');
+                        return (miSaldo === undefined || isNaN(saldoNum) || saldoNum < 0.50);
+                      })() && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center gap-1" data-testid="text-saldo-bajo-warning">
+                          <AlertCircle className="h-3 w-3" />
+                          Saldo bajo - recarga para usar servicios
+                        </p>
+                      )}
+                    </div>
+                    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Total Ingresos</p>
+                      <p className="text-xl font-bold text-green-500">
+                        S/ {miSaldo?.totalIngresos || '0.00'}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Total Egresos</p>
+                      <p className="text-xl font-bold text-red-500">
+                        S/ {miSaldo?.totalEgresos || '0.00'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-yellow-500" />
+                  Planes de Membresia
+                </CardTitle>
+                <CardDescription>
+                  {tieneMembresia 
+                    ? "Tu membresia esta activa. Disfruta de todos los beneficios."
+                    : "Elige un plan para acceder a beneficios exclusivos"
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {tieneMembresia ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200">
+                      <Crown className="h-10 w-10 text-yellow-500" />
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">Membresia {membresia?.plan?.nombre || 'Premium'}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Estado: <Badge className="bg-green-500 ml-1">Activa</Badge>
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Valida hasta: {membresia?.fechaFin ? new Date(membresia.fechaFin).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Productos creados</p>
+                        <p className="text-2xl font-bold">{membresia?.productosCreados || 0}</p>
+                      </div>
+                    </div>
+                    
+                    {membresia?.plan?.beneficios && membresia.plan.beneficios.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Tus beneficios:</h4>
+                        <ul className="space-y-1">
+                          {membresia.plan.beneficios.map((beneficio: string, i: number) => (
+                            <li key={i} className="flex items-center gap-2 text-sm">
+                              <Check className="h-4 w-4 text-green-500" />
+                              {beneficio}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ) : loadingPlanes ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : planesMembresia.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Crown className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-medium mb-2">No hay planes disponibles</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Pronto tendras opciones de membresia disponibles
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {planesMembresia.map((plan) => (
+                      <div 
+                        key={plan.id}
+                        className={`relative p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                          plan.destacado ? 'ring-2 ring-primary border-primary' : ''
+                        }`}
+                        onClick={() => { setPlanSeleccionado(plan); setShowPlanModal(true); }}
+                        data-testid={`card-plan-usuario-${plan.id}`}
+                      >
+                        {plan.destacado && (
+                          <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary">
+                            Recomendado
+                          </Badge>
+                        )}
+                        <div className="text-center pt-2">
+                          <Crown className={`h-8 w-8 mx-auto mb-2 ${plan.destacado ? 'text-primary' : 'text-yellow-500'}`} />
+                          <h3 className="font-bold">{plan.nombre}</h3>
+                          <p className="text-sm text-muted-foreground">{plan.duracionMeses} mes{plan.duracionMeses > 1 ? 'es' : ''}</p>
+                        </div>
+                        <div className="text-center my-4">
+                          {plan.precioDescuento ? (
+                            <>
+                              <span className="text-2xl font-bold text-primary">S/ {plan.precioDescuento}</span>
+                              <span className="text-sm line-through text-muted-foreground ml-2">S/ {plan.precioNormal}</span>
+                              {plan.porcentajeDescuento && (
+                                <Badge variant="outline" className="ml-2 text-green-600">-{plan.porcentajeDescuento}%</Badge>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-2xl font-bold">S/ {plan.precioNormal}</span>
+                          )}
+                        </div>
+                        <p className="text-center text-sm text-muted-foreground mb-3">
+                          {plan.productosIncluidos === 9999 ? 'Productos ilimitados' : `${plan.productosIncluidos} productos incluidos`}
+                        </p>
+                        {plan.beneficios && plan.beneficios.length > 0 && (
+                          <ul className="space-y-1 text-xs border-t pt-3">
+                            {plan.beneficios.slice(0, 3).map((beneficio, i) => (
+                              <li key={i} className="flex items-start gap-1">
+                                <Check className="h-3 w-3 text-green-500 mt-0.5" />
+                                <span className="text-muted-foreground">{beneficio}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <Button className="w-full mt-4" size="sm" data-testid={`button-seleccionar-plan-${plan.id}`}>
+                          Seleccionar
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-blue-500" />
+                  Opciones de Pago
+                </CardTitle>
+                <CardDescription>Dos formas de acceder a los servicios premium</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 rounded-full bg-yellow-100 dark:bg-yellow-900/30">
+                        <Crown className="h-6 w-6 text-yellow-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Membresia Premium</h4>
+                        <p className="text-sm text-muted-foreground">Pago unico mensual</p>
+                      </div>
+                    </div>
+                    <ul className="space-y-2 text-sm mb-4">
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        Acceso a todos los servicios
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        Sin limites de publicacion
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        Descuentos en comisiones
+                      </li>
+                    </ul>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setActiveTab("membresia")}
+                      data-testid="button-ver-planes-membresia"
+                    >
+                      Ver Planes
+                    </Button>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
+                        <Wallet className="h-6 w-6 text-green-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Recarga de Saldo</h4>
+                        <p className="text-sm text-muted-foreground">Paga solo lo que uses</p>
+                      </div>
+                    </div>
+                    <ul className="space-y-2 text-sm mb-4">
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        Recarga minima: S/ 1.00
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        Cobro por servicio usado
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        Sin compromisos mensuales
+                      </li>
+                    </ul>
+                    <Button 
+                      className="w-full"
+                      onClick={() => setShowRecargaModal(true)}
+                      data-testid="button-recargar-saldo-2"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Recargar Saldo
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
+
+      <Dialog open={showRecargaModal} onOpenChange={setShowRecargaModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-green-500" />
+              Recargar Saldo
+            </DialogTitle>
+            <DialogDescription>
+              Recarga tu saldo para usar los servicios de la plataforma
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="monto">Monto a Recargar (minimo S/ 1.00)</Label>
+              <Input
+                id="monto"
+                type="number"
+                step="0.50"
+                min="1"
+                value={montoRecarga}
+                onChange={(e) => setMontoRecarga(e.target.value)}
+                placeholder="10.00"
+                className={`mt-2 ${montoRecarga !== '' && (isNaN(parseFloat(montoRecarga)) || parseFloat(montoRecarga) < 1) ? 'border-red-500' : ''}`}
+                data-testid="input-monto-recarga"
+              />
+              {montoRecarga !== '' && (isNaN(parseFloat(montoRecarga)) || parseFloat(montoRecarga) < 1) && (
+                <p className="text-xs text-red-500 mt-1" data-testid="text-error-monto-minimo">
+                  El monto minimo de recarga es S/ 1.00
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {['5.00', '10.00', '20.00', '50.00'].map((monto) => (
+                <Button
+                  key={monto}
+                  type="button"
+                  variant={montoRecarga === monto ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setMontoRecarga(monto)}
+                  data-testid={`button-monto-${monto}`}
+                >
+                  S/ {monto}
+                </Button>
+              ))}
+            </div>
+            <div>
+              <Label htmlFor="metodoPago">Metodo de Pago</Label>
+              {loadingMetodos ? (
+                <div className="py-2 text-center text-muted-foreground text-sm">Cargando metodos...</div>
+              ) : metodosPago.length === 0 ? (
+                <div className="py-2 text-center text-muted-foreground text-sm">
+                  No hay metodos de pago disponibles
+                </div>
+              ) : (
+                <div className="space-y-2 mt-2">
+                  {metodosPago.filter(m => m.activo).map((metodo) => (
+                    <div
+                      key={metodo.id}
+                      className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                        metodoPagoId === metodo.id ? 'ring-2 ring-primary border-primary' : ''
+                      }`}
+                      onClick={() => setMetodoPagoId(metodo.id)}
+                      data-testid={`card-metodo-pago-${metodo.id}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{metodo.nombre}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {metodo.banco && `${metodo.banco} - `}{metodo.numero}
+                          </p>
+                          {metodo.titular && (
+                            <p className="text-xs text-muted-foreground">Titular: {metodo.titular}</p>
+                          )}
+                        </div>
+                        <Badge variant="outline">{metodo.tipo.replace('_', ' ')}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="comprobante">Numero de Operacion / Comprobante</Label>
+              <Input
+                id="comprobante"
+                value={comprobante}
+                onChange={(e) => setComprobante(e.target.value)}
+                placeholder="Ej: 123456789"
+                className="mt-2"
+                data-testid="input-comprobante"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRecargaModal(false)} data-testid="button-cancelar-recarga">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => solicitarRecargaMutation.mutate({ monto: montoRecarga, metodoPagoId, comprobante })}
+              disabled={isNaN(parseFloat(montoRecarga)) || parseFloat(montoRecarga) < 1 || !metodoPagoId || !comprobante || solicitarRecargaMutation.isPending}
+              data-testid="button-enviar-recarga"
+            >
+              {solicitarRecargaMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Enviar Solicitud
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPlanModal} onOpenChange={(open) => { setShowPlanModal(open); if (!open) setPlanSeleccionado(null); }}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-yellow-500" />
+              Contratar Membresia
+            </DialogTitle>
+            <DialogDescription>
+              Confirma tu suscripcion al plan seleccionado
+            </DialogDescription>
+          </DialogHeader>
+          {planSeleccionado && (
+            <div className="py-4">
+              <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg mb-4">
+                <Crown className="h-12 w-12 text-yellow-500 mx-auto mb-2" />
+                <h3 className="text-xl font-bold">{planSeleccionado.nombre}</h3>
+                <p className="text-sm text-muted-foreground">{planSeleccionado.duracionMeses} mes{planSeleccionado.duracionMeses > 1 ? 'es' : ''}</p>
+                <div className="mt-3">
+                  {planSeleccionado.precioDescuento ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-3xl font-bold text-primary">S/ {planSeleccionado.precioDescuento}</span>
+                      <span className="text-lg line-through text-muted-foreground">S/ {planSeleccionado.precioNormal}</span>
+                    </div>
+                  ) : (
+                    <span className="text-3xl font-bold">S/ {planSeleccionado.precioNormal}</span>
+                  )}
+                </div>
+              </div>
+
+              {planSeleccionado.descripcion && (
+                <p className="text-sm text-muted-foreground mb-4">{planSeleccionado.descripcion}</p>
+              )}
+
+              <div className="mb-4">
+                <h4 className="font-medium mb-2">Incluye:</h4>
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-green-500" />
+                    {planSeleccionado.productosIncluidos === 9999 ? 'Productos ilimitados' : `${planSeleccionado.productosIncluidos} productos para publicar`}
+                  </li>
+                  {planSeleccionado.beneficios?.map((beneficio, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-green-500" />
+                      {beneficio}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="p-3 bg-muted rounded-lg text-sm">
+                <p className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-blue-500" />
+                  Tu membresia quedara pendiente de aprobacion y se activara una vez confirmado el pago.
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowPlanModal(false); setPlanSeleccionado(null); }} data-testid="button-cancelar-membresia">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => planSeleccionado && contratarMembresiaMutation.mutate(planSeleccionado.id)}
+              disabled={!planSeleccionado || contratarMembresiaMutation.isPending}
+              data-testid="button-confirmar-membresia"
+            >
+              {contratarMembresiaMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Crown className="h-4 w-4 mr-2" />
+              )}
+              Contratar Membresia
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showProductoModal} onOpenChange={setShowProductoModal}>
         <DialogContent className="sm:max-w-[500px]">
