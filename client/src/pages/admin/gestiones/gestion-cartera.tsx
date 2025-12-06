@@ -93,6 +93,47 @@ type TransaccionSaldo = {
   createdAt: string;
 };
 
+type PlanMembresia = {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  duracionMeses: number;
+  precioNormal: string;
+  precioDescuento?: string;
+  porcentajeDescuento?: number;
+  beneficios?: string[];
+  productosIncluidos: number;
+  destacado: boolean;
+  activo: boolean;
+  orden: number;
+};
+
+type MembresiaUsuario = {
+  id: string;
+  usuarioId: string;
+  planId: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: string;
+  montoTotal: string;
+  metodoPago?: string;
+  productosCreados: number;
+  renovacionAutomatica: boolean;
+  createdAt: string;
+};
+
+type ConfiguracionCosto = {
+  id: string;
+  tipoServicio: string;
+  nombre: string;
+  descripcion?: string;
+  montoFijo?: string;
+  porcentaje?: string;
+  usarMontoFijo: boolean;
+  saldoMinimo?: string;
+  activo: boolean;
+};
+
 export default function GestionCarteraScreen() {
   const [activeTab, setActiveTab] = useState("solicitudes");
   const [searchTerm, setSearchTerm] = useState("");
@@ -146,6 +187,39 @@ export default function GestionCarteraScreen() {
   const { data: monedas = [], isLoading: loadingMonedas } = useQuery<Moneda[]>({
     queryKey: ["/api/monedas"],
   });
+
+  const { data: planes = [], isLoading: loadingPlanes } = useQuery<PlanMembresia[]>({
+    queryKey: ["/api/planes-membresia", { todos: true }],
+    queryFn: () => fetch("/api/planes-membresia?todos=true").then(res => res.json()),
+  });
+
+  const { data: membresias = [], isLoading: loadingMembresias } = useQuery<MembresiaUsuario[]>({
+    queryKey: ["/api/membresias"],
+  });
+
+  const { data: configuracionCostos = [], isLoading: loadingCostos } = useQuery<ConfiguracionCosto[]>({
+    queryKey: ["/api/configuracion-costos"],
+  });
+
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [planEditando, setPlanEditando] = useState<PlanMembresia | null>(null);
+  const [nuevoPlan, setNuevoPlan] = useState({
+    nombre: "",
+    descripcion: "",
+    duracionMeses: 1,
+    precioNormal: "",
+    precioDescuento: "",
+    porcentajeDescuento: 0,
+    beneficios: [] as string[],
+    productosIncluidos: 10,
+    destacado: false,
+    activo: true,
+    orden: 1,
+  });
+  const [nuevoBeneficio, setNuevoBeneficio] = useState("");
+
+  const [showCostoModal, setShowCostoModal] = useState(false);
+  const [costoEditando, setCostoEditando] = useState<ConfiguracionCosto | null>(null);
 
   const aprobarMutation = useMutation({
     mutationFn: (id: string) => apiRequest("POST", `/api/solicitudes-saldo/${id}/aprobar`),
@@ -222,6 +296,149 @@ export default function GestionCarteraScreen() {
       toast({ title: "Error al eliminar moneda", variant: "destructive" });
     },
   });
+
+  const crearPlanMutation = useMutation({
+    mutationFn: (data: typeof nuevoPlan) => apiRequest("POST", "/api/planes-membresia", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/planes-membresia", { todos: true }] });
+      setShowPlanModal(false);
+      resetPlanForm();
+      toast({ title: "Plan creado exitosamente" });
+    },
+    onError: () => {
+      toast({ title: "Error al crear plan", variant: "destructive" });
+    },
+  });
+
+  const actualizarPlanMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<typeof nuevoPlan> }) =>
+      apiRequest("PATCH", `/api/planes-membresia/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/planes-membresia", { todos: true }] });
+      setShowPlanModal(false);
+      setPlanEditando(null);
+      resetPlanForm();
+      toast({ title: "Plan actualizado exitosamente" });
+    },
+    onError: () => {
+      toast({ title: "Error al actualizar plan", variant: "destructive" });
+    },
+  });
+
+  const eliminarPlanMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/planes-membresia/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/planes-membresia", { todos: true }] });
+      toast({ title: "Plan eliminado" });
+    },
+    onError: () => {
+      toast({ title: "Error al eliminar plan", variant: "destructive" });
+    },
+  });
+
+  const aprobarMembresiaMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("PATCH", `/api/membresias/${id}/aprobar`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/membresias"] });
+      toast({ title: "Membresia aprobada exitosamente" });
+    },
+    onError: () => {
+      toast({ title: "Error al aprobar membresia", variant: "destructive" });
+    },
+  });
+
+  const actualizarCostoMutation = useMutation({
+    mutationFn: (data: Partial<ConfiguracionCosto>) => apiRequest("POST", "/api/configuracion-costos", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/configuracion-costos"] });
+      setShowCostoModal(false);
+      setCostoEditando(null);
+      toast({ title: "Configuracion actualizada exitosamente" });
+    },
+    onError: () => {
+      toast({ title: "Error al actualizar configuracion", variant: "destructive" });
+    },
+  });
+
+  const resetPlanForm = () => {
+    setNuevoPlan({
+      nombre: "",
+      descripcion: "",
+      duracionMeses: 1,
+      precioNormal: "",
+      precioDescuento: "",
+      porcentajeDescuento: 0,
+      beneficios: [],
+      productosIncluidos: 10,
+      destacado: false,
+      activo: true,
+      orden: 1,
+    });
+    setNuevoBeneficio("");
+  };
+
+  const agregarBeneficio = () => {
+    if (nuevoBeneficio.trim()) {
+      setNuevoPlan(prev => ({
+        ...prev,
+        beneficios: [...prev.beneficios, nuevoBeneficio.trim()]
+      }));
+      setNuevoBeneficio("");
+    }
+  };
+
+  const eliminarBeneficio = (index: number) => {
+    setNuevoPlan(prev => ({
+      ...prev,
+      beneficios: prev.beneficios.filter((_, i) => i !== index)
+    }));
+  };
+
+  const abrirEditarPlan = (plan: PlanMembresia) => {
+    setPlanEditando(plan);
+    setNuevoPlan({
+      nombre: plan.nombre,
+      descripcion: plan.descripcion || "",
+      duracionMeses: plan.duracionMeses,
+      precioNormal: plan.precioNormal,
+      precioDescuento: plan.precioDescuento || "",
+      porcentajeDescuento: plan.porcentajeDescuento || 0,
+      beneficios: plan.beneficios || [],
+      productosIncluidos: plan.productosIncluidos,
+      destacado: plan.destacado,
+      activo: plan.activo,
+      orden: plan.orden,
+    });
+    setShowPlanModal(true);
+  };
+
+  const guardarPlan = () => {
+    if (planEditando) {
+      actualizarPlanMutation.mutate({ id: planEditando.id, data: nuevoPlan });
+    } else {
+      crearPlanMutation.mutate(nuevoPlan);
+    }
+  };
+
+  const getPlanNombre = (planId: string) => {
+    const plan = planes.find(p => p.id === planId);
+    return plan?.nombre || "Plan desconocido";
+  };
+
+  const getEstadoMembresia = (estado: string) => {
+    switch (estado) {
+      case "activa":
+        return <Badge className="bg-green-500"><Check className="h-3 w-3 mr-1" />Activa</Badge>;
+      case "pendiente":
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300"><Clock className="h-3 w-3 mr-1" />Pendiente</Badge>;
+      case "vencida":
+        return <Badge variant="destructive"><X className="h-3 w-3 mr-1" />Vencida</Badge>;
+      case "cancelada":
+        return <Badge variant="secondary">Cancelada</Badge>;
+      default:
+        return <Badge variant="outline">{estado}</Badge>;
+    }
+  };
 
   const resetMetodoForm = () => {
     setNuevoMetodo({
@@ -377,6 +594,18 @@ export default function GestionCarteraScreen() {
             <TabsTrigger value="monedas" data-testid="tab-monedas">
               <DollarSign className="h-4 w-4 mr-2" />
               Monedas
+            </TabsTrigger>
+            <TabsTrigger value="planes" data-testid="tab-planes">
+              <CreditCard className="h-4 w-4 mr-2" />
+              Planes
+            </TabsTrigger>
+            <TabsTrigger value="membresias" data-testid="tab-membresias">
+              <Check className="h-4 w-4 mr-2" />
+              Membresias
+            </TabsTrigger>
+            <TabsTrigger value="costos" data-testid="tab-costos">
+              <Percent className="h-4 w-4 mr-2" />
+              Costos
             </TabsTrigger>
           </TabsList>
           <div className="flex items-center gap-2">
@@ -672,6 +901,222 @@ export default function GestionCarteraScreen() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="planes" className="mt-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-4">
+              <div>
+                <CardTitle>Planes de Membresia</CardTitle>
+                <CardDescription>Gestiona los planes disponibles para usuarios premium</CardDescription>
+              </div>
+              <Button onClick={() => { resetPlanForm(); setPlanEditando(null); setShowPlanModal(true); }} data-testid="button-nuevo-plan">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Plan
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {loadingPlanes ? (
+                <div className="text-center py-8 text-muted-foreground">Cargando planes...</div>
+              ) : planes.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No hay planes configurados.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {planes.map((plan) => (
+                    <div 
+                      key={plan.id} 
+                      className={`p-4 border rounded-lg ${plan.destacado ? 'ring-2 ring-primary' : ''} ${!plan.activo ? 'opacity-50' : ''}`}
+                      data-testid={`card-plan-${plan.id}`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h3 className="font-bold">{plan.nombre}</h3>
+                          <p className="text-sm text-muted-foreground">{plan.duracionMeses} mes{plan.duracionMeses > 1 ? 'es' : ''}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          {plan.destacado && <Badge className="bg-primary">Destacado</Badge>}
+                          <Badge variant={plan.activo ? "default" : "secondary"}>
+                            {plan.activo ? "Activo" : "Inactivo"}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-3">
+                        {plan.precioDescuento ? (
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-bold text-primary">S/ {plan.precioDescuento}</span>
+                            <span className="text-sm line-through text-muted-foreground">S/ {plan.precioNormal}</span>
+                            {plan.porcentajeDescuento && (
+                              <Badge variant="outline" className="text-green-600">-{plan.porcentajeDescuento}%</Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-2xl font-bold">S/ {plan.precioNormal}</span>
+                        )}
+                      </div>
+
+                      <div className="mb-3 text-sm">
+                        <p className="text-muted-foreground">
+                          <span className="font-medium">Productos:</span> {plan.productosIncluidos === 9999 ? 'Ilimitados' : plan.productosIncluidos}
+                        </p>
+                      </div>
+
+                      {plan.beneficios && plan.beneficios.length > 0 && (
+                        <ul className="text-sm space-y-1 mb-3">
+                          {plan.beneficios.slice(0, 3).map((beneficio, i) => (
+                            <li key={i} className="flex items-center gap-1">
+                              <Check className="h-3 w-3 text-green-500" />
+                              <span className="text-muted-foreground text-xs">{beneficio}</span>
+                            </li>
+                          ))}
+                          {plan.beneficios.length > 3 && (
+                            <li className="text-xs text-muted-foreground">+{plan.beneficios.length - 3} mas...</li>
+                          )}
+                        </ul>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => abrirEditarPlan(plan)}
+                          data-testid={`button-editar-plan-${plan.id}`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => eliminarPlanMutation.mutate(plan.id)}
+                          data-testid={`button-eliminar-plan-${plan.id}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="membresias" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Membresias de Usuarios</CardTitle>
+              <CardDescription>Usuarios con membresias activas y pendientes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingMembresias ? (
+                <div className="text-center py-8 text-muted-foreground">Cargando membresias...</div>
+              ) : membresias.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No hay membresias registradas.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {membresias.map((membresia) => (
+                    <div 
+                      key={membresia.id} 
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                      data-testid={`card-membresia-${membresia.id}`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <p className="font-medium">{getUserName(membresia.usuarioId)}</p>
+                          <p className="text-sm text-muted-foreground">{getPlanNombre(membresia.planId)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(membresia.fechaInicio), "dd/MM/yyyy")} - {format(new Date(membresia.fechaFin), "dd/MM/yyyy")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="font-bold">S/ {membresia.montoTotal}</p>
+                          <p className="text-xs text-muted-foreground">Productos: {membresia.productosCreados}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getEstadoMembresia(membresia.estado)}
+                          {membresia.estado === 'pendiente' && (
+                            <Button 
+                              size="sm"
+                              onClick={() => aprobarMembresiaMutation.mutate(membresia.id)}
+                              data-testid={`button-aprobar-membresia-${membresia.id}`}
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Aprobar
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="costos" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuracion de Costos</CardTitle>
+              <CardDescription>Define los montos o porcentajes que se cobran por cada servicio</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingCostos ? (
+                <div className="text-center py-8 text-muted-foreground">Cargando configuracion...</div>
+              ) : configuracionCostos.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No hay configuraciones de costos.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {configuracionCostos.map((costo) => (
+                    <div 
+                      key={costo.id} 
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                      data-testid={`card-costo-${costo.tipoServicio}`}
+                    >
+                      <div>
+                        <p className="font-medium">{costo.nombre}</p>
+                        <p className="text-sm text-muted-foreground">{costo.descripcion}</p>
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          <span className="flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            Monto fijo: S/ {costo.montoFijo || '0.00'}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Percent className="h-3 w-3" />
+                            Porcentaje: {costo.porcentaje || '0'}%
+                          </span>
+                          <span className="text-muted-foreground">
+                            Usa: {costo.usarMontoFijo ? 'Monto fijo' : 'Porcentaje'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={costo.activo ? "default" : "secondary"}>
+                          {costo.activo ? "Activo" : "Inactivo"}
+                        </Badge>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => { setCostoEditando(costo); setShowCostoModal(true); }}
+                          data-testid={`button-editar-costo-${costo.tipoServicio}`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       <Dialog open={showRechazoModal} onOpenChange={setShowRechazoModal}>
@@ -879,6 +1324,261 @@ export default function GestionCarteraScreen() {
               data-testid="button-guardar-moneda"
             >
               Guardar Moneda
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPlanModal} onOpenChange={(open) => { setShowPlanModal(open); if (!open) { setPlanEditando(null); resetPlanForm(); } }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{planEditando ? 'Editar Plan' : 'Nuevo Plan de Membresia'}</DialogTitle>
+            <DialogDescription>
+              Configura los detalles del plan de membresia.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="nombrePlan">Nombre del Plan</Label>
+                <Input
+                  id="nombrePlan"
+                  value={nuevoPlan.nombre}
+                  onChange={(e) => setNuevoPlan(prev => ({ ...prev, nombre: e.target.value }))}
+                  placeholder="Ej: Plan Premium"
+                  data-testid="input-nombre-plan"
+                />
+              </div>
+              <div>
+                <Label htmlFor="duracion">Duracion (meses)</Label>
+                <Select
+                  value={nuevoPlan.duracionMeses.toString()}
+                  onValueChange={(value) => setNuevoPlan(prev => ({ ...prev, duracionMeses: parseInt(value) }))}
+                >
+                  <SelectTrigger data-testid="select-duracion-plan">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 mes</SelectItem>
+                    <SelectItem value="3">3 meses</SelectItem>
+                    <SelectItem value="6">6 meses</SelectItem>
+                    <SelectItem value="12">12 meses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="descripcionPlan">Descripcion</Label>
+              <Textarea
+                id="descripcionPlan"
+                value={nuevoPlan.descripcion}
+                onChange={(e) => setNuevoPlan(prev => ({ ...prev, descripcion: e.target.value }))}
+                placeholder="Describe los beneficios del plan..."
+                data-testid="input-descripcion-plan"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="precioNormal">Precio Normal (S/)</Label>
+                <Input
+                  id="precioNormal"
+                  type="number"
+                  step="0.01"
+                  value={nuevoPlan.precioNormal}
+                  onChange={(e) => setNuevoPlan(prev => ({ ...prev, precioNormal: e.target.value }))}
+                  placeholder="29.90"
+                  data-testid="input-precio-normal"
+                />
+              </div>
+              <div>
+                <Label htmlFor="precioDescuento">Precio con Descuento</Label>
+                <Input
+                  id="precioDescuento"
+                  type="number"
+                  step="0.01"
+                  value={nuevoPlan.precioDescuento}
+                  onChange={(e) => setNuevoPlan(prev => ({ ...prev, precioDescuento: e.target.value }))}
+                  placeholder="24.90"
+                  data-testid="input-precio-descuento"
+                />
+              </div>
+              <div>
+                <Label htmlFor="porcentajeDescuento">% Descuento</Label>
+                <Input
+                  id="porcentajeDescuento"
+                  type="number"
+                  value={nuevoPlan.porcentajeDescuento}
+                  onChange={(e) => setNuevoPlan(prev => ({ ...prev, porcentajeDescuento: parseInt(e.target.value) || 0 }))}
+                  placeholder="10"
+                  data-testid="input-porcentaje-descuento"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="productosIncluidos">Productos Incluidos</Label>
+              <Input
+                id="productosIncluidos"
+                type="number"
+                value={nuevoPlan.productosIncluidos}
+                onChange={(e) => setNuevoPlan(prev => ({ ...prev, productosIncluidos: parseInt(e.target.value) || 0 }))}
+                placeholder="10"
+                data-testid="input-productos-incluidos"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Usa 9999 para productos ilimitados</p>
+            </div>
+            <div>
+              <Label>Beneficios</Label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  value={nuevoBeneficio}
+                  onChange={(e) => setNuevoBeneficio(e.target.value)}
+                  placeholder="Agregar beneficio..."
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), agregarBeneficio())}
+                  data-testid="input-nuevo-beneficio"
+                />
+                <Button type="button" variant="outline" onClick={agregarBeneficio} data-testid="button-agregar-beneficio">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {nuevoPlan.beneficios.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {nuevoPlan.beneficios.map((beneficio, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {beneficio}
+                      <button 
+                        type="button" 
+                        onClick={() => eliminarBeneficio(index)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={nuevoPlan.destacado}
+                  onChange={(e) => setNuevoPlan(prev => ({ ...prev, destacado: e.target.checked }))}
+                  className="rounded"
+                />
+                <span className="text-sm">Plan Destacado</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={nuevoPlan.activo}
+                  onChange={(e) => setNuevoPlan(prev => ({ ...prev, activo: e.target.checked }))}
+                  className="rounded"
+                />
+                <span className="text-sm">Activo</span>
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowPlanModal(false); setPlanEditando(null); resetPlanForm(); }}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={guardarPlan}
+              disabled={!nuevoPlan.nombre || !nuevoPlan.precioNormal || crearPlanMutation.isPending || actualizarPlanMutation.isPending}
+              data-testid="button-guardar-plan"
+            >
+              {planEditando ? 'Actualizar Plan' : 'Crear Plan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCostoModal} onOpenChange={(open) => { setShowCostoModal(open); if (!open) setCostoEditando(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Configuracion de Costo</DialogTitle>
+            <DialogDescription>
+              Modifica los valores de cobro para este servicio.
+            </DialogDescription>
+          </DialogHeader>
+          {costoEditando && (
+            <div className="space-y-4">
+              <div>
+                <Label>Servicio</Label>
+                <p className="font-medium">{costoEditando.nombre}</p>
+                <p className="text-sm text-muted-foreground">{costoEditando.descripcion}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="montoFijoCosto">Monto Fijo (S/)</Label>
+                  <Input
+                    id="montoFijoCosto"
+                    type="number"
+                    step="0.01"
+                    defaultValue={costoEditando.montoFijo || '0'}
+                    onChange={(e) => setCostoEditando(prev => prev ? { ...prev, montoFijo: e.target.value } : null)}
+                    data-testid="input-monto-fijo-costo"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="porcentajeCosto">Porcentaje (%)</Label>
+                  <Input
+                    id="porcentajeCosto"
+                    type="number"
+                    step="0.1"
+                    defaultValue={costoEditando.porcentaje || '0'}
+                    onChange={(e) => setCostoEditando(prev => prev ? { ...prev, porcentaje: e.target.value } : null)}
+                    data-testid="input-porcentaje-costo"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Tipo de Cobro</Label>
+                <Select
+                  value={costoEditando.usarMontoFijo ? 'fijo' : 'porcentaje'}
+                  onValueChange={(value) => setCostoEditando(prev => prev ? { ...prev, usarMontoFijo: value === 'fijo' } : null)}
+                >
+                  <SelectTrigger data-testid="select-tipo-cobro">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fijo">Usar Monto Fijo</SelectItem>
+                    <SelectItem value="porcentaje">Usar Porcentaje</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="saldoMinimoCosto">Saldo Minimo Requerido (S/)</Label>
+                <Input
+                  id="saldoMinimoCosto"
+                  type="number"
+                  step="0.01"
+                  defaultValue={costoEditando.saldoMinimo || '0.50'}
+                  onChange={(e) => setCostoEditando(prev => prev ? { ...prev, saldoMinimo: e.target.value } : null)}
+                  data-testid="input-saldo-minimo"
+                />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={costoEditando.activo}
+                  onChange={(e) => setCostoEditando(prev => prev ? { ...prev, activo: e.target.checked } : null)}
+                  className="rounded"
+                />
+                <span className="text-sm">Cobro Activo</span>
+              </label>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowCostoModal(false); setCostoEditando(null); }}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => costoEditando && actualizarCostoMutation.mutate(costoEditando)}
+              disabled={actualizarCostoMutation.isPending}
+              data-testid="button-guardar-costo"
+            >
+              Guardar Cambios
             </Button>
           </DialogFooter>
         </DialogContent>
