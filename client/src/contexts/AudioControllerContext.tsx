@@ -205,17 +205,42 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (autoReproducir && urlActual && audioRef.current) {
       const audio = audioRef.current;
-      audio.src = urlActual;
-      audio.load();
-      audio.play()
-        .then(() => {
-          setReproduciendo(true);
-          setAutoReproducir(false);
-        })
-        .catch((error) => {
-          setAutoReproducir(false);
-          setReproduciendo(false);
-        });
+      
+      const intentarReproducir = () => {
+        audio.src = urlActual;
+        audio.load();
+        
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setReproduciendo(true);
+              setAutoReproducir(false);
+              interaccionUsuarioRef.current = true;
+            })
+            .catch((error) => {
+              console.log("Autoplay bloqueado, esperando interaccion:", error.name);
+              if (interaccionUsuarioRef.current) {
+                setTimeout(() => {
+                  audio.play()
+                    .then(() => {
+                      setReproduciendo(true);
+                      setAutoReproducir(false);
+                    })
+                    .catch(() => {
+                      setAutoReproducir(false);
+                      setReproduciendo(false);
+                    });
+                }, 100);
+              } else {
+                setAutoReproducir(false);
+                setReproduciendo(false);
+              }
+            });
+        }
+      };
+      
+      intentarReproducir();
     }
   }, [autoReproducir, urlActual]);
 
@@ -251,10 +276,11 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   }, [reproduciendo, pausar, reproducir]);
 
   const seleccionarRadio = useCallback((radioId: number | string) => {
+    interaccionUsuarioRef.current = true;
+    
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
-      audioRef.current.load();
     }
     setTipoFuente("radio");
     setRadioSeleccionadaId(radioId);
@@ -269,10 +295,11 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   }, [radiosActivas]);
 
   const seleccionarLista = useCallback((listaId: number) => {
+    interaccionUsuarioRef.current = true;
+    
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
-      audioRef.current.load();
     }
     setTipoFuente("lista");
     setListaSeleccionadaId(listaId);
