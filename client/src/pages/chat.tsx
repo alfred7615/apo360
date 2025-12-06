@@ -136,8 +136,14 @@ export default function Chat() {
       fetch(`/api/chat/grupos/${grupoSeleccionado}/marcar-leidos`, {
         method: 'POST',
         credentials: 'include',
-      }).then(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
+      }).then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          if (data.mensajesActualizados > 0) {
+            queryClient.invalidateQueries({ queryKey: ["/api/chat/grupos", grupoSeleccionado, "mensajes"] });
+          }
+          queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
+        }
       }).catch(console.error);
     }
   }, [grupoSeleccionado, user]);

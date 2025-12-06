@@ -1489,6 +1489,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Estado inválido" });
       }
       
+      // Primero obtener el mensaje para verificar pertenencia al grupo
+      const mensajeActual = await db.select().from(mensajes).where(eq(mensajes.id, id)).limit(1);
+      if (!mensajeActual || mensajeActual.length === 0) {
+        return res.status(404).json({ message: "Mensaje no encontrado" });
+      }
+      
+      const grupoId = mensajeActual[0].grupoId;
+      
+      // Verificar que el usuario pertenece al grupo
+      const miembro = await db.select().from(miembrosGrupo)
+        .where(and(
+          eq(miembrosGrupo.grupoId, grupoId),
+          eq(miembrosGrupo.usuarioId, userId)
+        ))
+        .limit(1);
+      
+      if (!miembro || miembro.length === 0) {
+        return res.status(403).json({ message: "No tienes acceso a este mensaje" });
+      }
+      
       const timestamp = new Date();
       const updateData: any = { estadoMensaje: estado };
       
@@ -1499,19 +1519,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateData.leido = true;
       }
       
-      const mensaje = await db.update(mensajes)
+      await db.update(mensajes)
         .set(updateData)
-        .where(eq(mensajes.id, id))
-        .returning();
-      
-      if (!mensaje || mensaje.length === 0) {
-        return res.status(404).json({ message: "Mensaje no encontrado" });
-      }
+        .where(eq(mensajes.id, id));
       
       res.json({ 
         message: "Estado actualizado",
         estado,
         timestamp: timestamp.toISOString(),
+        grupoId,
       });
     } catch (error) {
       console.error("Error al actualizar estado de mensaje:", error);
@@ -1526,8 +1542,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const timestamp = new Date();
       
-      // Marcar todos los mensajes no leídos como leídos
-      await db.update(mensajes)
+      // Verificar que el usuario pertenece al grupo
+      const miembro = await db.select().from(miembrosGrupo)
+        .where(and(
+          eq(miembrosGrupo.grupoId, grupoId),
+          eq(miembrosGrupo.usuarioId, userId)
+        ))
+        .limit(1);
+      
+      if (!miembro || miembro.length === 0) {
+        return res.status(403).json({ message: "No tienes acceso a este grupo" });
+      }
+      
+      // Marcar mensajes de otros usuarios como leídos (solo los no leídos)
+      const result = await db.update(mensajes)
         .set({ 
           leido: true,
           leidoEn: timestamp,
@@ -1539,7 +1567,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ne(mensajes.remitenteId, userId),
             eq(mensajes.leido, false)
           )
-        );
+        )
+        .returning();
       
       // Actualizar contador de mensajes no leídos en miembros_grupo
       await db.update(miembrosGrupo)
@@ -1554,7 +1583,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           )
         );
       
-      res.json({ message: "Mensajes marcados como leídos" });
+      res.json({ 
+        message: "Mensajes marcados como leídos",
+        mensajesActualizados: result.length,
+      });
     } catch (error) {
       console.error("Error al marcar mensajes como leídos:", error);
       res.status(500).json({ message: "Error al marcar mensajes" });
