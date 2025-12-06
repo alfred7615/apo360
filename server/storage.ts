@@ -1080,7 +1080,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async puedeAccederChat(usuarioId: string, grupoId: string): Promise<{ puede: boolean; razon?: string }> {
-    const nivelUsuario = await this.verificarNivelUsuario(usuarioId);
     const grupo = await this.getGrupo(grupoId);
     
     if (!grupo) {
@@ -1091,10 +1090,7 @@ export class DatabaseStorage implements IStorage {
       return { puede: false, razon: 'Grupo suspendido' };
     }
     
-    if (nivelUsuario < (grupo.estrellasMinimas || 3)) {
-      return { puede: false, razon: `Requiere nivel ${grupo.estrellasMinimas} estrellas. Tu nivel actual es ${nivelUsuario}` };
-    }
-    
+    // Verificar membresía primero
     const miembro = await this.getMiembroGrupo(grupoId, usuarioId);
     if (!miembro) {
       return { puede: false, razon: 'No eres miembro de este grupo' };
@@ -1102,6 +1098,19 @@ export class DatabaseStorage implements IStorage {
     
     if (miembro.estado !== 'activo') {
       return { puede: false, razon: 'Tu membresía está suspendida' };
+    }
+    
+    // Para conversaciones privadas, no verificar nivel de estrellas
+    if (grupo.tipo === 'privado') {
+      return { puede: true };
+    }
+    
+    // Para grupos públicos o comunidades, verificar nivel de estrellas
+    const nivelUsuario = await this.verificarNivelUsuario(usuarioId);
+    const estrellasRequeridas = grupo.estrellasMinimas || 1; // Por defecto nivel 1
+    
+    if (nivelUsuario < estrellasRequeridas) {
+      return { puede: false, razon: `Requiere nivel ${estrellasRequeridas} estrellas. Tu nivel actual es ${nivelUsuario}` };
     }
     
     return { puede: true };
