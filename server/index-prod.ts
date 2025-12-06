@@ -7,6 +7,7 @@ import runApp from "./app";
 
 export async function serveStatic(app: Express, _server: Server) {
   const distPath = path.resolve(import.meta.dirname, "public");
+  const publicAssetsPath = path.resolve(process.cwd(), "public", "assets");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -14,6 +15,7 @@ export async function serveStatic(app: Express, _server: Server) {
     );
   }
 
+  app.use('/assets', express.static(publicAssetsPath));
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
