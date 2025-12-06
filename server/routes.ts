@@ -4244,6 +4244,452 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // PLANES DE MEMBRESÍA
+  // ============================================================
+
+  // Obtener todos los planes de membresía (públicos los activos, admin ve todos)
+  app.get('/api/planes-membresia', async (req: any, res) => {
+    try {
+      const soloActivos = req.query.todos !== 'true';
+      const planes = await storage.getPlanesMembresia(soloActivos);
+      res.json(planes);
+    } catch (error) {
+      console.error("Error al obtener planes de membresía:", error);
+      res.status(500).json({ message: "Error al obtener planes de membresía" });
+    }
+  });
+
+  // Obtener un plan específico
+  app.get('/api/planes-membresia/:id', async (req, res) => {
+    try {
+      const plan = await storage.getPlanMembresia(req.params.id);
+      if (!plan) {
+        return res.status(404).json({ message: "Plan no encontrado" });
+      }
+      res.json(plan);
+    } catch (error) {
+      console.error("Error al obtener plan:", error);
+      res.status(500).json({ message: "Error al obtener plan" });
+    }
+  });
+
+  // Crear plan (solo super admin)
+  app.post('/api/planes-membresia', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const plan = await storage.createPlanMembresia(req.body);
+      res.json(plan);
+    } catch (error: any) {
+      console.error("Error al crear plan:", error);
+      res.status(400).json({ message: error.message || "Error al crear plan" });
+    }
+  });
+
+  // Actualizar plan (solo super admin)
+  app.patch('/api/planes-membresia/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const plan = await storage.updatePlanMembresia(req.params.id, req.body);
+      if (!plan) {
+        return res.status(404).json({ message: "Plan no encontrado" });
+      }
+      res.json(plan);
+    } catch (error: any) {
+      console.error("Error al actualizar plan:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar plan" });
+    }
+  });
+
+  // Eliminar plan (solo super admin)
+  app.delete('/api/planes-membresia/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      await storage.deletePlanMembresia(req.params.id);
+      res.json({ message: "Plan eliminado" });
+    } catch (error) {
+      console.error("Error al eliminar plan:", error);
+      res.status(500).json({ message: "Error al eliminar plan" });
+    }
+  });
+
+  // ============================================================
+  // MEMBRESÍAS DE USUARIOS
+  // ============================================================
+
+  // Obtener todas las membresías (solo super admin)
+  app.get('/api/membresias', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const membresias = await storage.getMembresiasUsuarios();
+      res.json(membresias);
+    } catch (error) {
+      console.error("Error al obtener membresías:", error);
+      res.status(500).json({ message: "Error al obtener membresías" });
+    }
+  });
+
+  // Obtener membresía activa del usuario autenticado
+  app.get('/api/mi-membresia', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const membresia = await storage.getMembresiaActiva(userId);
+      res.json(membresia || null);
+    } catch (error) {
+      console.error("Error al obtener membresía del usuario:", error);
+      res.status(500).json({ message: "Error al obtener membresía" });
+    }
+  });
+
+  // Contratar membresía (el usuario paga con saldo o solicita pago)
+  app.post('/api/membresias/contratar', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { planId, metodoPago } = req.body;
+      
+      if (!planId) {
+        return res.status(400).json({ message: "ID del plan requerido" });
+      }
+      
+      const plan = await storage.getPlanMembresia(planId);
+      if (!plan) {
+        return res.status(404).json({ message: "Plan no encontrado" });
+      }
+      
+      const precio = plan.precioDescuento ? parseFloat(plan.precioDescuento) : parseFloat(plan.precioNormal);
+      
+      // Si el pago es con saldo, verificar y descontar
+      if (metodoPago === 'saldo') {
+        const saldoData = await storage.getSaldoUsuario(userId);
+        const saldoActual = saldoData ? parseFloat(saldoData.saldo) : 0;
+        
+        if (saldoActual < precio) {
+          return res.status(400).json({ 
+            message: "Saldo insuficiente", 
+            saldoActual,
+            requerido: precio 
+          });
+        }
+        
+        // Descontar saldo
+        await storage.upsertSaldoUsuario({
+          usuarioId: userId,
+          saldo: (saldoActual - precio).toFixed(2)
+        });
+        
+        // Registrar transacción
+        await storage.createTransaccionSaldo({
+          usuarioId: userId,
+          tipo: 'gasto',
+          monto: precio.toFixed(2),
+          concepto: `Contratación de membresía: ${plan.nombre}`,
+          estado: 'completada'
+        });
+      }
+      
+      // Calcular fechas
+      const fechaInicio = new Date();
+      const fechaFin = new Date();
+      fechaFin.setMonth(fechaFin.getMonth() + plan.duracionMeses);
+      
+      // Crear membresía
+      const membresia = await storage.createMembresiaUsuario({
+        usuarioId: userId,
+        planId,
+        fechaInicio,
+        fechaFin,
+        estado: metodoPago === 'saldo' ? 'activa' : 'pendiente',
+        montoTotal: precio.toFixed(2),
+        metodoPago: metodoPago || 'pendiente'
+      });
+      
+      res.json(membresia);
+    } catch (error: any) {
+      console.error("Error al contratar membresía:", error);
+      res.status(400).json({ message: error.message || "Error al contratar membresía" });
+    }
+  });
+
+  // Aprobar membresía pendiente (solo super admin)
+  app.patch('/api/membresias/:id/aprobar', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const membresia = await storage.updateMembresiaUsuario(req.params.id, {
+        estado: 'activa'
+      });
+      if (!membresia) {
+        return res.status(404).json({ message: "Membresía no encontrada" });
+      }
+      res.json(membresia);
+    } catch (error) {
+      console.error("Error al aprobar membresía:", error);
+      res.status(500).json({ message: "Error al aprobar membresía" });
+    }
+  });
+
+  // ============================================================
+  // CATEGORÍAS DE PRODUCTOS DE USUARIO
+  // ============================================================
+
+  // Obtener categorías
+  app.get('/api/categorias-productos-usuario', async (req, res) => {
+    try {
+      const incluyeInactivas = req.query.todas === 'true';
+      const categorias = await storage.getCategoriasProductosUsuario(incluyeInactivas);
+      res.json(categorias);
+    } catch (error) {
+      console.error("Error al obtener categorías:", error);
+      res.status(500).json({ message: "Error al obtener categorías" });
+    }
+  });
+
+  // Obtener subcategorías
+  app.get('/api/categorias-productos-usuario/:id/subcategorias', async (req, res) => {
+    try {
+      const subcategorias = await storage.getSubcategorias(req.params.id);
+      res.json(subcategorias);
+    } catch (error) {
+      console.error("Error al obtener subcategorías:", error);
+      res.status(500).json({ message: "Error al obtener subcategorías" });
+    }
+  });
+
+  // Crear categoría (solo super admin)
+  app.post('/api/categorias-productos-usuario', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const categoria = await storage.createCategoriaProductoUsuario(req.body);
+      res.json(categoria);
+    } catch (error: any) {
+      console.error("Error al crear categoría:", error);
+      res.status(400).json({ message: error.message || "Error al crear categoría" });
+    }
+  });
+
+  // Actualizar categoría (solo super admin)
+  app.patch('/api/categorias-productos-usuario/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const categoria = await storage.updateCategoriaProductoUsuario(req.params.id, req.body);
+      if (!categoria) {
+        return res.status(404).json({ message: "Categoría no encontrada" });
+      }
+      res.json(categoria);
+    } catch (error: any) {
+      console.error("Error al actualizar categoría:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar categoría" });
+    }
+  });
+
+  // Eliminar categoría (solo super admin - soft delete)
+  app.delete('/api/categorias-productos-usuario/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      await storage.deleteCategoriaProductoUsuario(req.params.id);
+      res.json({ message: "Categoría desactivada" });
+    } catch (error) {
+      console.error("Error al eliminar categoría:", error);
+      res.status(500).json({ message: "Error al eliminar categoría" });
+    }
+  });
+
+  // ============================================================
+  // PRODUCTOS DE USUARIO (Marketplace personal)
+  // ============================================================
+
+  // Obtener productos (con filtros opcionales)
+  app.get('/api/productos-usuario', async (req: any, res) => {
+    try {
+      const filtros: { usuarioId?: string; categoriaId?: string; estado?: string } = {};
+      
+      if (req.query.usuarioId) filtros.usuarioId = req.query.usuarioId;
+      if (req.query.categoriaId) filtros.categoriaId = req.query.categoriaId;
+      if (req.query.estado) filtros.estado = req.query.estado;
+      
+      const productos = await storage.getProductosUsuario(filtros);
+      res.json(productos);
+    } catch (error) {
+      console.error("Error al obtener productos:", error);
+      res.status(500).json({ message: "Error al obtener productos" });
+    }
+  });
+
+  // Obtener productos del usuario autenticado
+  app.get('/api/mis-productos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const productos = await storage.getProductosUsuario({ usuarioId: userId });
+      res.json(productos);
+    } catch (error) {
+      console.error("Error al obtener productos del usuario:", error);
+      res.status(500).json({ message: "Error al obtener productos" });
+    }
+  });
+
+  // Obtener un producto específico
+  app.get('/api/productos-usuario/:id', async (req, res) => {
+    try {
+      const producto = await storage.getProductoUsuario(req.params.id);
+      if (!producto) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+      res.json(producto);
+    } catch (error) {
+      console.error("Error al obtener producto:", error);
+      res.status(500).json({ message: "Error al obtener producto" });
+    }
+  });
+
+  // Crear producto (requiere membresía o saldo)
+  app.post('/api/productos-usuario', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Verificar si tiene membresía activa
+      const membresiaActiva = await storage.getMembresiaActiva(userId);
+      
+      if (!membresiaActiva) {
+        // Sin membresía, cobrar del saldo
+        const configCosto = await storage.getConfiguracionCosto('crear_producto');
+        
+        if (configCosto && configCosto.activo) {
+          const saldoData = await storage.getSaldoUsuario(userId);
+          const saldoActual = saldoData ? parseFloat(saldoData.saldo) : 0;
+          const saldoMinimo = parseFloat(configCosto.saldoMinimo || '0.50');
+          
+          // Verificar saldo mínimo
+          if (saldoActual < saldoMinimo) {
+            return res.status(400).json({ 
+              message: `Saldo insuficiente. Tu saldo actual es S/${saldoActual.toFixed(2)}. Necesitas al menos S/${saldoMinimo.toFixed(2)} para publicar productos. Por favor, recarga tu saldo.`,
+              saldoActual,
+              saldoMinimo,
+              tipo: 'saldo_insuficiente'
+            });
+          }
+          
+          // Calcular costo
+          let costo = 0;
+          const precioProducto = parseFloat(req.body.precio || '0');
+          
+          if (configCosto.usarMontoFijo) {
+            costo = parseFloat(configCosto.montoFijo || '0');
+          } else {
+            costo = precioProducto * (parseFloat(configCosto.porcentaje || '0') / 100);
+          }
+          
+          if (saldoActual < costo) {
+            return res.status(400).json({ 
+              message: `Saldo insuficiente para esta operación. El costo es S/${costo.toFixed(2)} y tu saldo es S/${saldoActual.toFixed(2)}.`,
+              saldoActual,
+              costoOperacion: costo,
+              tipo: 'saldo_insuficiente'
+            });
+          }
+          
+          // Descontar saldo
+          await storage.upsertSaldoUsuario({
+            usuarioId: userId,
+            saldo: (saldoActual - costo).toFixed(2)
+          });
+          
+          // Registrar transacción
+          await storage.createTransaccionSaldo({
+            usuarioId: userId,
+            tipo: 'gasto',
+            monto: costo.toFixed(2),
+            concepto: `Publicación de producto: ${req.body.nombre}`,
+            estado: 'completada'
+          });
+        }
+      }
+      
+      // Generar código único
+      const codigo = `PRD-${Date.now().toString(36).toUpperCase()}`;
+      
+      const producto = await storage.createProductoUsuario({
+        ...req.body,
+        usuarioId: userId,
+        codigo,
+        estado: 'activo'
+      });
+      
+      res.json(producto);
+    } catch (error: any) {
+      console.error("Error al crear producto:", error);
+      res.status(400).json({ message: error.message || "Error al crear producto" });
+    }
+  });
+
+  // Actualizar producto
+  app.patch('/api/productos-usuario/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const producto = await storage.getProductoUsuario(req.params.id);
+      
+      if (!producto) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+      
+      // Verificar propiedad o admin
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      
+      if (producto.usuarioId !== userId && !esSuperAdmin) {
+        return res.status(403).json({ message: "No tienes permiso para modificar este producto" });
+      }
+      
+      const actualizado = await storage.updateProductoUsuario(req.params.id, req.body);
+      res.json(actualizado);
+    } catch (error: any) {
+      console.error("Error al actualizar producto:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar producto" });
+    }
+  });
+
+  // Eliminar producto (soft delete)
+  app.delete('/api/productos-usuario/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const producto = await storage.getProductoUsuario(req.params.id);
+      
+      if (!producto) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+      
+      // Verificar propiedad o admin
+      const userRoles = await storage.getUserRoles(userId);
+      const esSuperAdmin = userRoles.includes('super_admin');
+      
+      if (producto.usuarioId !== userId && !esSuperAdmin) {
+        return res.status(403).json({ message: "No tienes permiso para eliminar este producto" });
+      }
+      
+      await storage.deleteProductoUsuario(req.params.id);
+      res.json({ message: "Producto eliminado" });
+    } catch (error) {
+      console.error("Error al eliminar producto:", error);
+      res.status(500).json({ message: "Error al eliminar producto" });
+    }
+  });
+
+  // ============================================================
+  // CONFIGURACIÓN DE COSTOS (para super admin)
+  // ============================================================
+
+  // Obtener todas las configuraciones de costos
+  app.get('/api/configuracion-costos', isAuthenticated, async (req, res) => {
+    try {
+      const config = await storage.getConfiguracionesCostos();
+      res.json(config);
+    } catch (error) {
+      console.error("Error al obtener configuración de costos:", error);
+      res.status(500).json({ message: "Error al obtener configuración" });
+    }
+  });
+
+  // Actualizar o crear configuración de costo (solo super admin)
+  app.post('/api/configuracion-costos', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const config = await storage.upsertConfiguracionCosto(req.body);
+      res.json(config);
+    } catch (error: any) {
+      console.error("Error al actualizar configuración de costos:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar configuración" });
+    }
+  });
+
+  // ============================================================
   // CONFIGURACIÓN DE WEBSOCKET
   // ============================================================
 
