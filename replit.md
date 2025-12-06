@@ -22,7 +22,12 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 - **Frontend**: React 18+ with TypeScript, styled with Tailwind CSS. Wouter for routing, TanStack Query for state management. Socket.io Client for real-time communication.
 - **Backend**: Express.js with TypeScript and Socket.io for real-time communication.
 - **Database Interaction**: Drizzle ORM for PostgreSQL.
-- **Authentication**: Replit Auth (OpenID Connect) with Express Session managing sessions in PostgreSQL.
+- **Authentication**: Sistema dual de autenticación:
+  - **Desarrollo (Replit)**: Replit Auth (OpenID Connect) - automático cuando `REPL_ID` está presente
+  - **Producción (apo360.net)**: Google OAuth 2.0 - requiere `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`
+  - Controlado por variable `AUTH_MODE` (valores: "replit" o "google")
+  - Archivos: `server/authConfig.ts` (lógica dual), `server/replitAuth.ts` (re-exporta)
+  - Express Session almacenada en PostgreSQL para ambos modos
 - **Real-time Features**: WebSockets are central to chat, emergency notifications, and taxi/delivery updates.
 - **Internationalization**: The entire system, including codebase, UI, error messages, and database schema, is developed in Spanish.
 

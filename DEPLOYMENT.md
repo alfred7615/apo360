@@ -65,7 +65,31 @@ SMTP_PASSWORD=tu_contraseña_app
 BASE_URL=https://apo360.net
 NODE_ENV=production
 PORT=5000
+
+# Autenticación (elegir UNA opción)
+# Opción 1: Replit Auth (solo si el dominio está configurado en Replit)
+AUTH_MODE=replit
+ISSUER_URL=https://replit.com/oidc
+REPL_ID=tu_repl_id
+
+# Opción 2: Google OAuth (recomendado para producción)
+AUTH_MODE=google
+GOOGLE_CLIENT_ID=tu_client_id_de_google
+GOOGLE_CLIENT_SECRET=tu_client_secret_de_google
+GOOGLE_CALLBACK_URL=https://apo360.net/api/callback
 ```
+
+### Cómo obtener credenciales de Google OAuth:
+
+1. Ve a https://console.cloud.google.com
+2. Crea un proyecto nuevo o selecciona uno existente
+3. Ve a "APIs y servicios" → "Credenciales"
+4. Clic en "Crear credenciales" → "ID de cliente OAuth"
+5. Tipo de aplicación: "Aplicación web"
+6. Nombre: "APO-360"
+7. Orígenes autorizados: `https://apo360.net`
+8. URIs de redireccionamiento: `https://apo360.net/api/callback`
+9. Copia el Client ID y Client Secret
 
 ---
 
