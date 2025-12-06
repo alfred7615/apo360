@@ -175,13 +175,18 @@ export default function Chat() {
 
   const enviarMensajeMutation = useMutation({
     mutationFn: async (datos: { grupoId: string; contenido: string; tipo: string; archivoUrl?: string; gpsLatitud?: number; gpsLongitud?: number }) => {
-      return await apiRequest("POST", `/api/chat/grupos/${datos.grupoId}/mensajes`, {
+      const response = await apiRequest("POST", `/api/chat/grupos/${datos.grupoId}/mensajes`, {
         contenido: datos.contenido,
         tipoContenido: datos.tipo,
         archivoUrl: datos.archivoUrl,
         gpsLatitud: datos.gpsLatitud,
         gpsLongitud: datos.gpsLongitud,
       });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || "Error al enviar mensaje");
+      }
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chat/grupos", grupoSeleccionado, "mensajes"] });
@@ -200,11 +205,28 @@ export default function Chat() {
         }, 500);
         return;
       }
-      toast({
-        title: "Error",
-        description: "No se pudo enviar el mensaje",
-        variant: "destructive",
-      });
+      
+      const mensaje = error.message || "No se pudo enviar el mensaje";
+      
+      if (mensaje.includes("perfil") || mensaje.includes("completar") || mensaje.includes("estrellas")) {
+        toast({
+          title: "Perfil incompleto",
+          description: `${mensaje}. Ve a tu perfil para completar los datos requeridos.`,
+          variant: "destructive",
+        });
+      } else if (mensaje.includes("miembro") || mensaje.includes("grupo")) {
+        toast({
+          title: "Sin acceso al grupo",
+          description: mensaje,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error al enviar mensaje",
+          description: mensaje,
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -406,9 +428,9 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-[600px] bg-background" data-testid="page-chat">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] bg-background" data-testid="page-chat">
       {/* Panel izquierdo - Lista de conversaciones y contactos */}
-      <div className={`${grupoSeleccionado && !mostrarPanelInfo ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 border-r bg-card`}>
+      <div className={`${grupoSeleccionado && !mostrarPanelInfo ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 border-r bg-card h-full overflow-hidden`}>
         {/* Header */}
         <div className="p-4 border-b space-y-3">
           <div className="flex items-center justify-between">
@@ -444,8 +466,8 @@ export default function Chat() {
         </div>
 
         {/* Tabs: Grupos, Contactos y Gmail */}
-        <Tabs defaultValue="grupos" className="flex-1 flex flex-col">
-          <TabsList className="mx-4 mt-2 grid w-[calc(100%-2rem)] grid-cols-3">
+        <Tabs defaultValue="grupos" className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <TabsList className="mx-4 mt-2 grid w-[calc(100%-2rem)] grid-cols-3 shrink-0">
             <TabsTrigger value="grupos" data-testid="tab-grupos">
               <MessageCircle className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Grupos</span>
@@ -460,8 +482,8 @@ export default function Chat() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="grupos" className="flex-1 m-0">
-            <ScrollArea className="h-full">
+          <TabsContent value="grupos" className="flex-1 m-0 min-h-0 overflow-hidden">
+            <ScrollArea className="h-full max-h-full">
               {cargandoGrupos ? (
                 <div className="p-4 space-y-3">
                   {[...Array(5)].map((_, i) => (
@@ -531,8 +553,8 @@ export default function Chat() {
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="contactos" className="flex-1 m-0">
-            <div className="p-4 pt-2">
+          <TabsContent value="contactos" className="flex-1 m-0 min-h-0 overflow-hidden flex flex-col">
+            <div className="p-4 pt-2 shrink-0">
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -544,7 +566,7 @@ export default function Chat() {
                 />
               </div>
             </div>
-            <ScrollArea className="h-[calc(100%-5rem)]">
+            <ScrollArea className="flex-1 min-h-0">
               {contactosFiltrados.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -620,8 +642,8 @@ export default function Chat() {
           </TabsContent>
 
           {/* Pestaña de Gmail/Google Contacts */}
-          <TabsContent value="gmail" className="flex-1 m-0">
-            <div className="p-4 pt-2">
+          <TabsContent value="gmail" className="flex-1 m-0 min-h-0 overflow-hidden flex flex-col">
+            <div className="p-4 pt-2 shrink-0">
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -631,7 +653,7 @@ export default function Chat() {
                 />
               </div>
             </div>
-            <ScrollArea className="h-[calc(100%-5rem)]">
+            <ScrollArea className="flex-1 min-h-0">
               <div className="p-8 text-center text-muted-foreground">
                 <Globe className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p className="font-medium mb-2">Conecta tu cuenta de Gmail</p>
@@ -661,7 +683,7 @@ export default function Chat() {
 
       {/* Panel central - Conversación */}
       {grupoSeleccionado && grupoActual ? (
-        <div className={`flex flex-col flex-1 ${mostrarPanelInfo ? 'hidden lg:flex' : ''}`}>
+        <div className={`flex flex-col flex-1 h-full min-h-0 overflow-hidden ${mostrarPanelInfo ? 'hidden lg:flex' : ''}`}>
           {/* Header del chat */}
           <div className="flex items-center gap-3 p-4 border-b bg-card">
             <Button
@@ -734,99 +756,101 @@ export default function Chat() {
           </div>
 
           {/* Mensajes */}
-          <ScrollArea className="flex-1 p-4 bg-muted/30">
-            {cargandoMensajes ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Cargando mensajes...</p>
+          <ScrollArea className="flex-1 min-h-0 bg-muted/30">
+            <div className="p-4">
+              {cargandoMensajes ? (
+                <div className="flex items-center justify-center min-h-[200px]">
+                  <div className="text-center">
+                    <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Cargando mensajes...</p>
+                  </div>
                 </div>
-              </div>
-            ) : mensajes.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center text-muted-foreground">
-                  <MessageCircle className="h-16 w-16 mx-auto mb-3 opacity-50" />
-                  <p>No hay mensajes aún</p>
-                  <p className="text-sm mt-1">Sé el primero en enviar un mensaje</p>
+              ) : mensajes.length === 0 ? (
+                <div className="flex items-center justify-center min-h-[200px]">
+                  <div className="text-center text-muted-foreground">
+                    <MessageCircle className="h-16 w-16 mx-auto mb-3 opacity-50" />
+                    <p>No hay mensajes aún</p>
+                    <p className="text-sm mt-1">Sé el primero en enviar un mensaje</p>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {mensajes.filter(m => !m.eliminado).map((mensaje) => {
-                  const esMio = mensaje.remitenteId === user.id;
-                  const nombreRemitente = mensaje.metadataFoto?.nombreUsuario || 'Usuario';
+              ) : (
+                <div className="space-y-3">
+                  {mensajes.filter(m => !m.eliminado).map((mensaje) => {
+                    const esMio = mensaje.remitenteId === user.id;
+                    const nombreRemitente = mensaje.metadataFoto?.nombreUsuario || 'Usuario';
 
-                  return (
-                    <div
-                      key={mensaje.id}
-                      className={`flex ${esMio ? 'justify-end' : 'justify-start'}`}
-                      data-testid={`message-${mensaje.id}`}
-                    >
-                      <div className={`flex gap-2 max-w-[70%] ${esMio ? 'flex-row-reverse' : 'flex-row'}`}>
-                        {!esMio && (
-                          <Avatar className="h-8 w-8 shrink-0">
-                            <AvatarImage src={mensaje.metadataFoto?.logoUrl} alt={nombreRemitente} />
-                            <AvatarFallback className="bg-muted text-xs">
-                              {nombreRemitente.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        
-                        <div className={`flex flex-col ${esMio ? 'items-end' : 'items-start'}`}>
+                    return (
+                      <div
+                        key={mensaje.id}
+                        className={`flex ${esMio ? 'justify-end' : 'justify-start'}`}
+                        data-testid={`message-${mensaje.id}`}
+                      >
+                        <div className={`flex gap-2 max-w-[70%] ${esMio ? 'flex-row-reverse' : 'flex-row'}`}>
                           {!esMio && (
-                            <p className="text-xs font-medium text-muted-foreground mb-1 px-3">
-                              {nombreRemitente}
-                            </p>
+                            <Avatar className="h-8 w-8 shrink-0">
+                              <AvatarImage src={mensaje.metadataFoto?.logoUrl} alt={nombreRemitente} />
+                              <AvatarFallback className="bg-muted text-xs">
+                                {nombreRemitente.substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
                           )}
-                          <div
-                            className={`rounded-2xl px-4 py-2 ${
-                              esMio
-                                ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white'
-                                : 'bg-card border'
-                            }`}
-                          >
-                            {mensaje.tipo === 'imagen' && mensaje.archivoUrl ? (
-                              <img 
-                                src={mensaje.archivoUrl} 
-                                alt="Imagen" 
-                                className="max-w-full rounded-lg max-h-64 object-cover"
-                              />
-                            ) : mensaje.tipo === 'ubicacion' && mensaje.gpsLatitud && mensaje.gpsLongitud ? (
-                              <a 
-                                href={`https://www.google.com/maps?q=${mensaje.gpsLatitud},${mensaje.gpsLongitud}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 hover:underline"
-                              >
-                                <MapPin className="h-5 w-5" />
-                                <span className="text-sm">Ver ubicación en mapa</span>
-                              </a>
-                            ) : mensaje.tipo === 'audio' && mensaje.archivoUrl ? (
-                              <audio controls className="max-w-full">
-                                <source src={mensaje.archivoUrl} type="audio/mpeg" />
-                              </audio>
-                            ) : (
-                              <p className="text-sm whitespace-pre-wrap break-words">{mensaje.contenido}</p>
+                          
+                          <div className={`flex flex-col ${esMio ? 'items-end' : 'items-start'}`}>
+                            {!esMio && (
+                              <p className="text-xs font-medium text-muted-foreground mb-1 px-3">
+                                {nombreRemitente}
+                              </p>
                             )}
+                            <div
+                              className={`rounded-2xl px-4 py-2 ${
+                                esMio
+                                  ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white'
+                                  : 'bg-card border'
+                              }`}
+                            >
+                              {mensaje.tipo === 'imagen' && mensaje.archivoUrl ? (
+                                <img 
+                                  src={mensaje.archivoUrl} 
+                                  alt="Imagen" 
+                                  className="max-w-full rounded-lg max-h-64 object-cover"
+                                />
+                              ) : mensaje.tipo === 'ubicacion' && mensaje.gpsLatitud && mensaje.gpsLongitud ? (
+                                <a 
+                                  href={`https://www.google.com/maps?q=${mensaje.gpsLatitud},${mensaje.gpsLongitud}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 hover:underline"
+                                >
+                                  <MapPin className="h-5 w-5" />
+                                  <span className="text-sm">Ver ubicación en mapa</span>
+                                </a>
+                              ) : mensaje.tipo === 'audio' && mensaje.archivoUrl ? (
+                                <audio controls className="max-w-full">
+                                  <source src={mensaje.archivoUrl} type="audio/mpeg" />
+                                </audio>
+                              ) : (
+                                <p className="text-sm whitespace-pre-wrap break-words">{mensaje.contenido}</p>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground mt-1 px-1">
+                              {new Date(mensaje.createdAt).toLocaleTimeString('es-PE', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
                           </div>
-                          <span className="text-xs text-muted-foreground mt-1 px-1">
-                            {new Date(mensaje.createdAt).toLocaleTimeString('es-PE', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-                <div ref={mensajesEndRef} />
-              </div>
-            )}
+                    );
+                  })}
+                  <div ref={mensajesEndRef} />
+                </div>
+              )}
+            </div>
           </ScrollArea>
 
-          {/* Input de mensaje con botones de adjuntar */}
-          <div className="p-4 border-t bg-card">
+          {/* Input de mensaje con botones de adjuntar - Fijo en la parte inferior */}
+          <div className="p-4 border-t bg-card shrink-0">
             <div className="flex items-center gap-2">
               {/* Botones de adjuntar */}
               <div className="flex gap-1">
