@@ -1,0 +1,21 @@
+{
+  "name": "APO-360 - Seguridad y Servicios Comunitarios",
+  "short_name": "APO-360",
+  "description": "Plataforma integral de seguridad, chat, taxi, delivery y servicios comunitarios para Tacna",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8B5CF6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo_apo360.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["security", "social", "utilities"],
+  "lang": "es",
+  "dir": "ltr"
+}
