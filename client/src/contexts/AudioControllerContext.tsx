@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 
+const AUDIO_ACTIVATED_KEY = "apo-360-audio-activado";
+
 interface RadioOnline {
   id: number | string;
   nombre: string;
@@ -68,6 +70,8 @@ interface AudioControllerActions {
   setVolumen: (volumen: number) => void;
   toggleSilencio: () => void;
   cambiarTipoFuente: (tipo: TipoFuente) => void;
+  activarAudio: () => void;
+  necesitaActivacion: boolean;
 }
 
 interface AudioControllerContextValue extends AudioControllerState, AudioControllerActions {
@@ -112,6 +116,15 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   const [silenciado, setSilenciado] = useState(storedState.silenciado || false);
   const [autoReproducir, setAutoReproducir] = useState(false);
   const [primeraVez, setPrimeraVez] = useState(true);
+  const [audioActivado, setAudioActivado] = useState(() => {
+    try {
+      return localStorage.getItem(AUDIO_ACTIVATED_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const necesitaActivacion = !audioActivado && !reproduciendo;
 
   useEffect(() => {
     const habilitarAutoplay = () => {
@@ -357,6 +370,66 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
     setReproduciendo(false);
   }, []);
 
+  const activarAudio = useCallback(() => {
+    interaccionUsuarioRef.current = true;
+    setAudioActivado(true);
+    try {
+      localStorage.setItem(AUDIO_ACTIVATED_KEY, "true");
+    } catch (e) {
+      console.error("Error guardando estado de activación:", e);
+    }
+    
+    if (!audioRef.current || !urlActual) {
+      console.log("activarAudio: no hay audioRef o urlActual, usando autoReproducir");
+      setAutoReproducir(true);
+      return;
+    }
+    
+    pausarOtrosAudios();
+    const audio = audioRef.current;
+    
+    if (audio.src !== urlActual) {
+      audio.src = urlActual;
+      audio.load();
+    }
+    
+    audio.play()
+      .then(() => {
+        console.log("Audio activado y reproduciéndose");
+        setReproduciendo(true);
+      })
+      .catch((error) => {
+        console.error("Error al activar audio:", error);
+        setAutoReproducir(true);
+      });
+  }, [urlActual, pausarOtrosAudios]);
+
+  useEffect(() => {
+    if ("mediaSession" in navigator && reproduciendo) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: tituloActual || "APO-360 Radio",
+        artist: artistaActual || "Radio Comunitaria",
+        album: tipoFuente === "radio" ? "Radio Online" : "Lista MP3",
+      });
+
+      navigator.mediaSession.setActionHandler("play", () => {
+        reproducir();
+      });
+      navigator.mediaSession.setActionHandler("pause", () => {
+        pausar();
+      });
+      
+      if (tipoFuente === "lista") {
+        navigator.mediaSession.setActionHandler("previoustrack", () => {
+          anteriorPista();
+        });
+        navigator.mediaSession.setActionHandler("nexttrack", () => {
+          siguientePista();
+        });
+      }
+    }
+  }, [reproduciendo, tituloActual, artistaActual, tipoFuente, reproducir, pausar, anteriorPista, siguientePista]);
+
   const usandoIframe = tipoFuente === "radio" && !!radioActual?.iframeCode;
   const iframeCode = usandoIframe ? radioActual?.iframeCode || null : null;
 
@@ -390,6 +463,8 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
     setVolumen,
     toggleSilencio,
     cambiarTipoFuente,
+    activarAudio,
+    necesitaActivacion,
   };
 
   return (

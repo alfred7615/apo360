@@ -14,6 +14,7 @@ import GaleriaServicios from "@/components/GaleriaServicios";
 import ModuloAudio from "@/components/ModuloAudio";
 import CartillasBeneficios from "@/components/CartillasBeneficios";
 import FranjaEmergencia from "@/components/FranjaEmergencia";
+import BannerActivarAudio from "@/components/BannerActivarAudio";
 import { CalculadoraCambio } from "@/components/CalculadoraCambio";
 
 export default function Landing() {
@@ -332,6 +333,9 @@ export default function Landing() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Banner para activar audio - disponible para todos */}
+      <BannerActivarAudio />
     </div>
   );
 }

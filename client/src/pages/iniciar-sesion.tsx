@@ -279,6 +279,7 @@ export default function IniciarSesion() {
                                     type="email"
                                     placeholder="tu@email.com"
                                     className="pl-10"
+                                    autoComplete="email"
                                     data-testid="input-email-login"
                                     {...field}
                                   />
@@ -302,6 +303,7 @@ export default function IniciarSesion() {
                                     type={showPassword ? "text" : "password"}
                                     placeholder="••••••••"
                                     className="pl-10 pr-10"
+                                    autoComplete="current-password"
                                     data-testid="input-password-login"
                                     {...field}
                                   />
@@ -471,6 +473,7 @@ export default function IniciarSesion() {
                                 <FormControl>
                                   <Input
                                     placeholder="Tu alias en la comunidad"
+                                    autoComplete="username"
                                     data-testid="input-alias"
                                     {...field}
                                   />
@@ -496,6 +499,7 @@ export default function IniciarSesion() {
                                       type="email"
                                       placeholder="tu@email.com"
                                       className="pl-10"
+                                      autoComplete="email"
                                       data-testid="input-email-registro"
                                       {...field}
                                     />
@@ -519,6 +523,7 @@ export default function IniciarSesion() {
                                       type="tel"
                                       placeholder="+51 999 999 999"
                                       className="pl-10"
+                                      autoComplete="tel"
                                       data-testid="input-telefono"
                                       {...field}
                                     />
@@ -542,6 +547,7 @@ export default function IniciarSesion() {
                                       type={showPassword ? "text" : "password"}
                                       placeholder="Mínimo 8 caracteres"
                                       className="pl-10 pr-10"
+                                      autoComplete="new-password"
                                       data-testid="input-password-registro"
                                       {...field}
                                     />
@@ -575,6 +581,7 @@ export default function IniciarSesion() {
                                       type={showPassword ? "text" : "password"}
                                       placeholder="Repite tu contraseña"
                                       className="pl-10"
+                                      autoComplete="new-password"
                                       data-testid="input-confirm-password"
                                       {...field}
                                     />
