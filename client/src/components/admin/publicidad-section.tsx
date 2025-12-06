@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +30,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPublicidadSchema, type RadioOnline, type ListaMp3 } from "@shared/schema";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Pause, Play, ImageIcon, Facebook, Instagram, Twitter, Youtube, Linkedin, MapPin, ExternalLink, Calendar, Info, Upload, Radio, Music, Volume2, Star, StopCircle, Loader2, Edit } from "lucide-react";
+import { Plus, Pencil, Trash2, Pause, Play, ImageIcon, Facebook, Instagram, Twitter, Youtube, Linkedin, MapPin, ExternalLink, Calendar, Info, Upload, Radio, Music, Volume2, Star, StopCircle, Loader2, Edit, FileAudio, X } from "lucide-react";
 import { SiTiktok, SiWhatsapp } from "react-icons/si";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -123,6 +123,9 @@ export default function PublicidadSection() {
   const [deleteType, setDeleteType] = useState<"radio" | "lista">("radio");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [radioSubTab, setRadioSubTab] = useState<"radios" | "listas">("radios");
+  const [archivosSeleccionados, setArchivosSeleccionados] = useState<File[]>([]);
+  const [creandoLista, setCreandoLista] = useState(false);
+  const inputArchivoRef = useRef<HTMLInputElement>(null);
 
   const [radioForm, setRadioForm] = useState({
     nombre: "",
@@ -170,6 +173,34 @@ export default function PublicidadSection() {
       estado: "activo",
     });
     setSelectedLista(null);
+    setArchivosSeleccionados([]);
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleSeleccionarArchivos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const mp3Files = Array.from(files).filter(file => 
+        file.type === 'audio/mpeg' || file.type === 'audio/mp3' || file.name.endsWith('.mp3')
+      );
+      if (mp3Files.length > 0) {
+        setArchivosSeleccionados(prev => [...prev, ...mp3Files]);
+      }
+      if (inputArchivoRef.current) {
+        inputArchivoRef.current.value = '';
+      }
+    }
+  };
+
+  const handleQuitarArchivo = (index: number) => {
+    setArchivosSeleccionados(prev => prev.filter((_, i) => i !== index));
   };
 
   const createRadioMutation = useMutation({
@@ -312,11 +343,67 @@ export default function PublicidadSection() {
     }
   };
 
-  const handleSubmitLista = () => {
+  const handleSubmitLista = async () => {
     if (selectedLista) {
       updateListaMutation.mutate({ id: selectedLista.id, data: listaForm });
     } else {
-      createListaMutation.mutate(listaForm);
+      if (!listaForm.nombre.trim()) {
+        toast({ title: "Error", description: "El nombre de la lista es requerido", variant: "destructive" });
+        return;
+      }
+      if (archivosSeleccionados.length === 0) {
+        toast({ title: "Error", description: "Selecciona al menos un archivo MP3", variant: "destructive" });
+        return;
+      }
+
+      setCreandoLista(true);
+      try {
+        const response = await apiRequest("POST", "/api/listas-mp3", {
+          nombre: listaForm.nombre.trim(),
+          descripcion: "",
+          rutaCarpeta: "",
+          imagenUrl: "",
+          genero: "",
+          orden: 0,
+          estado: "activo",
+        });
+        const nuevaLista = response as unknown as { id: number };
+        
+        let archivosSubidos = 0;
+        for (const archivo of archivosSeleccionados) {
+          const formData = new FormData();
+          formData.append('archivo', archivo);
+          
+          try {
+            const uploadResponse = await fetch(`/api/listas-mp3/${nuevaLista.id}/subir`, {
+              method: 'POST',
+              body: formData,
+            });
+            if (uploadResponse.ok) {
+              archivosSubidos++;
+            }
+          } catch (uploadError) {
+            console.error('Error subiendo archivo:', archivo.name, uploadError);
+          }
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["/api/listas-mp3"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/archivos-mp3"] });
+        setShowListaModal(false);
+        resetListaForm();
+        toast({ 
+          title: "Lista creada", 
+          description: `Lista creada con ${archivosSubidos} de ${archivosSeleccionados.length} archivos` 
+        });
+      } catch (error: any) {
+        toast({ 
+          title: "Error", 
+          description: error.message || "Error al crear la lista", 
+          variant: "destructive" 
+        });
+      } finally {
+        setCreandoLista(false);
+      }
     }
   };
 
@@ -1552,114 +1639,147 @@ export default function PublicidadSection() {
           </DialogContent>
         </Dialog>
 
-        {/* Modal para Lista MP3 - Scrollable y responsivo para móvil */}
-        <Dialog open={showListaModal} onOpenChange={setShowListaModal}>
-          <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
-            <DialogHeader className="flex-shrink-0">
+        {/* Modal para Lista MP3 - Con selector de archivos */}
+        <Dialog open={showListaModal} onOpenChange={(open) => {
+          if (!open && !creandoLista) {
+            setShowListaModal(false);
+            resetListaForm();
+          }
+        }}>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Music className="h-5 w-5 text-purple-600" />
                 {selectedLista ? "Editar Lista" : "Nueva Lista MP3"}
               </DialogTitle>
               <DialogDescription>
-                {selectedLista ? "Modifica los datos de la lista" : "Agrega una nueva lista de MP3"}
+                {selectedLista ? "Modifica los datos de la lista" : "Crea una nueva lista y sube tus archivos MP3"}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 overflow-y-auto flex-1 pr-2">
-              <div>
-                <Label htmlFor="lista-nombre">Nombre *</Label>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="lista-nombre">Nombre de la Lista *</Label>
                 <Input
                   id="lista-nombre"
+                  placeholder="Ej: Rock Clasico, Exitos 80s, Cumbia Mix"
                   value={listaForm.nombre}
                   onChange={(e) => setListaForm({ ...listaForm, nombre: e.target.value })}
-                  placeholder="Nombre de la lista"
                   data-testid="input-lista-nombre"
-                  className="touch-manipulation"
+                  disabled={creandoLista}
                 />
               </div>
-              <div>
-                <Label htmlFor="lista-genero">Genero</Label>
-                <Input
-                  id="lista-genero"
-                  value={listaForm.genero}
-                  onChange={(e) => setListaForm({ ...listaForm, genero: e.target.value })}
-                  placeholder="Rock, Pop, Jazz..."
-                  data-testid="input-lista-genero"
-                  className="touch-manipulation"
-                />
-              </div>
-              <div>
-                <Label htmlFor="lista-descripcion">Descripcion</Label>
-                <Textarea
-                  id="lista-descripcion"
-                  value={listaForm.descripcion}
-                  onChange={(e) => setListaForm({ ...listaForm, descripcion: e.target.value })}
-                  placeholder="Descripcion de la lista"
-                  data-testid="input-lista-descripcion"
-                  className="touch-manipulation"
-                />
-              </div>
-              <div>
-                <Label htmlFor="lista-carpeta">Ruta de Carpeta</Label>
-                <Input
-                  id="lista-carpeta"
-                  value={listaForm.rutaCarpeta}
-                  onChange={(e) => setListaForm({ ...listaForm, rutaCarpeta: e.target.value })}
-                  placeholder="/musica/rock/"
-                  data-testid="input-lista-carpeta"
-                  className="touch-manipulation"
-                />
-              </div>
-              <div>
-                <Label htmlFor="lista-imagen">URL de Imagen</Label>
-                <Input
-                  id="lista-imagen"
-                  value={listaForm.imagenUrl}
-                  onChange={(e) => setListaForm({ ...listaForm, imagenUrl: e.target.value })}
-                  placeholder="https://..."
-                  data-testid="input-lista-imagen"
-                  className="touch-manipulation"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="lista-orden">Orden</Label>
-                  <Input
-                    id="lista-orden"
-                    type="number"
-                    value={listaForm.orden}
-                    onChange={(e) => setListaForm({ ...listaForm, orden: parseInt(e.target.value) || 0 })}
-                    data-testid="input-lista-orden"
-                    className="touch-manipulation"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="lista-estado">Estado</Label>
-                  <Select
-                    value={listaForm.estado}
-                    onValueChange={(value) => setListaForm({ ...listaForm, estado: value })}
+              
+              {!selectedLista && (
+                <div className="grid gap-2">
+                  <Label>Archivos MP3 *</Label>
+                  <div 
+                    className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                    onClick={() => inputArchivoRef.current?.click()}
                   >
-                    <SelectTrigger data-testid="select-lista-estado" className="touch-manipulation">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="activo">Activo</SelectItem>
-                      <SelectItem value="inactivo">Inactivo</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <input
+                      ref={inputArchivoRef}
+                      type="file"
+                      accept=".mp3,audio/mpeg,audio/mp3"
+                      multiple
+                      onChange={handleSeleccionarArchivos}
+                      className="hidden"
+                      id="input-archivos-mp3"
+                      data-testid="input-archivos-mp3"
+                      disabled={creandoLista}
+                    />
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="p-3 rounded-full bg-primary/10">
+                        <Upload className="h-8 w-8 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          Haz clic aqui para seleccionar archivos MP3
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Puedes seleccionar varios archivos a la vez
+                        </p>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          inputArchivoRef.current?.click();
+                        }}
+                        disabled={creandoLista}
+                        data-testid="button-seleccionar-archivos"
+                      >
+                        <FileAudio className="h-4 w-4 mr-2" />
+                        Seleccionar Archivos
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {archivosSeleccionados.length > 0 && (
+                    <div className="space-y-2 mt-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm">{archivosSeleccionados.length} archivo(s) seleccionado(s)</Label>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setArchivosSeleccionados([])}
+                          disabled={creandoLista}
+                        >
+                          Limpiar todo
+                        </Button>
+                      </div>
+                      <div className="max-h-[200px] overflow-y-auto space-y-1 border rounded-lg p-2">
+                        {archivosSeleccionados.map((archivo, index) => (
+                          <div 
+                            key={index}
+                            className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                            data-testid={`archivo-seleccionado-${index}`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <FileAudio className="h-4 w-4 text-primary flex-shrink-0" />
+                              <span className="text-sm truncate">{archivo.name}</span>
+                              <span className="text-xs text-muted-foreground flex-shrink-0">
+                                ({formatFileSize(archivo.size)})
+                              </span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 flex-shrink-0"
+                              onClick={() => handleQuitarArchivo(index)}
+                              disabled={creandoLista}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
-            <DialogFooter className="flex-shrink-0 pt-4 border-t mt-4 gap-2 sm:gap-0">
-              <Button variant="outline" onClick={() => setShowListaModal(false)} className="touch-manipulation">
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowListaModal(false);
+                  resetListaForm();
+                }}
+                disabled={creandoLista}
+              >
                 Cancelar
               </Button>
               <Button 
                 onClick={handleSubmitLista}
-                disabled={!listaForm.nombre || createListaMutation.isPending || updateListaMutation.isPending}
+                disabled={!listaForm.nombre.trim() || (!selectedLista && archivosSeleccionados.length === 0) || creandoLista}
                 data-testid="button-guardar-lista"
-                className="touch-manipulation"
               >
-                {createListaMutation.isPending || updateListaMutation.isPending ? "Guardando..." : "Guardar"}
+                {creandoLista && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
+                {creandoLista ? "Creando..." : selectedLista ? "Guardar Cambios" : "Crear Lista"}
               </Button>
             </DialogFooter>
           </DialogContent>
