@@ -195,8 +195,25 @@ export default function Chat() {
           ["/api/chat/grupos", msg.grupoId, "mensajes"],
           (oldData: Mensaje[] | undefined) => {
             if (!oldData) return [msg];
-            const existe = oldData.some((m) => m.id === msg.id);
-            if (existe) return oldData;
+            
+            // Verificar si ya existe el mensaje real o temporal
+            const existeReal = oldData.some((m) => m.id === msg.id);
+            if (existeReal) return oldData;
+            
+            // Buscar y reemplazar mensaje temporal con el mismo contenido del mismo remitente
+            const indiceTemp = oldData.findIndex((m) => 
+              m.id.startsWith('temp-') && 
+              m.contenido === msg.contenido && 
+              m.remitenteId === msg.remitenteId
+            );
+            
+            if (indiceTemp !== -1) {
+              // Reemplazar mensaje temporal con el real
+              const nuevoArray = [...oldData];
+              nuevoArray[indiceTemp] = msg;
+              return nuevoArray;
+            }
+            
             return [...oldData, msg];
           }
         );
@@ -392,8 +409,28 @@ export default function Chat() {
     e.preventDefault();
     if (!mensajeNuevo.trim() || !grupoSeleccionado) return;
 
+    const contenidoMensaje = mensajeNuevo.trim();
+    
     if (isConnected && grupoSeleccionado) {
-      const success = sendWebSocketMessage(mensajeNuevo.trim());
+      // Crear mensaje optimista antes de enviar
+      const mensajeOptimista: Mensaje = {
+        id: `temp-ws-${Date.now()}`,
+        grupoId: grupoSeleccionado,
+        remitenteId: user?.id || '',
+        contenido: contenidoMensaje,
+        tipo: 'texto',
+        createdAt: new Date().toISOString(),
+        estadoMensaje: 'enviado',
+        nombreRemitente: user?.nombre || user?.alias || 'Yo',
+      };
+      
+      // Agregar mensaje optimista al cache
+      queryClient.setQueryData<Mensaje[]>(
+        ["/api/chat/grupos", grupoSeleccionado, "mensajes"],
+        (old) => old ? [...old, mensajeOptimista] : [mensajeOptimista]
+      );
+      
+      const success = sendWebSocketMessage(contenidoMensaje);
       if (success) {
         setMensajeNuevo("");
         return;
@@ -402,7 +439,7 @@ export default function Chat() {
 
     enviarMensajeMutation.mutate({
       grupoId: grupoSeleccionado,
-      contenido: mensajeNuevo.trim(),
+      contenido: contenidoMensaje,
       tipo: "texto",
     });
   };

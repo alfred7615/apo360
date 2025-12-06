@@ -12,7 +12,7 @@ interface WebSocketMessage {
 
 interface UseWebSocketOptions {
   grupoId: string;
-  onMessage?: (mensaje: Mensaje) => void;
+  onMessage?: (data: any) => void;
   onUserTyping?: (usuarioId: string) => void;
   onError?: (error: string) => void;
 }
@@ -83,9 +83,8 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
         switch (data.type) {
           case 'new_message':
             if (data.mensaje) {
-              // Invalidar cache de mensajes para actualizar UI
-              queryClient.invalidateQueries({ queryKey: ['/api/chat/mensajes', grupoIdRef.current] });
-              onMessageRef.current?.(data.mensaje);
+              // Llamar al callback para que el componente actualice la UI
+              onMessageRef.current?.(data);
             }
             break;
 
