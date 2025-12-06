@@ -1356,6 +1356,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteListaMp3(id: number): Promise<void> {
+    // Primero eliminar todos los archivos MP3 asociados a esta lista
+    await db.delete(archivosMp3).where(eq(archivosMp3.listaId, id));
+    // Luego eliminar la lista
     await db.delete(listasMp3).where(eq(listasMp3.id, id));
   }
 

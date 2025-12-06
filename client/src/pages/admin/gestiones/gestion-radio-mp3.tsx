@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Radio, Music, Plus, Play, Pause, Edit, Trash2, Star, StopCircle, Volume2, Loader2, FolderOpen } from "lucide-react";
+import { Radio, Music, Plus, Edit, Trash2, Star, Volume2, Loader2, FolderOpen, Upload, X, FileAudio } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +50,10 @@ export default function GestionRadioMp3Screen() {
     orden: 0,
     estado: "activo" as string,
   });
+
+  const [archivosSeleccionados, setArchivosSeleccionados] = useState<File[]>([]);
+  const [creandoLista, setCreandoLista] = useState(false);
+  const inputArchivoRef = useRef<HTMLInputElement>(null);
 
   const { data: radios = [], isLoading: loadingRadios } = useQuery<RadioOnline[]>({
     queryKey: ["/api/radios-online"],
@@ -164,6 +168,30 @@ export default function GestionRadioMp3Screen() {
       orden: 0,
       estado: "activo",
     });
+    setArchivosSeleccionados([]);
+  };
+
+  const handleSeleccionarArchivos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const nuevosArchivos = Array.from(files).filter(
+        file => file.type === "audio/mpeg" || file.type === "audio/mp3" || file.name.toLowerCase().endsWith('.mp3')
+      );
+      setArchivosSeleccionados(prev => [...prev, ...nuevosArchivos]);
+    }
+    if (inputArchivoRef.current) {
+      inputArchivoRef.current.value = "";
+    }
+  };
+
+  const handleQuitarArchivo = (index: number) => {
+    setArchivosSeleccionados(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   const handleEditRadio = (radio: RadioOnline) => {
@@ -181,19 +209,6 @@ export default function GestionRadioMp3Screen() {
     setShowRadioModal(true);
   };
 
-  const handleEditLista = (lista: ListaMp3) => {
-    setSelectedLista(lista);
-    setListaForm({
-      nombre: lista.nombre,
-      descripcion: lista.descripcion || "",
-      rutaCarpeta: lista.rutaCarpeta || "",
-      imagenUrl: lista.imagenUrl || "",
-      genero: lista.genero || "",
-      orden: lista.orden || 0,
-      estado: lista.estado || "activo",
-    });
-    setShowListaModal(true);
-  };
 
   const handleDeleteRadio = (id: number) => {
     setDeleteType("radio");
@@ -224,11 +239,51 @@ export default function GestionRadioMp3Screen() {
     }
   };
 
-  const handleSubmitLista = () => {
-    if (selectedLista) {
-      updateListaMutation.mutate({ id: selectedLista.id, data: listaForm });
-    } else {
-      createListaMutation.mutate(listaForm);
+  const handleSubmitLista = async () => {
+    if (!listaForm.nombre.trim()) {
+      toast({ title: "Error", description: "El nombre de la lista es requerido", variant: "destructive" });
+      return;
+    }
+    if (archivosSeleccionados.length === 0) {
+      toast({ title: "Error", description: "Debes seleccionar al menos un archivo MP3", variant: "destructive" });
+      return;
+    }
+
+    setCreandoLista(true);
+    try {
+      const listaResponse = await apiRequest("POST", "/api/listas-mp3", { 
+        nombre: listaForm.nombre.trim(),
+        estado: "activo"
+      });
+      const nuevaLista = await listaResponse.json();
+
+      const formData = new FormData();
+      archivosSeleccionados.forEach(archivo => {
+        formData.append("archivos", archivo);
+      });
+
+      const uploadResponse = await fetch(`/api/listas-mp3/${nuevaLista.id}/subir`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Error al subir los archivos");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/listas-mp3"] });
+      setShowListaModal(false);
+      resetListaForm();
+      toast({ 
+        title: "Lista creada", 
+        description: `Se creo la lista "${nuevaLista.nombre}" con ${archivosSeleccionados.length} archivo(s)` 
+      });
+    } catch (error: any) {
+      console.error("Error al crear lista:", error);
+      toast({ title: "Error", description: error.message || "Error al crear la lista", variant: "destructive" });
+    } finally {
+      setCreandoLista(false);
     }
   };
 
@@ -503,14 +558,6 @@ export default function GestionRadioMp3Screen() {
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          onClick={() => handleEditLista(lista)}
-                          data-testid={`button-edit-lista-${lista.id}`}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
                           onClick={() => handleDeleteLista(lista.id)}
                           data-testid={`button-delete-lista-${lista.id}`}
                         >
@@ -631,110 +678,123 @@ export default function GestionRadioMp3Screen() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showListaModal} onOpenChange={setShowListaModal}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={showListaModal} onOpenChange={(open) => {
+        if (!open && !creandoLista) {
+          setShowListaModal(false);
+          resetListaForm();
+        }
+      }}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selectedLista ? "Editar Lista MP3" : "Nueva Lista MP3"}</DialogTitle>
+            <DialogTitle>Nueva Lista MP3</DialogTitle>
             <DialogDescription>
-              {selectedLista ? "Modifica los datos de la lista" : "Crea una nueva coleccion de musica"}
+              Crea una nueva lista con archivos de musica MP3
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="lista-nombre">Nombre *</Label>
+              <Label htmlFor="lista-nombre">Titulo de la Lista *</Label>
               <Input
                 id="lista-nombre"
-                placeholder="Ej: Rock Moderna"
+                placeholder="Ej: Rock Clasico, Exitos 80s, Cumbia Mix"
                 value={listaForm.nombre}
                 onChange={(e) => setListaForm({ ...listaForm, nombre: e.target.value })}
                 data-testid="input-lista-nombre"
+                disabled={creandoLista}
               />
             </div>
+            
             <div className="grid gap-2">
-              <Label htmlFor="lista-genero">Genero</Label>
-              <Select
-                value={listaForm.genero}
-                onValueChange={(value) => setListaForm({ ...listaForm, genero: value })}
-              >
-                <SelectTrigger data-testid="select-lista-genero">
-                  <SelectValue placeholder="Selecciona un genero" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Rock">Rock</SelectItem>
-                  <SelectItem value="Cumbia">Cumbia</SelectItem>
-                  <SelectItem value="Exitos">Exitos Variados</SelectItem>
-                  <SelectItem value="Mix">Mix Variado</SelectItem>
-                  <SelectItem value="Romantica">Romantica</SelectItem>
-                  <SelectItem value="Salsa">Salsa</SelectItem>
-                  <SelectItem value="Reggaeton">Reggaeton</SelectItem>
-                  <SelectItem value="Pop">Pop</SelectItem>
-                  <SelectItem value="Electronica">Electronica</SelectItem>
-                  <SelectItem value="Clasica">Clasica</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="lista-ruta">Ruta de Carpeta</Label>
-              <Input
-                id="lista-ruta"
-                placeholder="/public_html/assets/mp3/lista1"
-                value={listaForm.rutaCarpeta}
-                onChange={(e) => setListaForm({ ...listaForm, rutaCarpeta: e.target.value })}
-                data-testid="input-lista-ruta"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="lista-descripcion">Descripcion</Label>
-              <Textarea
-                id="lista-descripcion"
-                placeholder="Descripcion de la lista..."
-                value={listaForm.descripcion}
-                onChange={(e) => setListaForm({ ...listaForm, descripcion: e.target.value })}
-                data-testid="input-lista-descripcion"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="lista-orden">Orden</Label>
-                <Input
-                  id="lista-orden"
-                  type="number"
-                  value={listaForm.orden}
-                  onChange={(e) => setListaForm({ ...listaForm, orden: parseInt(e.target.value) || 0 })}
-                  data-testid="input-lista-orden"
+              <Label>Archivos MP3 *</Label>
+              <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                <input
+                  ref={inputArchivoRef}
+                  type="file"
+                  accept=".mp3,audio/mpeg,audio/mp3"
+                  multiple
+                  onChange={handleSeleccionarArchivos}
+                  className="hidden"
+                  id="input-archivos-mp3"
+                  data-testid="input-archivos-mp3"
+                  disabled={creandoLista}
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="lista-estado">Estado</Label>
-                <Select
-                  value={listaForm.estado}
-                  onValueChange={(value) => setListaForm({ ...listaForm, estado: value })}
+                <label 
+                  htmlFor="input-archivos-mp3" 
+                  className="cursor-pointer flex flex-col items-center gap-2"
                 >
-                  <SelectTrigger data-testid="select-lista-estado">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="activo">Activo</SelectItem>
-                    <SelectItem value="pausado">Pausado</SelectItem>
-                    <SelectItem value="suspendido">Suspendido</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    Haz clic para seleccionar archivos MP3
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Puedes seleccionar uno o varios archivos a la vez
+                  </span>
+                </label>
               </div>
+              
+              {archivosSeleccionados.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">{archivosSeleccionados.length} archivo(s) seleccionado(s)</Label>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setArchivosSeleccionados([])}
+                      disabled={creandoLista}
+                    >
+                      Limpiar todo
+                    </Button>
+                  </div>
+                  <div className="max-h-[200px] overflow-y-auto space-y-1 border rounded-lg p-2">
+                    {archivosSeleccionados.map((archivo, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                        data-testid={`archivo-seleccionado-${index}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <FileAudio className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="text-sm truncate">{archivo.name}</span>
+                          <span className="text-xs text-muted-foreground flex-shrink-0">
+                            ({formatFileSize(archivo.size)})
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 flex-shrink-0"
+                          onClick={() => handleQuitarArchivo(index)}
+                          disabled={creandoLista}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowListaModal(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowListaModal(false);
+                resetListaForm();
+              }}
+              disabled={creandoLista}
+            >
               Cancelar
             </Button>
             <Button 
               onClick={handleSubmitLista}
-              disabled={!listaForm.nombre || createListaMutation.isPending || updateListaMutation.isPending}
+              disabled={!listaForm.nombre.trim() || archivosSeleccionados.length === 0 || creandoLista}
               data-testid="button-guardar-lista"
             >
-              {(createListaMutation.isPending || updateListaMutation.isPending) && (
+              {creandoLista && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              {selectedLista ? "Guardar Cambios" : "Crear Lista"}
+              {creandoLista ? "Creando..." : "Crear Lista"}
             </Button>
           </DialogFooter>
         </DialogContent>
