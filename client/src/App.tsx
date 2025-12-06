@@ -67,19 +67,15 @@ function AppContent() {
   
   const esRutaAdmin = location.startsWith("/admin");
 
-  if (esRutaAdmin) {
-    return <Router />;
-  }
-
   return (
     <div className="min-h-screen flex flex-col">
       <Encabezado />
       <main className="flex-1">
         <Router />
       </main>
-      <PiePagina />
-      {isAuthenticated && <BotonPanico />}
-      {isAuthenticated && <SolicitudPermisos />}
+      {!esRutaAdmin && <PiePagina />}
+      {isAuthenticated && !esRutaAdmin && <BotonPanico />}
+      {isAuthenticated && !esRutaAdmin && <SolicitudPermisos />}
     </div>
   );
 }

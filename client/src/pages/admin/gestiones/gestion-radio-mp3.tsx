@@ -706,7 +706,10 @@ export default function GestionRadioMp3Screen() {
             
             <div className="grid gap-2">
               <Label>Archivos MP3 *</Label>
-              <div className="border-2 border-dashed rounded-lg p-4 text-center">
+              <div 
+                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                onClick={() => inputArchivoRef.current?.click()}
+              >
                 <input
                   ref={inputArchivoRef}
                   type="file"
@@ -718,18 +721,33 @@ export default function GestionRadioMp3Screen() {
                   data-testid="input-archivos-mp3"
                   disabled={creandoLista}
                 />
-                <label 
-                  htmlFor="input-archivos-mp3" 
-                  className="cursor-pointer flex flex-col items-center gap-2"
-                >
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    Haz clic para seleccionar archivos MP3
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Puedes seleccionar uno o varios archivos a la vez
-                  </span>
-                </label>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="p-3 rounded-full bg-primary/10">
+                    <Upload className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      Haz clic aqui para seleccionar archivos MP3
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Puedes seleccionar uno o varios archivos a la vez
+                    </p>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      inputArchivoRef.current?.click();
+                    }}
+                    disabled={creandoLista}
+                    data-testid="button-seleccionar-archivos"
+                  >
+                    <FileAudio className="h-4 w-4 mr-2" />
+                    Seleccionar Archivos
+                  </Button>
+                </div>
               </div>
               
               {archivosSeleccionados.length > 0 && (
