@@ -73,11 +73,15 @@ export default function SelectorAudio({ abierto, onClose }: SelectorAudioProps) 
             </div>
 
             {audio.usandoIframe && audio.iframeCode ? (
-              <div 
-                className="w-full rounded-lg overflow-hidden" 
-                dangerouslySetInnerHTML={{ __html: audio.iframeCode }}
-                data-testid="iframe-radio-player-modal"
-              />
+              <div className="w-full rounded-lg overflow-hidden">
+                <div 
+                  dangerouslySetInnerHTML={{ __html: audio.iframeCode }}
+                  data-testid="iframe-radio-player-modal"
+                />
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Usa los controles del reproductor de arriba para controlar el audio
+                </p>
+              </div>
             ) : (
               <div className="flex items-center gap-1 sm:gap-2">
                 {audio.tipoFuente === "lista" && (

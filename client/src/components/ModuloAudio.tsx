@@ -179,8 +179,13 @@ export default function ModuloAudio() {
           </div>
         </div>
 
-        {tieneIframe && audio.iframeCode && audio.reproduciendo && (
-          <div className="w-full rounded-lg overflow-hidden" dangerouslySetInnerHTML={{ __html: audio.iframeCode }} />
+        {tieneIframe && audio.iframeCode && (
+          <div className="w-full rounded-lg overflow-hidden">
+            <div dangerouslySetInnerHTML={{ __html: audio.iframeCode }} />
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Usa los controles del reproductor de arriba para controlar el audio
+            </p>
+          </div>
         )}
 
         {audio.urlActual && (

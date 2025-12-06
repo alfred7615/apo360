@@ -206,41 +206,45 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
     if (autoReproducir && urlActual && audioRef.current) {
       const audio = audioRef.current;
       
-      const intentarReproducir = () => {
-        audio.src = urlActual;
-        audio.load();
-        
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              setReproduciendo(true);
-              setAutoReproducir(false);
-              interaccionUsuarioRef.current = true;
-            })
-            .catch((error) => {
-              console.log("Autoplay bloqueado, esperando interaccion:", error.name);
-              if (interaccionUsuarioRef.current) {
-                setTimeout(() => {
-                  audio.play()
-                    .then(() => {
-                      setReproduciendo(true);
-                      setAutoReproducir(false);
-                    })
-                    .catch(() => {
-                      setAutoReproducir(false);
-                      setReproduciendo(false);
-                    });
-                }, 100);
-              } else {
-                setAutoReproducir(false);
-                setReproduciendo(false);
-              }
-            });
-        }
-      };
+      console.log("Intentando autoplay para:", urlActual);
       
-      intentarReproducir();
+      audio.src = urlActual;
+      audio.load();
+      
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log("Autoplay exitoso");
+            setReproduciendo(true);
+            setAutoReproducir(false);
+            interaccionUsuarioRef.current = true;
+          })
+          .catch((error) => {
+            console.log("Autoplay bloqueado:", error.name, "- interaccionUsuario:", interaccionUsuarioRef.current);
+            
+            if (interaccionUsuarioRef.current) {
+              setTimeout(() => {
+                console.log("Reintentando reproduccion tras interaccion...");
+                audio.play()
+                  .then(() => {
+                    console.log("Reintento exitoso");
+                    setReproduciendo(true);
+                    setAutoReproducir(false);
+                  })
+                  .catch((err) => {
+                    console.error("Reintento fallido:", err);
+                    setAutoReproducir(false);
+                    setReproduciendo(false);
+                  });
+              }, 100);
+            } else {
+              console.log("No hay interaccion del usuario, autoplay desactivado");
+              setAutoReproducir(false);
+              setReproduciendo(false);
+            }
+          });
+      }
     }
   }, [autoReproducir, urlActual]);
 
@@ -254,11 +258,28 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const reproducir = useCallback(() => {
-    if (!audioRef.current || !urlActual) return;
+    if (!audioRef.current || !urlActual) {
+      console.log("reproducir: no hay audioRef o urlActual", { audioRef: !!audioRef.current, urlActual });
+      return;
+    }
+    
     pausarOtrosAudios();
-    audioRef.current.play()
-      .then(() => setReproduciendo(true))
-      .catch((error) => console.error("Error al reproducir:", error));
+    const audio = audioRef.current;
+    
+    if (audio.src !== urlActual) {
+      audio.src = urlActual;
+      audio.load();
+    }
+    
+    audio.play()
+      .then(() => {
+        console.log("Audio reproduciendose correctamente");
+        setReproduciendo(true);
+      })
+      .catch((error) => {
+        console.error("Error al reproducir:", error);
+        setReproduciendo(false);
+      });
   }, [urlActual, pausarOtrosAudios]);
 
   const pausar = useCallback(() => {
