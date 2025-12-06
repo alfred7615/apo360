@@ -135,6 +135,21 @@ import {
   type InsertSector,
   type LugarUsuario,
   type InsertLugarUsuario,
+  planesMembresia,
+  membresiasUsuarios,
+  categoriasProductosUsuario,
+  productosUsuario,
+  configuracionCostos,
+  type PlanMembresia,
+  type InsertPlanMembresia,
+  type MembresiaUsuario,
+  type InsertMembresiaUsuario,
+  type CategoriaProductoUsuario,
+  type InsertCategoriaProductoUsuario,
+  type ProductoUsuario,
+  type InsertProductoUsuario,
+  type ConfiguracionCosto,
+  type InsertConfiguracionCosto,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -369,6 +384,50 @@ export interface IStorage {
   getSectores(departamento?: string, distrito?: string): Promise<Sector[]>;
   buscarSectores(texto: string, departamento?: string, distrito?: string): Promise<Sector[]>;
   createSector(data: InsertSector): Promise<Sector>;
+  
+  // ============================================================
+  // PLANES DE MEMBRESÍA
+  // ============================================================
+  getPlanesMembresia(soloActivos?: boolean): Promise<PlanMembresia[]>;
+  getPlanMembresia(id: string): Promise<PlanMembresia | undefined>;
+  createPlanMembresia(data: InsertPlanMembresia): Promise<PlanMembresia>;
+  updatePlanMembresia(id: string, data: Partial<InsertPlanMembresia>): Promise<PlanMembresia | undefined>;
+  deletePlanMembresia(id: string): Promise<void>;
+  
+  // ============================================================
+  // MEMBRESÍAS DE USUARIOS
+  // ============================================================
+  getMembresiasUsuarios(): Promise<MembresiaUsuario[]>;
+  getMembresiaUsuario(usuarioId: string): Promise<MembresiaUsuario | undefined>;
+  getMembresiaActiva(usuarioId: string): Promise<MembresiaUsuario | undefined>;
+  createMembresiaUsuario(data: InsertMembresiaUsuario): Promise<MembresiaUsuario>;
+  updateMembresiaUsuario(id: string, data: Partial<InsertMembresiaUsuario>): Promise<MembresiaUsuario | undefined>;
+  
+  // ============================================================
+  // CATEGORÍAS DE PRODUCTOS DE USUARIO
+  // ============================================================
+  getCategoriasProductosUsuario(incluyeInactivas?: boolean): Promise<CategoriaProductoUsuario[]>;
+  getSubcategorias(categoriaPadreId: string): Promise<CategoriaProductoUsuario[]>;
+  getCategoriaProductoUsuario(id: string): Promise<CategoriaProductoUsuario | undefined>;
+  createCategoriaProductoUsuario(data: InsertCategoriaProductoUsuario): Promise<CategoriaProductoUsuario>;
+  updateCategoriaProductoUsuario(id: string, data: Partial<InsertCategoriaProductoUsuario>): Promise<CategoriaProductoUsuario | undefined>;
+  deleteCategoriaProductoUsuario(id: string): Promise<void>;
+  
+  // ============================================================
+  // PRODUCTOS DE USUARIO
+  // ============================================================
+  getProductosUsuario(filtros?: { usuarioId?: string; categoriaId?: string; estado?: string }): Promise<ProductoUsuario[]>;
+  getProductoUsuario(id: string): Promise<ProductoUsuario | undefined>;
+  createProductoUsuario(data: InsertProductoUsuario): Promise<ProductoUsuario>;
+  updateProductoUsuario(id: string, data: Partial<InsertProductoUsuario>): Promise<ProductoUsuario | undefined>;
+  deleteProductoUsuario(id: string): Promise<void>;
+  
+  // ============================================================
+  // CONFIGURACIÓN DE COSTOS
+  // ============================================================
+  getConfiguracionesCostos(): Promise<ConfiguracionCosto[]>;
+  getConfiguracionCosto(tipoServicio: string): Promise<ConfiguracionCosto | undefined>;
+  upsertConfiguracionCosto(data: InsertConfiguracionCosto): Promise<ConfiguracionCosto>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2970,6 +3029,201 @@ export class DatabaseStorage implements IStorage {
       .where(eq(usuarios.id, usuarioId))
       .returning();
     return actualizado;
+  }
+
+  // ============================================================
+  // PLANES DE MEMBRESÍA
+  // ============================================================
+  async getPlanesMembresia(soloActivos = true): Promise<PlanMembresia[]> {
+    if (soloActivos) {
+      return await db.select().from(planesMembresia)
+        .where(eq(planesMembresia.activo, true))
+        .orderBy(planesMembresia.orden);
+    }
+    return await db.select().from(planesMembresia).orderBy(planesMembresia.orden);
+  }
+
+  async getPlanMembresia(id: string): Promise<PlanMembresia | undefined> {
+    const [plan] = await db.select().from(planesMembresia)
+      .where(eq(planesMembresia.id, id));
+    return plan;
+  }
+
+  async createPlanMembresia(data: InsertPlanMembresia): Promise<PlanMembresia> {
+    const [plan] = await db.insert(planesMembresia).values(data).returning();
+    return plan;
+  }
+
+  async updatePlanMembresia(id: string, data: Partial<InsertPlanMembresia>): Promise<PlanMembresia | undefined> {
+    const [actualizado] = await db.update(planesMembresia)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(planesMembresia.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deletePlanMembresia(id: string): Promise<void> {
+    await db.delete(planesMembresia).where(eq(planesMembresia.id, id));
+  }
+
+  // ============================================================
+  // MEMBRESÍAS DE USUARIOS
+  // ============================================================
+  async getMembresiasUsuarios(): Promise<MembresiaUsuario[]> {
+    return await db.select().from(membresiasUsuarios)
+      .orderBy(desc(membresiasUsuarios.createdAt));
+  }
+
+  async getMembresiaUsuario(usuarioId: string): Promise<MembresiaUsuario | undefined> {
+    const [membresia] = await db.select().from(membresiasUsuarios)
+      .where(eq(membresiasUsuarios.usuarioId, usuarioId))
+      .orderBy(desc(membresiasUsuarios.createdAt))
+      .limit(1);
+    return membresia;
+  }
+
+  async getMembresiaActiva(usuarioId: string): Promise<MembresiaUsuario | undefined> {
+    const ahora = new Date();
+    const [membresia] = await db.select().from(membresiasUsuarios)
+      .where(and(
+        eq(membresiasUsuarios.usuarioId, usuarioId),
+        eq(membresiasUsuarios.estado, 'activa'),
+        gte(membresiasUsuarios.fechaFin, ahora)
+      ))
+      .limit(1);
+    return membresia;
+  }
+
+  async createMembresiaUsuario(data: InsertMembresiaUsuario): Promise<MembresiaUsuario> {
+    const [membresia] = await db.insert(membresiasUsuarios).values(data).returning();
+    return membresia;
+  }
+
+  async updateMembresiaUsuario(id: string, data: Partial<InsertMembresiaUsuario>): Promise<MembresiaUsuario | undefined> {
+    const [actualizada] = await db.update(membresiasUsuarios)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(membresiasUsuarios.id, id))
+      .returning();
+    return actualizada;
+  }
+
+  // ============================================================
+  // CATEGORÍAS DE PRODUCTOS DE USUARIO
+  // ============================================================
+  async getCategoriasProductosUsuario(incluyeInactivas = false): Promise<CategoriaProductoUsuario[]> {
+    if (!incluyeInactivas) {
+      return await db.select().from(categoriasProductosUsuario)
+        .where(eq(categoriasProductosUsuario.activo, true))
+        .orderBy(categoriasProductosUsuario.orden);
+    }
+    return await db.select().from(categoriasProductosUsuario)
+      .orderBy(categoriasProductosUsuario.orden);
+  }
+
+  async getSubcategorias(categoriaPadreId: string): Promise<CategoriaProductoUsuario[]> {
+    return await db.select().from(categoriasProductosUsuario)
+      .where(and(
+        eq(categoriasProductosUsuario.categoriaPadreId, categoriaPadreId),
+        eq(categoriasProductosUsuario.activo, true)
+      ))
+      .orderBy(categoriasProductosUsuario.orden);
+  }
+
+  async getCategoriaProductoUsuario(id: string): Promise<CategoriaProductoUsuario | undefined> {
+    const [categoria] = await db.select().from(categoriasProductosUsuario)
+      .where(eq(categoriasProductosUsuario.id, id));
+    return categoria;
+  }
+
+  async createCategoriaProductoUsuario(data: InsertCategoriaProductoUsuario): Promise<CategoriaProductoUsuario> {
+    const [categoria] = await db.insert(categoriasProductosUsuario).values(data).returning();
+    return categoria;
+  }
+
+  async updateCategoriaProductoUsuario(id: string, data: Partial<InsertCategoriaProductoUsuario>): Promise<CategoriaProductoUsuario | undefined> {
+    const [actualizada] = await db.update(categoriasProductosUsuario)
+      .set(data)
+      .where(eq(categoriasProductosUsuario.id, id))
+      .returning();
+    return actualizada;
+  }
+
+  async deleteCategoriaProductoUsuario(id: string): Promise<void> {
+    await db.update(categoriasProductosUsuario)
+      .set({ activo: false })
+      .where(eq(categoriasProductosUsuario.id, id));
+  }
+
+  // ============================================================
+  // PRODUCTOS DE USUARIO
+  // ============================================================
+  async getProductosUsuario(filtros?: { usuarioId?: string; categoriaId?: string; estado?: string }): Promise<ProductoUsuario[]> {
+    let query = db.select().from(productosUsuario);
+    
+    if (filtros?.usuarioId) {
+      query = query.where(eq(productosUsuario.usuarioId, filtros.usuarioId)) as typeof query;
+    }
+    if (filtros?.categoriaId) {
+      query = query.where(eq(productosUsuario.categoriaId, filtros.categoriaId)) as typeof query;
+    }
+    if (filtros?.estado) {
+      query = query.where(eq(productosUsuario.estado, filtros.estado)) as typeof query;
+    }
+    
+    return await query.orderBy(desc(productosUsuario.createdAt));
+  }
+
+  async getProductoUsuario(id: string): Promise<ProductoUsuario | undefined> {
+    const [producto] = await db.select().from(productosUsuario)
+      .where(eq(productosUsuario.id, id));
+    return producto;
+  }
+
+  async createProductoUsuario(data: InsertProductoUsuario): Promise<ProductoUsuario> {
+    const [producto] = await db.insert(productosUsuario).values(data).returning();
+    return producto;
+  }
+
+  async updateProductoUsuario(id: string, data: Partial<InsertProductoUsuario>): Promise<ProductoUsuario | undefined> {
+    const [actualizado] = await db.update(productosUsuario)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(productosUsuario.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteProductoUsuario(id: string): Promise<void> {
+    await db.update(productosUsuario)
+      .set({ estado: 'eliminado', updatedAt: new Date() })
+      .where(eq(productosUsuario.id, id));
+  }
+
+  // ============================================================
+  // CONFIGURACIÓN DE COSTOS
+  // ============================================================
+  async getConfiguracionesCostos(): Promise<ConfiguracionCosto[]> {
+    return await db.select().from(configuracionCostos);
+  }
+
+  async getConfiguracionCosto(tipoServicio: string): Promise<ConfiguracionCosto | undefined> {
+    const [config] = await db.select().from(configuracionCostos)
+      .where(eq(configuracionCostos.tipoServicio, tipoServicio));
+    return config;
+  }
+
+  async upsertConfiguracionCosto(data: InsertConfiguracionCosto): Promise<ConfiguracionCosto> {
+    const existente = await this.getConfiguracionCosto(data.tipoServicio);
+    
+    if (existente) {
+      const [actualizado] = await db.update(configuracionCostos)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(configuracionCostos.tipoServicio, data.tipoServicio))
+        .returning();
+      return actualizado;
+    }
+    
+    const [nuevo] = await db.insert(configuracionCostos).values(data).returning();
+    return nuevo;
   }
 }
 
