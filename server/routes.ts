@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import express from "express";
 import path from "path";
 import { storage } from "./storage";
+import { db } from "./db";
+import { eq, and, ne } from "drizzle-orm";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { createUploadMiddleware, getPublicUrl } from "./uploadConfigByEndpoint";
 import { requireSuperAdmin } from "./authMiddleware";
@@ -29,6 +31,8 @@ import {
   rolesRegistroValidos,
   rolesConAprobacion,
   insertSectorSchema,
+  mensajes,
+  miembrosGrupo,
 } from "@shared/schema";
 import { paises, departamentosPeru, distritosPorDepartamento, obtenerDepartamentos, obtenerDistritos, buscarDepartamentos, buscarDistritos } from "@shared/ubicaciones-peru";
 import { registerAdminRoutes } from "./routes-admin";
@@ -1471,6 +1475,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al eliminar mensaje:", error);
       res.status(500).json({ message: "Error al eliminar mensaje" });
+    }
+  });
+
+  // Actualizar estado de mensaje (enviado -> entregado -> leído)
+  app.patch('/api/chat/mensajes/:id/estado', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const { estado } = req.body;
+      
+      if (!['enviado', 'entregado', 'leido'].includes(estado)) {
+        return res.status(400).json({ message: "Estado inválido" });
+      }
+      
+      const timestamp = new Date();
+      const updateData: any = { estadoMensaje: estado };
+      
+      if (estado === 'entregado') {
+        updateData.entregadoEn = timestamp;
+      } else if (estado === 'leido') {
+        updateData.leidoEn = timestamp;
+        updateData.leido = true;
+      }
+      
+      const mensaje = await db.update(mensajes)
+        .set(updateData)
+        .where(eq(mensajes.id, id))
+        .returning();
+      
+      if (!mensaje || mensaje.length === 0) {
+        return res.status(404).json({ message: "Mensaje no encontrado" });
+      }
+      
+      res.json({ 
+        message: "Estado actualizado",
+        estado,
+        timestamp: timestamp.toISOString(),
+      });
+    } catch (error) {
+      console.error("Error al actualizar estado de mensaje:", error);
+      res.status(500).json({ message: "Error al actualizar estado" });
+    }
+  });
+
+  // Marcar mensajes como leídos en un grupo
+  app.post('/api/chat/grupos/:grupoId/marcar-leidos', isAuthenticated, async (req: any, res) => {
+    try {
+      const { grupoId } = req.params;
+      const userId = req.user.claims.sub;
+      const timestamp = new Date();
+      
+      // Marcar todos los mensajes no leídos como leídos
+      await db.update(mensajes)
+        .set({ 
+          leido: true,
+          leidoEn: timestamp,
+          estadoMensaje: 'leido',
+        })
+        .where(
+          and(
+            eq(mensajes.grupoId, grupoId),
+            ne(mensajes.remitenteId, userId),
+            eq(mensajes.leido, false)
+          )
+        );
+      
+      // Actualizar contador de mensajes no leídos en miembros_grupo
+      await db.update(miembrosGrupo)
+        .set({ 
+          mensajesNoLeidos: 0,
+          ultimoMensajeVisto: timestamp,
+        })
+        .where(
+          and(
+            eq(miembrosGrupo.grupoId, grupoId),
+            eq(miembrosGrupo.usuarioId, userId)
+          )
+        );
+      
+      res.json({ message: "Mensajes marcados como leídos" });
+    } catch (error) {
+      console.error("Error al marcar mensajes como leídos:", error);
+      res.status(500).json({ message: "Error al marcar mensajes" });
     }
   });
 

@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Send, Search, MoreVertical, Users, MessageCircle, Plus, ArrowLeft, WifiOff,
   Paperclip, Image, Mic, MapPin, Phone, Video, UserPlus, Mail, X, Check, 
-  MessageSquare, Globe, ExternalLink
+  MessageSquare, Globe, ExternalLink, CheckCheck
 } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,11 @@ interface Mensaje {
   };
   eliminado?: boolean;
   createdAt: string;
+  estadoMensaje?: 'enviado' | 'entregado' | 'leido';
+  entregadoEn?: string;
+  leidoEn?: string;
+  nombreRemitente?: string;
+  fotoRemitente?: string;
 }
 
 interface MiembroGrupo {
@@ -126,6 +131,17 @@ export default function Chat() {
     }
   }, [user, cargandoAuth, toast]);
 
+  useEffect(() => {
+    if (grupoSeleccionado && user) {
+      fetch(`/api/chat/grupos/${grupoSeleccionado}/marcar-leidos`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
+      }).catch(console.error);
+    }
+  }, [grupoSeleccionado, user]);
+
   const { data: grupos = [], isLoading: cargandoGrupos } = useQuery<GrupoChat[]>({
     queryKey: ["/api/chat/mis-grupos"],
     enabled: !!user,
@@ -166,7 +182,39 @@ export default function Chat() {
   const { isConnected, sendMessage: sendWebSocketMessage } = useWebSocket({
     grupoId: grupoSeleccionado || "",
     onMessage: (nuevoMensaje: any) => {
-      console.log('Nuevo mensaje recibido por WebSocket');
+      console.log('Nuevo mensaje recibido por WebSocket:', nuevoMensaje);
+      if (nuevoMensaje.type === 'new_message' && nuevoMensaje.mensaje) {
+        const msg = nuevoMensaje.mensaje;
+        queryClient.setQueryData(
+          ["/api/chat/grupos", msg.grupoId, "mensajes"],
+          (oldData: Mensaje[] | undefined) => {
+            if (!oldData) return [msg];
+            const existe = oldData.some((m) => m.id === msg.id);
+            if (existe) return oldData;
+            return [...oldData, msg];
+          }
+        );
+        queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
+      } else if (nuevoMensaje.type === 'mensaje_estado') {
+        const { mensajeId, estado, timestamp } = nuevoMensaje;
+        queryClient.setQueryData(
+          ["/api/chat/grupos", grupoSeleccionado, "mensajes"],
+          (oldData: Mensaje[] | undefined) => {
+            if (!oldData) return oldData;
+            return oldData.map((m) => {
+              if (m.id === mensajeId) {
+                return {
+                  ...m,
+                  estadoMensaje: estado,
+                  ...(estado === 'entregado' && { entregadoEn: timestamp }),
+                  ...(estado === 'leido' && { leidoEn: timestamp }),
+                };
+              }
+              return m;
+            });
+          }
+        );
+      }
     },
     onError: (error) => {
       console.error('Error WebSocket:', error);
@@ -186,14 +234,47 @@ export default function Chat() {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || errorData.error || "Error al enviar mensaje");
       }
-      return response;
+      return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/grupos", grupoSeleccionado, "mensajes"] });
+    onMutate: async (datos) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/chat/grupos", datos.grupoId, "mensajes"] });
+      
+      const previousMensajes = queryClient.getQueryData<Mensaje[]>(["/api/chat/grupos", datos.grupoId, "mensajes"]);
+      
+      const mensajeOptimista: Mensaje = {
+        id: `temp-${Date.now()}`,
+        grupoId: datos.grupoId,
+        remitenteId: user?.id || '',
+        contenido: datos.contenido,
+        tipo: datos.tipo,
+        archivoUrl: datos.archivoUrl,
+        gpsLatitud: datos.gpsLatitud,
+        gpsLongitud: datos.gpsLongitud,
+        createdAt: new Date().toISOString(),
+        estadoMensaje: 'enviado',
+        nombreRemitente: user?.nombre || user?.alias || 'Yo',
+      };
+      
+      queryClient.setQueryData<Mensaje[]>(
+        ["/api/chat/grupos", datos.grupoId, "mensajes"],
+        (old) => old ? [...old, mensajeOptimista] : [mensajeOptimista]
+      );
+      
+      return { previousMensajes, grupoId: datos.grupoId };
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/grupos", variables.grupoId, "mensajes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
       setMensajeNuevo("");
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables, context) => {
+      if (context?.previousMensajes) {
+        queryClient.setQueryData(
+          ["/api/chat/grupos", context.grupoId, "mensajes"],
+          context.previousMensajes
+        );
+      }
+      
       if (isUnauthorizedError(error)) {
         toast({
           title: "No autenticado",
@@ -832,12 +913,25 @@ export default function Chat() {
                                 <p className="text-sm whitespace-pre-wrap break-words">{mensaje.contenido}</p>
                               )}
                             </div>
-                            <span className="text-xs text-muted-foreground mt-1 px-1">
-                              {new Date(mensaje.createdAt).toLocaleTimeString('es-PE', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
+                            <div className="flex items-center gap-1 mt-1 px-1">
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(mensaje.createdAt).toLocaleTimeString('es-PE', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                              {esMio && (
+                                <span className="flex items-center" data-testid={`message-status-${mensaje.id}`}>
+                                  {mensaje.estadoMensaje === 'leido' || mensaje.leidoEn ? (
+                                    <CheckCheck className="h-3.5 w-3.5 text-green-500" />
+                                  ) : mensaje.estadoMensaje === 'entregado' || mensaje.entregadoEn ? (
+                                    <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                                  ) : (
+                                    <Check className="h-3.5 w-3.5 text-muted-foreground" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

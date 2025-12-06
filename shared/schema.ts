@@ -476,6 +476,10 @@ export const mensajes = pgTable("mensajes", {
   eliminadoPor: varchar("eliminado_por").references(() => usuarios.id),
   fechaEliminacion: timestamp("fecha_eliminacion"),
   createdAt: timestamp("created_at").defaultNow(),
+  estadoMensaje: varchar("estado_mensaje", { length: 20 }).default("enviado"),
+  entregadoEn: timestamp("entregado_en"),
+  leidoEn: timestamp("leido_en"),
+  leidoPor: varchar("leido_por").array(),
 });
 
 export const insertMensajeSchema = createInsertSchema(mensajes).omit({ id: true, createdAt: true });
