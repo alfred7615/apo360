@@ -7,13 +7,41 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-const AUTH_MODE = process.env.AUTH_MODE || (process.env.REPL_ID ? "replit" : "google");
+function isValidString(value: string | undefined): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+const hasReplitEnv = isValidString(process.env.REPL_ID);
+const hasGoogleEnv = isValidString(process.env.GOOGLE_CLIENT_ID) && isValidString(process.env.GOOGLE_CLIENT_SECRET);
+
+function determineAuthMode(): "replit" | "google" {
+  const explicitMode = process.env.AUTH_MODE?.trim().toLowerCase();
+  
+  if (explicitMode === "replit") {
+    if (!hasReplitEnv) {
+      console.warn("⚠️ AUTH_MODE=replit pero REPL_ID no está disponible");
+    }
+    return "replit";
+  }
+  
+  if (explicitMode === "google") {
+    return "google";
+  }
+  
+  return hasReplitEnv ? "replit" : "google";
+}
+
+const AUTH_MODE = determineAuthMode();
 let activeAuthMode = AUTH_MODE;
 
 let oidcClientModule: typeof import("openid-client") | null = null;
 let oidcPassportModule: typeof import("openid-client/passport") | null = null;
 
 async function loadOidcModules() {
+  if (!hasReplitEnv) {
+    throw new Error("Cannot load OIDC modules: REPL_ID is not available");
+  }
+  
   if (!oidcClientModule) {
     oidcClientModule = await import("openid-client");
   }
@@ -25,13 +53,14 @@ async function loadOidcModules() {
 
 const getOidcConfig = memoize(
   async () => {
-    if (!process.env.REPL_ID) return null;
+    if (!hasReplitEnv) return null;
     
     const { client } = await loadOidcModules();
+    const replId = process.env.REPL_ID!.trim();
     
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
+      replId
     );
   },
   { maxAge: 3600 * 1000 }
@@ -134,8 +163,8 @@ async function upsertUser(claims: any) {
 }
 
 async function setupReplitAuth(app: Express) {
-  if (!process.env.REPL_ID) {
-    throw new Error("Replit Auth requires REPL_ID environment variable");
+  if (!hasReplitEnv) {
+    throw new Error("Replit Auth requires valid REPL_ID environment variable (non-empty string)");
   }
   
   const config = await getOidcConfig();
@@ -268,15 +297,15 @@ export async function setupAuth(app: Express) {
   } else {
     const googleConfigured = await setupGoogleAuth(app);
     if (!googleConfigured) {
-      console.log("⚠️ Fallback: Configurando Replit Auth en lugar de Google OAuth");
-      if (process.env.REPL_ID) {
+      if (hasReplitEnv) {
+        console.log("⚠️ Fallback: Configurando Replit Auth en lugar de Google OAuth");
         await setupReplitAuth(app);
         console.log("✅ Replit Auth configurado (fallback)");
       } else {
         console.error("❌ ERROR: No hay proveedor de autenticación disponible.");
         console.error("   Configure GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET para Google OAuth");
-        console.error("   O ejecute en un entorno Replit para usar Replit Auth");
-        throw new Error("No authentication provider configured");
+        console.error("   O ejecute en un entorno Replit para usar Replit Auth (requiere REPL_ID válido)");
+        throw new Error("No authentication provider configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET for production, or run in Replit environment for development.");
       }
     }
   }
