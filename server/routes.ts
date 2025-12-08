@@ -3505,6 +3505,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // SUBCATEGORÍAS DE SERVICIOS LOCALES
+  // ============================================================
+
+  app.get('/api/subcategorias-servicio', async (req, res) => {
+    try {
+      const { categoriaId } = req.query;
+      const subcategorias = await storage.getSubcategoriasServicio(categoriaId as string);
+      res.json(subcategorias);
+    } catch (error) {
+      console.error("Error al obtener subcategorías:", error);
+      res.status(500).json({ message: "Error al obtener subcategorías" });
+    }
+  });
+
+  app.get('/api/subcategorias-servicio/:id', async (req, res) => {
+    try {
+      const subcategoria = await storage.getSubcategoriaServicio(req.params.id);
+      if (!subcategoria) {
+        return res.status(404).json({ message: "Subcategoría no encontrada" });
+      }
+      res.json(subcategoria);
+    } catch (error) {
+      console.error("Error al obtener subcategoría:", error);
+      res.status(500).json({ message: "Error al obtener subcategoría" });
+    }
+  });
+
+  app.post('/api/subcategorias-servicio', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const subcategoria = await storage.createSubcategoriaServicio(req.body);
+      res.json(subcategoria);
+    } catch (error: any) {
+      console.error("Error al crear subcategoría:", error);
+      res.status(400).json({ message: error.message || "Error al crear subcategoría" });
+    }
+  });
+
+  app.patch('/api/subcategorias-servicio/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const subcategoria = await storage.updateSubcategoriaServicio(req.params.id, req.body);
+      if (!subcategoria) {
+        return res.status(404).json({ message: "Subcategoría no encontrada" });
+      }
+      res.json(subcategoria);
+    } catch (error: any) {
+      console.error("Error al actualizar subcategoría:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar subcategoría" });
+    }
+  });
+
+  app.delete('/api/subcategorias-servicio/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      await storage.deleteSubcategoriaServicio(req.params.id);
+      res.json({ message: "Subcategoría eliminada" });
+    } catch (error) {
+      console.error("Error al eliminar subcategoría:", error);
+      res.status(500).json({ message: "Error al eliminar subcategoría" });
+    }
+  });
+
+  // ============================================================
   // LOGOS DE SERVICIOS (Negocios/Locales)
   // ============================================================
 

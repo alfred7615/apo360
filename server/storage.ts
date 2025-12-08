@@ -33,6 +33,7 @@ import {
   tiposMoneda,
   tasasCambio,
   categoriasServicio,
+  subcategoriasServicio,
   logosServicios,
   productosServicio,
   transaccionesSaldo,
@@ -111,6 +112,8 @@ import {
   type InsertTasaCambio,
   type CategoriaServicio,
   type InsertCategoriaServicio,
+  type SubcategoriaServicio,
+  type InsertSubcategoriaServicio,
   type LogoServicio,
   type InsertLogoServicio,
   type ProductoServicio,
@@ -2212,7 +2215,46 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCategoriaServicio(id: string): Promise<void> {
+    await db.delete(subcategoriasServicio).where(eq(subcategoriasServicio.categoriaId, id));
     await db.delete(categoriasServicio).where(eq(categoriasServicio.id, id));
+  }
+
+  // ============================================================
+  // SUBCATEGORÍAS DE SERVICIOS LOCALES
+  // ============================================================
+  async getSubcategoriasServicio(categoriaId?: string): Promise<SubcategoriaServicio[]> {
+    if (categoriaId) {
+      return await db.select().from(subcategoriasServicio)
+        .where(eq(subcategoriasServicio.categoriaId, categoriaId))
+        .orderBy(subcategoriasServicio.orden);
+    }
+    return await db.select().from(subcategoriasServicio).orderBy(subcategoriasServicio.orden);
+  }
+
+  async getSubcategoriaServicio(id: string): Promise<SubcategoriaServicio | undefined> {
+    const [subcategoria] = await db.select().from(subcategoriasServicio).where(eq(subcategoriasServicio.id, id));
+    return subcategoria;
+  }
+
+  async createSubcategoriaServicio(data: InsertSubcategoriaServicio): Promise<SubcategoriaServicio> {
+    const [subcategoria] = await db.insert(subcategoriasServicio).values(data).returning();
+    return subcategoria;
+  }
+
+  async updateSubcategoriaServicio(id: string, data: Partial<InsertSubcategoriaServicio>): Promise<SubcategoriaServicio | undefined> {
+    const [actualizada] = await db
+      .update(subcategoriasServicio)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(subcategoriasServicio.id, id))
+      .returning();
+    return actualizada;
+  }
+
+  async deleteSubcategoriaServicio(id: string): Promise<void> {
+    await db.update(logosServicios)
+      .set({ subcategoriaId: null })
+      .where(eq(logosServicios.subcategoriaId, id));
+    await db.delete(subcategoriasServicio).where(eq(subcategoriasServicio.id, id));
   }
 
   // ============================================================
