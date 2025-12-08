@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-const AUDIO_ACTIVATED_KEY = "apo-360-audio-activado";
+const AUDIO_AUTOPLAY_KEY = "apo-360-audio-autoplay";
 
 interface RadioOnline {
   id: number | string;
@@ -116,31 +116,10 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   const [silenciado, setSilenciado] = useState(storedState.silenciado || false);
   const [autoReproducir, setAutoReproducir] = useState(false);
   const [primeraVez, setPrimeraVez] = useState(true);
-  const [audioActivado, setAudioActivado] = useState(() => {
-    try {
-      return localStorage.getItem(AUDIO_ACTIVATED_KEY) === "true";
-    } catch {
-      return false;
-    }
-  });
+  const [intentoAutoplay, setIntentoAutoplay] = useState(false);
+  const [autoplayBloqueado, setAutoplayBloqueado] = useState(false);
 
-  const necesitaActivacion = !audioActivado && !reproduciendo;
-
-  useEffect(() => {
-    const habilitarAutoplay = () => {
-      interaccionUsuarioRef.current = true;
-    };
-    
-    document.addEventListener("click", habilitarAutoplay, { once: true });
-    document.addEventListener("touchstart", habilitarAutoplay, { once: true });
-    document.addEventListener("keydown", habilitarAutoplay, { once: true });
-    
-    return () => {
-      document.removeEventListener("click", habilitarAutoplay);
-      document.removeEventListener("touchstart", habilitarAutoplay);
-      document.removeEventListener("keydown", habilitarAutoplay);
-    };
-  }, []);
+  const necesitaActivacion = autoplayBloqueado && !reproduciendo;
 
   const { data: radios = [] } = useQuery<RadioOnline[]>({
     queryKey: ["/api/radios-online"],
@@ -171,6 +150,31 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   const artistaActual = tipoFuente === "lista" ? archivoActual?.artista || null : null;
 
   useEffect(() => {
+    const habilitarAutoplay = () => {
+      interaccionUsuarioRef.current = true;
+      if (autoplayBloqueado && urlActual && audioRef.current) {
+        console.log("🎵 Interacción detectada, intentando reproducir...");
+        audioRef.current.play()
+          .then(() => {
+            setReproduciendo(true);
+            setAutoplayBloqueado(false);
+          })
+          .catch(err => console.log("Error en reproducción tras interacción:", err));
+      }
+    };
+    
+    document.addEventListener("click", habilitarAutoplay);
+    document.addEventListener("touchstart", habilitarAutoplay);
+    document.addEventListener("keydown", habilitarAutoplay);
+    
+    return () => {
+      document.removeEventListener("click", habilitarAutoplay);
+      document.removeEventListener("touchstart", habilitarAutoplay);
+      document.removeEventListener("keydown", habilitarAutoplay);
+    };
+  }, [autoplayBloqueado, urlActual]);
+
+  useEffect(() => {
     if (radiosActivas.length > 0 && radioSeleccionadaId === null) {
       const predeterminada = radiosActivas.find((r) => r.esPredeterminada);
       const tacnaFm = radiosActivas.find((r) => 
@@ -180,14 +184,34 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
       );
       const radioInicial = predeterminada?.id || tacnaFm?.id || radiosActivas[0].id;
       setRadioSeleccionadaId(radioInicial);
-      
-      if (primeraVez && !inicializadoRef.current) {
-        inicializadoRef.current = true;
-        setPrimeraVez(false);
-        setAutoReproducir(true);
-      }
     }
-  }, [radiosActivas, radioSeleccionadaId, primeraVez]);
+  }, [radiosActivas, radioSeleccionadaId]);
+
+  useEffect(() => {
+    if (primeraVez && urlActual && !intentoAutoplay && !reproduciendo && audioRef.current) {
+      setIntentoAutoplay(true);
+      inicializadoRef.current = true;
+      setPrimeraVez(false);
+      
+      console.log("🎵 Intentando autoplay inicial con:", urlActual);
+      
+      const audio = audioRef.current;
+      audio.src = urlActual;
+      audio.load();
+      
+      audio.play()
+        .then(() => {
+          console.log("✅ Autoplay exitoso");
+          setReproduciendo(true);
+          setAutoplayBloqueado(false);
+        })
+        .catch((error) => {
+          console.log("⚠️ Autoplay bloqueado por el navegador:", error.name);
+          setAutoplayBloqueado(true);
+          setReproduciendo(false);
+        });
+    }
+  }, [primeraVez, urlActual, intentoAutoplay, reproduciendo]);
 
   useEffect(() => {
     if (listasActivas.length > 0 && listaSeleccionadaId === null) {
@@ -372,12 +396,7 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
 
   const activarAudio = useCallback(() => {
     interaccionUsuarioRef.current = true;
-    setAudioActivado(true);
-    try {
-      localStorage.setItem(AUDIO_ACTIVATED_KEY, "true");
-    } catch (e) {
-      console.error("Error guardando estado de activación:", e);
-    }
+    setAutoplayBloqueado(false);
     
     if (!audioRef.current || !urlActual) {
       console.log("activarAudio: no hay audioRef o urlActual, usando autoReproducir");
@@ -395,8 +414,9 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
     
     audio.play()
       .then(() => {
-        console.log("Audio activado y reproduciéndose");
+        console.log("✅ Audio activado y reproduciéndose");
         setReproduciendo(true);
+        setAutoplayBloqueado(false);
       })
       .catch((error) => {
         console.error("Error al activar audio:", error);
@@ -470,21 +490,18 @@ export function AudioControllerProvider({ children }: { children: ReactNode }) {
   return (
     <AudioControllerContext.Provider value={value}>
       {children}
-      {urlActual && !usandoIframe && (
-        <audio
-          id={AUDIO_PLAYER_ID}
-          ref={audioRef}
-          src={urlActual}
-          onEnded={() => {
-            if (tipoFuente === "lista" && archivosDeLista.length > 0) {
-              siguientePista();
-            }
-          }}
-          onPlay={() => setReproduciendo(true)}
-          onPause={() => setReproduciendo(false)}
-          style={{ display: "none" }}
-        />
-      )}
+      <audio
+        id={AUDIO_PLAYER_ID}
+        ref={audioRef}
+        onEnded={() => {
+          if (tipoFuente === "lista" && archivosDeLista.length > 0) {
+            siguientePista();
+          }
+        }}
+        onPlay={() => setReproduciendo(true)}
+        onPause={() => setReproduciendo(false)}
+        style={{ display: "none" }}
+      />
     </AudioControllerContext.Provider>
   );
 }

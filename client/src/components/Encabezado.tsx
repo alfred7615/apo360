@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useAudioController } from "@/contexts/AudioControllerContext";
 import SelectorAudio from "./SelectorAudio";
+import ReproductorMini from "./ReproductorMini";
 
 export default function Encabezado() {
   const [location] = useLocation();
@@ -203,6 +204,8 @@ export default function Encabezado() {
           </div>
         </div>
       </div>
+      
+      <ReproductorMini onAbrirSelector={() => setSelectorAudioAbierto(true)} />
     </header>
   );
 }
