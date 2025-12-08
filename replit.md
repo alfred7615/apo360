@@ -43,7 +43,15 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 - **Role-Based Access Control**: Supports various roles including `super_admin`, `admin_cartera`, `admin_operaciones`, `supervisor`, `usuario`, `conductor`, and `local` with specific permissions.
 - **Wallet and Balance System**: Comprehensive system with user balances, payment methods (bank accounts, Yape, Plin, PayPal), multi-currency support, recharge/withdrawal requests with approval flow, and transaction history. Includes configurable commissions/discounts for various services.
 - **Survey and Promotional Popups System**: Supports dynamic surveys with multiple questions, scheduled popups (advertising, missing persons/pets, events) with mandatory timers, and social interactions (likes, favorites, comments, sharing).
-- **Local Services System**: Management of service categories, local business logos, products/services with social counters (likes, favorites, shares, comments), and an integrated charging system for adding products.
+- **Local Services System (Hierarchical)**: Three-level hierarchical system:
+  - **Categorías**: Main service categories (Restaurantes, Farmacias, Ferreterías, Tiendas, Peluquerías, Talleres, Mecánica)
+  - **Subcategorías**: Nested under categories, managed via accordion UI in admin panel
+  - **Logos/Negocios**: Local businesses with category/subcategory assignment, products, social counters (likes, favorites, shares, comments)
+  - Table `subcategorias_servicio` linked to `categorias_servicio`
+  - Field `subcategoriaId` added to `logos_servicios` table
+  - API endpoints: `/api/subcategorias-servicio` (CRUD), `/api/logos-servicio/:id/like`, `/api/logos-servicio/:id/favorito`
+  - Component `GaleriaServiciosLocales.tsx` provides hierarchical navigation on home page
+  - Admin panel: `gestion-servicios-locales.tsx` with accordion-based category/subcategory management
 - **Image Upload System**: Secure backend upload system with endpoint-specific configuration, MIME validation, increased size limits (15MB), and a reusable frontend component for previews and error handling, including multi-image uploads with persistence, visual indicators for GPS, social networks, links, and dates, and robust validations.
 - **User Profile - Business Section**: Extended business section with fields for 4 photos (using CameraCapture), 2 videos (file explorer), and GPS location of the business (using MapPicker). Uploads via `/api/upload/perfil-imagenes` and `/api/upload/perfil-videos` endpoints.
 - **User Locations (Lugares)**: Users can save multiple GPS locations with custom names (home, work, pharmacy, etc.) for use with taxi and delivery services. Stored in `lugares_usuario` table with API endpoints at `/api/lugares-usuario`.
