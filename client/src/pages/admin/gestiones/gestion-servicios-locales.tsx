@@ -18,7 +18,9 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { CategoriaServicio, LogoServicio, ProductoServicio } from "@shared/schema";
+import type { CategoriaServicio, SubcategoriaServicio, LogoServicio, ProductoServicio } from "@shared/schema";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { FolderOpen, Layers } from "lucide-react";
 
 export default function GestionServiciosLocalesScreen() {
   const [activeTab, setActiveTab] = useState("categorias");
@@ -26,22 +28,29 @@ export default function GestionServiciosLocalesScreen() {
   const { toast } = useToast();
 
   const [showCategoriaModal, setShowCategoriaModal] = useState(false);
+  const [showSubcategoriaModal, setShowSubcategoriaModal] = useState(false);
   const [showLogoModal, setShowLogoModal] = useState(false);
   const [showProductoModal, setShowProductoModal] = useState(false);
   const [showProductosListModal, setShowProductosListModal] = useState(false);
   const [showConfigCobrosModal, setShowConfigCobrosModal] = useState(false);
 
   const [editingCategoria, setEditingCategoria] = useState<CategoriaServicio | null>(null);
+  const [editingSubcategoria, setEditingSubcategoria] = useState<SubcategoriaServicio | null>(null);
   const [editingLogo, setEditingLogo] = useState<LogoServicio | null>(null);
   const [editingProducto, setEditingProducto] = useState<ProductoServicio | null>(null);
   const [selectedLogoId, setSelectedLogoId] = useState<string | null>(null);
+  const [selectedCategoriaIdForSubcat, setSelectedCategoriaIdForSubcat] = useState<string | null>(null);
 
   const [formCategoria, setFormCategoria] = useState({
     nombre: "", descripcion: "", imagenUrl: "", icono: "", orden: 0, estado: "activo"
   });
 
+  const [formSubcategoria, setFormSubcategoria] = useState({
+    categoriaId: "", nombre: "", descripcion: "", imagenUrl: "", icono: "", orden: 0, estado: "activo"
+  });
+
   const [formLogo, setFormLogo] = useState({
-    categoriaId: "", nombre: "", descripcion: "", logoUrl: "", direccion: "",
+    categoriaId: "", subcategoriaId: "", nombre: "", descripcion: "", logoUrl: "", direccion: "",
     telefono: "", whatsapp: "", email: "", horario: "", estado: "activo",
     gpsLatitud: 0, gpsLongitud: 0
   });
@@ -61,6 +70,10 @@ export default function GestionServiciosLocalesScreen() {
 
   const { data: logos = [], isLoading: loadingLogos } = useQuery<LogoServicio[]>({
     queryKey: ["/api/logos-servicio"],
+  });
+
+  const { data: subcategorias = [], isLoading: loadingSubcategorias } = useQuery<SubcategoriaServicio[]>({
+    queryKey: ["/api/subcategorias-servicio"],
   });
 
   const { data: productosDelLogo = [], isLoading: loadingProductos } = useQuery<ProductoServicio[]>({
@@ -103,10 +116,49 @@ export default function GestionServiciosLocalesScreen() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/categorias-servicio/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categorias-servicio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subcategorias-servicio"] });
       toast({ title: "Categoría eliminada" });
     },
     onError: (error: any) => {
       toast({ title: "Error al eliminar categoría", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const createSubcategoriaMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/subcategorias-servicio", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/subcategorias-servicio"] });
+      toast({ title: "Subcategoría creada exitosamente" });
+      setShowSubcategoriaModal(false);
+      resetFormSubcategoria();
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al crear subcategoría", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateSubcategoriaMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PATCH", `/api/subcategorias-servicio/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/subcategorias-servicio"] });
+      toast({ title: "Subcategoría actualizada" });
+      setShowSubcategoriaModal(false);
+      setEditingSubcategoria(null);
+      resetFormSubcategoria();
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al actualizar subcategoría", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteSubcategoriaMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/subcategorias-servicio/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/subcategorias-servicio"] });
+      toast({ title: "Subcategoría eliminada" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al eliminar subcategoría", description: error.message, variant: "destructive" });
     },
   });
 
@@ -202,9 +254,16 @@ export default function GestionServiciosLocalesScreen() {
     setFormCategoria({ nombre: "", descripcion: "", imagenUrl: "", icono: "", orden: 0, estado: "activo" });
   };
 
+  const resetFormSubcategoria = () => {
+    setFormSubcategoria({ 
+      categoriaId: selectedCategoriaIdForSubcat || "", 
+      nombre: "", descripcion: "", imagenUrl: "", icono: "", orden: 0, estado: "activo" 
+    });
+  };
+
   const resetFormLogo = () => {
     setFormLogo({
-      categoriaId: "", nombre: "", descripcion: "", logoUrl: "", direccion: "",
+      categoriaId: "", subcategoriaId: "", nombre: "", descripcion: "", logoUrl: "", direccion: "",
       telefono: "", whatsapp: "", email: "", horario: "", estado: "activo",
       gpsLatitud: 0, gpsLongitud: 0
     });
@@ -230,10 +289,43 @@ export default function GestionServiciosLocalesScreen() {
     setShowCategoriaModal(true);
   };
 
+  const handleEditSubcategoria = (sub: SubcategoriaServicio) => {
+    setEditingSubcategoria(sub);
+    setFormSubcategoria({
+      categoriaId: sub.categoriaId,
+      nombre: sub.nombre,
+      descripcion: sub.descripcion || "",
+      imagenUrl: sub.imagenUrl || "",
+      icono: sub.icono || "",
+      orden: sub.orden || 0,
+      estado: sub.estado || "activo"
+    });
+    setShowSubcategoriaModal(true);
+  };
+
+  const handleAddSubcategoria = (categoriaId: string) => {
+    setSelectedCategoriaIdForSubcat(categoriaId);
+    setEditingSubcategoria(null);
+    setFormSubcategoria({
+      categoriaId: categoriaId,
+      nombre: "", descripcion: "", imagenUrl: "", icono: "", orden: 0, estado: "activo"
+    });
+    setShowSubcategoriaModal(true);
+  };
+
+  const handleSaveSubcategoria = () => {
+    if (editingSubcategoria) {
+      updateSubcategoriaMutation.mutate({ id: editingSubcategoria.id, data: formSubcategoria });
+    } else {
+      createSubcategoriaMutation.mutate(formSubcategoria);
+    }
+  };
+
   const handleEditLogo = (logo: LogoServicio) => {
     setEditingLogo(logo);
     setFormLogo({
       categoriaId: logo.categoriaId || "",
+      subcategoriaId: (logo as any).subcategoriaId || "",
       nombre: logo.nombre,
       descripcion: logo.descripcion || "",
       logoUrl: logo.logoUrl || "",
@@ -392,7 +484,7 @@ export default function GestionServiciosLocalesScreen() {
             <CardHeader className="flex flex-row items-center justify-between gap-2">
               <div>
                 <CardTitle>Categorías de Servicios</CardTitle>
-                <CardDescription>Agrupa los servicios locales en categorías</CardDescription>
+                <CardDescription>Agrupa los servicios locales en categorías y subcategorías</CardDescription>
               </div>
               <Button onClick={() => { resetFormCategoria(); setEditingCategoria(null); setShowCategoriaModal(true); }} data-testid="button-nueva-categoria">
                 <Plus className="h-4 w-4 mr-2" />
@@ -407,32 +499,85 @@ export default function GestionServiciosLocalesScreen() {
                   No hay categorías. Agrega una nueva categoría para comenzar.
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {filteredCategorias.map((cat) => (
-                    <Card key={cat.id} className="hover-elevate cursor-pointer group" data-testid={`card-categoria-${cat.id}`}>
-                      <CardContent className="p-4 flex flex-col items-center text-center">
-                        <Avatar className="h-16 w-16 mb-2">
-                          <AvatarImage src={cat.imagenUrl || ""} alt={cat.nombre} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                            {cat.nombre.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <h3 className="font-medium text-sm">{cat.nombre}</h3>
-                        <Badge variant={cat.estado === "activo" ? "default" : "secondary"} className="mt-1">
-                          {cat.estado}
-                        </Badge>
-                        <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button size="icon" variant="ghost" onClick={() => handleEditCategoria(cat)} data-testid={`button-edit-categoria-${cat.id}`}>
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={() => deleteCategoriaMutation.mutate(cat.id)} data-testid={`button-delete-categoria-${cat.id}`}>
-                            <Trash2 className="h-3 w-3 text-destructive" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                <Accordion type="multiple" className="space-y-2">
+                  {filteredCategorias.map((cat) => {
+                    const subcatsDeCategoria = subcategorias.filter(s => s.categoriaId === cat.id);
+                    return (
+                      <AccordionItem key={cat.id} value={cat.id} className="border rounded-lg" data-testid={`accordion-categoria-${cat.id}`}>
+                        <AccordionTrigger className="px-4 hover:no-underline">
+                          <div className="flex items-center gap-3 w-full">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={cat.imagenUrl || ""} alt={cat.nombre} />
+                              <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                                {cat.nombre.substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 text-left">
+                              <h3 className="font-medium">{cat.nombre}</h3>
+                              <p className="text-xs text-muted-foreground">
+                                {subcatsDeCategoria.length} subcategoría(s) · {logos.filter(l => l.categoriaId === cat.id).length} negocio(s)
+                              </p>
+                            </div>
+                            <Badge variant={cat.estado === "activo" ? "default" : "secondary"} className="mr-2">
+                              {cat.estado}
+                            </Badge>
+                            <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                              <Button size="icon" variant="ghost" onClick={() => handleEditCategoria(cat)} data-testid={`button-edit-categoria-${cat.id}`}>
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button size="icon" variant="ghost" onClick={() => deleteCategoriaMutation.mutate(cat.id)} data-testid={`button-delete-categoria-${cat.id}`}>
+                                <Trash2 className="h-3 w-3 text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-sm flex items-center gap-2">
+                                <Layers className="h-4 w-4" />
+                                Subcategorías
+                              </h4>
+                              <Button size="sm" variant="outline" onClick={() => handleAddSubcategoria(cat.id)} data-testid={`button-add-subcategoria-${cat.id}`}>
+                                <Plus className="h-3 w-3 mr-1" />
+                                Agregar
+                              </Button>
+                            </div>
+                            {subcatsDeCategoria.length === 0 ? (
+                              <p className="text-sm text-muted-foreground text-center py-2">
+                                No hay subcategorías. Agrega una para organizar mejor tus negocios.
+                              </p>
+                            ) : (
+                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                                {subcatsDeCategoria.map((sub) => (
+                                  <Card key={sub.id} className="hover-elevate group" data-testid={`card-subcategoria-${sub.id}`}>
+                                    <CardContent className="p-3 flex flex-col items-center text-center">
+                                      <div className="h-8 w-8 rounded-full bg-secondary/50 flex items-center justify-center mb-1">
+                                        <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                                      </div>
+                                      <h4 className="font-medium text-xs truncate w-full">{sub.nombre}</h4>
+                                      <span className="text-xs text-muted-foreground">
+                                        {logos.filter(l => (l as any).subcategoriaId === sub.id).length} negocio(s)
+                                      </span>
+                                      <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEditSubcategoria(sub)} data-testid={`button-edit-subcategoria-${sub.id}`}>
+                                          <Edit className="h-2 w-2" />
+                                        </Button>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => deleteSubcategoriaMutation.mutate(sub.id)} data-testid={`button-delete-subcategoria-${sub.id}`}>
+                                          <Trash2 className="h-2 w-2 text-destructive" />
+                                        </Button>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
               )}
             </CardContent>
           </Card>
@@ -458,49 +603,73 @@ export default function GestionServiciosLocalesScreen() {
                   No hay logos de servicios. Agrega uno nuevo para comenzar.
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {filteredLogos.map((logo) => (
-                    <Card key={logo.id} className="hover-elevate cursor-pointer group" data-testid={`card-logo-${logo.id}`}>
-                      <CardContent className="p-4 flex flex-col items-center text-center">
-                        <div 
-                          className="relative cursor-pointer" 
-                          onClick={() => handleViewProductos(logo.id)}
-                        >
-                          <Avatar className="h-20 w-20 mb-2 ring-2 ring-primary/20">
-                            <AvatarImage src={logo.logoUrl || ""} alt={logo.nombre} className="object-cover" />
-                            <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                              {logo.nombre.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          {logo.verificado && (
-                            <CheckCircle className="absolute bottom-0 right-0 h-5 w-5 text-green-500 bg-white rounded-full" />
-                          )}
-                        </div>
-                        <h3 className="font-medium text-sm truncate w-full">{logo.nombre}</h3>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <Heart className="h-3 w-3" /> {logo.totalLikes || 0}
-                          <Star className="h-3 w-3 ml-2" /> {logo.totalFavoritos || 0}
-                        </div>
-                        <Badge 
-                          variant={logo.estado === "activo" ? "default" : logo.estado === "suspendido" ? "destructive" : "secondary"} 
-                          className="mt-1"
-                        >
-                          {logo.estado}
-                        </Badge>
-                        <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button size="icon" variant="ghost" onClick={() => handleViewProductos(logo.id)} data-testid={`button-view-productos-${logo.id}`}>
-                            <Package className="h-3 w-3" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={() => handleEditLogo(logo)} data-testid={`button-edit-logo-${logo.id}`}>
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={() => deleteLogoMutation.mutate(logo.id)} data-testid={`button-delete-logo-${logo.id}`}>
-                            <Trash2 className="h-3 w-3 text-destructive" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {filteredLogos.map((logo) => {
+                    const catLogo = categorias.find(c => c.id === logo.categoriaId);
+                    const subcatLogo = subcategorias.find(s => s.id === (logo as any).subcategoriaId);
+                    return (
+                      <Card key={logo.id} className="hover-elevate cursor-pointer group" data-testid={`card-logo-${logo.id}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div 
+                              className="relative cursor-pointer flex-shrink-0" 
+                              onClick={() => handleViewProductos(logo.id)}
+                            >
+                              <Avatar className="h-16 w-16 ring-2 ring-primary/20">
+                                <AvatarImage src={logo.logoUrl || ""} alt={logo.nombre} className="object-cover" />
+                                <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                                  {logo.nombre.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              {logo.verificado && (
+                                <CheckCircle className="absolute bottom-0 right-0 h-4 w-4 text-green-500 bg-white rounded-full" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium text-sm truncate">{logo.nombre}</h3>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {catLogo && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {catLogo.nombre}
+                                  </Badge>
+                                )}
+                                {subcatLogo && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {subcatLogo.nombre}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                <span className="flex items-center gap-0.5">
+                                  <Heart className="h-3 w-3" /> {logo.totalLikes || 0}
+                                </span>
+                                <span className="flex items-center gap-0.5">
+                                  <Star className="h-3 w-3" /> {logo.totalFavoritos || 0}
+                                </span>
+                              </div>
+                              <Badge 
+                                variant={logo.estado === "activo" ? "default" : logo.estado === "suspendido" ? "destructive" : "secondary"} 
+                                className="mt-1"
+                              >
+                                {logo.estado}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex gap-1 mt-3 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button size="icon" variant="ghost" onClick={() => handleViewProductos(logo.id)} data-testid={`button-view-productos-${logo.id}`}>
+                              <Package className="h-3 w-3" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => handleEditLogo(logo)} data-testid={`button-edit-logo-${logo.id}`}>
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={() => deleteLogoMutation.mutate(logo.id)} data-testid={`button-delete-logo-${logo.id}`}>
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -584,6 +753,77 @@ export default function GestionServiciosLocalesScreen() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showSubcategoriaModal} onOpenChange={setShowSubcategoriaModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingSubcategoria ? "Editar Subcategoría" : "Nueva Subcategoría"}</DialogTitle>
+            <DialogDescription>
+              {categorias.find(c => c.id === formSubcategoria.categoriaId)?.nombre 
+                ? `Para la categoría: ${categorias.find(c => c.id === formSubcategoria.categoriaId)?.nombre}` 
+                : "Configura los datos de la subcategoría"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nombre</Label>
+              <Input
+                value={formSubcategoria.nombre}
+                onChange={(e) => setFormSubcategoria({ ...formSubcategoria, nombre: e.target.value })}
+                placeholder="Ej: Pizzería, Cevichería, etc."
+                data-testid="input-subcategoria-nombre"
+              />
+            </div>
+            <div>
+              <Label>Descripción (opcional)</Label>
+              <Textarea
+                value={formSubcategoria.descripcion}
+                onChange={(e) => setFormSubcategoria({ ...formSubcategoria, descripcion: e.target.value })}
+                placeholder="Descripción de la subcategoría"
+                data-testid="input-subcategoria-descripcion"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Icono (opcional)</Label>
+                <Input
+                  value={formSubcategoria.icono}
+                  onChange={(e) => setFormSubcategoria({ ...formSubcategoria, icono: e.target.value })}
+                  placeholder="pizza, coffee, etc"
+                  data-testid="input-subcategoria-icono"
+                />
+              </div>
+              <div>
+                <Label>Orden</Label>
+                <Input
+                  type="number"
+                  value={formSubcategoria.orden}
+                  onChange={(e) => setFormSubcategoria({ ...formSubcategoria, orden: parseInt(e.target.value) || 0 })}
+                  data-testid="input-subcategoria-orden"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Estado</Label>
+              <Select value={formSubcategoria.estado} onValueChange={(v) => setFormSubcategoria({ ...formSubcategoria, estado: v })}>
+                <SelectTrigger data-testid="select-subcategoria-estado">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="activo">Activo</SelectItem>
+                  <SelectItem value="inactivo">Inactivo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSubcategoriaModal(false)}>Cancelar</Button>
+            <Button onClick={handleSaveSubcategoria} disabled={createSubcategoriaMutation.isPending || updateSubcategoriaMutation.isPending} data-testid="button-guardar-subcategoria">
+              {editingSubcategoria ? "Actualizar" : "Crear"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showLogoModal} onOpenChange={setShowLogoModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -593,13 +833,30 @@ export default function GestionServiciosLocalesScreen() {
           <div className="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
             <div>
               <Label>Categoría</Label>
-              <Select value={formLogo.categoriaId} onValueChange={(v) => setFormLogo({ ...formLogo, categoriaId: v })}>
+              <Select value={formLogo.categoriaId} onValueChange={(v) => setFormLogo({ ...formLogo, categoriaId: v, subcategoriaId: "" })}>
                 <SelectTrigger data-testid="select-logo-categoria">
                   <SelectValue placeholder="Selecciona categoría" />
                 </SelectTrigger>
                 <SelectContent>
                   {categorias.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>{cat.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Subcategoría</Label>
+              <Select 
+                value={formLogo.subcategoriaId} 
+                onValueChange={(v) => setFormLogo({ ...formLogo, subcategoriaId: v })}
+                disabled={!formLogo.categoriaId}
+              >
+                <SelectTrigger data-testid="select-logo-subcategoria">
+                  <SelectValue placeholder={formLogo.categoriaId ? "Selecciona subcategoría" : "Primero selecciona categoría"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {subcategorias.filter(s => s.categoriaId === formLogo.categoriaId).map((sub) => (
+                    <SelectItem key={sub.id} value={sub.id}>{sub.nombre}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
