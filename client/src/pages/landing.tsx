@@ -318,17 +318,19 @@ export default function Landing() {
 
       {/* Modal Calculadora de Cambio - Acceso libre para todos */}
       <Dialog open={modalMoneda} onOpenChange={setModalMoneda}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 sm:p-6">
-          <DialogHeader className="p-4 sm:p-0 pb-0">
-            <DialogTitle className="flex items-center gap-2 justify-center">
-              <Coins className="h-6 w-6 text-emerald-600" />
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 bg-gradient-to-br from-gray-900 via-gray-850 to-gray-900 border-gray-700/50">
+          <DialogHeader className="p-5 pb-0 border-b border-gray-700/50">
+            <DialogTitle className="flex items-center gap-3 justify-center text-gray-100">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 border border-rose-500/20">
+                <Coins className="h-5 w-5 text-rose-400" />
+              </div>
               Cambio de Moneda
             </DialogTitle>
-            <DialogDescription className="text-center">
+            <DialogDescription className="text-center text-gray-400">
               Calcula el tipo de cambio entre monedas
             </DialogDescription>
           </DialogHeader>
-          <div className="px-2 sm:px-0 pb-4">
+          <div className="p-5">
             <CalculadoraCambio sinCard />
           </div>
         </DialogContent>
