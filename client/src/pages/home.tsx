@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
-import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X, Megaphone, UsersRound, Bus, Coins, Construction } from "lucide-react";
+import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X, Megaphone, UsersRound, Bus, Coins, Construction, Share2, Shield, Radio, Accessibility, CircleDot, Store, Clock, Star } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import FranjaEmergencia from "@/components/FranjaEmergencia";
 import CarruselPublicidad from "@/components/CarruselPublicidad";
 import GaleriaServiciosLocales from "@/components/GaleriaServiciosLocales";
 import ModuloAudio from "@/components/ModuloAudio";
+import CartillasBeneficios from "@/components/CartillasBeneficios";
 import BannerActivarAudio from "@/components/BannerActivarAudio";
 import { CalculadoraCambio } from "@/components/CalculadoraCambio";
 import { useQuery } from "@tanstack/react-query";
@@ -362,6 +363,152 @@ export default function Home() {
       {/* Módulo de audio */}
       <section className="container mx-auto px-4 py-8">
         <ModuloAudio />
+      </section>
+
+      {/* Cartillas de beneficios - Por Qué Elegir APO-360 */}
+      <CartillasBeneficios />
+
+      {/* Sección de Servicios Integrados */}
+      <section className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-3">Servicios Integrados</h2>
+            <p className="text-muted-foreground">Todo lo que necesitas en una sola plataforma</p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+            {/* Botón de Pánico */}
+            <div 
+              className="text-center group cursor-pointer hover-elevate active-elevate-2 p-4 rounded-xl transition-all"
+              onClick={() => toast({ title: "Botón de Pánico", description: "Usa el botón flotante rojo en pantalla para emergencias" })}
+              data-testid="servicio-panico-home"
+            >
+              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-red-600 text-white mx-auto mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                <AlertTriangle className="h-8 w-8 sm:h-10 sm:w-10" />
+              </div>
+              <h3 className="font-semibold mb-1 text-sm sm:text-base">Botón de Pánico</h3>
+              <p className="text-xs text-muted-foreground">Alerta inmediata</p>
+            </div>
+
+            {/* Chat Comunitario */}
+            <div 
+              className="text-center group cursor-pointer hover-elevate active-elevate-2 p-4 rounded-xl transition-all"
+              onClick={() => setLocation("/chat")}
+              data-testid="servicio-chat-home"
+            >
+              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-green-600 text-white mx-auto mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                <MessageCircle className="h-8 w-8 sm:h-10 sm:w-10" />
+              </div>
+              <h3 className="font-semibold mb-1 text-sm sm:text-base">Chat Comunitario</h3>
+              <p className="text-xs text-muted-foreground">Tiempo real</p>
+            </div>
+
+            {/* Servicio de Taxi */}
+            <div 
+              className="text-center group cursor-pointer hover-elevate active-elevate-2 p-4 rounded-xl transition-all"
+              onClick={() => setModalTaxi(true)}
+              data-testid="servicio-taxi-home"
+            >
+              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-500 to-yellow-600 text-white mx-auto mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                <Car className="h-8 w-8 sm:h-10 sm:w-10" />
+              </div>
+              <h3 className="font-semibold mb-1 text-sm sm:text-base">Servicio de Taxi</h3>
+              <p className="text-xs text-muted-foreground">Transporte seguro</p>
+            </div>
+
+            {/* Delivery Local */}
+            <div 
+              className="text-center group cursor-pointer hover-elevate active-elevate-2 p-4 rounded-xl transition-all"
+              onClick={() => setModalDelivery(true)}
+              data-testid="servicio-delivery-home"
+            >
+              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white mx-auto mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                <ShoppingCart className="h-8 w-8 sm:h-10 sm:w-10" />
+              </div>
+              <h3 className="font-semibold mb-1 text-sm sm:text-base">Delivery Local</h3>
+              <p className="text-xs text-muted-foreground">Pedidos cercanos</p>
+            </div>
+
+            {/* Radio Online */}
+            <div 
+              className="text-center group cursor-pointer hover-elevate active-elevate-2 p-4 rounded-xl transition-all"
+              onClick={() => toast({ title: "Radio Online", description: "Usa el módulo de audio en la parte superior" })}
+              data-testid="servicio-radio-home"
+            >
+              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-500 to-pink-600 text-white mx-auto mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                <Radio className="h-8 w-8 sm:h-10 sm:w-10" />
+              </div>
+              <h3 className="font-semibold mb-1 text-sm sm:text-base">Radio Online</h3>
+              <p className="text-xs text-muted-foreground">Música 24/7</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Call to Action Final - Compartir Sitio */}
+      <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-4xl font-bold mb-4">¿Listo para una Comunidad Más Segura?</h2>
+          <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
+            Comparte APO-360 con tus amigos y familiares para fortalecer la seguridad de toda la comunidad.
+          </p>
+          <Button
+            size="lg"
+            variant="secondary"
+            className="bg-white text-purple-700 hover:bg-white/90 px-10 py-6 text-lg font-semibold shadow-2xl"
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({
+                  title: "APO-360 - Seguridad Comunitaria",
+                  text: "Únete a la comunidad más segura de Tacna. ¡Regístrate gratis!",
+                  url: window.location.origin,
+                });
+              } else {
+                navigator.clipboard.writeText(window.location.origin);
+                toast({
+                  title: "¡Enlace copiado!",
+                  description: "Comparte este enlace con tus amigos y familiares",
+                });
+              }
+            }}
+            data-testid="button-compartir-sitio"
+          >
+            <Share2 className="mr-2 h-5 w-5" />
+            Compartir Sitio con Amigos
+          </Button>
+
+          {/* Estadísticas */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12 max-w-4xl mx-auto">
+            <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-4" data-testid="stat-usuarios-home">
+              <div className="flex items-center justify-center mb-2">
+                <Users className="h-6 w-6 mr-2" />
+              </div>
+              <div className="text-4xl font-bold mb-1">500+</div>
+              <div className="text-sm text-white/80">Usuarios Activos</div>
+            </div>
+            <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-4" data-testid="stat-servicios-home">
+              <div className="flex items-center justify-center mb-2">
+                <Store className="h-6 w-6 mr-2" />
+              </div>
+              <div className="text-4xl font-bold mb-1">50+</div>
+              <div className="text-sm text-white/80">Servicios Locales</div>
+            </div>
+            <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-4" data-testid="stat-monitoreo-home">
+              <div className="flex items-center justify-center mb-2">
+                <Clock className="h-6 w-6 mr-2" />
+              </div>
+              <div className="text-4xl font-bold mb-1">24/7</div>
+              <div className="text-sm text-white/80">Monitoreo</div>
+            </div>
+            <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-4" data-testid="stat-satisfaccion-home">
+              <div className="flex items-center justify-center mb-2">
+                <Star className="h-6 w-6 mr-2" />
+              </div>
+              <div className="text-4xl font-bold mb-1">98%</div>
+              <div className="text-sm text-white/80">Satisfacción</div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Modal Agenda */}
