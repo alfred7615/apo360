@@ -3664,6 +3664,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/logos-servicio/:id/like', isAuthenticated, async (req: any, res) => {
+    try {
+      const logoId = req.params.id;
+      const logo = await storage.getLogoServicio(logoId);
+      if (!logo) {
+        return res.status(404).json({ message: "Logo no encontrado" });
+      }
+      const nuevoTotal = (logo.totalLikes || 0) + 1;
+      await storage.updateLogoServicio(logoId, { totalLikes: nuevoTotal });
+      res.json({ totalLikes: nuevoTotal });
+    } catch (error) {
+      console.error("Error al dar like:", error);
+      res.status(500).json({ message: "Error al dar like" });
+    }
+  });
+
+  app.post('/api/logos-servicio/:id/favorito', isAuthenticated, async (req: any, res) => {
+    try {
+      const logoId = req.params.id;
+      const logo = await storage.getLogoServicio(logoId);
+      if (!logo) {
+        return res.status(404).json({ message: "Logo no encontrado" });
+      }
+      const nuevoTotal = (logo.totalFavoritos || 0) + 1;
+      await storage.updateLogoServicio(logoId, { totalFavoritos: nuevoTotal });
+      res.json({ totalFavoritos: nuevoTotal });
+    } catch (error) {
+      console.error("Error al agregar a favoritos:", error);
+      res.status(500).json({ message: "Error al agregar a favoritos" });
+    }
+  });
+
   // ============================================================
   // PRODUCTOS DE SERVICIOS LOCALES
   // ============================================================

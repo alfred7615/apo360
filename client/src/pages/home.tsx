@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import FranjaEmergencia from "@/components/FranjaEmergencia";
 import CarruselPublicidad from "@/components/CarruselPublicidad";
-import GaleriaServicios from "@/components/GaleriaServicios";
+import GaleriaServiciosLocales from "@/components/GaleriaServiciosLocales";
 import ModuloAudio from "@/components/ModuloAudio";
 import BannerActivarAudio from "@/components/BannerActivarAudio";
 import { CalculadoraCambio } from "@/components/CalculadoraCambio";
@@ -356,8 +356,8 @@ export default function Home() {
         </section>
       )}
 
-      {/* Galería de servicios */}
-      <GaleriaServicios />
+      {/* Galería de servicios locales - Categorías, Subcategorías y Logos */}
+      <GaleriaServiciosLocales />
 
       {/* Módulo de audio */}
       <section className="container mx-auto px-4 py-8">
