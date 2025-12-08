@@ -990,11 +990,32 @@ export type InsertCategoriaServicio = z.infer<typeof insertCategoriaServicioSche
 export type CategoriaServicio = typeof categoriasServicio.$inferSelect;
 
 // ============================================================
+// SUBCATEGORÍAS DE SERVICIOS LOCALES
+// ============================================================
+export const subcategoriasServicio = pgTable("subcategorias_servicio", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  categoriaId: varchar("categoria_id").notNull().references(() => categoriasServicio.id),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  descripcion: text("descripcion"),
+  imagenUrl: varchar("imagen_url"),
+  icono: varchar("icono", { length: 50 }),
+  orden: integer("orden").default(0),
+  estado: varchar("estado", { length: 20 }).default("activo"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSubcategoriaServicioSchema = createInsertSchema(subcategoriasServicio).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSubcategoriaServicio = z.infer<typeof insertSubcategoriaServicioSchema>;
+export type SubcategoriaServicio = typeof subcategoriasServicio.$inferSelect;
+
+// ============================================================
 // LOGOS DE SERVICIOS (Negocios/Locales)
 // ============================================================
 export const logosServicios = pgTable("logos_servicios", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   categoriaId: varchar("categoria_id").references(() => categoriasServicio.id),
+  subcategoriaId: varchar("subcategoria_id").references(() => subcategoriasServicio.id),
   usuarioId: varchar("usuario_id").references(() => usuarios.id),
   nombre: varchar("nombre", { length: 255 }).notNull(),
   descripcion: text("descripcion"),
