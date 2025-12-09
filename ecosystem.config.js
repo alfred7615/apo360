@@ -1,9 +1,8 @@
 module.exports = {
   apps: [{
     name: 'apo360',
-    script: 'npm',
-    args: 'start',
-    cwd: '/root/apo360.net',
+    script: 'dist/index.js',
+    cwd: '/var/www/apo360.net',
     instances: 1,
     autorestart: true,
     watch: false,
@@ -16,9 +15,9 @@ module.exports = {
       NODE_ENV: 'production',
       PORT: 5000
     },
-    error_file: '/root/apo360.net/logs/error.log',
-    out_file: '/root/apo360.net/logs/output.log',
-    log_file: '/root/apo360.net/logs/combined.log',
+    error_file: '/var/www/apo360.net/logs/error.log',
+    out_file: '/var/www/apo360.net/logs/output.log',
+    log_file: '/var/www/apo360.net/logs/combined.log',
     time: true
   }]
 };
