@@ -74,9 +74,9 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 
 ## External Dependencies
 
--   **Hosting & Deployment**: Replit (desarrollo) / KVM propio con PM2 + Nginx (producción)
--   **Database**: Neon PostgreSQL (desarrollo) / PostgreSQL en Docker (producción)
--   **Authentication**: Replit Auth (OpenID Connect)
+-   **Hosting & Deployment**: Replit (desarrollo) / Hostinger VPS con PM2 + Nginx (producción)
+-   **Database**: Neon PostgreSQL (desarrollo) / PostgreSQL local (producción)
+-   **Authentication**: Replit Auth (OpenID Connect) para desarrollo, Google OAuth para producción
 -   **Real-time Communication**: Socket.io
 -   **Mapping**: Google Maps API
 -   **Email Services**: SMTP (via Gmail SMTP)
@@ -84,12 +84,19 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 
 ## Deployment Configuration
 
-### Production Server (KVM - apo360.net)
-- **Server**: KVM VPS con acceso root
+### Production Server (Hostinger VPS - apo360.net)
+- **Server**: Hostinger VPS (srv1170282)
+- **Directorio**: `/var/www/apo360.net`
 - **Process Manager**: PM2 (ecosystem.config.js)
-- **Web Server**: Nginx (nginx.conf)
-- **Database**: PostgreSQL en Docker
+- **Web Server**: Nginx (puerto 80/443 con SSL)
+- **Database**: PostgreSQL local (puerto 5432)
 - **SSL**: Let's Encrypt (Certbot)
+
+### Bases de Datos Separadas
+- **Desarrollo (Replit)**: Neon PostgreSQL (acceso externo)
+- **Producción (Hostinger)**: PostgreSQL local
+  - DB Producción: `apo360_prod` / Usuario: `apo360_admin`
+  - DB Desarrollo: `apo360_dev` / Usuario: `apo360_dev`
 
 ### Deployment Flow
 ```

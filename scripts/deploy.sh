@@ -2,25 +2,30 @@
 # ==================================================
 # APO-360 - Script de despliegue automático
 # ==================================================
-# Ejecutar en el servidor de producción después de git pull
+# Ejecutar en el servidor de producción (Hostinger VPS)
+# Directorio: /var/www/apo360.net
 
 echo "🚀 Iniciando despliegue de APO-360..."
 echo "📅 $(date)"
 
+# Directorio de producción
+PROD_DIR="/var/www/apo360.net"
+BACKUP_DIR="/root/backups"
+
 # Verificar directorio
+cd $PROD_DIR || { echo "❌ No se encontró $PROD_DIR"; exit 1; }
+
 if [ ! -f "package.json" ]; then
-    echo "❌ Error: Ejecuta este script desde la raíz del proyecto"
+    echo "❌ Error: No se encontró package.json en $PROD_DIR"
     exit 1
 fi
 
-# Respaldar base de datos (opcional pero recomendado)
+# Respaldar base de datos
 echo "💾 Creando respaldo de base de datos..."
-BACKUP_DIR="/root/backups"
 mkdir -p $BACKUP_DIR
-# Si usas Docker local:
-# docker exec postgres pg_dump -U postgres apo360 > $BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S).sql
+sudo -u postgres pg_dump apo360_prod > $BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S).sql 2>/dev/null || echo "⚠️  Backup omitido"
 
-# Actualizar código
+# Actualizar código desde GitHub
 echo "📥 Actualizando código desde Git..."
 git pull origin main
 
@@ -41,6 +46,10 @@ if [ $? -ne 0 ]; then
     echo "❌ Error en la construcción"
     exit 1
 fi
+
+# Sincronizar base de datos (sin borrar datos)
+echo "🗄️  Sincronizando esquema de base de datos..."
+npm run db:push 2>/dev/null || echo "⚠️  Revisar migración manualmente"
 
 # Reiniciar aplicación
 echo "🔄 Reiniciando aplicación..."
