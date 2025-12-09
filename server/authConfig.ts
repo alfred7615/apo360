@@ -246,7 +246,7 @@ async function setupGoogleAuth(app: Express): Promise<boolean> {
       clientID: clientId,
       clientSecret: clientSecret,
       callbackURL: callbackUrl,
-      scope: ["profile", "email"],
+      scope: ["profile", "email", "https://www.googleapis.com/auth/contacts.readonly"],
     },
     async (accessToken: string, refreshToken: string, profile: GoogleProfile, done: VerifyCallback) => {
       try {
@@ -261,7 +261,9 @@ async function setupGoogleAuth(app: Express): Promise<boolean> {
   ));
 
   app.get("/api/login", passport.authenticate("google", {
-    scope: ["profile", "email"],
+    scope: ["profile", "email", "https://www.googleapis.com/auth/contacts.readonly"],
+    accessType: "offline",
+    prompt: "consent",
   }));
 
   app.get("/api/callback", passport.authenticate("google", {

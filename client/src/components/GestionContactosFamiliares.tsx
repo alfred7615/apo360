@@ -7,8 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, Plus, Trash2, Save, Loader2, Phone, Mail, User, 
-  GripVertical, AlertTriangle, Check
+  GripVertical, AlertTriangle, Check, Download
 } from "lucide-react";
+import { SiGoogle } from "react-icons/si";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -65,6 +66,7 @@ const RELACIONES = [
   { value: "primo", label: "Primo/a" },
   { value: "amigo", label: "Amigo/a" },
   { value: "vecino", label: "Vecino/a" },
+  { value: "importado_google", label: "Importado de Google" },
   { value: "otro", label: "Otro" },
 ];
 
@@ -151,6 +153,40 @@ export default function GestionContactosFamiliares() {
     },
   });
 
+  const importarGoogleMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/contactos-familiares/importar-google");
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contactos-familiares"] });
+      toast({
+        title: "Importación exitosa",
+        description: data.message || `Se importaron ${data.importados} contactos de Google`,
+      });
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.message || "";
+      const requiresReauth = error?.requiresReauth || errorMessage.includes("expirada") || errorMessage.includes("401");
+      
+      if (requiresReauth) {
+        toast({
+          title: "Sesión de Google expirada",
+          description: "Cerrando sesión para renovar permisos. Vuelve a iniciar sesión.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/logout";
+        }, 2000);
+      } else {
+        toast({
+          title: "Error al importar",
+          description: errorMessage || "No se pudieron importar los contactos. Inicia sesión de nuevo.",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
   const abrirModalNuevo = () => {
     setFormData(formVacio);
     setEditando(null);
@@ -219,19 +255,35 @@ export default function GestionContactosFamiliares() {
     <>
       <Card data-testid="card-contactos-familiares">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-pink-600" />
               <CardTitle className="text-base">Contactos Familiares</CardTitle>
             </div>
-            <Button 
-              size="sm" 
-              onClick={abrirModalNuevo}
-              data-testid="button-agregar-contacto"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Agregar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => importarGoogleMutation.mutate()}
+                disabled={importarGoogleMutation.isPending}
+                data-testid="button-importar-google"
+              >
+                {importarGoogleMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <SiGoogle className="h-4 w-4 mr-1" />
+                )}
+                Importar
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={abrirModalNuevo}
+                data-testid="button-agregar-contacto"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Agregar
+              </Button>
+            </div>
           </div>
           <CardDescription className="text-xs">
             Estos contactos serán notificados cuando uses el botón de pánico con la opción "Familia"

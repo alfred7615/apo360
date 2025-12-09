@@ -2071,6 +2071,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // IMPORTAR CONTACTOS DE GOOGLE
+  // ============================================================
+  
+  app.post('/api/contactos-familiares/importar-google', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const accessToken = req.user.access_token;
+      
+      if (!accessToken) {
+        return res.status(400).json({ 
+          message: "No tiene acceso a Google. Por favor, inicie sesión nuevamente.",
+          requiresReauth: true
+        });
+      }
+
+      console.log("🔄 Importando contactos de Google para usuario:", userId);
+
+      // Obtener contactos de la API de Google People
+      const response = await fetch(
+        'https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses,phoneNumbers,photos&pageSize=200',
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Error de Google API:", response.status, errorText);
+        
+        if (response.status === 401) {
+          return res.status(401).json({ 
+            message: "Sesión de Google expirada. Por favor, inicie sesión nuevamente.",
+            requiresReauth: true
+          });
+        }
+        
+        return res.status(500).json({ message: "Error al obtener contactos de Google" });
+      }
+
+      const data = await response.json();
+      const connections = data.connections || [];
+
+      if (connections.length === 0) {
+        return res.json({ 
+          success: true, 
+          message: "No se encontraron contactos en su cuenta de Google",
+          importados: 0,
+          omitidos: 0
+        });
+      }
+
+      // Obtener contactos existentes para evitar duplicados
+      const contactosExistentes = await storage.getContactosFamiliares(userId);
+      const emailsExistentes = new Set(contactosExistentes.map(c => c.email?.toLowerCase()).filter(Boolean));
+      const telefonosExistentes = new Set(contactosExistentes.map(c => c.telefono).filter(Boolean));
+
+      let importados = 0;
+      let omitidos = 0;
+
+      for (const person of connections) {
+        const nombre = person.names?.[0]?.displayName;
+        const email = person.emailAddresses?.[0]?.value;
+        const telefono = person.phoneNumbers?.[0]?.value;
+        const fotoUrl = person.photos?.[0]?.url;
+
+        // Solo importar contactos que tengan nombre y (email o teléfono)
+        if (!nombre || (!email && !telefono)) {
+          omitidos++;
+          continue;
+        }
+
+        // Verificar si ya existe (por email o teléfono)
+        const emailLower = email?.toLowerCase();
+        if ((emailLower && emailsExistentes.has(emailLower)) || 
+            (telefono && telefonosExistentes.has(telefono))) {
+          omitidos++;
+          continue;
+        }
+
+        // Crear el contacto
+        await storage.createContactoFamiliar({
+          usuarioId: userId,
+          nombre: nombre,
+          email: email || null,
+          telefono: telefono || null,
+          relacion: "importado_google",
+          esContactoPrincipal: false,
+          notificarEmergencias: false,
+          orden: 999
+        });
+
+        importados++;
+        
+        // Agregar a sets para evitar duplicados dentro de la misma importación
+        if (emailLower) emailsExistentes.add(emailLower);
+        if (telefono) telefonosExistentes.add(telefono);
+      }
+
+      console.log(`✅ Importación completada: ${importados} contactos importados, ${omitidos} omitidos`);
+
+      res.json({ 
+        success: true,
+        message: `Se importaron ${importados} contactos de Google`,
+        importados,
+        omitidos,
+        total: connections.length
+      });
+
+    } catch (error: any) {
+      console.error("❌ Error al importar contactos de Google:", error);
+      res.status(500).json({ message: error.message || "Error al importar contactos" });
+    }
+  });
+
+  // ============================================================
   // RUTAS DE LUGARES FRECUENTES DEL USUARIO
   // ============================================================
 

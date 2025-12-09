@@ -32,7 +32,8 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 - **Internationalization**: The entire system, including codebase, UI, error messages, and database schema, is developed in Spanish.
 
 ### Feature Specifications
-- **Emergency System**: Floating panic button with direct drag functionality (tap < 250ms opens modal, hold/drag moves button), icon-only grid selection for emergency services (police, firefighters, SAMU, serenazgo, transit, electric), multi-destination notifications to emergency services, family contacts, and chat groups simultaneously, automatic GPS location with metadata, and optional message field. Includes family contacts management system with emergency notification preferences.
+- **Emergency System**: Floating panic button with direct drag functionality (tap < 250ms opens modal, hold/drag moves button), icon-only grid selection for emergency services (police, firefighters, SAMU, serenazgo, transit, electric), multi-destination notifications to emergency services, family contacts, and chat groups simultaneously, automatic GPS location with metadata, and optional message field. Includes family contacts management system with emergency notification preferences and Google Contacts import feature.
+- **Google Contacts Import**: Authenticated users can import contacts from their Google account into family contacts. Endpoint POST `/api/contactos-familiares/importar-google` uses Google People API. Imported contacts are marked with `relacion: "importado_google"`. Token expiry triggers automatic logout and reauth flow. Scope `https://www.googleapis.com/auth/contacts.readonly` added to Google OAuth configuration.
 - **Community Chat**: Real-time messaging (WebSocket), divided layout with group/contact tabs, integrated search, multimedia attachments (files, photos, audio, GPS location), and an invitation system.
 - **Taxi System**: Driver/passenger modes, ride requests with real-time geolocation, ride status tracking.
 - **Delivery System**: Order listing, local integration, automated local notifications, driver assignment.
@@ -111,3 +112,34 @@ cd /root/apo360.net
 ### Database Migrations
 - `npm run db:push` - Sincronizar esquema (seguro, no borra datos)
 - Backups automáticos antes de cada actualización
+
+### Google OAuth Production Setup (Resolver error `invalid_client`)
+Para resolver el error `invalid_client` en producción (apo360.net):
+
+1. **Verificar Google Cloud Console**:
+   - Ir a https://console.cloud.google.com/apis/credentials
+   - Seleccionar el proyecto correcto
+   - Editar las credenciales OAuth 2.0
+
+2. **Authorized JavaScript origins**:
+   - Agregar: `https://apo360.net`
+
+3. **Authorized redirect URIs** (EXACTO, sin trailing slash):
+   - Agregar: `https://apo360.net/api/callback`
+
+4. **OAuth Consent Screen**:
+   - Ir a "OAuth consent screen"
+   - Verificar que el estado sea "In production" (no "Testing")
+   - Si está en "Testing", hacer clic en "PUBLISH APP"
+   - Agregar scope: `https://www.googleapis.com/auth/contacts.readonly`
+
+5. **Variables de entorno en producción**:
+   - `GOOGLE_CLIENT_ID` - Sin espacios extra
+   - `GOOGLE_CLIENT_SECRET` - Sin espacios extra
+   - `GOOGLE_CALLBACK_URL=https://apo360.net/api/callback`
+   - `AUTH_MODE=google`
+
+6. **Reiniciar aplicación después de cambios**:
+   ```bash
+   pm2 restart apo360
+   ```
