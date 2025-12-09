@@ -100,8 +100,19 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 - `DEPLOYMENT.md` - Guía completa de despliegue
 - `ecosystem.config.js` - Configuración PM2
 - `nginx.conf` - Configuración Nginx
-- `deploy.sh` - Script de actualización automática
-- `setup-server.sh` - Script de configuración inicial
+- `scripts/deploy.sh` - Script de actualización automática
+- `scripts/setup-replit.sh` - Script de configuración para desarrollo
+- `scripts/setup-production.sh` - Script de configuración para producción
+
+### Configuration Files (config/)
+- `config/environment.ts` - Detección automática de entorno (dev/prod)
+- `config/database.ts` - Configuración de base de datos por entorno
+- `config/auth.ts` - Configuración de autenticación por entorno
+
+### Environment Templates
+- `.env.example` - Plantilla completa de variables
+- `.env.replit` - Plantilla para desarrollo (Replit)
+- `.env.production.template` - Plantilla para producción (KVM)
 
 ### Update Commands (on KVM)
 ```bash
