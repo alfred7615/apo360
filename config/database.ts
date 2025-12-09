@@ -29,13 +29,13 @@ function getDevelopmentConfig(): DatabaseConfig {
 
 function getProductionConfig(): DatabaseConfig {
   return {
-    connectionString: process.env.DATABASE_URL_PROD || process.env.DATABASE_URL || '',
-    host: process.env.PGHOST_PROD || process.env.PGHOST || '',
-    port: parseInt(process.env.PGPORT_PROD || process.env.PGPORT || '5432'),
-    user: process.env.PGUSER_PROD || process.env.PGUSER || '',
-    password: process.env.PGPASSWORD_PROD || process.env.PGPASSWORD || '',
-    database: process.env.PGDATABASE_PROD || process.env.PGDATABASE || 'apo360',
-    ssl: true,
+    connectionString: process.env.DATABASE_URL || '',
+    host: process.env.PGHOST || 'localhost',
+    port: parseInt(process.env.PGPORT || '5432'),
+    user: process.env.PGUSER || 'apo360_admin',
+    password: process.env.PGPASSWORD || '',
+    database: process.env.PGDATABASE || 'apo360_prod',
+    ssl: false, // Conexión local en VPS, no requiere SSL
   };
 }
 

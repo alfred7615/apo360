@@ -100,7 +100,7 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 
 ### Deployment Flow
 ```
-[Replit Desarrollo] → [GitHub] → [KVM Producción]
+[Replit Desarrollo] → [GitHub] → [Hostinger VPS Producción]
 ```
 
 ### Key Files
