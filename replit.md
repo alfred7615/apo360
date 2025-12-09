@@ -119,12 +119,12 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 ### Environment Templates
 - `.env.example` - Plantilla completa de variables
 - `.env.replit` - Plantilla para desarrollo (Replit)
-- `.env.production.template` - Plantilla para producción (KVM)
+- `.env.production.template` - Plantilla para producción (Hostinger VPS)
 
-### Update Commands (on KVM)
+### Update Commands (on Hostinger VPS)
 ```bash
-cd /root/apo360.net
-./deploy.sh
+cd /var/www/apo360.net
+./scripts/deploy.sh
 ```
 
 ### Database Migrations
