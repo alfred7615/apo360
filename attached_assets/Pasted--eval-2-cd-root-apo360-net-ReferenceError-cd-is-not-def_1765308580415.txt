@@ -1,0 +1,56 @@
+"[eval]:2
+cd /root/apo360.net
+^
+
+ReferenceError: cd is not defined
+    at [eval]:2:1
+    at runScriptInThisContext (node:internal/vm:209:10)
+    at node:internal/process/execution:118:14
+    at [eval]-wrapper:6:24
+    at runScript (node:internal/process/execution:101:62)
+    at evalScript (node:internal/process/execution:133:3)
+    at node:internal/main/eval_string:51:3
+
+Node.js v20.19.6
+root@srv1170282:~/apo360.net# const { Pool } = require('@neondatabase/serverless');
+-bash: syntax error near unexpected token `('
+root@srv1170282:~/apo360.net# const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+-bash: syntax error near unexpected token `('
+root@srv1170282:~/apo360.net# pool.query(\"UPDATE users SET rol = 'super_admin' WHERE email = 'aapomayta15@gmail.com' RETURNING id, email, rol\")
+-bash: syntax error near unexpected token `\"UPDATE'
+root@srv1170282:~/apo360.net#   .then(r => { console.log('Actualizado:', r.rows); pool.end(); })
+-bash: syntax error near unexpected token `r'
+root@srv1170282:~/apo360.net#   .catch(e => { console.error('Error:', e.message); pool.end(); });
+-bash: syntax error near unexpected token `e'
+root@srv1170282:~/apo360.net# "
+>
+>
+>
+>
+> ^C
+root@srv1170282:~/apo360.net# cd /root/apo360.net
+root@srv1170282:~/apo360.net# node -e "
+> const { Pool } = require('@neondatabase/serverless');
+> const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+> pool.query(\"UPDATE users SET rol = 'super_admin' WHERE email = 'aapomayta15@gmail.com' RETURNING id, email, rol\")
+>   .then(r => { console.log('Actualizado:', r.rows); pool.end(); })
+>   .catch(e => { console.error('Error:', e.message); pool.end(); });
+> "
+/root/apo360.net/node_modules/@neondatabase/serverless/index.js:1582
+this.user===s&&this.database===s&&this.password===null)throw new Error(`No datab\
+                                                       ^
+
+Error: No database host or connection string was set, and key parameters have default values (host: localhost, user: root, db: root, password: null). Is an environment variable missing? Alternatively, if you intended to connect with these parameters, please set the host to 'localhost' explicitly.
+    at Tn.connect (/root/apo360.net/node_modules/@neondatabase/serverless/index.js:1582:62)
+    at In.newClient (/root/apo360.net/node_modules/@neondatabase/serverless/index.js:1383:3)
+    at In.connect (/root/apo360.net/node_modules/@neondatabase/serverless/index.js:1378:23)
+    at In.query (/root/apo360.net/node_modules/@neondatabase/serverless/index.js:1407:63)
+    at In.query (/root/apo360.net/node_modules/@neondatabase/serverless/index.js:1626:14)
+    at [eval]:4:6
+    at runScriptInThisContext (node:internal/vm:209:10)
+    at node:internal/process/execution:118:14
+    at [eval]-wrapper:6:24
+    at runScript (node:internal/process/execution:101:62)
+
+Node.js v20.19.6
+root@srv1170282:~/apo360.net#
