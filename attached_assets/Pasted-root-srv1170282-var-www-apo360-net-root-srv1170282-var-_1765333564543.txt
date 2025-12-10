@@ -1,0 +1,232 @@
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# sudo -u postgres psql -d apo360_prod -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO apo360_admin;"
+GRANT
+root@srv1170282:/var/www/apo360.net# sudo -u postgres psql -d apo360_prod -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO apo360_admin;"
+GRANT
+root@srv1170282:/var/www/apo360.net# sudo -u postgres psql -d apo360_prod -c "GRANT ALL PRIVILEGES ON SCHEMA public TO apo360_admin;"
+GRANT
+root@srv1170282:/var/www/apo360.net# sudo -u postgres psql -d apo360_prod -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO apo360_admin;"
+ALTER DEFAULT PRIVILEGES
+root@srv1170282:/var/www/apo360.net# sudo -u postgres psql -d apo360_prod -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO apo360_admin;"
+ALTER DEFAULT PRIVILEGES
+root@srv1170282:/var/www/apo360.net# npm run db:push
+
+> rest-express@1.0.0 db:push
+> drizzle-kit push
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/var/www/apo360.net/drizzle.config.ts'
+Using 'pg' driver for database querying
+[✓] Pulling schema from database...
+
++ telefono column will be created
+
++ imei_dispositivo column will be created
+
++ first_name column will be created
+
++ last_name column will be created
+
++ profile_image_url column will be created
+
++ rol column will be created
+
++ estado column will be created
+
++ latitud column will be created
+
++ longitud column will be created
+
++ en_linea column will be created
+
++ ultima_conexion column will be created
+
++ modo_taxi column will be created
+
++ vehiculo_modelo column will be created
+
++ vehiculo_placa column will be created
+
++ disponible_taxi column will be created
+
++ nombre_local column will be created
+
++ categoria_local column will be created
+
++ direccion_local column will be created
+
++ logo_local column will be created
+
++ descripcion_local column will be created
+
++ created_at column will be created
+
++ updated_at column will be created
+
++ nivel_usuario column will be created
+
++ alias column will be created
+
++ dni column will be created
+
++ dni_imagen_frente column will be created
+
++ dni_imagen_posterior column will be created
+
++ dni_emision column will be created
+
++ dni_caducidad column will be created
+
++ pais column will be created
+
++ departamento column will be created
+
++ distrito column will be created
+
++ sector column will be created
+
++ direccion column will be created
+
++ manzana_lote column will be created
+
++ avenida_calle column will be created
+
++ gps_latitud column will be created
+
++ gps_longitud column will be created
+
++ ruc column will be created
+
++ gps_local_latitud column will be created
+
++ gps_local_longitud column will be created
+
++ brevete_imagen_frente column will be created
+
++ brevete_imagen_posterior column will be created
+
++ brevete_emision column will be created
+
++ brevete_caducidad column will be created
+
++ soat_imagen_frente column will be created
+
++ soat_imagen_posterior column will be created
+
++ soat_emision column will be created
+
++ soat_caducidad column will be created
+
++ revision_tecnica_imagen_frente column will be created
+
++ revision_tecnica_imagen_posterior column will be created
+
++ revision_tecnica_emision column will be created
+
++ revision_tecnica_caducidad column will be created
+
++ credencial_conductor_imagen_frente column will be created
+
++ credencial_conductor_imagen_posterior column will be created
+
++ credencial_conductor_emision column will be created
+
++ credencial_conductor_caducidad column will be created
+
++ credencial_taxi_imagen_frente column will be created
+
++ credencial_taxi_imagen_posterior column will be created
+
++ credencial_taxi_emision column will be created
+
++ credencial_taxi_caducidad column will be created
+
++ tipo_vehiculo column will be created
+
++ vehiculo_foto_frente column will be created
+
++ vehiculo_foto_posterior column will be created
+
++ vehiculo_foto_lateral_izq column will be created
+
++ vehiculo_foto_lateral_der column will be created
+
++ foto_domicilio column will be created
+
++ password_hash column will be created
+
++ motivo_suspension column will be created
+
++ fecha_suspension column will be created
+
++ motivo_bloqueo column will be created
+
++ fecha_bloqueo column will be created
+
++ local_foto_1 column will be created
+
++ local_foto_2 column will be created
+
++ local_foto_3 column will be created
+
++ local_foto_4 column will be created
+
++ local_video_1 column will be created
+
++ local_video_2 column will be created
+--- all columns conflicts in users table resolved ---
+
+ Warning  Found data-loss statements:
+· You're about to delete password column in users table with 1 items
+· You're about to delete name column in users table with 1 items
+· You're about to delete role column in users table with 1 items
+
+THIS ACTION WILL CAUSE DATA LOSS AND CANNOT BE REVERTED
+
+Do you still want to push changes?
+[x] All changes were aborted
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360 --update-env
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 8    │ online    │ 0%       │ 40.4mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 logs apo360 --lines 15
+[TAILING] Tailing last 15 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/error-0.log last 15 lines:
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T02:23:26: error: relation "sessions" does not exist
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T02:23:26: error: relation "sessions" does not exist
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T02:23:26: error: relation "sessions" does not exist
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+
+/var/www/apo360.net/logs/output-0.log last 15 lines:
+0|apo360   | 2025-12-10T02:22:40: ✅ Google OAuth configurado correctamente
+0|apo360   | 2025-12-10T02:22:40: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-10T02:22:40: 2:22:40 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-10T02:22:40: 2:22:40 AM [express] ⚠️ Error en migración automática (se ignorará): [object Object]
+0|apo360   | 2025-12-10T02:22:40: 2:22:40 AM [express] serving on port 5000
+0|apo360   | 2025-12-10T02:23:26: 2:23:26 AM [express] GET /api/configuracion/franja_emergencia 500 in 49ms :: {"message":"relation \"…
+0|apo360   | 2025-12-10T02:23:26: 2:23:26 AM [express] GET /api/estadisticas/publicas 500 in 58ms :: {"message":"relation \"sessions\"…
+0|apo360   | 2025-12-10T02:23:26: 2:23:26 AM [express] GET /api/servicios 500 in 55ms :: {"message":"relation \"sessions\" does not ex…
+0|apo360   | 2025-12-10T02:23:26: 2:23:26 AM [express] GET /api/publicidad 500 in 66ms :: {"message":"relation \"sessions\" does not e…
+0|apo360   | 2025-12-10T02:26:19: 🔐 Modo de autenticación solicitado: google
+0|apo360   | 2025-12-10T02:26:19: ✅ Google OAuth configurado correctamente
+0|apo360   | 2025-12-10T02:26:19: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-10T02:26:19: 2:26:19 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-10T02:26:19: 2:26:19 AM [express] ⚠️ Error en migración automática (se ignorará): [object Object]
+0|apo360   | 2025-12-10T02:26:19: 2:26:19 AM [express] serving on port 5000
