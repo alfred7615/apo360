@@ -69,12 +69,30 @@ const getOidcConfig = memoize(
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
   const pgStore = connectPg(session);
+  
+  // Detectar si estamos en producción (Hostinger) o desarrollo (Replit/Neon)
+  const isProduction = !process.env.REPL_ID && process.env.NODE_ENV === 'production';
+  
+  // Configuración del pool para connect-pg-simple
+  const poolConfig: any = {
+    connectionString: process.env.DATABASE_URL,
+  };
+  
+  // En producción local, desactivar SSL
+  if (isProduction) {
+    poolConfig.ssl = false;
+  }
+  
+  const { Pool } = require('pg');
+  const pool = new Pool(poolConfig);
+  
   const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
+    pool: pool,
     createTableIfMissing: true,
     ttl: sessionTtl,
-    tableName: "session",
+    tableName: "sessions",
   });
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
