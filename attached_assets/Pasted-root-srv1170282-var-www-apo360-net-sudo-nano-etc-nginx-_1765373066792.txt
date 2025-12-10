@@ -1,0 +1,242 @@
+root@srv1170282:/var/www/apo360.net# sudo nano /etc/nginx/sites-available/apo360.net
+root@srv1170282:/var/www/apo360.net# sudo nginx -t && sudo systemctl
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+  UNIT                                                                                                      LOAD   ACTI>
+  proc-sys-fs-binfmt_misc.automount                                                                         loaded acti>
+  sys-devices-pci0000:00-0000:00:01.1-ata2-host2-target2:0:0-2:0:0:0-block-sr0.device                       loaded acti>
+  sys-devices-pci0000:00-0000:00:05.0-0000:01:01.0-virtio3-host0-target0:0:0-0:0:0:0-block-sda-sda1.device  loaded acti>
+  sys-devices-pci0000:00-0000:00:05.0-0000:01:01.0-virtio3-host0-target0:0:0-0:0:0:0-block-sda-sda14.device loaded acti>
+  sys-devices-pci0000:00-0000:00:05.0-0000:01:01.0-virtio3-host0-target0:0:0-0:0:0:0-block-sda-sda15.device loaded acti>
+  sys-devices-pci0000:00-0000:00:05.0-0000:01:01.0-virtio3-host0-target0:0:0-0:0:0:0-block-sda-sda16.device loaded acti>
+  sys-devices-pci0000:00-0000:00:05.0-0000:01:01.0-virtio3-host0-target0:0:0-0:0:0:0-block-sda.device       loaded acti>
+  sys-devices-pci0000:00-0000:00:08.0-virtio1-virtio\x2dports-vport1p1.device                               loaded acti>
+  sys-devices-pci0000:00-0000:00:12.0-virtio2-net-eth0.device                                               loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.1-tty-ttyS1.device                              loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.10-tty-ttyS10.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.11-tty-ttyS11.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.12-tty-ttyS12.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.13-tty-ttyS13.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.14-tty-ttyS14.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.15-tty-ttyS15.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.16-tty-ttyS16.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.17-tty-ttyS17.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.18-tty-ttyS18.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.19-tty-ttyS19.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.2-tty-ttyS2.device                              loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.20-tty-ttyS20.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.21-tty-ttyS21.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.22-tty-ttyS22.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.23-tty-ttyS23.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.24-tty-ttyS24.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.25-tty-ttyS25.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.26-tty-ttyS26.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.27-tty-ttyS27.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.28-tty-ttyS28.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.29-tty-ttyS29.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.3-tty-ttyS3.device                              loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.30-tty-ttyS30.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.31-tty-ttyS31.device                            loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.4-tty-ttyS4.device                              loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.5-tty-ttyS5.device                              loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.6-tty-ttyS6.device                              loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.7-tty-ttyS7.device                              loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.8-tty-ttyS8.device                              loaded acti>
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.9-tty-ttyS9.device                              loaded acti>
+  sys-devices-pnp0-00:00-00:00:0-00:00:0.0-tty-ttyS0.device                                                 loaded acti>
+  sys-devices-virtual-misc-rfkill.device                                                                    loaded acti>
+  sys-devices-virtual-net-docker0.device                                                                    loaded acti>
+  sys-devices-virtual-tty-ttyprintk.device                                                                  loaded acti>
+  sys-module-configfs.device                                                                                loaded acti>
+  sys-module-fuse.device                                                                                    loaded acti>
+  sys-subsystem-net-devices-docker0.device                                                                  loaded acti>
+  sys-subsystem-net-devices-eth0.device                                                                     loaded acti>
+  -.mount                                                                                                   loaded acti>
+  boot-efi.mount                                                                                            loaded acti>
+  boot.mount                                                                                                loaded acti>
+  dev-hugepages.mount                                                                                       loaded acti>
+  dev-mqueue.mount                                                                                          loaded acti>
+  proc-sys-fs-binfmt_misc.mount                                                                             loaded acti>
+  run-user-0.mount                                                                                          loaded acti>
+  sys-fs-fuse-connections.mount                                                                             loaded acti>
+  sys-kernel-config.mount                                                                                   loaded acti>
+  sys-kernel-debug-tracing.mount                                                                            loaded acti>
+  sys-kernel-debug.mount                                                                                    loaded acti>
+  sys-kernel-tracing.mount                                                                                  loaded acti>
+  systemd-ask-password-console.path                                                                         loaded acti>
+  systemd-ask-password-wall.path                                                                            loaded acti>
+  init.scope                                                                                                loaded acti>
+  session-1379.scope                                                                                        loaded acti>
+  session-1407.scope                                                                                        loaded acti>
+  session-1553.scope                                                                                        loaded acti>
+  apparmor.service                                                                                          loaded acti>
+  apport.service                                                                                            loaded acti>
+  blk-availability.service                                                                                  loaded acti>
+  cloud-config.service                                                                                      loaded acti>
+  cloud-final.service                                                                                       loaded acti>
+  cloud-init-local.service                                                                                  loaded acti>
+  cloud-init.service                                                                                        loaded acti>
+  console-setup.service                                                                                     loaded acti>
+  containerd.service                                                                                        loaded acti>
+  cron.service                                                                                              loaded acti>
+  dbus.service                                                                                              loaded acti>
+  docker.service                                                                                            loaded acti>
+  finalrd.service                                                                                           loaded acti>
+  fwupd.service                                                                                             loaded acti>
+  getty@tty1.service                                                                                        loaded acti>
+  keyboard-setup.service                                                                                    loaded acti>
+  kmod-static-nodes.service                                                                                 loaded acti>
+  lvm2-monitor.service                                                                                      loaded acti>
+  ModemManager.service                                                                                      loaded acti>
+  monarx-agent.service                                                                                      loaded acti>
+  multipathd.service                                                                                        loaded acti>
+  nginx.service                                                                                             loaded acti>
+  plymouth-quit-wait.service                                                                                loaded acti>
+  plymouth-quit.service                                                                                     loaded acti>
+  plymouth-read-write.service                                                                               loaded acti>
+  polkit.service                                                                                            loaded acti>
+  postgresql.service                                                                                        loaded acti>
+  postgresql@16-main.service                                                                                loaded acti>
+  qemu-guest-agent.service                                                                                  loaded acti>
+  rsyslog.service                                                                                           loaded acti>
+  serial-getty@ttyS0.service                                                                                loaded acti>
+  setvtrgb.service                                                                                          loaded acti>
+  snapd.apparmor.service                                                                                    loaded acti>
+  snapd.seeded.service                                                                                      loaded acti>
+  ssh.service                                                                                               loaded acti>
+  sysstat.service                                                                                           loaded acti>
+  systemd-binfmt.service                                                                                    loaded acti>
+  systemd-fsck@dev-disk-by\x2dlabel-BOOT.service                                                            loaded acti>
+  systemd-fsck@dev-disk-by\x2dlabel-UEFI.service                                                            loaded acti>
+  systemd-journal-flush.service                                                                             loaded acti>
+  systemd-journald.service                                                                                  loaded acti>
+  systemd-logind.service                                                                                    loaded acti>
+  systemd-modules-load.service                                                                              loaded acti>
+  systemd-networkd-wait-online.service                                                                      loaded acti>
+  systemd-networkd.service                                                                                  loaded acti>
+  systemd-random-seed.service                                                                               loaded acti>
+  systemd-remount-fs.service                                                                                loaded acti>
+  systemd-resolved.service                                                                                  loaded acti>
+  systemd-sysctl.service                                                                                    loaded acti>
+  systemd-timesyncd.service                                                                                 loaded acti>
+  systemd-tmpfiles-setup-dev-early.service                                                                  loaded acti>
+  systemd-tmpfiles-setup-dev.service                                                                        loaded acti>
+  systemd-tmpfiles-setup.service                                                                            loaded acti>
+  systemd-udev-trigger.service                                                                              loaded acti>
+  systemd-udevd.service                                                                                     loaded acti>
+  systemd-update-utmp.service                                                                               loaded acti>
+  systemd-user-sessions.service                                                                             loaded acti>
+  udisks2.service                                                                                           loaded acti>
+  ufw.service                                                                                               loaded acti>
+  unattended-upgrades.service                                                                               loaded acti>
+  user-runtime-dir@0.service                                                                                loaded acti>
+  user@0.service                                                                                            loaded acti>
+  -.slice                                                                                                   loaded acti>
+  system-getty.slice                                                                                        loaded acti>
+  system-modprobe.slice                                                                                     loaded acti>
+  system-postgresql.slice                                                                                   loaded acti>
+  system-serial\x2dgetty.slice                                                                              loaded acti>
+  system-systemd\x2dfsck.slice                                                                              loaded acti>
+  system.slice                                                                                              loaded acti>
+  user-0.slice                                                                                              loaded acti>
+  user.slice                                                                                                loaded acti>
+  cloud-init-hotplugd.socket                                                                                loaded acti>
+  dbus.socket                                                                                               loaded acti>
+  dm-event.socket                                                                                           loaded acti>
+  docker.socket                                                                                             loaded acti>
+  iscsid.socket                                                                                             loaded acti>
+  lvm2-lvmpolld.socket                                                                                      loaded acti>
+  lxd-installer.socket                                                                                      loaded acti>
+  multipathd.socket                                                                                         loaded acti>
+  snapd.socket                                                                                              loaded acti>
+  ssh.socket                                                                                                loaded acti>
+  syslog.socket                                                                                             loaded acti>
+  systemd-fsckd.socket                                                                                      loaded acti>
+  systemd-initctl.socket                                                                                    loaded acti>
+  systemd-journald-dev-log.socket                                                                           loaded acti>
+  systemd-journald.socket                                                                                   loaded acti>
+  systemd-networkd.socket                                                                                   loaded acti>
+  systemd-rfkill.socket                                                                                     loaded acti>
+  systemd-sysext.socket                                                                                     loaded acti>
+  systemd-udevd-control.socket                                                                              loaded acti>
+  systemd-udevd-kernel.socket                                                                               loaded acti>
+  uuidd.socket                                                                                              loaded acti>
+  basic.target                                                                                              loaded acti>
+  cloud-config.target                                                                                       loaded acti>
+  cloud-init.target                                                                                         loaded acti>
+  cryptsetup.target                                                                                         loaded acti>
+  getty-pre.target                                                                                          loaded acti>
+  getty.target                                                                                              loaded acti>
+  graphical.target                                                                                          loaded acti>
+  integritysetup.target                                                                                     loaded acti>
+  local-fs-pre.target                                                                                       loaded acti>
+  local-fs.target                                                                                           loaded acti>
+  multi-user.target                                                                                         loaded acti>
+  network-online.target                                                                                     loaded acti>
+  network-pre.target                                                                                        loaded acti>
+  network.target                                                                                            loaded acti>
+  nss-lookup.target                                                                                         loaded acti>
+  paths.target                                                                                              loaded acti>
+  remote-fs-pre.target                                                                                      loaded acti>
+  remote-fs.target                                                                                          loaded acti>
+  slices.target                                                                                             loaded acti>
+  snapd.mounts-pre.target                                                                                   loaded acti>
+  snapd.mounts.target                                                                                       loaded acti>
+  sockets.target                                                                                            loaded acti>
+  swap.target                                                                                               loaded acti>
+  sysinit.target                                                                                            loaded acti>
+  time-set.target                                                                                           loaded acti>
+  timers.target                                                                                             loaded acti>
+  veritysetup.target                                                                                        loaded acti>
+  apt-daily-upgrade.timer                                                                                   loaded acti>
+  apt-daily.timer                                                                                           loaded acti>
+  certbot.timer                                                                                             loaded acti>
+  dpkg-db-backup.timer                                                                                      loaded acti>
+  e2scrub_all.timer                                                                                         loaded acti>
+  fstrim.timer                                                                                              loaded acti>
+  fwupd-refresh.timer                                                                                       loaded acti>
+  logrotate.timer                                                                                           loaded acti>
+  man-db.timer                                                                                              loaded acti>
+  motd-news.timer                                                                                           loaded acti>
+  sysstat-collect.timer                                                                                     loaded acti>
+  sysstat-summary.timer                                                                                     loaded acti>
+  systemd-tmpfiles-clean.timer                                                                              loaded acti>
+  update-notifier-download.timer                                                                            loaded acti>
+  update-notifier-motd.timer                                                                                loaded acti>
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+200 loaded units listed. Pass --all to see loaded but inactive units, too.
+To show all installed unit files use 'systemctl list-unit-files'.
+
+[2]+  Stopped                 sudo systemctl
+root@srv1170282:/var/www/apo360.net# restart nginx
+Command 'restart' not found, did you mean:
+  command 'restartd' from deb restartd (0.2.3-1.1)
+  command 'rstart' from deb x11-session-utils (7.7+6)
+Try: apt install <deb name>
+root@srv1170282:/var/www/apo360.net# curl -I "https://apo360.net/assets/carrusel/aviso001-1764047877222-608984656.png"
+HTTP/1.1 200 OK
+Server: nginx/1.24.0 (Ubuntu)
+Date: Wed, 10 Dec 2025 13:24:08 GMT
+Content-Type: image/png
+Content-Length: 5991920
+Last-Modified: Tue, 09 Dec 2025 14:27:06 GMT
+Connection: keep-alive
+ETag: "693831ba-5b6df0"
+Expires: Thu, 10 Dec 2026 13:24:08 GMT
+Cache-Control: max-age=31536000
+Cache-Control: public, immutable
+Accept-Ranges: bytes
+
+root@srv1170282:/var/www/apo360.net# curl -I https://apo360.net/assets/index-D0Tej4IN.js
+HTTP/1.1 404 Not Found
+Server: nginx/1.24.0 (Ubuntu)
+Date: Wed, 10 Dec 2025 13:24:23 GMT
+Content-Type: text/html
+Content-Length: 162
+Connection: keep-alive
+
+root@srv1170282:/var/www/apo360.net#
