@@ -24,7 +24,7 @@ import {
 import { 
   Wallet, CreditCard, TrendingUp, TrendingDown, Search, Plus, DollarSign, 
   Percent, Check, X, Clock, AlertCircle, Banknote, Building, Smartphone,
-  Globe, ArrowUpRight, ArrowDownRight, RefreshCw, Eye, Trash2, Edit
+  Globe, ArrowUpRight, ArrowDownRight, RefreshCw, Eye, Trash2, Edit, ZoomIn, Image as ImageIcon
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -140,6 +140,8 @@ export default function GestionCarteraScreen() {
   const [showMetodoModal, setShowMetodoModal] = useState(false);
   const [showMonedaModal, setShowMonedaModal] = useState(false);
   const [showRechazoModal, setShowRechazoModal] = useState(false);
+  const [showComprobanteModal, setShowComprobanteModal] = useState(false);
+  const [comprobanteUrl, setComprobanteUrl] = useState("");
   const [selectedSolicitud, setSelectedSolicitud] = useState<SolicitudSaldo | null>(null);
   const [motivoRechazo, setMotivoRechazo] = useState("");
   const [nuevoMetodo, setNuevoMetodo] = useState({
@@ -664,6 +666,20 @@ export default function GestionCarteraScreen() {
                             <p className="text-xs text-muted-foreground">Op: {solicitud.numeroOperacion}</p>
                           )}
                         </div>
+                        {solicitud.comprobante && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setComprobanteUrl(solicitud.comprobante!);
+                              setShowComprobanteModal(true);
+                            }}
+                            data-testid={`button-ver-comprobante-${solicitud.id}`}
+                          >
+                            <ImageIcon className="h-4 w-4 mr-1" />
+                            Ver Boucher
+                          </Button>
+                        )}
                         {getEstadoBadge(solicitud.estado)}
                         {solicitud.estado === "pendiente" && (
                           <div className="flex gap-2">
@@ -1156,6 +1172,53 @@ export default function GestionCarteraScreen() {
             >
               Rechazar Solicitud
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showComprobanteModal} onOpenChange={setShowComprobanteModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              Boucher / Comprobante de Pago
+            </DialogTitle>
+            <DialogDescription>
+              Imagen del comprobante enviado por el usuario
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4 bg-muted/30 rounded-lg min-h-[400px]">
+            {comprobanteUrl ? (
+              <img 
+                src={comprobanteUrl} 
+                alt="Comprobante de pago" 
+                className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                data-testid="img-comprobante-fullscreen"
+              />
+            ) : (
+              <div className="text-center text-muted-foreground">
+                <ImageIcon className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p>No hay imagen disponible</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowComprobanteModal(false)}
+              data-testid="button-cerrar-comprobante"
+            >
+              Cerrar
+            </Button>
+            {comprobanteUrl && (
+              <Button 
+                onClick={() => window.open(comprobanteUrl, '_blank')}
+                data-testid="button-abrir-nueva-pestaña"
+              >
+                <ZoomIn className="h-4 w-4 mr-2" />
+                Abrir en nueva pestaña
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
