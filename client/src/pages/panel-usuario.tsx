@@ -17,7 +17,7 @@ import {
   Trash2, Share2, Car, CreditCard, ShoppingBag,
   Plus, Edit, Loader2, Crown, CheckCircle,
   User, Camera, AlertCircle, Wallet, DollarSign,
-  Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn, Copy, Building
+  Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn, Copy, Building, Phone
 } from "lucide-react";
 import { Link } from "wouter";
 import BloqueoServicio, { useVerificarPerfil } from "@/components/BloqueoServicio";
@@ -1013,44 +1013,100 @@ export default function PanelUsuarioPage() {
                         </div>
                       </div>
                       
+                      {/* Numero de telefono para Yape/Plin */}
+                      {metodo.telefono && (metodo.tipo === 'yape' || metodo.tipo === 'plin' || metodo.tipo === 'billetera_digital') && (
+                        <div
+                          className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors mb-1"
+                          onClick={() => {
+                            navigator.clipboard.writeText(metodo.telefono);
+                            toast({ title: "Numero copiado", description: `${metodo.telefono} copiado - Pegalo en tu app de ${metodo.tipo?.charAt(0).toUpperCase() + metodo.tipo?.slice(1)}` });
+                          }}
+                          data-testid={`button-copiar-telefono-${metodo.id}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-green-600" />
+                            <div>
+                              <p className="text-xs text-green-700 dark:text-green-400">Numero {metodo.tipo?.toUpperCase()}</p>
+                              <p className="font-mono text-lg font-bold text-green-800 dark:text-green-300">{metodo.telefono}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 text-green-600">
+                            <Copy className="h-5 w-5" />
+                            <span className="text-xs">Copiar</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Cuenta bancaria */}
                       {(metodo.numeroCuenta || metodo.numero) && (
                         <div
-                          className="flex items-center justify-between p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors mb-1"
+                          className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors mb-1"
                           onClick={() => {
                             const cuenta = metodo.numeroCuenta || metodo.numero;
                             navigator.clipboard.writeText(cuenta);
-                            toast({ title: "Cuenta copiada", description: `${cuenta} copiado al portapapeles` });
+                            toast({ title: "Cuenta copiada", description: `${cuenta} - Pegalo en tu app bancaria` });
                           }}
                           data-testid={`button-copiar-cuenta-${metodo.id}`}
                         >
                           <div className="flex items-center gap-2">
-                            <CreditCard className="h-4 w-4 text-muted-foreground" />
+                            <CreditCard className="h-4 w-4 text-blue-600" />
                             <div>
-                              <p className="text-xs text-muted-foreground">Cuenta Bancaria</p>
-                              <p className="font-mono text-sm font-medium">{metodo.numeroCuenta || metodo.numero}</p>
+                              <p className="text-xs text-blue-700 dark:text-blue-400">Cuenta Bancaria</p>
+                              <p className="font-mono text-sm font-bold text-blue-800 dark:text-blue-300">{metodo.numeroCuenta || metodo.numero}</p>
                             </div>
                           </div>
-                          <Copy className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex items-center gap-1 text-blue-600">
+                            <Copy className="h-5 w-5" />
+                            <span className="text-xs">Copiar</span>
+                          </div>
                         </div>
                       )}
                       
+                      {/* CCI - Cuenta Interbancaria */}
                       {metodo.cci && (
                         <div
-                          className="flex items-center justify-between p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors"
+                          className="flex items-center justify-between p-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors mb-1"
                           onClick={() => {
                             navigator.clipboard.writeText(metodo.cci);
-                            toast({ title: "CCI copiado", description: `${metodo.cci} copiado al portapapeles` });
+                            toast({ title: "CCI copiado", description: `${metodo.cci} - Pegalo para transferencia interbancaria` });
                           }}
                           data-testid={`button-copiar-cci-${metodo.id}`}
                         >
                           <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <Building className="h-4 w-4 text-purple-600" />
                             <div>
-                              <p className="text-xs text-muted-foreground">Cuenta Interbancaria (CCI)</p>
-                              <p className="font-mono text-sm font-medium">{metodo.cci}</p>
+                              <p className="text-xs text-purple-700 dark:text-purple-400">Cuenta Interbancaria (CCI)</p>
+                              <p className="font-mono text-sm font-bold text-purple-800 dark:text-purple-300">{metodo.cci}</p>
                             </div>
                           </div>
-                          <Copy className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex items-center gap-1 text-purple-600">
+                            <Copy className="h-5 w-5" />
+                            <span className="text-xs">Copiar</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Email para PayPal */}
+                      {metodo.email && metodo.tipo === 'paypal' && (
+                        <div
+                          className="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors mb-1"
+                          onClick={() => {
+                            navigator.clipboard.writeText(metodo.email);
+                            toast({ title: "PayPal copiado", description: `${metodo.email} - Pegalo en PayPal para enviar pago` });
+                          }}
+                          data-testid={`button-copiar-paypal-${metodo.id}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-yellow-600" />
+                            <div>
+                              <p className="text-xs text-yellow-700 dark:text-yellow-400">Cuenta PayPal</p>
+                              <p className="font-mono text-sm font-bold text-yellow-800 dark:text-yellow-300">{metodo.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 text-yellow-600">
+                            <Copy className="h-5 w-5" />
+                            <span className="text-xs">Copiar</span>
+                          </div>
                         </div>
                       )}
                     </div>

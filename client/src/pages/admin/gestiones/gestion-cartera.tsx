@@ -151,6 +151,8 @@ export default function GestionCarteraScreen() {
     nombre: "",
     numeroCuenta: "",
     cci: "",
+    telefono: "",
+    email: "",
     titular: "",
     moneda: "PEN",
     esPlataforma: true,
@@ -506,6 +508,8 @@ export default function GestionCarteraScreen() {
       nombre: "",
       numeroCuenta: "",
       cci: "",
+      telefono: "",
+      email: "",
       titular: "",
       moneda: "PEN",
       esPlataforma: true,
@@ -521,6 +525,8 @@ export default function GestionCarteraScreen() {
       nombre: metodo.nombre || "",
       numeroCuenta: metodo.numeroCuenta || metodo.numero || "",
       cci: metodo.cci || "",
+      telefono: metodo.telefono || "",
+      email: metodo.email || "",
       titular: metodo.titular || "",
       moneda: metodo.moneda || "PEN",
       esPlataforma: metodo.esPlataforma ?? true,
@@ -1362,17 +1368,7 @@ export default function GestionCarteraScreen() {
         setShowMetodoModal(open); 
         if (!open) { 
           setMetodoEditando(null); 
-          setNuevoMetodo({
-            tipo: "cuenta_bancaria",
-            nombre: "",
-            numeroCuenta: "",
-            cci: "",
-            titular: "",
-            moneda: "PEN",
-            esPlataforma: true,
-            activo: true,
-            orden: 1,
-          });
+          resetMetodoForm();
         }
       }}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-hidden flex flex-col">
@@ -1438,27 +1434,29 @@ export default function GestionCarteraScreen() {
             )}
             {(nuevoMetodo.tipo === "yape" || nuevoMetodo.tipo === "plin") && (
               <div>
-                <Label htmlFor="numeroCuenta">Numero de Celular</Label>
+                <Label htmlFor="telefono">Numero de Celular</Label>
                 <Input
-                  id="numeroCuenta"
-                  value={nuevoMetodo.numeroCuenta}
-                  onChange={(e) => setNuevoMetodo(prev => ({ ...prev, numeroCuenta: e.target.value }))}
+                  id="telefono"
+                  value={nuevoMetodo.telefono}
+                  onChange={(e) => setNuevoMetodo(prev => ({ ...prev, telefono: e.target.value }))}
                   placeholder="Ej: 999888777"
                   data-testid="input-numero-celular"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Este numero se mostrara para que el usuario lo copie y pague por {nuevoMetodo.tipo?.toUpperCase()}</p>
               </div>
             )}
             {nuevoMetodo.tipo === "paypal" && (
               <div>
-                <Label htmlFor="numeroCuenta">Email de PayPal</Label>
+                <Label htmlFor="email">Email o Usuario de PayPal</Label>
                 <Input
-                  id="numeroCuenta"
+                  id="email"
                   type="email"
-                  value={nuevoMetodo.numeroCuenta}
-                  onChange={(e) => setNuevoMetodo(prev => ({ ...prev, numeroCuenta: e.target.value }))}
+                  value={nuevoMetodo.email}
+                  onChange={(e) => setNuevoMetodo(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="Ej: cuenta@email.com"
                   data-testid="input-email-paypal"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Este email se mostrara para que el usuario lo copie y envie pago por PayPal</p>
               </div>
             )}
             <div>
