@@ -1,0 +1,37 @@
+ public | lugares_usuario              | table | apo360_admin
+ public | membresias_usuarios          | table | apo360_admin
+ public | mensajes                     | table | apo360_admin
+ public | metodos_pago                 | table | apo360_admin
+ public | miembros_grupo               | table | apo360_admin
+ public | monedas                      | table | apo360_admin
+ public | notificaciones_chat          | table | apo360_admin
+ public | pedidos_delivery             | table | apo360_admin
+ public | planes_membresia             | table | apo360_admin
+ public | popups_publicitarios         | table | apo360_admin
+ public | productos_delivery           | table | apo360_admin
+ public | productos_servicio           | table | apo360_admin
+ public | productos_usuario            | table | apo360_admin
+ public | publicidad                   | table | apo360_admin
+ public | radios_online                | table | apo360_admin
+ public | registro_basico              | table | apo360_admin
+ public | registro_chat                | table | apo360_admin
+ public | registro_direccion           | table | apo360_admin
+ public | registro_marketplace         | table | apo360_admin
+ public | registro_ubicacion           | table | apo360_admin
+ public | respuestas_encuestas         | table | apo360_admin
+ public | saldos_usuarios              | table | apo360_admin
+ public | sectores                     | table | apo360_admin
+ public | servicios                    | table | apo360_admin
+ public | sessions                     | table | apo360_admin
+ public | solicitudes_saldo            | table | apo360_admin
+ public | subcategorias_servicio       | table | apo360_admin
+ public | tasas_cambio                 | table | apo360_admin
+ public | tasas_cambio_locales         | table | apo360_admin
+ public | tipos_moneda                 | table | apo360_admin
+ public | transacciones_saldo          | table | apo360_admin
+ public | users                        | table | apo360_admin
+ public | usuario_roles                | table | apo360_admin
+ public | viajes_taxi                  | table | apo360_admin
+(57 rows)
+
+(END)
