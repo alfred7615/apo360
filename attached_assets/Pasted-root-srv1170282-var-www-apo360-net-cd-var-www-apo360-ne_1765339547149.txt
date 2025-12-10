@@ -1,0 +1,213 @@
+root@srv1170282:/var/www/apo360.net# cd /var/www/apo360.net
+root@srv1170282:/var/www/apo360.net# git pull origin main
+remote: Enumerating objects: 19, done.
+remote: Counting objects: 100% (19/19), done.
+remote: Compressing objects: 100% (4/4), done.
+remote: Total 13 (delta 9), reused 13 (delta 9), pack-reused 0 (from 0)
+Unpacking objects: 100% (13/13), 10.85 KiB | 427.00 KiB/s, done.
+From https://github.com/alfred7615/apo360
+ * branch            main       -> FETCH_HEAD
+   80a573f..ce002d2  main       -> origin/main
+Updating 80a573f..ce002d2
+Fast-forward
+ .env.production.template                                                    |  20 ++-
+ ...n-tu-caso-espec-fico-Tu-env-tiene-env-GOOGLE-CLIENT-ID_1765338469526.txt | 305 ++++++++++++++++++++++++++++++++++++
+ ...ot-srv1170282-var-www-apo360-net-root-srv1170282-var-w_1765337353282.txt | 200 +++++++++++++++++++++++
+ replit.md                                                                   | 157 ++++---------------
+ server/authConfig.ts                                                        | 225 +++++++++++++++++++++++++-
+ 5 files changed, 763 insertions(+), 144 deletions(-)
+ create mode 100644 attached_assets/Pasted-En-tu-caso-espec-fico-Tu-env-tiene-env-GOOGLE-CLIENT-ID_1765338469526.txt
+ create mode 100644 attached_assets/Pasted-oot-srv1170282-var-www-apo360-net-root-srv1170282-var-w_1765337353282.txt
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# nano .env
+root@srv1170282:/var/www/apo360.net# sudo -u postgres psql -d apo360_prod -c "INSERT INTO usuarios (id, email, password_hash, first_name, rol, estado) VALUES ('admin_001', 'aapomayta15@gmail.com', 'Admin123', 'Admin', 'super_admin', 'activo') ON CONFLICT (email) DO UPDATE SET password_hash = 'Admin123', rol = 'super_admin';
+>
+>
+>
+>
+>
+>
+>
+>
+>
+> ^C
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# npm install
+
+up to date, audited 524 packages in 4s
+
+70 packages are looking for funding
+  run `npm fund` for details
+
+9 vulnerabilities (3 low, 5 moderate, 1 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+root@srv1170282:/var/www/apo360.net# npm run build
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js
+
+vite v5.4.20 building for production...
+transforming (4) src/App.tsx
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 2790 modules transformed.
+../dist/public/index.html                     1.53 kB │ gzip:   0.66 kB
+../dist/public/assets/index-CpuEqJzU.css    144.64 kB │ gzip:  26.94 kB
+../dist/public/assets/index-D0Tej4IN.js   1,436.20 kB │ gzip: 362.38 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 17.81s
+▲ [WARNING] Duplicate member "updateServicio" in class body [duplicate-class-member]
+
+    server/storage.ts:1859:8:
+      1859 │   async updateServicio(id: string, data: any): Promise<any> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "updateServicio" is here:
+
+    server/storage.ts:808:8:
+      808 │   async updateServicio(id: string, data: Partial<InsertServicio>): Promise<Servicio | undefined> {
+          ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getFavoritosUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2424:8:
+      2424 │   async getFavoritosUsuario(usuarioId: string, tipo?: string): Promise<any[]> {
+           ╵         ~~~~~~~~~~~~~~~~~~~
+
+  The original member "getFavoritosUsuario" is here:
+
+    server/storage.ts:776:8:
+      776 │   async getFavoritosUsuario(usuarioId: string): Promise<any[]> {
+          ╵         ~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getInteraccionesUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2607:8:
+      2607 │   async getInteraccionesUsuario(
+           ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "getInteraccionesUsuario" is here:
+
+    server/storage.ts:552:8:
+      552 │   async getInteraccionesUsuario(publicidadId: string, usuarioId: string): Promise<{ hasLike: boolean; has...
+          ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getComentarios" in class body [duplicate-class-member]
+
+    server/storage.ts:2631:8:
+      2631 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "getComentarios" is here:
+
+    server/storage.ts:1828:8:
+      1828 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "createComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2647:8:
+      2647 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "createComentario" is here:
+
+    server/storage.ts:1841:8:
+      1841 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "deleteComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2661:8:
+      2661 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "deleteComentario" is here:
+
+    server/storage.ts:1849:8:
+      1849 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+6 of 7 warnings shown (disable the message limit with --log-limit=0)
+
+  dist/index.js  380.7kb
+
+⚡ Done in 125ms
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 1    │ online    │ 0%       │ 41.3mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 logs apo360
+[TAILING] Tailing last 15 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/error-0.log last 15 lines:
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at server/storage.ts (file:///var/www/apo360.net/dist/index.js:1225:5)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at file:///var/www/apo360.net/dist/index.js:3932:1
+0|apo360   |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|apo360   |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|apo360   | You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+0|apo360   | Error: DATABASE_URL debe estar configurada. ¿Olvidaste crear la base de datos?
+0|apo360   |     at server/db.ts (file:///var/www/apo360.net/dist/index.js:1187:13)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at server/storage.ts (file:///var/www/apo360.net/dist/index.js:1225:5)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at file:///var/www/apo360.net/dist/index.js:3932:1
+0|apo360   |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|apo360   |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+
+/var/www/apo360.net/logs/output-0.log last 15 lines:
+0|apo360   | 2025-12-10T03:30:08: 3:30:08 AM [express] GET /api/publicidad 200 in 19ms :: []
+0|apo360   | 2025-12-10T03:30:08: 3:30:08 AM [express] GET /api/estadisticas/publicas 200 in 19ms :: {"usuariosActivos":1,"serviciosLo…
+0|apo360   | 2025-12-10T03:30:08: 3:30:08 AM [express] GET /api/configuracion/franja_emergencia 404 in 38ms :: {"message":"Configuraci…
+0|apo360   | 2025-12-10T03:32:12: 3:32:12 AM [express] GET /api/configuracion/franja_emergencia 404 in 35ms :: {"message":"Configuraci…
+0|apo360   | 2025-12-10T03:32:12: 3:32:12 AM [express] GET /api/configuracion/roles 404 in 32ms :: {"message":"Configuración no encont…
+0|apo360   | 2025-12-10T03:32:14: 3:32:14 AM [express] POST /api/auth/login 401 in 7ms :: {"message":"Credenciales incorrectas"}
+0|apo360   | 2025-12-10T03:32:27: 3:32:27 AM [express] POST /api/auth/login 401 in 21ms :: {"message":"Credenciales incorrectas"}
+0|apo360   | 2025-12-10T03:32:32: 3:32:32 AM [express] GET /api/login 302 in 3ms
+0|apo360   | 2025-12-10T04:04:37: 🗄️ Usando PostgreSQL local (producción)
+0|apo360   | 2025-12-10T04:04:37: 🔐 Modo de autenticación solicitado: google
+0|apo360   | 2025-12-10T04:04:37: ✅ Google OAuth configurado correctamente
+0|apo360   | 2025-12-10T04:04:37: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-10T04:04:37: 4:04:37 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-10T04:04:38: 4:04:38 AM [express] ✅ Tabla miembros_grupo ya está sincronizada
+0|apo360   | 2025-12-10T04:04:38: 4:04:38 AM [express] serving on port 5000
+
+
+
+
+
+
+0|apo360  | 2025-12-10T04:05:02: 4:05:02 AM [express] GET /api/auth/user 401 in 90ms :: {"message":"No autorizado"}
+0|apo360  | 2025-12-10T04:05:02: 4:05:02 AM [express] GET /api/radios-online 200 in 109ms :: []
+0|apo360  | 2025-12-10T04:05:02: 4:05:02 AM [express] GET /api/archivos-mp3 304 in 106ms :: []
+0|apo360  | 2025-12-10T04:05:02: 4:05:02 AM [express] GET /api/listas-mp3 304 in 112ms :: []
+0|apo360  | 2025-12-10T04:05:02: 4:05:02 AM [express] GET /api/configuracion/franja_emergencia 404 in 9ms :: {"message":"Configuració…
+0|apo360  | 2025-12-10T04:05:02: 4:05:02 AM [express] GET /api/configuracion/roles 404 in 3ms :: {"message":"Configuración no encontr…
+0|apo360  | 2025-12-10T04:05:04: 4:05:04 AM [express] GET /api/estadisticas/publicas 304 in 18ms :: {"usuariosActivos":1,"serviciosLo…
+0|apo360  | 2025-12-10T04:05:04: 4:05:04 AM [express] GET /api/configuracion/franja_emergencia 404 in 8ms :: {"message":"Configuració…
+0|apo360  | 2025-12-10T04:05:04: 4:05:04 AM [express] GET /api/servicios 304 in 18ms :: []
+0|apo360  | 2025-12-10T04:05:04: 4:05:04 AM [express] GET /api/publicidad 304 in 18ms :: []
+0|apo360  | 2025-12-10T04:05:10: 4:05:10 AM [express] GET /api/configuracion/franja_emergencia 404 in 4ms :: {"message":"Configuració…
+0|apo360  | 2025-12-10T04:05:10: 4:05:10 AM [express] GET /api/configuracion/roles 404 in 5ms :: {"message":"Configuración no encontr…
+0|apo360  | 2025-12-10T04:05:12: 4:05:12 AM [express] POST /api/auth/login 401 in 6ms :: {"message":"Credenciales incorrectas"}
+0|apo360  | 2025-12-10T04:05:25: 4:05:25 AM [express] POST /api/auth/login 401 in 18ms :: {"message":"Credenciales incorrectas"}
+0|apo360  | 2025-12-10T04:05:27: 4:05:27 AM [express] POST /api/auth/login 401 in 5ms :: {"message":"Credenciales incorrectas"}
+0|apo360  | 2025-12-10T04:05:55: 4:05:55 AM [express] POST /api/auth/login 401 in 25ms :: {"message":"Credenciales incorrectas"}
