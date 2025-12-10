@@ -1,0 +1,65 @@
+root@srv1170282:/var/www/apo360.net# pm2 logs apo360 --lines 30
+[TAILING] Tailing last 30 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/error-0.log last 30 lines:
+0|apo360   |     at async upsertUser (file:///var/www/apo360.net/dist/index.js:3191:3)
+0|apo360   |     at async Strategy._verify (file:///var/www/apo360.net/dist/index.js:3304:9)
+0|apo360   | You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+0|apo360   | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'dotenv' imported from /var/www/apo360.net/dist/index.js
+0|apo360   |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+0|apo360   |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+0|apo360   |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+0|apo360   |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)
+0|apo360   |     at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)
+0|apo360   |     at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)
+0|apo360   |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)
+0|apo360   |     at ModuleJob._link (node:internal/modules/esm/module_job:168:49)
+0|apo360   | You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+0|apo360   | Error: DATABASE_URL debe estar configurada. ¿Olvidaste crear la base de datos?
+0|apo360   |     at server/db.ts (file:///var/www/apo360.net/dist/index.js:1187:13)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at server/storage.ts (file:///var/www/apo360.net/dist/index.js:1225:5)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at file:///var/www/apo360.net/dist/index.js:3932:1
+0|apo360   |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|apo360   |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|apo360   | You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+0|apo360   | Error: DATABASE_URL debe estar configurada. ¿Olvidaste crear la base de datos?
+0|apo360   |     at server/db.ts (file:///var/www/apo360.net/dist/index.js:1187:13)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at server/storage.ts (file:///var/www/apo360.net/dist/index.js:1225:5)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at file:///var/www/apo360.net/dist/index.js:3932:1
+0|apo360   |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|apo360   |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+
+/var/www/apo360.net/logs/output-0.log last 30 lines:
+0|apo360   | 2025-12-10T05:05:12: 5:05:12 AM [express] DELETE /api/publicidad/8ba5df17-6ee6-4d0f-9e35-b3e2eaebc1b5 200 in 7ms :: {"mes…
+0|apo360   | 2025-12-10T05:05:12: 5:05:12 AM [express] GET /api/publicidad 200 in 4ms :: [{"id":"dd22e2b3-d456-4392-b444-6b2afdf1ea4e"…
+0|apo360   | 2025-12-10T05:05:28: 5:05:28 AM [express] POST /api/upload/publicidad 200 in 36ms :: {"url":"/assets/carrusel/carrusel03-…
+0|apo360   | 2025-12-10T05:05:28: 5:05:28 AM [express] POST /api/upload/publicidad 200 in 27ms :: {"url":"/assets/carrusel/carrusel02-…
+0|apo360   | 2025-12-10T05:05:29: 5:05:29 AM [express] POST /api/publicidad 200 in 15ms :: {"id":"0926a542-3bed-4568-98bf-2fcdc0588225…
+0|apo360   | 2025-12-10T05:05:29: 5:05:29 AM [express] POST /api/publicidad 200 in 17ms :: {"id":"ea068bc6-a62b-4538-a5cb-20945546de8b…
+0|apo360   | 2025-12-10T05:05:29: 5:05:29 AM [express] GET /api/publicidad 200 in 6ms :: [{"id":"dd22e2b3-d456-4392-b444-6b2afdf1ea4e"…
+0|apo360   | 2025-12-10T05:07:09: 5:07:09 AM [express] GET /api/emergencias/familia 304 in 44ms
+0|apo360   | 2025-12-10T05:07:09: 5:07:09 AM [express] GET /api/emergencias/comunidad 304 in 40ms
+0|apo360   | 2025-12-10T05:07:09: 5:07:09 AM [express] GET /api/configuracion/franja_emergencia 404 in 59ms :: {"message":"Configuraci…
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/auth/user 304 in 15ms :: {"id":"1","nombre":"Usuario","email":"aapomay…
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/archivos-mp3 304 in 16ms :: []
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/listas-mp3 304 in 16ms :: []
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/radios-online 304 in 20ms :: []
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/subcategorias-servicio 304 in 27ms :: []
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/emergencias/recientes 304 in 31ms :: []
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/publicidad 304 in 33ms :: [{"id":"dd22e2b3-d456-4392-b444-6b2afdf1ea4e…
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/categorias-servicio 304 in 20ms :: []
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/configuracion/franja_emergencia 404 in 16ms :: {"message":"Configuraci…
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/logos-servicio 304 in 53ms :: []
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/contactos-familiares 304 in 6ms :: []
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/emergencias/familia 304 in 7ms
+0|apo360   | 2025-12-10T05:07:15: 5:07:15 AM [express] GET /api/emergencias/comunidad 304 in 6ms
+0|apo360   | 2025-12-10T05:07:38: 5:07:38 AM [express] POST /api/upload/publicidad 200 in 23ms :: {"url":"/assets/carrusel/carrusel04-…
+0|apo360   | 2025-12-10T05:07:38: 5:07:38 AM [express] POST /api/publicidad 200 in 9ms :: {"id":"0941c223-92c2-4a32-9449-fb4c05da8133"…
+0|apo360   | 2025-12-10T05:07:38: 5:07:38 AM [express] GET /api/publicidad 200 in 5ms :: [{"id":"dd22e2b3-d456-4392-b444-6b2afdf1ea4e"…
+0|apo360   | 2025-12-10T05:07:52: 5:07:52 AM [express] POST /api/upload/publicidad 200 in 26ms :: {"url":"/assets/carrusel/carrusel06-…
+0|apo360   | 2025-12-10T05:07:59: 5:07:59 AM [express] POST /api/publicidad 200 in 7ms :: {"id":"49ba0c88-a422-47e3-8484-40478a10b02e"…
+0|apo360   | 2025-12-10T05:07:59: 5:07:59 AM [express] GET /api/publicidad 200 in 8ms :: [{"id":"dd22e2b3-d456-4392-b444-6b2afdf1ea4e"…
+0|apo360   | 2025-12-10T05:11:30: 5:11:30 AM [express] GET /api/monedas/promedio/PEN/USD 304 in 27ms :: {"promedioCompra":null,"promed…
