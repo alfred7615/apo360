@@ -1,0 +1,69 @@
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# cat /etc/nginx/sites-available/apo360.net
+server {
+    listen 80;
+    server_name apo360.net www.apo360.net;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl ipv6only=on;
+
+    server_name apo360.net www.apo360.net;
+
+    ssl_certificate /etc/letsencrypt/live/apo360.net/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/apo360.net/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    client_max_body_size 50M;
+
+    root /var/www/apo360.net/dist/public;
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:5000/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /ws {
+        proxy_pass http://127.0.0.1:5000/ws;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+
+    # Build assets (JS/CSS/Map) desde dist
+    location ~* ^/assets/.*\.(js|css|map)$ {
+        alias /var/www/apo360.net/dist/public/assets/;
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Imágenes subidas desde public/assets
+    location ^~ /assets/ {
+        alias /var/www/apo360.net/public/assets/;
+        try_files $uri $uri/ =404;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+root@srv1170282:/var/www/apo360.net# sudo nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+root@srv1170282:/var/www/apo360.net# ls /var/www/apo360.net/public/assets/carrusel/ | head -3
+aviso001-1764047877222-608984656.png
+aviso001-1764066810100-542976534.png
+aviso001-1765348157638-219681078.png
+root@srv1170282:/var/www/apo360.net#
