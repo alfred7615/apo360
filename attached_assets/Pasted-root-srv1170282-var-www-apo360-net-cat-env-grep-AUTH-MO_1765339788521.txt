@@ -1,0 +1,59 @@
+root@srv1170282:/var/www/apo360.net# cat .env | grep AUTH_MODE
+AUTH_MODE=basic
+root@srv1170282:/var/www/apo360.net# sudo -u postgres psql -d apo360_prod -c "INSERT INTO usuarios (id, email, password_hash, first_name, rol, estado) VALUES ('admin_001', 'aapomayta15@gmail.com', 'Admin123', 'Admin', 'super_admin', 'activo') ON CONFLICT (email) DO UPDATE SET password_hash = 'Admin123', rol = 'super_admin';"
+ERROR:  relation "usuarios" does not exist
+LINE 1: INSERT INTO usuarios (id, email, password_hash, first_name, ...
+                    ^
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360 --update-env
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 2    │ online    │ 0%       │ 40.5mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 logs apo360 --lines 20
+[TAILING] Tailing last 20 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/error-0.log last 20 lines:
+0|apo360   |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)
+0|apo360   |     at ModuleJob._link (node:internal/modules/esm/module_job:168:49)
+0|apo360   | You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+0|apo360   | Error: DATABASE_URL debe estar configurada. ¿Olvidaste crear la base de datos?
+0|apo360   |     at server/db.ts (file:///var/www/apo360.net/dist/index.js:1187:13)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at server/storage.ts (file:///var/www/apo360.net/dist/index.js:1225:5)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at file:///var/www/apo360.net/dist/index.js:3932:1
+0|apo360   |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|apo360   |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|apo360   | You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+0|apo360   | Error: DATABASE_URL debe estar configurada. ¿Olvidaste crear la base de datos?
+0|apo360   |     at server/db.ts (file:///var/www/apo360.net/dist/index.js:1187:13)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at server/storage.ts (file:///var/www/apo360.net/dist/index.js:1225:5)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at file:///var/www/apo360.net/dist/index.js:3932:1
+0|apo360   |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|apo360   |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+
+/var/www/apo360.net/logs/output-0.log last 20 lines:
+0|apo360   | 2025-12-10T04:05:02: 4:05:02 AM [express] GET /api/configuracion/franja_emergencia 404 in 9ms :: {"message":"Configuració…
+0|apo360   | 2025-12-10T04:05:02: 4:05:02 AM [express] GET /api/configuracion/roles 404 in 3ms :: {"message":"Configuración no encontr…
+0|apo360   | 2025-12-10T04:05:04: 4:05:04 AM [express] GET /api/estadisticas/publicas 304 in 18ms :: {"usuariosActivos":1,"serviciosLo…
+0|apo360   | 2025-12-10T04:05:04: 4:05:04 AM [express] GET /api/configuracion/franja_emergencia 404 in 8ms :: {"message":"Configuració…
+0|apo360   | 2025-12-10T04:05:04: 4:05:04 AM [express] GET /api/servicios 304 in 18ms :: []
+0|apo360   | 2025-12-10T04:05:04: 4:05:04 AM [express] GET /api/publicidad 304 in 18ms :: []
+0|apo360   | 2025-12-10T04:05:10: 4:05:10 AM [express] GET /api/configuracion/franja_emergencia 404 in 4ms :: {"message":"Configuració…
+0|apo360   | 2025-12-10T04:05:10: 4:05:10 AM [express] GET /api/configuracion/roles 404 in 5ms :: {"message":"Configuración no encontr…
+0|apo360   | 2025-12-10T04:05:12: 4:05:12 AM [express] POST /api/auth/login 401 in 6ms :: {"message":"Credenciales incorrectas"}
+0|apo360   | 2025-12-10T04:05:25: 4:05:25 AM [express] POST /api/auth/login 401 in 18ms :: {"message":"Credenciales incorrectas"}
+0|apo360   | 2025-12-10T04:05:27: 4:05:27 AM [express] POST /api/auth/login 401 in 5ms :: {"message":"Credenciales incorrectas"}
+0|apo360   | 2025-12-10T04:05:55: 4:05:55 AM [express] POST /api/auth/login 401 in 25ms :: {"message":"Credenciales incorrectas"}
+0|apo360   | 2025-12-10T04:06:34: 4:06:34 AM [express] POST /api/auth/login 401 in 18ms :: {"message":"Credenciales incorrectas"}
+0|apo360   | 2025-12-10T04:09:53: 🗄️ Usando PostgreSQL local (producción)
+0|apo360   | 2025-12-10T04:09:53: 🔐 Modo de autenticación solicitado: google
+0|apo360   | 2025-12-10T04:09:53: ✅ Google OAuth configurado correctamente
+0|apo360   | 2025-12-10T04:09:53: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-10T04:09:53: 4:09:53 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-10T04:09:53: 4:09:53 AM [express] ✅ Tabla miembros_grupo ya está sincronizada
+0|apo360   | 2025-12-10T04:09:53: 4:09:53 AM [express] serving on port 5000
