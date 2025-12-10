@@ -36,6 +36,8 @@ type MetodoPago = {
   id: string;
   tipo: string;
   nombre: string;
+  numeroCuenta?: string;
+  cci?: string;
   numero?: string;
   titular?: string;
   banco?: string;
@@ -147,14 +149,16 @@ export default function GestionCarteraScreen() {
   const [nuevoMetodo, setNuevoMetodo] = useState({
     tipo: "cuenta_bancaria",
     nombre: "",
-    numero: "",
+    numeroCuenta: "",
+    cci: "",
     titular: "",
-    banco: "",
     moneda: "PEN",
     esPlataforma: true,
     activo: true,
     orden: 1,
   });
+  const [metodoEditando, setMetodoEditando] = useState<MetodoPago | null>(null);
+  const [monedaEditando, setMonedaEditando] = useState<Moneda | null>(null);
   const [nuevaMoneda, setNuevaMoneda] = useState({
     codigo: "",
     nombre: "",
@@ -275,6 +279,33 @@ export default function GestionCarteraScreen() {
     },
   });
 
+  const actualizarMetodoMutation = useMutation({
+    mutationFn: (data: { id: string } & Partial<typeof nuevoMetodo>) => 
+      apiRequest("PATCH", `/api/metodos-pago/${data.id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/metodos-pago", { esPlataforma: true }] });
+      setShowMetodoModal(false);
+      setMetodoEditando(null);
+      resetMetodoForm();
+      toast({ title: "Metodo de pago actualizado" });
+    },
+    onError: () => {
+      toast({ title: "Error al actualizar metodo de pago", variant: "destructive" });
+    },
+  });
+
+  const toggleMetodoActivoMutation = useMutation({
+    mutationFn: ({ id, activo }: { id: string; activo: boolean }) => 
+      apiRequest("PATCH", `/api/metodos-pago/${id}`, { activo }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/metodos-pago", { esPlataforma: true }] });
+      toast({ title: "Estado actualizado" });
+    },
+    onError: () => {
+      toast({ title: "Error al cambiar estado", variant: "destructive" });
+    },
+  });
+
   const crearMonedaMutation = useMutation({
     mutationFn: (data: typeof nuevaMoneda) => apiRequest("POST", "/api/monedas", data),
     onSuccess: () => {
@@ -296,6 +327,33 @@ export default function GestionCarteraScreen() {
     },
     onError: () => {
       toast({ title: "Error al eliminar moneda", variant: "destructive" });
+    },
+  });
+
+  const actualizarMonedaMutation = useMutation({
+    mutationFn: (data: { id: string } & Partial<typeof nuevaMoneda>) => 
+      apiRequest("PATCH", `/api/monedas/${data.id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/monedas"] });
+      setShowMonedaModal(false);
+      setMonedaEditando(null);
+      resetMonedaForm();
+      toast({ title: "Moneda actualizada" });
+    },
+    onError: () => {
+      toast({ title: "Error al actualizar moneda", variant: "destructive" });
+    },
+  });
+
+  const toggleMonedaActivaMutation = useMutation({
+    mutationFn: ({ id, activo }: { id: string; activo: boolean }) => 
+      apiRequest("PATCH", `/api/monedas/${id}`, { activo }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/monedas"] });
+      toast({ title: "Estado actualizado" });
+    },
+    onError: () => {
+      toast({ title: "Error al cambiar estado", variant: "destructive" });
     },
   });
 
@@ -446,14 +504,30 @@ export default function GestionCarteraScreen() {
     setNuevoMetodo({
       tipo: "cuenta_bancaria",
       nombre: "",
-      numero: "",
+      numeroCuenta: "",
+      cci: "",
       titular: "",
-      banco: "",
       moneda: "PEN",
       esPlataforma: true,
       activo: true,
       orden: 1,
     });
+  };
+
+  const editarMetodo = (metodo: MetodoPago) => {
+    setMetodoEditando(metodo);
+    setNuevoMetodo({
+      tipo: metodo.tipo || "cuenta_bancaria",
+      nombre: metodo.nombre || "",
+      numeroCuenta: metodo.numeroCuenta || metodo.numero || "",
+      cci: metodo.cci || "",
+      titular: metodo.titular || "",
+      moneda: metodo.moneda || "PEN",
+      esPlataforma: metodo.esPlataforma ?? true,
+      activo: metodo.activo ?? true,
+      orden: metodo.orden || 1,
+    });
+    setShowMetodoModal(true);
   };
 
   const resetMonedaForm = () => {
@@ -465,6 +539,19 @@ export default function GestionCarteraScreen() {
       activo: true,
       orden: 1,
     });
+  };
+
+  const editarMoneda = (moneda: Moneda) => {
+    setMonedaEditando(moneda);
+    setNuevaMoneda({
+      codigo: moneda.codigo || "",
+      nombre: moneda.nombre || "",
+      simbolo: moneda.simbolo || "",
+      tasaCambio: moneda.tasaCambio || "1.00",
+      activo: moneda.activo ?? true,
+      orden: moneda.orden || 1,
+    });
+    setShowMonedaModal(true);
   };
 
   const getUserName = (userId: string) => {
@@ -826,19 +913,34 @@ export default function GestionCarteraScreen() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {metodosPago.map((metodo) => (
-                    <div key={metodo.id} className="p-4 border rounded-lg" data-testid={`card-metodo-${metodo.id}`}>
-                      <div className="flex items-center justify-between mb-2">
+                  {Array.isArray(metodosPago) && metodosPago.map((metodo) => (
+                    <div key={metodo.id} className={`p-4 border rounded-lg transition-all ${metodo.activo ? 'bg-background' : 'bg-muted/30 opacity-75'}`} data-testid={`card-metodo-${metodo.id}`}>
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           {getTipoIcon(metodo.tipo)}
                           <span className="font-medium">{metodo.nombre}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={metodo.activo ? "default" : "secondary"}>
-                            {metodo.activo ? "Activo" : "Inactivo"}
-                          </Badge>
+                        <div className="flex items-center gap-1">
                           <Button 
                             size="sm" 
+                            variant={metodo.activo ? "default" : "secondary"}
+                            className={`text-xs px-2 ${metodo.activo ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'}`}
+                            onClick={() => toggleMetodoActivoMutation.mutate({ id: metodo.id, activo: !metodo.activo })}
+                            disabled={toggleMetodoActivoMutation.isPending}
+                            data-testid={`button-toggle-metodo-${metodo.id}`}
+                          >
+                            {metodo.activo ? "Activo" : "Suspendido"}
+                          </Button>
+                          <Button 
+                            size="icon" 
+                            variant="ghost"
+                            onClick={() => editarMetodo(metodo)}
+                            data-testid={`button-editar-metodo-${metodo.id}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="icon" 
                             variant="ghost"
                             onClick={() => eliminarMetodoMutation.mutate(metodo.id)}
                             data-testid={`button-eliminar-metodo-${metodo.id}`}
@@ -847,12 +949,30 @@ export default function GestionCarteraScreen() {
                           </Button>
                         </div>
                       </div>
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        <p><span className="font-medium">Tipo:</span> {metodo.tipo.replace('_', ' ')}</p>
-                        {metodo.banco && <p><span className="font-medium">Banco:</span> {metodo.banco}</p>}
-                        {metodo.numero && <p><span className="font-medium">Numero:</span> {metodo.numero}</p>}
-                        {metodo.titular && <p><span className="font-medium">Titular:</span> {metodo.titular}</p>}
-                        <p><span className="font-medium">Moneda:</span> {metodo.moneda}</p>
+                      <div className="space-y-2 text-sm">
+                        <p className="text-muted-foreground">
+                          <span className="font-medium">Tipo:</span> {metodo.tipo?.replace('_', ' ')}
+                        </p>
+                        {metodo.titular && (
+                          <p className="text-muted-foreground">
+                            <span className="font-medium">Titular:</span> {metodo.titular}
+                          </p>
+                        )}
+                        {(metodo.numeroCuenta || metodo.numero) && (
+                          <div className="p-2 bg-muted/50 rounded">
+                            <p className="text-xs text-muted-foreground mb-1">Cuenta Bancaria</p>
+                            <p className="font-mono font-medium">{metodo.numeroCuenta || metodo.numero}</p>
+                          </div>
+                        )}
+                        {metodo.cci && (
+                          <div className="p-2 bg-muted/50 rounded">
+                            <p className="text-xs text-muted-foreground mb-1">Cuenta Interbancaria (CCI)</p>
+                            <p className="font-mono font-medium">{metodo.cci}</p>
+                          </div>
+                        )}
+                        <p className="text-muted-foreground">
+                          <span className="font-medium">Moneda:</span> {metodo.moneda}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -884,18 +1004,33 @@ export default function GestionCarteraScreen() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {monedas.map((moneda) => (
-                    <div key={moneda.id} className="p-4 border rounded-lg" data-testid={`card-moneda-${moneda.id}`}>
+                    <div key={moneda.id} className={`p-4 border rounded-lg transition-all ${moneda.activo ? 'bg-background' : 'bg-muted/30 opacity-75'}`} data-testid={`card-moneda-${moneda.id}`}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-2xl">{moneda.simbolo}</span>
                           <span className="font-medium">{moneda.codigo}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={moneda.activo ? "default" : "secondary"}>
-                            {moneda.activo ? "Activa" : "Inactiva"}
-                          </Badge>
+                        <div className="flex items-center gap-1">
                           <Button 
                             size="sm" 
+                            variant={moneda.activo ? "default" : "secondary"}
+                            className={`text-xs px-2 ${moneda.activo ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'}`}
+                            onClick={() => toggleMonedaActivaMutation.mutate({ id: moneda.id, activo: !moneda.activo })}
+                            disabled={toggleMonedaActivaMutation.isPending}
+                            data-testid={`button-toggle-moneda-${moneda.id}`}
+                          >
+                            {moneda.activo ? "Activa" : "Suspendida"}
+                          </Button>
+                          <Button 
+                            size="icon" 
+                            variant="ghost"
+                            onClick={() => editarMoneda(moneda)}
+                            data-testid={`button-editar-moneda-${moneda.id}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="icon" 
                             variant="ghost"
                             onClick={() => eliminarMonedaMutation.mutate(moneda.id)}
                             data-testid={`button-eliminar-moneda-${moneda.id}`}
@@ -1223,15 +1358,31 @@ export default function GestionCarteraScreen() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showMetodoModal} onOpenChange={setShowMetodoModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Nuevo Metodo de Pago</DialogTitle>
+      <Dialog open={showMetodoModal} onOpenChange={(open) => { 
+        setShowMetodoModal(open); 
+        if (!open) { 
+          setMetodoEditando(null); 
+          setNuevoMetodo({
+            tipo: "cuenta_bancaria",
+            nombre: "",
+            numeroCuenta: "",
+            cci: "",
+            titular: "",
+            moneda: "PEN",
+            esPlataforma: true,
+            activo: true,
+            orden: 1,
+          });
+        }
+      }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle>{metodoEditando ? 'Editar Metodo de Pago' : 'Nuevo Metodo de Pago'}</DialogTitle>
             <DialogDescription>
-              Agrega una cuenta donde los usuarios puedan depositar.
+              {metodoEditando ? 'Modifica los datos del metodo de pago.' : 'Agrega una cuenta donde los usuarios puedan depositar.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
             <div>
               <Label htmlFor="tipo">Tipo de Metodo</Label>
               <Select
@@ -1243,7 +1394,6 @@ export default function GestionCarteraScreen() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cuenta_bancaria">Cuenta Bancaria</SelectItem>
-                  <SelectItem value="interbancaria">Cuenta Interbancaria</SelectItem>
                   <SelectItem value="yape">Yape</SelectItem>
                   <SelectItem value="plin">Plin</SelectItem>
                   <SelectItem value="paypal">PayPal</SelectItem>
@@ -1251,44 +1401,73 @@ export default function GestionCarteraScreen() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="nombre">Nombre del Metodo</Label>
+              <Label htmlFor="nombre">Nombre del Banco / Metodo</Label>
               <Input
                 id="nombre"
                 value={nuevoMetodo.nombre}
                 onChange={(e) => setNuevoMetodo(prev => ({ ...prev, nombre: e.target.value }))}
-                placeholder="Ej: BCP Soles"
+                placeholder="Ej: BCP, BBVA, Interbank, Yape"
                 data-testid="input-nombre-metodo"
               />
             </div>
-            {(nuevoMetodo.tipo === "cuenta_bancaria" || nuevoMetodo.tipo === "interbancaria") && (
+            {nuevoMetodo.tipo === "cuenta_bancaria" && (
+              <>
+                <div>
+                  <Label htmlFor="numeroCuenta">Numero de Cuenta Bancaria</Label>
+                  <Input
+                    id="numeroCuenta"
+                    value={nuevoMetodo.numeroCuenta}
+                    onChange={(e) => setNuevoMetodo(prev => ({ ...prev, numeroCuenta: e.target.value }))}
+                    placeholder="Ej: 191-123456789-0-01"
+                    data-testid="input-numero-cuenta"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Este numero se mostrara para que el usuario lo copie</p>
+                </div>
+                <div>
+                  <Label htmlFor="cci">Numero de Cuenta Interbancaria (CCI)</Label>
+                  <Input
+                    id="cci"
+                    value={nuevoMetodo.cci}
+                    onChange={(e) => setNuevoMetodo(prev => ({ ...prev, cci: e.target.value }))}
+                    placeholder="Ej: 00219100123456789001"
+                    data-testid="input-cci"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">20 digitos para transferencias desde otros bancos</p>
+                </div>
+              </>
+            )}
+            {(nuevoMetodo.tipo === "yape" || nuevoMetodo.tipo === "plin") && (
               <div>
-                <Label htmlFor="banco">Banco</Label>
+                <Label htmlFor="numeroCuenta">Numero de Celular</Label>
                 <Input
-                  id="banco"
-                  value={nuevoMetodo.banco}
-                  onChange={(e) => setNuevoMetodo(prev => ({ ...prev, banco: e.target.value }))}
-                  placeholder="Ej: BCP, BBVA, Interbank"
-                  data-testid="input-banco"
+                  id="numeroCuenta"
+                  value={nuevoMetodo.numeroCuenta}
+                  onChange={(e) => setNuevoMetodo(prev => ({ ...prev, numeroCuenta: e.target.value }))}
+                  placeholder="Ej: 999888777"
+                  data-testid="input-numero-celular"
+                />
+              </div>
+            )}
+            {nuevoMetodo.tipo === "paypal" && (
+              <div>
+                <Label htmlFor="numeroCuenta">Email de PayPal</Label>
+                <Input
+                  id="numeroCuenta"
+                  type="email"
+                  value={nuevoMetodo.numeroCuenta}
+                  onChange={(e) => setNuevoMetodo(prev => ({ ...prev, numeroCuenta: e.target.value }))}
+                  placeholder="Ej: cuenta@email.com"
+                  data-testid="input-email-paypal"
                 />
               </div>
             )}
             <div>
-              <Label htmlFor="numero">Numero de Cuenta/Celular</Label>
-              <Input
-                id="numero"
-                value={nuevoMetodo.numero}
-                onChange={(e) => setNuevoMetodo(prev => ({ ...prev, numero: e.target.value }))}
-                placeholder="Ej: 191-123456789-0-01"
-                data-testid="input-numero-metodo"
-              />
-            </div>
-            <div>
-              <Label htmlFor="titular">Titular</Label>
+              <Label htmlFor="titular">Nombre del Titular</Label>
               <Input
                 id="titular"
                 value={nuevoMetodo.titular}
                 onChange={(e) => setNuevoMetodo(prev => ({ ...prev, titular: e.target.value }))}
-                placeholder="Nombre del titular de la cuenta"
+                placeholder="Nombre completo del titular"
                 data-testid="input-titular"
               />
             </div>
@@ -1308,30 +1487,42 @@ export default function GestionCarteraScreen() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0 pt-4">
             <Button variant="outline" onClick={() => setShowMetodoModal(false)}>
               Cancelar
             </Button>
             <Button 
-              onClick={() => crearMetodoMutation.mutate(nuevoMetodo)}
-              disabled={!nuevoMetodo.nombre || !nuevoMetodo.numero || crearMetodoMutation.isPending}
+              onClick={() => {
+                if (metodoEditando) {
+                  actualizarMetodoMutation.mutate({ id: metodoEditando.id, ...nuevoMetodo });
+                } else {
+                  crearMetodoMutation.mutate(nuevoMetodo);
+                }
+              }}
+              disabled={!nuevoMetodo.nombre || !nuevoMetodo.numeroCuenta || crearMetodoMutation.isPending || actualizarMetodoMutation?.isPending}
               data-testid="button-guardar-metodo"
             >
-              Guardar Metodo
+              {metodoEditando ? 'Actualizar' : 'Guardar'} Metodo
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showMonedaModal} onOpenChange={setShowMonedaModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Nueva Moneda</DialogTitle>
+      <Dialog open={showMonedaModal} onOpenChange={(open) => { 
+        setShowMonedaModal(open); 
+        if (!open) { 
+          setMonedaEditando(null); 
+          resetMonedaForm();
+        }
+      }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle>{monedaEditando ? 'Editar Moneda' : 'Nueva Moneda'}</DialogTitle>
             <DialogDescription>
-              Configura una nueva moneda para el sistema.
+              {monedaEditando ? 'Modifica los datos de la moneda.' : 'Configura una nueva moneda para el sistema.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
             <div>
               <Label htmlFor="codigo">Codigo (ISO)</Label>
               <Input
@@ -1377,16 +1568,22 @@ export default function GestionCarteraScreen() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0 pt-4">
             <Button variant="outline" onClick={() => setShowMonedaModal(false)}>
               Cancelar
             </Button>
             <Button 
-              onClick={() => crearMonedaMutation.mutate(nuevaMoneda)}
-              disabled={!nuevaMoneda.codigo || !nuevaMoneda.nombre || !nuevaMoneda.simbolo || crearMonedaMutation.isPending}
+              onClick={() => {
+                if (monedaEditando) {
+                  actualizarMonedaMutation.mutate({ id: monedaEditando.id, ...nuevaMoneda });
+                } else {
+                  crearMonedaMutation.mutate(nuevaMoneda);
+                }
+              }}
+              disabled={!nuevaMoneda.codigo || !nuevaMoneda.nombre || !nuevaMoneda.simbolo || crearMonedaMutation.isPending || actualizarMonedaMutation?.isPending}
               data-testid="button-guardar-moneda"
             >
-              Guardar Moneda
+              {monedaEditando ? 'Actualizar' : 'Guardar'} Moneda
             </Button>
           </DialogFooter>
         </DialogContent>

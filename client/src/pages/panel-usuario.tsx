@@ -17,7 +17,7 @@ import {
   Trash2, Share2, Car, CreditCard, ShoppingBag,
   Plus, Edit, Loader2, Crown, CheckCircle,
   User, Camera, AlertCircle, Wallet, DollarSign,
-  Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn
+  Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn, Copy, Building
 } from "lucide-react";
 import { Link } from "wouter";
 import BloqueoServicio, { useVerificarPerfil } from "@/components/BloqueoServicio";
@@ -922,8 +922,8 @@ export default function PanelUsuarioPage() {
       </Tabs>
 
       <Dialog open={showRecargaModal} onOpenChange={setShowRecargaModal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5 text-green-500" />
               Recargar Saldo
@@ -932,7 +932,7 @@ export default function PanelUsuarioPage() {
               Recarga tu saldo para usar los servicios de la plataforma
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto space-y-4 py-4 pr-2">
             <div>
               <Label htmlFor="monto">Monto a Recargar (minimo S/ 1.00)</Label>
               <Input
@@ -967,36 +967,92 @@ export default function PanelUsuarioPage() {
               ))}
             </div>
             <div>
-              <Label htmlFor="metodoPago">Metodo de Pago</Label>
+              <Label htmlFor="metodoPago" className="flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                Metodo de Pago - Selecciona y copia el numero
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Toca el numero de cuenta para copiarlo al portapapeles
+              </p>
               {loadingMetodos ? (
                 <div className="py-2 text-center text-muted-foreground text-sm">Cargando metodos...</div>
-              ) : metodosPago.length === 0 ? (
+              ) : !Array.isArray(metodosPago) || metodosPago.length === 0 ? (
                 <div className="py-2 text-center text-muted-foreground text-sm">
                   No hay metodos de pago disponibles
                 </div>
               ) : (
                 <div className="space-y-2 mt-2">
-                  {metodosPago.filter(m => m.activo).map((metodo) => (
+                  {metodosPago.filter(m => m.activo).map((metodo: any) => (
                     <div
                       key={metodo.id}
-                      className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                        metodoPagoId === metodo.id ? 'ring-2 ring-primary border-primary' : ''
+                      className={`p-3 border rounded-lg transition-all ${
+                        metodoPagoId === metodo.id ? 'ring-2 ring-primary border-primary bg-primary/5' : ''
                       }`}
-                      onClick={() => setMetodoPagoId(metodo.id)}
                       data-testid={`card-metodo-pago-${metodo.id}`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{metodo.nombre}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {metodo.banco && `${metodo.banco} - `}{metodo.numero}
+                      <div className="flex items-center justify-between mb-2">
+                        <div 
+                          className="flex-1 cursor-pointer" 
+                          onClick={() => setMetodoPagoId(metodo.id)}
+                        >
+                          <p className="font-medium flex items-center gap-2">
+                            {metodo.nombre}
+                            <Badge variant="outline" className="text-xs">{metodo.tipo?.replace('_', ' ')}</Badge>
                           </p>
                           {metodo.titular && (
                             <p className="text-xs text-muted-foreground">Titular: {metodo.titular}</p>
                           )}
                         </div>
-                        <Badge variant="outline">{metodo.tipo.replace('_', ' ')}</Badge>
+                        <div 
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer ${
+                            metodoPagoId === metodo.id ? 'bg-primary border-primary' : 'border-muted-foreground'
+                          }`}
+                          onClick={() => setMetodoPagoId(metodo.id)}
+                        >
+                          {metodoPagoId === metodo.id && <Check className="h-3 w-3 text-primary-foreground" />}
+                        </div>
                       </div>
+                      
+                      {(metodo.numeroCuenta || metodo.numero) && (
+                        <div
+                          className="flex items-center justify-between p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors mb-1"
+                          onClick={() => {
+                            const cuenta = metodo.numeroCuenta || metodo.numero;
+                            navigator.clipboard.writeText(cuenta);
+                            toast({ title: "Cuenta copiada", description: `${cuenta} copiado al portapapeles` });
+                          }}
+                          data-testid={`button-copiar-cuenta-${metodo.id}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">Cuenta Bancaria</p>
+                              <p className="font-mono text-sm font-medium">{metodo.numeroCuenta || metodo.numero}</p>
+                            </div>
+                          </div>
+                          <Copy className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      
+                      {metodo.cci && (
+                        <div
+                          className="flex items-center justify-between p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors"
+                          onClick={() => {
+                            navigator.clipboard.writeText(metodo.cci);
+                            toast({ title: "CCI copiado", description: `${metodo.cci} copiado al portapapeles` });
+                          }}
+                          data-testid={`button-copiar-cci-${metodo.id}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">Cuenta Interbancaria (CCI)</p>
+                              <p className="font-mono text-sm font-medium">{metodo.cci}</p>
+                            </div>
+                          </div>
+                          <Copy className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
