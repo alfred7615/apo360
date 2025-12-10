@@ -1,0 +1,63 @@
+root@srv1170282:/var/www/apo360.net# cat /etc/nginx/sites-available/apo360.net
+server {
+    listen 80;
+    server_name apo360.net www.apo360.net;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl ipv6only=on;
+
+    server_name apo360.net www.apo360.net;
+
+    ssl_certificate /etc/letsencrypt/live/apo360.net/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/apo360.net/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    root /var/www/apo360.net/dist/public;
+    index index.html;
+
+    # API primero - debe ir ANTES de la regla general
+    location /api/ {
+        proxy_pass http://localhost:5000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Headers adicionales para CORS si es necesario
+        proxy_set_header Access-Control-Allow-Origin *;
+        proxy_set_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        proxy_set_header Access-Control-Allow-Headers "Authorization, Content-Type";
+    }
+
+    # Websocket para conexiones en tiempo real
+    location /ws/ {
+        proxy_pass http://localhost:5000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Archivos estáticos del frontend
+location /assets/ {
+    alias /var/www/apo360.net/public/assets/;
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    }
+
+    # Regla general para SPA (Single Page Application)
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+root@srv1170282:/var/www/apo360.net#
