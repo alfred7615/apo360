@@ -1,0 +1,73 @@
+
+Last login: Tue Dec  9 21:37:22 2025 from 169.254.0.1
+root@srv1170282:~# pm2 status
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 0    │ online    │ 0%       │ 99.6mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:~# pm2 logs apo360 --lines 30
+[TAILING] Tailing last 30 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/error-0.log last 30 lines:
+0|apo360   |     at async upsertUser (file:///var/www/apo360.net/dist/index.js:3191:3)
+0|apo360   |     at async Strategy._verify (file:///var/www/apo360.net/dist/index.js:3304:9)
+0|apo360   | You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+0|apo360   | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'dotenv' imported from /var/www/apo360.net/dist/index.js
+0|apo360   |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+0|apo360   |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+0|apo360   |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+0|apo360   |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)
+0|apo360   |     at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)
+0|apo360   |     at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)
+0|apo360   |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)
+0|apo360   |     at ModuleJob._link (node:internal/modules/esm/module_job:168:49)
+0|apo360   | You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+0|apo360   | Error: DATABASE_URL debe estar configurada. ¿Olvidaste crear la base de datos?
+0|apo360   |     at server/db.ts (file:///var/www/apo360.net/dist/index.js:1187:13)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at server/storage.ts (file:///var/www/apo360.net/dist/index.js:1225:5)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at file:///var/www/apo360.net/dist/index.js:3932:1
+0|apo360   |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|apo360   |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|apo360   | You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+0|apo360   | Error: DATABASE_URL debe estar configurada. ¿Olvidaste crear la base de datos?
+0|apo360   |     at server/db.ts (file:///var/www/apo360.net/dist/index.js:1187:13)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at server/storage.ts (file:///var/www/apo360.net/dist/index.js:1225:5)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at file:///var/www/apo360.net/dist/index.js:3932:1
+0|apo360   |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|apo360   |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+
+/var/www/apo360.net/logs/output-0.log last 30 lines:
+0|apo360   | 2025-12-10T12:10:56: 12:10:56 PM [express] GET /api/configuracion/franja_emergencia 404 in 12ms :: {"message":"Configuraci…
+0|apo360   | 2025-12-10T12:10:56: 12:10:56 PM [express] GET /api/emergencias/recientes 200 in 15ms :: []
+0|apo360   | 2025-12-10T12:10:56: 12:10:56 PM [express] GET /api/contactos-familiares 200 in 11ms :: []
+0|apo360   | 2025-12-10T12:10:56: 12:10:56 PM [express] GET /api/emergencias/comunidad 304 in 9ms
+0|apo360   | 2025-12-10T12:10:56: 12:10:56 PM [express] GET /api/emergencias/familia 304 in 11ms
+0|apo360   | 2025-12-10T12:11:33: 12:11:33 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"No autorizado"}
+0|apo360   | 2025-12-10T12:11:33: 12:11:33 PM [express] GET /api/radios-online 200 in 22ms :: [{"id":1,"nombre":"TacnaFM.apo","url":"ht…
+0|apo360   | 2025-12-10T12:11:33: 12:11:33 PM [express] GET /api/listas-mp3 200 in 4ms :: []
+0|apo360   | 2025-12-10T12:11:33: 12:11:33 PM [express] GET /api/archivos-mp3 200 in 2ms :: []
+0|apo360   | 2025-12-10T12:11:33: 12:11:33 PM [express] GET /api/publicidad 200 in 14ms :: [{"id":"2906a495-955b-4b51-b84c-90f1663990d3…
+0|apo360   | 2025-12-10T12:11:33: 12:11:33 PM [express] GET /api/configuracion/franja_emergencia 404 in 28ms :: {"message":"Configuraci…
+0|apo360   | 2025-12-10T12:11:33: 12:11:33 PM [express] GET /api/estadisticas/publicas 200 in 10ms :: {"usuariosActivos":2,"serviciosLo…
+0|apo360   | 2025-12-10T12:11:33: 12:11:33 PM [express] GET /api/servicios 200 in 8ms :: []
+0|apo360   | 2025-12-10T12:11:39: 12:11:39 PM [express] GET /api/configuracion/franja_emergencia 404 in 3ms :: {"message":"Configuració…
+0|apo360   | 2025-12-10T12:11:39: 12:11:39 PM [express] GET /api/configuracion/roles 404 in 2ms :: {"message":"Configuración no encontr…
+0|apo360   | 2025-12-10T12:12:03: 12:12:03 PM [express] GET /api/listas-mp3 304 in 227ms :: []
+0|apo360   | 2025-12-10T12:12:03: 12:12:03 PM [express] GET /api/radios-online 304 in 245ms :: [{"id":1,"nombre":"TacnaFM.apo","url":"h…
+0|apo360   | 2025-12-10T12:12:03: 12:12:03 PM [express] GET /api/archivos-mp3 304 in 245ms :: []
+0|apo360   | 2025-12-10T12:12:03: 12:12:03 PM [express] GET /api/auth/user 304 in 48ms :: {"id":"1","nombre":"Usuario","email":"aapomay…
+0|apo360   | 2025-12-10T12:12:03: 12:12:03 PM [express] GET /api/logos-servicio 304 in 20ms :: []
+0|apo360   | 2025-12-10T12:12:03: 12:12:03 PM [express] GET /api/categorias-servicio 304 in 22ms :: []
+0|apo360   | 2025-12-10T12:12:03: 12:12:03 PM [express] GET /api/emergencias/recientes 304 in 33ms :: []
+0|apo360   | 2025-12-10T12:12:04: 12:12:04 PM [express] GET /api/publicidad 304 in 70ms :: [{"id":"2906a495-955b-4b51-b84c-90f1663990d3…
+0|apo360   | 2025-12-10T12:12:04: 12:12:04 PM [express] GET /api/configuracion/franja_emergencia 404 in 107ms :: {"message":"Configurac…
+0|apo360   | 2025-12-10T12:12:04: 12:12:04 PM [express] GET /api/subcategorias-servicio 304 in 128ms :: []
+0|apo360   | 2025-12-10T12:12:04: 12:12:04 PM [express] GET /api/contactos-familiares 304 in 24ms :: []
+0|apo360   | 2025-12-10T12:12:04: 12:12:04 PM [express] GET /api/emergencias/familia 304 in 9ms
+0|apo360   | 2025-12-10T12:12:04: 12:12:04 PM [express] GET /api/emergencias/comunidad 304 in 19ms
+0|apo360   | 2025-12-10T12:12:07: 12:12:07 PM [express] GET /api/publicidad/515b19ea-53a6-4464-82cf-2aff67f379e7/contadores 200 in 15ms…
+0|apo360   | 2025-12-10T12:12:07: 12:12:07 PM [express] GET /api/publicidad/515b19ea-53a6-4464-82cf-2aff67f379e7/mis-interacciones 200 …
