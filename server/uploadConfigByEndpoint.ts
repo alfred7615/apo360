@@ -31,19 +31,28 @@ export function createUploadMiddleware(folder: string, fieldName: string = 'imag
   });
 
   const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    const allowedMimes = [
+      'image/jpeg', 
+      'image/png', 
+      'image/webp', 
+      'image/jpg',
+      'image/gif',
+      'image/bmp',
+      'image/tiff',
+      'image/svg+xml'
+    ];
     
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Formato de archivo no permitido. Solo se aceptan: JPG, PNG, WEBP'));
+      cb(new Error('Formato de archivo no permitido. Solo se aceptan: JPG, PNG, WEBP, GIF, BMP, TIFF, SVG'));
     }
   };
 
   return multer({
     storage: storage,
     limits: {
-      fileSize: 15 * 1024 * 1024,
+      fileSize: 25 * 1024 * 1024, // 25 MB máximo
     },
     fileFilter: fileFilter,
   }).single(fieldName);
