@@ -1,6 +1,3 @@
-// Cargar variables de entorno desde .env
-require('dotenv').config({ path: '/var/www/apo360.net/.env' });
-
 module.exports = {
   apps: [{
     name: 'apo360',
@@ -14,24 +11,22 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       PORT: 5000,
-      // Variables de base de datos
-      DATABASE_URL: process.env.DATABASE_URL,
-      PGHOST: process.env.PGHOST,
-      PGPORT: process.env.PGPORT,
-      PGUSER: process.env.PGUSER,
-      PGPASSWORD: process.env.PGPASSWORD,
-      PGDATABASE: process.env.PGDATABASE,
-      // Variables de autenticación
-      SESSION_SECRET: process.env.SESSION_SECRET,
-      AUTH_MODE: process.env.AUTH_MODE || 'google',
-      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-      GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL,
-      // SMTP
-      SMTP_HOST: process.env.SMTP_HOST,
-      SMTP_PORT: process.env.SMTP_PORT,
-      SMTP_USER: process.env.SMTP_USER,
-      SMTP_PASSWORD: process.env.SMTP_PASSWORD
+      HOST: '0.0.0.0',
+      DATABASE_URL: 'postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable',
+      PGHOST: '127.0.0.1',
+      PGPORT: '5432',
+      PGUSER: 'apo360_admin',
+      PGPASSWORD: 'Admin2025',
+      PGDATABASE: 'apo360_prod',
+      SESSION_SECRET: 'Q1WbrRv7MMG7ElYk08ePw7QuIhCkp3hzMEqQJ5tUn2ZNtzOBGgRCOizEpXoYl/1r/Bt7eCWtKMVEseEvVu1kJQ==',
+      AUTH_MODE: 'basic',
+      GOOGLE_CLIENT_ID: '16943049442-mbv8ll4g7iu186nttlahsdhh8of1jq1u.apps.googleusercontent.com',
+      GOOGLE_CLIENT_SECRET: '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',
+      GOOGLE_CALLBACK_URL: 'https://apo360.net/api/callback',
+      SMTP_HOST: 'smtp.gmail.com',
+      SMTP_PORT: '587',
+      SMTP_USER: 'aapomayta15@gmail.com',
+      SMTP_PASSWORD: 'frog svje eiih jfga'
     },
     error_file: '/var/www/apo360.net/logs/error.log',
     out_file: '/var/www/apo360.net/logs/output.log',
