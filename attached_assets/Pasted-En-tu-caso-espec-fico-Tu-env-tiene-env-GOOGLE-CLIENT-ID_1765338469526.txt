@@ -1,0 +1,305 @@
+En tu caso específico:
+Tu .env tiene:
+
+env
+GOOGLE_CLIENT_ID=16943049442-mbv8ll4g7iu186nttlahsdhh8of1jq1u.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+GOOGLE_CALLBACK_URL=https://apo360.net/api/callback
+¿Debes cambiar a producción?
+NO, todavía no. Por ahora:
+
+🛡️ RECOMENDACIÓN INMEDIATA
+Paso 1: Desactivar Google OAuth temporalmente
+bash
+# Modificar tu servidor para NO usar Google OAuth por ahora
+cd /var/www/apo360.net
+
+cat > server-sin-google.cjs << 'EOF'
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const { Pool } = require('pg');
+
+const app = express();
+const PORT = 5000;
+
+console.log('🚀 APO360 SIN GOOGLE OAUTH');
+console.log('='.repeat(60));
+
+// PostgreSQL config
+const pool = new Pool({
+  host: 'localhost',
+  port: 5432,
+  user: 'apo360_admin',
+  password: 'Apo360Admin2025',
+  database: 'apo360_prod',
+  max: 10
+});
+
+// Middleware SIMPLE
+app.use(cors({
+  origin: ['https://apo360.net', 'http://localhost:3000'],
+  credentials: true
+}));
+app.use(express.json());
+
+// ==================== RUTAS BÁSICAS ====================
+
+// 1. HEALTH CHECK
+app.get('/api/health', async (req, res) => {
+  res.json({
+    status: 'healthy',
+    server: 'APO360 Basic Auth',
+    timestamp: new Date().toISOString(),
+    auth_mode: 'basic',
+    login: 'aapomayta15@gmail.com / Admin123'
+  });
+});
+
+// 2. LOGIN SIMPLE (sin Google)
+app.post('/api/auth/login', async (req, res) => {
+  console.log('Login attempt:', req.body.email);
+  
+  const { email, password } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email y password requeridos' });
+  }
+  
+  try {
+    const result = await pool.query(
+      'SELECT id, email, name, role FROM users WHERE email = $1 AND password = $2',
+      [email, password]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
+    
+    const user = result.rows[0];
+    
+    res.json({
+      success: true,
+      user: user,
+      token: `apo360-${user.id}-${Date.now()}`,
+      message: 'Login exitoso'
+    });
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// 3. OBTENER USUARIO
+app.get('/api/auth/user', (req, res) => {
+  const token = req.headers.authorization;
+  
+  if (token && token.includes('apo360')) {
+    res.json({
+      success: true,
+      user: {
+        id: 1,
+        email: 'aapomayta15@gmail.com',
+        name: 'Admin Principal',
+        role: 'super_admin'
+      }
+    });
+  } else {
+    res.status(401).json({ error: 'No autenticado' });
+  }
+});
+
+// ==================== INICIAR ====================
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n✅ Servidor: http://localhost:${PORT}`);
+  console.log(`🔗 Health: http://localhost:${PORT}/api/health`);
+  console.log(`👤 Login: aapomayta15@gmail.com`);
+  console.log(`🔑 Password: Admin123`);
+  console.log('='.repeat(60));
+  console.log('⚠️  Google OAuth DESACTIVADO temporalmente');
+  console.log('='.repeat(60));
+});
+EOF
+Paso 2: Actualizar .env sin Google OAuth
+bash
+# Crear .env sin Google OAuth
+cat > .env.basic << 'EOF'
+# ENTORNO
+NODE_ENV=production
+PORT=5000
+
+# POSTGRESQL
+PGHOST=localhost
+PGPORT=5432
+PGUSER=apo360_admin
+PGPASSWORD=Apo360Admin2025
+PGDATABASE=apo360_prod
+
+# AUTH BASIC
+ADMIN_EMAIL=aapomayta15@gmail.com
+ADMIN_PASSWORD=Admin123
+
+# CORS
+CORS_ORIGIN=https://apo360.net
+EOF
+
+cp .env.basic .env
+Paso 3: Flujo de trabajo recomendado
+text
+FASE 1: ✅ AHORA
+- Login básico (email/password)
+- PostgreSQL local
+- Sin Google OAuth
+- Funcionalidad básica
+
+FASE 2: ✅ DESPUÉS (cuando todo funcione)
+- Configurar Google OAuth en modo testing
+- Agregar login social
+- Usar JWT tokens
+
+FASE 3: ✅ FUTURO
+- Cambiar Google OAuth a producción
+- Enviar para verificación (si es necesario)
+- Agregar más funcionalidades
+Paso 4: Script para iniciar TODO limpio
+bash
+cat > /var/www/apo360.net/start-clean.sh << 'EOF'
+#!/bin/bash
+echo "🧹 INICIANDO TODO DESDE CERO"
+echo "============================"
+
+# 1. Matar procesos
+echo "1. Limpiando procesos..."
+sudo lsof -ti:5000 | xargs kill -9 2>/dev/null || true
+pm2 delete apo360 2>/dev/null || true
+
+# 2. PostgreSQL
+echo "2. Configurando PostgreSQL..."
+sudo -u postgres psql << 'PSQL_EOF'
+DROP DATABASE IF EXISTS apo360_prod;
+DROP USER IF EXISTS apo360_admin;
+CREATE USER apo360_admin WITH PASSWORD 'Apo360Admin2025';
+CREATE DATABASE apo360_prod OWNER apo360_admin;
+\c apo360_prod
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    name VARCHAR(255),
+    role VARCHAR(50) DEFAULT 'user'
+);
+INSERT INTO users (email, password, name, role) 
+VALUES ('aapomayta15@gmail.com', 'Admin123', 'Admin', 'super_admin');
+SELECT '✅ PostgreSQL listo' as status;
+PSQL_EOF
+
+# 3. .env simple
+echo "3. Configurando .env..."
+cat > .env << 'ENV_EOF'
+NODE_ENV=production
+PORT=5000
+PGHOST=localhost
+PGPORT=5432
+PGUSER=apo360_admin
+PGPASSWORD=Apo360Admin2025
+PGDATABASE=apo360_prod
+ADMIN_EMAIL=aapomayta15@gmail.com
+ADMIN_PASSWORD=Admin123
+CORS_ORIGIN=https://apo360.net
+ENV_EOF
+
+# 4. Servidor simple
+echo "4. Creando servidor simple..."
+cat > server-simple.cjs << 'SERVER_EOF'
+const express = require("express");
+const { Pool } = require("pg");
+const app = express();
+const PORT = 5000;
+const pool = new Pool({
+  host: "localhost",
+  port: 5432,
+  user: "apo360_admin",
+  password: "Apo360Admin2025",
+  database: "apo360_prod",
+});
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "*");
+  next();
+});
+app.use(express.json());
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", server: "APO360 Simple" });
+});
+app.post("/api/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email y password requeridos" });
+  }
+  try {
+    const result = await pool.query(
+      "SELECT id, email, name, role FROM users WHERE email = $1 AND password = $2",
+      [email, password]
+    );
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Credenciales incorrectas" });
+    }
+    res.json({
+      success: true,
+      user: result.rows[0],
+      token: "apo360-token",
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error del servidor" });
+  }
+});
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("✅ Servidor simple: http://localhost:" + PORT);
+  console.log("👤 Login: aapomayta15@gmail.com");
+  console.log("🔑 Password: Admin123");
+});
+SERVER_EOF
+
+# 5. Iniciar
+echo "5. Iniciando servidor..."
+node server-simple.cjs
+EOF
+
+chmod +x start-clean.sh
+🎯 PLAN DE ACCIÓN INMEDIATO
+Para resolver tu problema de login AHORA:
+
+Ejecuta el script limpio:
+
+bash
+cd /var/www/apo360.net
+./start-clean.sh
+En otra terminal SSH, prueba:
+
+bash
+curl http://localhost:5000/api/health
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"aapomayta15@gmail.com","password":"Admin123"}'
+Si funciona, configura PM2:
+
+bash
+pm2 start server-simple.cjs --name apo360
+pm2 logs apo360
+📋 RESUMEN SOBRE GOOGLE OAUTH
+Aspecto	Modo Testing	Modo Production
+Usuarios	Solo 100 autorizados	Cualquier usuario Google
+Verificación	No requiere	Requiere si >10 dominios o permisos sensibles
+Recomendación	✅ Usar AHORA	❌ NO usar todavía
+Tu app	Aún en desarrollo	Cuando esté lista para público
+Mi recomendación: Olvida Google OAuth por ahora. Primero haz que el login básico funcione, luego agregas Google después.
+
+¿Quieres que hagamos esto paso a paso? Podemos:
+
+Crear servidor SIN Google OAuth
+
+Hacer que el login básico funcione
+
+Después agregar Google OAuth en modo testing

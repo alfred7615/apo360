@@ -15,8 +15,12 @@ function isValidString(value: string | undefined): boolean {
 const hasReplitEnv = isValidString(process.env.REPL_ID);
 const hasGoogleEnv = isValidString(process.env.GOOGLE_CLIENT_ID) && isValidString(process.env.GOOGLE_CLIENT_SECRET);
 
-function determineAuthMode(): "replit" | "google" {
+function determineAuthMode(): "replit" | "google" | "basic" {
   const explicitMode = process.env.AUTH_MODE?.trim().toLowerCase();
+  
+  if (explicitMode === "basic") {
+    return "basic";
+  }
   
   if (explicitMode === "replit") {
     if (!hasReplitEnv) {
@@ -33,7 +37,7 @@ function determineAuthMode(): "replit" | "google" {
 }
 
 const AUTH_MODE = determineAuthMode();
-let activeAuthMode = AUTH_MODE;
+let activeAuthMode: "replit" | "google" | "basic" = AUTH_MODE;
 
 let oidcClientModule: typeof import("openid-client") | null = null;
 let oidcPassportModule: typeof import("openid-client/passport") | null = null;
@@ -301,6 +305,212 @@ async function setupGoogleAuth(app: Express): Promise<boolean> {
   return true;
 }
 
+async function setupBasicAuth(app: Express) {
+  console.log("🔐 Configurando autenticación básica (email/contraseña)...");
+  
+  // Ruta de login básico
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email y contraseña son requeridos" });
+      }
+      
+      // Buscar usuario por email
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Credenciales incorrectas" });
+      }
+      
+      // Verificar contraseña (comparación simple por ahora)
+      if (user.passwordHash !== password) {
+        return res.status(401).json({ message: "Credenciales incorrectas" });
+      }
+      
+      // Crear sesión
+      const sessionUser = {
+        claims: {
+          sub: user.id,
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          profile_image_url: user.profileImageUrl,
+        },
+        expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // 7 días
+      };
+      
+      (req.session as any).user = sessionUser;
+      
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          profileImageUrl: user.profileImageUrl,
+          rol: user.rol,
+        },
+        message: "Login exitoso"
+      });
+    } catch (error) {
+      console.error("Error en login básico:", error);
+      res.status(500).json({ message: "Error del servidor" });
+    }
+  });
+  
+  // Ruta de registro básico (compatible con frontend existente)
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, alias, telefono, rol } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email y contraseña son requeridos" });
+      }
+      
+      // Verificar si el usuario ya existe
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: "El email ya está registrado" });
+      }
+      
+      // Crear usuario
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const isSuperAdmin = email === "aapomayta15@gmail.com";
+      const userRol = isSuperAdmin ? "super_admin" : (rol || "usuario");
+      
+      await storage.upsertUsuario({
+        id: userId,
+        email: email,
+        firstName: firstName || alias || email.split('@')[0],
+        lastName: lastName || '',
+        passwordHash: password,
+        rol: userRol,
+        telefono: telefono || null,
+      });
+      
+      // Crear sesión automáticamente
+      const sessionUser = {
+        claims: {
+          sub: userId,
+          email: email,
+          first_name: firstName || alias || email.split('@')[0],
+          last_name: lastName || '',
+        },
+        expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
+      };
+      
+      (req.session as any).user = sessionUser;
+      
+      res.status(201).json({
+        success: true,
+        message: "Registro exitoso",
+        user: {
+          id: userId,
+          email: email,
+          firstName: firstName || alias || email.split('@')[0],
+          lastName: lastName || '',
+        }
+      });
+    } catch (error) {
+      console.error("Error en registro:", error);
+      res.status(500).json({ message: "Error del servidor" });
+    }
+  });
+  
+  // Ruta de registro compatible con frontend (alias /api/auth/registro)
+  app.post("/api/auth/registro", async (req, res) => {
+    try {
+      const { email, password, alias, telefono, rol, nivelUsuario } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email y contraseña son requeridos" });
+      }
+      
+      // Verificar si el usuario ya existe
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: "El email ya está registrado" });
+      }
+      
+      // Roles que requieren aprobación
+      const rolesConAprobacion = ["serenazgo", "policia", "bombero", "samu"];
+      const requiereAprobacion = rolesConAprobacion.includes(rol || "usuario");
+      
+      // Crear usuario
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const isSuperAdmin = email === "aapomayta15@gmail.com";
+      const userRol = isSuperAdmin ? "super_admin" : (rol || "usuario");
+      
+      await storage.upsertUsuario({
+        id: userId,
+        email: email,
+        firstName: alias || email.split('@')[0],
+        lastName: '',
+        passwordHash: password,
+        rol: userRol,
+        telefono: telefono || null,
+        estado: requiereAprobacion ? "pendiente" : "activo",
+      });
+      
+      if (!requiereAprobacion) {
+        // Crear sesión automáticamente
+        const sessionUser = {
+          claims: {
+            sub: userId,
+            email: email,
+            first_name: alias || email.split('@')[0],
+            last_name: '',
+          },
+          expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
+        };
+        
+        (req.session as any).user = sessionUser;
+      }
+      
+      res.status(201).json({
+        success: true,
+        message: requiereAprobacion ? "Registro enviado para aprobación" : "Registro exitoso",
+        requiereAprobacion,
+        user: {
+          id: userId,
+          email: email,
+          nombre: alias || email.split('@')[0],
+        }
+      });
+    } catch (error) {
+      console.error("Error en registro:", error);
+      res.status(500).json({ message: "Error del servidor" });
+    }
+  });
+  
+  // Ruta de logout
+  app.get("/api/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Error al cerrar sesión:", err);
+      }
+      res.redirect("/");
+    });
+  });
+  
+  // Rutas vacías para compatibilidad con frontend
+  app.get("/api/login", (req, res) => {
+    res.redirect("/?showLogin=true");
+  });
+  
+  app.get("/api/callback", (req, res) => {
+    res.redirect("/");
+  });
+  
+  console.log("✅ Autenticación básica configurada");
+  console.log("   📧 Login: POST /api/auth/login");
+  console.log("   📝 Registro: POST /api/auth/register");
+  activeAuthMode = "basic";
+}
+
 export async function setupAuth(app: Express) {
   console.log(`🔐 Modo de autenticación solicitado: ${AUTH_MODE}`);
   
@@ -312,7 +522,9 @@ export async function setupAuth(app: Express) {
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
-  if (AUTH_MODE === "replit") {
+  if (AUTH_MODE === "basic") {
+    await setupBasicAuth(app);
+  } else if (AUTH_MODE === "replit") {
     await setupReplitAuth(app);
     console.log("✅ Replit Auth configurado");
   } else {
@@ -323,10 +535,9 @@ export async function setupAuth(app: Express) {
         await setupReplitAuth(app);
         console.log("✅ Replit Auth configurado (fallback)");
       } else {
-        console.error("❌ ERROR: No hay proveedor de autenticación disponible.");
-        console.error("   Configure GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET para Google OAuth");
-        console.error("   O ejecute en un entorno Replit para usar Replit Auth (requiere REPL_ID válido)");
-        throw new Error("No authentication provider configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET for production, or run in Replit environment for development.");
+        // Si no hay Google ni Replit, usar autenticación básica
+        console.log("⚠️ Fallback: Usando autenticación básica");
+        await setupBasicAuth(app);
       }
     }
   }
