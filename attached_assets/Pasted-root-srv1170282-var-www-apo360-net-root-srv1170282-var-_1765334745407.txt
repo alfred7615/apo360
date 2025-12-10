@@ -1,0 +1,58 @@
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# sudo -u postgres psql -d apo360_prod -c "\dt"
+root@srv1170282:/var/www/apo360.net# root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# sudo -u postgres psql -d apo360_prod -c "
+> CREATE TABLE IF NOT EXISTS sessions (
+>   sid VARCHAR NOT NULL PRIMARY KEY,
+>   sess JSON NOT NULL,
+>   expire TIMESTAMP(6) NOT NULL
+> );
+> CREATE INDEX IF NOT EXISTS IDX_session_expire ON sessions (expire);
+> ALTER TABLE sessions OWNER TO apo360_admin;
+> "
+CREATE TABLE
+CREATE INDEX
+ALTER TABLE
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360 --update-env
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 10   │ online    │ 0%       │ 41.5mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 logs apo360 --lines 10
+[TAILING] Tailing last 10 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/error-0.log last 10 lines:
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T02:38:45: error: relation "sessions" does not exist
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T02:38:47: error: relation "sessions" does not exist
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+
+/var/www/apo360.net/logs/output-0.log last 10 lines:
+0|apo360   | 2025-12-10T02:38:42: 2:38:42 AM [express] GET /api/estadisticas/publicas 500 in 32ms :: {"message":"relation \"sessions\"…
+0|apo360   | 2025-12-10T02:38:45: 2:38:45 AM [express] GET /api/configuracion/franja_emergencia 500 in 19ms :: {"message":"relation \"…
+0|apo360   | 2025-12-10T02:38:45: 2:38:45 AM [express] GET /api/configuracion/roles 500 in 29ms :: {"message":"relation \"sessions\" d…
+0|apo360   | 2025-12-10T02:38:47: 2:38:47 AM [express] POST /api/auth/login 500 in 8ms :: {"message":"relation \"sessions\" does not e…
+0|apo360   | 2025-12-10T02:46:03: 🔐 Modo de autenticación solicitado: google
+0|apo360   | 2025-12-10T02:46:03: ✅ Google OAuth configurado correctamente
+0|apo360   | 2025-12-10T02:46:03: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-10T02:46:03: 2:46:03 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-10T02:46:03: 2:46:03 AM [express] ⚠️ Error en migración automática (se ignorará): [object Object]
+0|apo360   | 2025-12-10T02:46:03: 2:46:03 AM [express] serving on port 5000
+
