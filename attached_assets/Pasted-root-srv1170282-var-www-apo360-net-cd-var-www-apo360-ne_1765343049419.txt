@@ -1,0 +1,47 @@
+root@srv1170282:/var/www/apo360.net# cd /var/www/apo360.net
+root@srv1170282:/var/www/apo360.net# git pull origin main
+0remote: Enumerating objects: 18, done.
+remote: Counting objects: 100% (18/18), done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 16 (delta 13), reused 16 (delta 13), pack-reused 0 (from 0)
+Unpacking objects: 100% (16/16), 6.49 KiB | 415.00 KiB/s, done.
+From https://github.com/alfred7615/apo360
+ * branch            main       -> FETCH_HEAD
+   ce002d2..230ef22  main       -> origin/main
+Updating ce002d2..230ef22
+Fast-forward
+ ...public-lugares-usuario-table-apo360-admin-public-membr_1765339900975.txt |  37 +++++++
+ ...ot-srv1170282-var-www-apo360-net-root-srv1170282-var-w_1765340009402.txt |  68 ++++++++++++
+ ...oot-srv1170282-var-www-apo360-net-cat-env-grep-AUTH-MO_1765339788521.txt |  59 ++++++++++
+ ...oot-srv1170282-var-www-apo360-net-cd-var-www-apo360-ne_1765339547149.txt | 213 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 377 insertions(+)
+ create mode 100644 attached_assets/Pasted--public-lugares-usuario-table-apo360-admin-public-membr_1765339900975.txt
+ create mode 100644 attached_assets/Pasted-oot-srv1170282-var-www-apo360-net-root-srv1170282-var-w_1765340009402.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-cat-env-grep-AUTH-MO_1765339788521.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-cd-var-www-apo360-ne_1765339547149.txt
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 2    │ online    │ 0%       │ 40.1mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# ls -la /var/www/apo360.net/public/assets/
+total 48
+drwxr-xr-x 10 root root  4096 Dec 10 04:37 .
+drwxr-xr-x  3 root root  4096 Dec  9 14:27 ..
+drwxr-xr-x  2 root root 12288 Dec 10 04:45 carrusel
+drwxr-xr-x  2 root root  4096 Dec  9 14:27 chat
+drwxr-xr-x  2 root root  4096 Dec  9 14:27 documentos
+drwxr-xr-x  2 root root  4096 Dec 10 04:37 galeria
+drwxr-xr-x  5 root root  4096 Dec  6 21:20 img
+drwxr-xr-x  2 root root  4096 Dec  9 14:27 mp3
+drwxr-xr-x  2 root root  4096 Dec  9 14:27 perfiles
+drwxr-xr-x  2 root root  4096 Dec 10 04:37 servicios
+root@srv1170282:/var/www/apo360.net# chmod -R 755 /var/www/apo360.net/public/assets
+root@srv1170282:/var/www/apo360.net# sudo nginx -t
+sudo systemctl reload nginxnginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+root@srv1170282:/var/www/apo360.net#
