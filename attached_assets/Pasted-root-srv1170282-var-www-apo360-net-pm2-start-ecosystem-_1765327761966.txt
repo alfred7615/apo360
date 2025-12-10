@@ -1,0 +1,79 @@
+root@srv1170282:/var/www/apo360.net# pm2 start ecosystem.config.cjs
+[PM2][WARN] Applications apo360 not running, starting...
+[PM2] App [apo360] launched (1 instances)
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 0    │ online    │ 0%       │ 44.4mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 status
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 0    │ online    │ 0%       │ 101.2mb  │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 logs apo360 --lines 30
+[TAILING] Tailing last 30 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/error-0.log last 30 lines:
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T00:17:47: error: password authentication failed for user "apo360_admin"
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T00:17:50: error: password authentication failed for user "apo360_admin"
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T00:17:51: error: password authentication failed for user "apo360_admin"
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T00:20:06: error: password authentication failed for user "apo360_admin"
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T00:20:16: error: password authentication failed for user "apo360_admin"
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T00:20:17: error: password authentication failed for user "apo360_admin"
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+0|apo360   | 2025-12-10T00:20:31: error: password authentication failed for user "apo360_admin"
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async PGStore._asyncQuery (/var/www/apo360.net/node_modules/connect-pg-simple/index.js:322:21)
+
+/var/www/apo360.net/logs/output-0.log last 30 lines:
+0|apo360   | 2025-12-10T00:06:09: 12:06:09 AM [express] POST /api/auth/login 500 in 14ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:06:19: 12:06:19 AM [express] POST /api/auth/login 500 in 9ms :: {"message":"password authentication failed f…
+0|apo360   | 2025-12-10T00:06:20: 12:06:20 AM [express] POST /api/auth/login 500 in 10ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:06:20: 12:06:20 AM [express] POST /api/auth/login 500 in 8ms :: {"message":"password authentication failed f…
+0|apo360   | 2025-12-10T00:06:20: 12:06:20 AM [express] POST /api/auth/login 500 in 11ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:06:21: 12:06:21 AM [express] POST /api/auth/login 500 in 10ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:06:21: 12:06:21 AM [express] POST /api/auth/login 500 in 8ms :: {"message":"password authentication failed f…
+0|apo360   | 2025-12-10T00:06:21: 12:06:21 AM [express] POST /api/auth/login 500 in 10ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:17:13: 12:17:13 AM [express] POST /api/auth/login 500 in 18ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:17:18: 12:17:18 AM [express] POST /api/auth/login 500 in 9ms :: {"message":"password authentication failed f…
+0|apo360   | 2025-12-10T00:17:20: 12:17:20 AM [express] POST /api/auth/login 500 in 10ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:17:39: 12:17:39 AM [express] POST /api/auth/login 500 in 11ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:17:40: 12:17:40 AM [express] POST /api/auth/login 500 in 9ms :: {"message":"password authentication failed f…
+0|apo360   | 2025-12-10T00:17:40: 12:17:40 AM [express] POST /api/auth/login 500 in 10ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:17:41: 12:17:41 AM [express] POST /api/auth/login 500 in 8ms :: {"message":"password authentication failed f…
+0|apo360   | 2025-12-10T00:17:41: 12:17:41 AM [express] POST /api/auth/login 500 in 12ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:17:46: 12:17:46 AM [express] POST /api/auth/login 500 in 14ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:17:47: 12:17:47 AM [express] POST /api/auth/login 500 in 8ms :: {"message":"password authentication failed f…
+0|apo360   | 2025-12-10T00:17:50: 12:17:50 AM [express] POST /api/auth/login 500 in 9ms :: {"message":"password authentication failed f…
+0|apo360   | 2025-12-10T00:17:51: 12:17:51 AM [express] POST /api/auth/login 500 in 10ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:20:06: 12:20:06 AM [express] GET /api/login 500 in 13ms :: {"message":"password authentication failed for us…
+0|apo360   | 2025-12-10T00:20:16: 12:20:16 AM [express] POST /api/auth/login 500 in 9ms :: {"message":"password authentication failed f…
+0|apo360   | 2025-12-10T00:20:17: 12:20:17 AM [express] POST /api/auth/login 500 in 13ms :: {"message":"password authentication failed …
+0|apo360   | 2025-12-10T00:20:31: 12:20:31 AM [express] POST /api/auth/login 500 in 9ms :: {"message":"password authentication failed f…
+0|apo360   | 2025-12-10T00:49:25: 🔐 Modo de autenticación solicitado: google
+0|apo360   | 2025-12-10T00:49:25: ✅ Google OAuth configurado correctamente
+0|apo360   | 2025-12-10T00:49:25: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-10T00:49:25: 12:49:25 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-10T00:49:25: 12:49:25 AM [express] ⚠️ Error en migración automática (se ignorará): [object Object]
+0|apo360   | 2025-12-10T00:49:25: 12:49:25 AM [express] serving on port 5000
