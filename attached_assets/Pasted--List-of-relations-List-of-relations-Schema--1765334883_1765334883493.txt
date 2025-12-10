@@ -1,0 +1,33 @@
+                      List of relations                      List of relations
+ Schema |             Name             | Type  |    Owner
+--------+------------------------------+-------+--------------
+ public | administradores              | table | apo360_admin
+ public | archivos_mp3                 | table | apo360_admin
+ public | avisos_emergencia            | table | apo360_admin
+ public | categorias_productos_usuario | table | apo360_admin
+ public | categorias_servicio          | table | apo360_admin
+ public | comentarios                  | table | apo360_admin
+ public | comentarios_publicidad       | table | apo360_admin
+ public | configuracion_costos         | table | apo360_admin
+ public | configuracion_monedas        | table | apo360_admin
+ public | configuracion_saldos         | table | apo360_admin
+ public | configuracion_sitio          | table | apo360_admin
+ public | contactos_familiares         | table | apo360_admin
+ public | contadores_publicidad        | table | apo360_admin
+ public | credenciales_conductor       | table | apo360_admin
+ public | emergencias                  | table | apo360_admin
+ public | encuestas                    | table | apo360_admin
+ public | eventos                      | table | apo360_admin
+ public | favoritos_usuario            | table | apo360_admin
+ public | grupos_chat                  | table | apo360_admin
+ public | interacciones_publicidad     | table | apo360_admin
+ public | interacciones_sociales       | table | apo360_admin
+ public | listas_mp3                   | table | apo360_admin
+ public | logos_servicios              | table | apo360_admin
+ public | lugares_usuario              | table | apo360_admin
+ public | membresias_usuarios          | table | apo360_admin
+ public | mensajes                     | table | apo360_admin
+ public | metodos_pago                 | table | apo360_admin
+ public | miembros_grupo               | table | apo360_admin
+ public | monedas                      | table | apo360_admin
+ public | notificaciones_chat          | table | apo360_admin
