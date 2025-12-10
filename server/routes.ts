@@ -341,6 +341,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Upload de comprobantes de pago (boucher)
+  app.post('/api/upload/comprobantes', isAuthenticated, createUploadMiddleware('comprobantes', 'imagen'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
+      }
+
+      const url = getPublicUrl(req.file.path);
+      res.json({ 
+        url, 
+        path: req.file.path,
+        filename: req.file.filename,
+        size: req.file.size,
+      });
+    } catch (error: any) {
+      console.error('Error al subir comprobante:', error);
+      res.status(500).json({ message: error.message || 'Error al subir comprobante' });
+    }
+  });
+
   // ============================================================
   // RUTAS DE AUTENTICACIÓN
   // ============================================================

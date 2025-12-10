@@ -17,7 +17,7 @@ import {
   Trash2, Share2, Car, CreditCard, ShoppingBag,
   Plus, Edit, Loader2, Crown, CheckCircle,
   User, Camera, AlertCircle, Wallet, DollarSign,
-  Clock, Check, X, ArrowRight
+  Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn
 } from "lucide-react";
 import { Link } from "wouter";
 import BloqueoServicio, { useVerificarPerfil } from "@/components/BloqueoServicio";
@@ -55,7 +55,10 @@ export default function PanelUsuarioPage() {
   const [planSeleccionado, setPlanSeleccionado] = useState<PlanMembresia | null>(null);
   const [montoRecarga, setMontoRecarga] = useState("10.00");
   const [metodoPagoId, setMetodoPagoId] = useState("");
-  const [comprobante, setComprobante] = useState("");
+  const [numeroOperacion, setNumeroOperacion] = useState("");
+  const [imagenComprobante, setImagenComprobante] = useState<File | null>(null);
+  const [imagenComprobanteUrl, setImagenComprobanteUrl] = useState("");
+  const [subiendoComprobante, setSubiendoComprobante] = useState(false);
   const { toast } = useToast();
   
   const { 
@@ -99,7 +102,8 @@ export default function PanelUsuarioPage() {
   });
 
   const { data: metodosPago = [], isLoading: loadingMetodos } = useQuery<any[]>({
-    queryKey: ["/api/metodos-pago-plataforma"],
+    queryKey: ["/api/metodos-pago", { esPlataforma: true }],
+    queryFn: () => fetch("/api/metodos-pago?esPlataforma=true").then(res => res.json()),
     enabled: isAuthenticated,
   });
 
@@ -118,25 +122,54 @@ export default function PanelUsuarioPage() {
   });
 
   const solicitarRecargaMutation = useMutation({
-    mutationFn: (data: { monto: string; metodoPagoId: string; comprobante: string }) => 
+    mutationFn: (data: { monto: string; metodoPagoId: string; comprobante: string; numeroOperacion?: string }) => 
       apiRequest("POST", "/api/solicitudes-saldo", { 
         tipo: "recarga", 
         monto: data.monto,
         metodoPagoId: data.metodoPagoId,
-        comprobante: data.comprobante
+        comprobante: data.comprobante,
+        numeroOperacion: data.numeroOperacion || null
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mi-saldo"] });
       setShowRecargaModal(false);
       setMontoRecarga("10.00");
       setMetodoPagoId("");
-      setComprobante("");
-      toast({ title: "Solicitud de recarga enviada", description: "Tu solicitud sera procesada pronto" });
+      setNumeroOperacion("");
+      setImagenComprobante(null);
+      setImagenComprobanteUrl("");
+      toast({ title: "Solicitud de recarga enviada", description: "Tu solicitud sera procesada pronto. Un administrador la revisara." });
     },
     onError: (error: any) => {
       toast({ title: "Error al solicitar recarga", description: error.message, variant: "destructive" });
     },
   });
+
+  const handleSubirComprobante = async (file: File) => {
+    setSubiendoComprobante(true);
+    try {
+      const formData = new FormData();
+      formData.append('imagen', file);
+      
+      const response = await fetch('/api/upload/comprobantes', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al subir la imagen');
+      }
+      
+      const data = await response.json();
+      setImagenComprobanteUrl(data.url);
+      setImagenComprobante(file);
+      toast({ title: "Imagen subida correctamente" });
+    } catch (error: any) {
+      toast({ title: "Error al subir imagen", description: error.message, variant: "destructive" });
+    } finally {
+      setSubiendoComprobante(false);
+    }
+  };
 
   const quitarFavoritoMutation = useMutation({
     mutationFn: (data: { tipoContenido: string; contenidoId: string }) => 
@@ -970,14 +1003,75 @@ export default function PanelUsuarioPage() {
               )}
             </div>
             <div>
-              <Label htmlFor="comprobante">Numero de Operacion / Comprobante</Label>
+              <Label htmlFor="imagenComprobante" className="flex items-center gap-1">
+                Imagen del Boucher / Comprobante
+                <span className="text-red-500">*</span>
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Sube una foto clara del comprobante de pago (obligatorio)
+              </p>
+              {imagenComprobanteUrl ? (
+                <div className="relative mt-2">
+                  <img 
+                    src={imagenComprobanteUrl} 
+                    alt="Comprobante" 
+                    className="w-full h-40 object-contain border rounded-lg bg-muted"
+                    data-testid="img-comprobante-preview"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => {
+                      setImagenComprobante(null);
+                      setImagenComprobanteUrl("");
+                    }}
+                    data-testid="button-eliminar-comprobante"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <label 
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors mt-2"
+                  data-testid="label-upload-comprobante"
+                >
+                  {subiendoComprobante ? (
+                    <div className="flex flex-col items-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                      <span className="text-sm text-muted-foreground">Subiendo imagen...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                      <span className="text-sm text-muted-foreground">Toca para subir foto del boucher</span>
+                      <span className="text-xs text-muted-foreground">JPG, PNG hasta 25MB</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/jpeg,image/png,image/webp,image/jpg"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleSubirComprobante(file);
+                    }}
+                    disabled={subiendoComprobante}
+                    data-testid="input-file-comprobante"
+                  />
+                </label>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="numeroOperacion">Numero de Operacion (opcional)</Label>
               <Input
-                id="comprobante"
-                value={comprobante}
-                onChange={(e) => setComprobante(e.target.value)}
+                id="numeroOperacion"
+                value={numeroOperacion}
+                onChange={(e) => setNumeroOperacion(e.target.value)}
                 placeholder="Ej: 123456789"
                 className="mt-2"
-                data-testid="input-comprobante"
+                data-testid="input-numero-operacion"
               />
             </div>
           </div>
@@ -986,8 +1080,20 @@ export default function PanelUsuarioPage() {
               Cancelar
             </Button>
             <Button 
-              onClick={() => solicitarRecargaMutation.mutate({ monto: montoRecarga, metodoPagoId, comprobante })}
-              disabled={isNaN(parseFloat(montoRecarga)) || parseFloat(montoRecarga) < 1 || !metodoPagoId || !comprobante || solicitarRecargaMutation.isPending}
+              onClick={() => solicitarRecargaMutation.mutate({ 
+                monto: montoRecarga, 
+                metodoPagoId, 
+                comprobante: imagenComprobanteUrl,
+                numeroOperacion 
+              })}
+              disabled={
+                isNaN(parseFloat(montoRecarga)) || 
+                parseFloat(montoRecarga) < 1 || 
+                !metodoPagoId || 
+                !imagenComprobanteUrl || 
+                subiendoComprobante ||
+                solicitarRecargaMutation.isPending
+              }
               data-testid="button-enviar-recarga"
             >
               {solicitarRecargaMutation.isPending ? (
