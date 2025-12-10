@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,7 +19,7 @@ import {
   User, Camera, AlertCircle, Wallet, DollarSign,
   Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn, Copy, Building, Phone
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import BloqueoServicio, { useVerificarPerfil } from "@/components/BloqueoServicio";
 
 interface PlanMembresia {
@@ -48,10 +48,25 @@ interface SaldoUsuario {
 
 export default function PanelUsuarioPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const searchString = useSearch();
   const [activeTab, setActiveTab] = useState("favoritos");
   const [showProductoModal, setShowProductoModal] = useState(false);
   const [showRecargaModal, setShowRecargaModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
+
+  // Detectar si viene con parámetro de recarga para abrir el modal automáticamente
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    if (params.get("recarga") === "true") {
+      setShowRecargaModal(true);
+      setActiveTab("membresia");
+      // Limpiar el parámetro de la URL
+      window.history.replaceState({}, '', '/mi-panel');
+    }
+    if (params.get("tab")) {
+      setActiveTab(params.get("tab") || "favoritos");
+    }
+  }, [searchString]);
   const [planSeleccionado, setPlanSeleccionado] = useState<PlanMembresia | null>(null);
   const [montoRecarga, setMontoRecarga] = useState("10.00");
   const [metodoPagoId, setMetodoPagoId] = useState("");
