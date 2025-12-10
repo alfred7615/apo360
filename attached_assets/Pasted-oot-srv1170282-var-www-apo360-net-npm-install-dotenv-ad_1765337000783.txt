@@ -1,0 +1,165 @@
+oot@srv1170282:/var/www/apo360.net# npm install dotenv
+
+added 1 package, and audited 524 packages in 2s
+
+70 packages are looking for funding
+  run `npm fund` for details
+
+9 vulnerabilities (3 low, 5 moderate, 1 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+root@srv1170282:/var/www/apo360.net# npm run build
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js
+
+vite v5.4.20 building for production...
+transforming (28) src/pages/chat.tsx
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 2790 modules transformed.
+../dist/public/index.html                     1.53 kB │ gzip:   0.66 kB
+../dist/public/assets/index-CpuEqJzU.css    144.64 kB │ gzip:  26.94 kB
+../dist/public/assets/index-D0Tej4IN.js   1,436.20 kB │ gzip: 362.38 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 19.98s
+▲ [WARNING] Duplicate member "updateServicio" in class body [duplicate-class-member]
+
+    server/storage.ts:1859:8:
+      1859 │   async updateServicio(id: string, data: any): Promise<any> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "updateServicio" is here:
+
+    server/storage.ts:808:8:
+      808 │   async updateServicio(id: string, data: Partial<InsertServicio>): Promise<Servicio | undefined> {
+          ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getFavoritosUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2424:8:
+      2424 │   async getFavoritosUsuario(usuarioId: string, tipo?: string): Promise<any[]> {
+           ╵         ~~~~~~~~~~~~~~~~~~~
+
+  The original member "getFavoritosUsuario" is here:
+
+    server/storage.ts:776:8:
+      776 │   async getFavoritosUsuario(usuarioId: string): Promise<any[]> {
+          ╵         ~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getInteraccionesUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2607:8:
+      2607 │   async getInteraccionesUsuario(
+           ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "getInteraccionesUsuario" is here:
+
+    server/storage.ts:552:8:
+      552 │   async getInteraccionesUsuario(publicidadId: string, usuarioId: string): Promise<{ hasLike: boolean; has...
+          ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getComentarios" in class body [duplicate-class-member]
+
+    server/storage.ts:2631:8:
+      2631 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "getComentarios" is here:
+
+    server/storage.ts:1828:8:
+      1828 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "createComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2647:8:
+      2647 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "createComentario" is here:
+
+    server/storage.ts:1841:8:
+      1841 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "deleteComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2661:8:
+      2661 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "deleteComentario" is here:
+
+    server/storage.ts:1849:8:
+      1849 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+6 of 7 warnings shown (disable the message limit with --log-limit=0)
+
+  dist/index.js  375.7kb
+
+⚡ Done in 121ms
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360 --update-env
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 16   │ online    │ 0%       │ 40.0mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 logs apo360 --lines 20
+[TAILING] Tailing last 20 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/output-0.log last 20 lines:
+0|apo360   | 2025-12-10T03:12:25: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-10T03:12:25: 3:12:25 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-10T03:12:25: 3:12:25 AM [express] ⚠️ Error en migración automática (se ignorará): [object Object]
+0|apo360   | 2025-12-10T03:12:25: 3:12:25 AM [express] serving on port 5000
+0|apo360   | 2025-12-10T03:13:36: 3:13:36 AM [express] GET /api/publicidad 500 in 90ms :: {"message":"Error al obtener publicidad"}
+0|apo360   | 2025-12-10T03:13:36: 3:13:36 AM [express] GET /api/configuracion/franja_emergencia 500 in 94ms :: {"message":"Error al ob…
+0|apo360   | 2025-12-10T03:13:36: 3:13:36 AM [express] GET /api/estadisticas/publicas 500 in 121ms :: {"message":"Error al obtener est…
+0|apo360   | 2025-12-10T03:13:36: 3:13:36 AM [express] GET /api/servicios 500 in 139ms :: {"message":"Error al obtener servicios"}
+0|apo360   | 2025-12-10T03:13:41: 3:13:41 AM [express] GET /api/configuracion/franja_emergencia 500 in 13ms :: {"message":"Error al ob…
+0|apo360   | 2025-12-10T03:13:41: 3:13:41 AM [express] GET /api/configuracion/roles 500 in 18ms :: {"message":"Error al obtener config…
+0|apo360   | 2025-12-10T03:13:43: 3:13:43 AM [express] POST /api/auth/login 500 in 12ms :: {"message":"Hostname/IP does not match cert…
+0|apo360   | 2025-12-10T03:13:46: 3:13:46 AM [express] POST /api/auth/login 500 in 10ms :: {"message":"Hostname/IP does not match cert…
+0|apo360   | 2025-12-10T03:13:47: 3:13:47 AM [express] GET /api/login 302 in 3ms
+0|apo360   | 2025-12-10T03:13:48: 3:13:48 AM [express] GET /api/callback 500 in 454ms :: {"message":"Hostname/IP does not match certif…
+0|apo360   | 2025-12-10T03:16:27: 🔐 Modo de autenticación solicitado: google
+0|apo360   | 2025-12-10T03:16:27: ✅ Google OAuth configurado correctamente
+0|apo360   | 2025-12-10T03:16:27: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-10T03:16:27: 3:16:27 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-10T03:16:27: 3:16:27 AM [express] ⚠️ Error en migración automática (se ignorará): [object Object]
+0|apo360   | 2025-12-10T03:16:27: 3:16:27 AM [express] serving on port 5000
+
+/var/www/apo360.net/logs/error-0.log last 20 lines:
+0|apo360   |     at async Strategy._verify (file:///var/www/apo360.net/dist/index.js:3304:9)
+0|apo360   | You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+0|apo360   | Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'dotenv' imported from /var/www/apo360.net/dist/index.js
+0|apo360   |     at packageResolve (node:internal/modules/esm/resolve:873:9)
+0|apo360   |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+0|apo360   |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+0|apo360   |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)
+0|apo360   |     at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)
+0|apo360   |     at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)
+0|apo360   |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)
+0|apo360   |     at ModuleJob._link (node:internal/modules/esm/module_job:168:49)
+0|apo360   | You have triggered an unhandledRejection, you may have forgotten to catch a Promise rejection:
+0|apo360   | Error: DATABASE_URL debe estar configurada. ¿Olvidaste crear la base de datos?
+0|apo360   |     at server/db.ts (file:///var/www/apo360.net/dist/index.js:1187:13)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at server/storage.ts (file:///var/www/apo360.net/dist/index.js:1225:5)
+0|apo360   |     at __init (file:///var/www/apo360.net/dist/index.js:10:56)
+0|apo360   |     at file:///var/www/apo360.net/dist/index.js:3932:1
+0|apo360   |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|apo360   |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+

@@ -1,3 +1,8 @@
+import { Pool as NeonPool, neonConfig } from '@neondatabase/serverless';
+import { Pool as PgPool } from 'pg';
+import { drizzle as drizzleNeon } from 'drizzle-orm/neon-serverless';
+import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
+import ws from "ws";
 import * as schema from "@shared/schema";
 
 if (!process.env.DATABASE_URL) {
@@ -14,24 +19,17 @@ let db: any;
 
 if (isProduction) {
   // Producción: PostgreSQL local sin SSL
-  const { Pool } = require('pg');
-  const { drizzle } = require('drizzle-orm/node-postgres');
-  
-  pool = new Pool({ 
+  pool = new PgPool({ 
     connectionString: process.env.DATABASE_URL,
     ssl: false
   });
-  db = drizzle(pool, { schema });
+  db = drizzlePg(pool, { schema });
   console.log('🗄️ Usando PostgreSQL local (producción)');
 } else {
   // Desarrollo: Neon con WebSocket
-  const { Pool, neonConfig } = require('@neondatabase/serverless');
-  const { drizzle } = require('drizzle-orm/neon-serverless');
-  const ws = require('ws');
-  
   neonConfig.webSocketConstructor = ws;
-  pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  db = drizzle({ client: pool, schema });
+  pool = new NeonPool({ connectionString: process.env.DATABASE_URL });
+  db = drizzleNeon({ client: pool, schema });
   console.log('🗄️ Usando Neon PostgreSQL (desarrollo)');
 }
 

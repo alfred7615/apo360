@@ -5,6 +5,7 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
+import { Pool as PgPool } from "pg";
 import { storage } from "./storage";
 
 function isValidString(value: string | undefined): boolean {
@@ -83,8 +84,8 @@ export function getSession() {
     poolConfig.ssl = false;
   }
   
-  const { Pool } = require('pg');
-  const pool = new Pool(poolConfig);
+  // Usar pg Pool importado al inicio del archivo
+  const pool = new PgPool(poolConfig);
   
   const sessionStore = new pgStore({
     pool: pool,
