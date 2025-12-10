@@ -1,0 +1,51 @@
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# curl -I https://apo360.net
+HTTP/1.1 200 OK
+Server: nginx/1.24.0 (Ubuntu)
+Date: Wed, 10 Dec 2025 12:43:04 GMT
+Content-Type: text/html
+Content-Length: 1528
+Last-Modified: Wed, 10 Dec 2025 04:04:36 GMT
+Connection: keep-alive
+ETag: "6938f154-5f8"
+Accept-Ranges: bytes
+
+root@srv1170282:/var/www/apo360.net# curl https://apo360.net 2>/dev/null | head -50
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo_apo360.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo_apo360.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="APO-360" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="APO-360 - Plataforma de Seguridad y Servicios Comunitarios de Tacna" />
+    <meta name="keywords" content="seguridad, tacna, pánico, emergencia, chat, taxi, delivery, apo360" />
+    <meta property="og:title" content="APO-360 - Seguridad y Servicios Comunitarios Tacna" />
+    <meta property="og:description" content="Plataforma integral de seguridad, chat y servicios para la comunidad de Tacna" />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#8B5CF6" />
+    <title>APO-360 - Seguridad y Servicios Comunitarios Tacna</title>
+    <!-- Evitar WebSocket error en Vite -->
+    <script>
+      window.__VITE_PORT__ = window.location.port || (window.location.protocol === 'https:' ? 443 : 80);
+    </script>
+    <script type="module" crossorigin src="/assets/index-D0Tej4IN.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CpuEqJzU.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+root@srv1170282:/var/www/apo360.net# ls -la /var/www/apo360.net/dist/public/
+total 36
+drwxr-xr-x 3 root root 4096 Dec 10 04:04 .
+drwxr-xr-x 3 root root 4096 Dec  9 20:43 ..
+drwxr-xr-x 2 root root 4096 Dec 10 04:04 assets
+-rw-r--r-- 1 root root 1145 Dec 10 04:04 favicon.png
+-rw-r--r-- 1 root root 1528 Dec 10 04:04 index.html
+-rw-r--r-- 1 root root  523 Dec 10 04:04 manifest.json
+root@srv1170282:/var/www/apo360.net#
