@@ -1,6 +1,6 @@
 # APO-360 - Documentación Técnica Completa
 
-## Fecha de actualización: 10 de Diciembre 2025
+## Fecha de actualización: 11 de Diciembre 2025
 
 ---
 
@@ -310,10 +310,20 @@ ssh root@IP_SERVIDOR
 # Ir al directorio
 cd /var/www/apo360.net
 
-# Descargar cambios
+# Si hay conflictos locales (archivos modificados en servidor):
+# Opción A: Guardar cambios locales temporalmente
+git stash
+git pull origin main
+git stash pop  # Recuperar cambios locales (puede haber conflictos)
+
+# Opción B: Descartar cambios locales y forzar actualización
+git reset --hard origin/main
 git pull origin main
 
-# Compilar
+# Opción C: Descargar solo si no hay conflictos
+git pull origin main
+
+# Compilar el proyecto
 npm run build
 
 # Reiniciar PM2
@@ -321,6 +331,21 @@ pm2 restart apo360
 
 # Verificar logs
 pm2 logs apo360 --lines 20
+```
+
+### Paso 4: Verificar el Despliegue
+```bash
+# Verificar que Nginx esté sirviendo correctamente
+curl -I https://apo360.net
+
+# Verificar que el backend esté funcionando
+curl https://apo360.net/api/health
+
+# Verificar PM2
+pm2 status
+
+# Ver logs en tiempo real
+pm2 logs apo360 --lines 50
 ```
 
 ---

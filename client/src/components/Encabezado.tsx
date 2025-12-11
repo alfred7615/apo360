@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, User, Music, LogOut, Bell, Shield, Volume2, Star, Wallet, Plus, ArrowRight, X, Clock, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ export default function Encabezado() {
   const [billeteraAbierta, setBilleteraAbierta] = useState(false);
   
   const audio = useAudioController();
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Query para obtener el saldo del usuario
   const { data: saldoData } = useQuery({
@@ -114,20 +115,14 @@ export default function Encabezado() {
 
           {/* Acciones derecha */}
           <div className="flex items-center gap-2">
-            {/* Control de audio: clic = play/pause, doble clic = selector */}
+            {/* Control de audio: clic simple = play/pause */}
             <Button
               variant="ghost"
               size="icon"
               className={`text-white hover:bg-white/20 relative touch-manipulation ${audio.reproduciendo ? '' : ''}`}
-              onClick={(e) => {
-                // Un clic alterna play/pause
-                if (e.detail === 1) {
-                  audio.alternarReproduccion();
-                }
-              }}
-              onDoubleClick={() => {
-                // Doble clic abre el selector
-                setSelectorAudioAbierto(true);
+              onClick={() => {
+                // Clic alterna play/pause
+                audio.alternarReproduccion();
               }}
               onTouchEnd={(e) => {
                 e.preventDefault();
@@ -135,7 +130,7 @@ export default function Encabezado() {
                 audio.alternarReproduccion();
               }}
               data-testid="button-audio-control"
-              title={audio.reproduciendo ? "Pausar audio (doble clic para cambiar)" : "Reproducir audio (doble clic para cambiar)"}
+              title={audio.reproduciendo ? "Pausar audio" : "Reproducir audio"}
             >
               {audio.reproduciendo ? (
                 <Volume2 className="h-5 w-5" />
@@ -153,8 +148,12 @@ export default function Encabezado() {
               size="icon"
               className="text-white hover:bg-white/20 touch-manipulation"
               onClick={() => setSelectorAudioAbierto(true)}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                setSelectorAudioAbierto(true);
+              }}
               data-testid="button-audio-selector"
-              title="Cambiar radio/musica"
+              title="Cambiar radio/música"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 6h16M4 12h16M4 18h16" />
