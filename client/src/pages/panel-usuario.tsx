@@ -17,8 +17,11 @@ import {
   Trash2, Share2, Car, CreditCard, ShoppingBag,
   Plus, Edit, Loader2, Crown, CheckCircle,
   User, Camera, AlertCircle, Wallet, DollarSign,
-  Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn, Copy, Building, Phone
+  Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn, Copy, Building, Phone,
+  History, TrendingUp, TrendingDown, Megaphone, UtensilsCrossed, Wrench, FileText
 } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { Link, useSearch } from "wouter";
 import BloqueoServicio, { useVerificarPerfil } from "@/components/BloqueoServicio";
 
@@ -44,6 +47,39 @@ interface SaldoUsuario {
   totalIngresos: string;
   totalEgresos: string;
   monedaPreferida: string;
+}
+
+interface TransaccionSaldo {
+  id: string;
+  usuarioId: string;
+  tipo: string;
+  concepto: string;
+  monto: string;
+  saldoAnterior: string;
+  saldoNuevo: string;
+  referenciaId?: string;
+  referenciaTipo?: string;
+  estado: string;
+  notas?: string;
+  createdAt: string;
+}
+
+interface ViajeTaxi {
+  id: string;
+  pasajeroId: string;
+  conductorId: string | null;
+  origenLatitud: number;
+  origenLongitud: number;
+  origenDireccion: string | null;
+  destinoLatitud: number;
+  destinoLongitud: number;
+  destinoDireccion: string | null;
+  precio: string | null;
+  estado: string | null;
+  tipoServicio: string | null;
+  createdAt: string;
+  iniciadoAt: string | null;
+  completadoAt: string | null;
 }
 
 export default function PanelUsuarioPage() {
@@ -120,6 +156,16 @@ export default function PanelUsuarioPage() {
     queryKey: ["/api/metodos-pago", { esPlataforma: true }],
     queryFn: () => fetch("/api/metodos-pago?esPlataforma=true").then(res => res.json()),
     enabled: isAuthenticated,
+  });
+
+  const { data: transacciones = [], isLoading: loadingTransacciones } = useQuery<TransaccionSaldo[]>({
+    queryKey: ["/api/transacciones-saldo"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: historialViajes = [], isLoading: loadingHistorialViajes } = useQuery<ViajeTaxi[]>({
+    queryKey: ["/api/taxi/historial-conductor"],
+    enabled: isAuthenticated && user?.modoTaxi === "conductor",
   });
 
   const contratarMembresiaMutation = useMutation({
@@ -326,10 +372,14 @@ export default function PanelUsuarioPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-4 mb-6">
+        <TabsList className="w-full grid grid-cols-5 mb-6">
           <TabsTrigger value="favoritos" className="gap-2" data-testid="tab-favoritos">
             <Star className="h-4 w-4" />
             <span className="hidden sm:inline">Favoritos</span>
+          </TabsTrigger>
+          <TabsTrigger value="historial" className="gap-2" data-testid="tab-historial">
+            <History className="h-4 w-4" />
+            <span className="hidden sm:inline">Historial</span>
           </TabsTrigger>
           <TabsTrigger value="marketplace" className="gap-2" data-testid="tab-marketplace">
             <ShoppingBag className="h-4 w-4" />
@@ -352,7 +402,7 @@ export default function PanelUsuarioPage() {
                 <Star className="h-5 w-5 text-yellow-500" />
                 Mis Favoritos
               </CardTitle>
-              <CardDescription>Contenido que has guardado</CardDescription>
+              <CardDescription>Contenido que has guardado organizado por categoría</CardDescription>
             </CardHeader>
             <CardContent>
               {loadingFavoritos ? (
@@ -368,96 +418,263 @@ export default function PanelUsuarioPage() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {favoritos.map((fav) => (
-                    <Card key={fav.id} className="hover-elevate" data-testid={`card-favorito-${fav.id}`}>
-                      <CardContent className="p-4">
-                        {fav.tipoContenido === 'logo_servicio' && fav.detalle && (
-                          <div className="flex items-start gap-3">
-                            <Avatar className="h-12 w-12 ring-2 ring-primary/20">
-                              <AvatarImage src={fav.detalle.logoUrl || ""} alt={fav.detalle.nombre} />
-                              <AvatarFallback className="bg-primary/10 text-primary">
-                                {fav.detalle.nombre?.substring(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-medium truncate">{fav.detalle.nombre}</h3>
-                              {fav.detalle.direccion && (
-                                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {fav.detalle.direccion}
-                                </p>
-                              )}
-                              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                                <Heart className="h-3 w-3" /> {fav.detalle.totalLikes || 0}
-                                <Star className="h-3 w-3 ml-2" /> {fav.detalle.totalFavoritos || 0}
+                <div className="space-y-6">
+                  {(() => {
+                    const favPublicidad = favoritos.filter((f: any) => f.tipoContenido === 'popup' || f.tipoContenido === 'publicidad');
+                    const favProductos = favoritos.filter((f: any) => f.tipoContenido === 'producto_servicio');
+                    const favNegocios = favoritos.filter((f: any) => f.tipoContenido === 'logo_servicio');
+                    const favOtros = favoritos.filter((f: any) => 
+                      !['popup', 'publicidad', 'producto_servicio', 'logo_servicio'].includes(f.tipoContenido)
+                    );
+
+                    const renderFavoritoCard = (fav: any) => (
+                      <Card key={fav.id} className="hover-elevate" data-testid={`card-favorito-${fav.id}`}>
+                        <CardContent className="p-4">
+                          {fav.tipoContenido === 'logo_servicio' && fav.detalle && (
+                            <div className="flex items-start gap-3">
+                              <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+                                <AvatarImage src={fav.detalle.logoUrl || ""} alt={fav.detalle.nombre} />
+                                <AvatarFallback className="bg-primary/10 text-primary">
+                                  {fav.detalle.nombre?.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium truncate">{fav.detalle.nombre}</h3>
+                                {fav.detalle.direccion && (
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {fav.detalle.direccion}
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                                  <Heart className="h-3 w-3" /> {fav.detalle.totalLikes || 0}
+                                  <Star className="h-3 w-3 ml-2" /> {fav.detalle.totalFavoritos || 0}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        {fav.tipoContenido === 'producto_servicio' && fav.detalle && (
-                          <div>
-                            {fav.detalle.imagenUrl && (
-                              <img 
-                                src={fav.detalle.imagenUrl} 
-                                alt={fav.detalle.nombre} 
-                                className="w-full h-24 object-cover rounded mb-3" 
-                              />
-                            )}
-                            <h3 className="font-medium truncate">{fav.detalle.nombre}</h3>
-                            <div className="flex items-center justify-between mt-2">
-                              <span className="font-bold text-primary">
-                                S/. {fav.detalle.precio || "0.00"}
-                              </span>
-                              <Badge variant={fav.detalle.disponible ? "default" : "secondary"}>
-                                {fav.detalle.disponible ? "Disponible" : "Agotado"}
+                          {fav.tipoContenido === 'producto_servicio' && fav.detalle && (
+                            <div>
+                              {fav.detalle.imagenUrl && (
+                                <img 
+                                  src={fav.detalle.imagenUrl} 
+                                  alt={fav.detalle.nombre} 
+                                  className="w-full h-24 object-cover rounded mb-3" 
+                                />
+                              )}
+                              <h3 className="font-medium truncate">{fav.detalle.nombre}</h3>
+                              <div className="flex items-center justify-between mt-2">
+                                <span className="font-bold text-primary">
+                                  S/. {fav.detalle.precio || "0.00"}
+                                </span>
+                                <Badge variant={fav.detalle.disponible ? "default" : "secondary"}>
+                                  {fav.detalle.disponible ? "Disponible" : "Agotado"}
+                                </Badge>
+                              </div>
+                            </div>
+                          )}
+
+                          {(fav.tipoContenido === 'popup' || fav.tipoContenido === 'publicidad') && fav.detalle && (
+                            <div>
+                              {fav.detalle.imagenUrl && (
+                                <img 
+                                  src={fav.detalle.imagenUrl} 
+                                  alt={fav.detalle.titulo} 
+                                  className="w-full h-24 object-cover rounded mb-3" 
+                                />
+                              )}
+                              <h3 className="font-medium truncate">{fav.detalle.titulo}</h3>
+                              <Badge variant="outline" className="mt-1">
+                                {fav.detalle.tipo || "publicidad"}
                               </Badge>
+                            </div>
+                          )}
+
+                          {!['popup', 'publicidad', 'producto_servicio', 'logo_servicio'].includes(fav.tipoContenido) && fav.detalle && (
+                            <div>
+                              <h3 className="font-medium truncate">{fav.detalle.nombre || fav.detalle.titulo || 'Sin nombre'}</h3>
+                              <Badge variant="outline" className="mt-1">{fav.tipoContenido}</Badge>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => handleCompartir(fav)}
+                              data-testid={`button-compartir-${fav.id}`}
+                            >
+                              <Share2 className="h-4 w-4 mr-1" />
+                              Compartir
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleQuitarFavorito(fav.tipoContenido, fav.contenidoId)}
+                              disabled={quitarFavoritoMutation.isPending}
+                              data-testid={`button-quitar-favorito-${fav.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+
+                    return (
+                      <>
+                        {favPublicidad.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <Megaphone className="h-5 w-5 text-purple-500" />
+                              <h3 className="font-semibold">Publicidad ({favPublicidad.length})</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {favPublicidad.map(renderFavoritoCard)}
                             </div>
                           </div>
                         )}
 
-                        {fav.tipoContenido === 'popup' && fav.detalle && (
+                        {favProductos.length > 0 && (
                           <div>
-                            {fav.detalle.imagenUrl && (
-                              <img 
-                                src={fav.detalle.imagenUrl} 
-                                alt={fav.detalle.titulo} 
-                                className="w-full h-24 object-cover rounded mb-3" 
-                              />
-                            )}
-                            <h3 className="font-medium truncate">{fav.detalle.titulo}</h3>
-                            <Badge variant="outline" className="mt-1">
-                              {fav.detalle.tipo || "publicidad"}
-                            </Badge>
+                            <div className="flex items-center gap-2 mb-3">
+                              <ShoppingBag className="h-5 w-5 text-green-500" />
+                              <h3 className="font-semibold">Productos y Servicios ({favProductos.length})</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {favProductos.map(renderFavoritoCard)}
+                            </div>
                           </div>
                         )}
 
-                        <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="flex-1"
-                            onClick={() => handleCompartir(fav)}
-                            data-testid={`button-compartir-${fav.id}`}
-                          >
-                            <Share2 className="h-4 w-4 mr-1" />
-                            Compartir
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleQuitarFavorito(fav.tipoContenido, fav.contenidoId)}
-                            disabled={quitarFavoritoMutation.isPending}
-                            data-testid={`button-quitar-favorito-${fav.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        {favNegocios.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <Store className="h-5 w-5 text-blue-500" />
+                              <h3 className="font-semibold">Negocios Locales ({favNegocios.length})</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {favNegocios.map(renderFavoritoCard)}
+                            </div>
+                          </div>
+                        )}
+
+                        {favOtros.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <Star className="h-5 w-5 text-yellow-500" />
+                              <h3 className="font-semibold">Otros Favoritos ({favOtros.length})</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {favOtros.map(renderFavoritoCard)}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="historial" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5 text-blue-500" />
+                Historial de Cartera
+              </CardTitle>
+              <CardDescription>Registro de todos tus movimientos de saldo</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingTransacciones ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : transacciones.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-medium mb-2">Sin movimientos</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Aún no tienes transacciones en tu historial
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                      <TrendingUp className="h-5 w-5 text-green-600 mx-auto mb-1" />
+                      <p className="text-xs text-muted-foreground">Total Ingresos</p>
+                      <p className="font-bold text-green-600">S/ {miSaldo?.totalIngresos || "0.00"}</p>
+                    </div>
+                    <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
+                      <TrendingDown className="h-5 w-5 text-red-600 mx-auto mb-1" />
+                      <p className="text-xs text-muted-foreground">Total Egresos</p>
+                      <p className="font-bold text-red-600">S/ {miSaldo?.totalEgresos || "0.00"}</p>
+                    </div>
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
+                      <FileText className="h-5 w-5 text-blue-600 mx-auto mb-1" />
+                      <p className="text-xs text-muted-foreground">Transacciones</p>
+                      <p className="font-bold text-blue-600">{transacciones.length}</p>
+                    </div>
+                    <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-center">
+                      <Wallet className="h-5 w-5 text-purple-600 mx-auto mb-1" />
+                      <p className="text-xs text-muted-foreground">Saldo Actual</p>
+                      <p className="font-bold text-purple-600">S/ {miSaldo?.saldo || "0.00"}</p>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="hidden md:grid grid-cols-6 gap-2 p-3 bg-muted/50 text-sm font-medium">
+                      <span>Fecha/Hora</span>
+                      <span>Concepto</span>
+                      <span>Tipo</span>
+                      <span className="text-right">Monto</span>
+                      <span className="text-right">Saldo Anterior</span>
+                      <span className="text-right">Saldo Nuevo</span>
+                    </div>
+                    <div className="divide-y max-h-[400px] overflow-y-auto">
+                      {transacciones.map((t) => (
+                        <div 
+                          key={t.id} 
+                          className="grid grid-cols-2 md:grid-cols-6 gap-2 p-3 text-sm hover:bg-muted/30 transition-colors"
+                          data-testid={`row-transaccion-${t.id}`}
+                        >
+                          <div className="md:col-span-1">
+                            <p className="font-medium">{format(new Date(t.createdAt), "dd MMM yyyy", { locale: es })}</p>
+                            <p className="text-xs text-muted-foreground">{format(new Date(t.createdAt), "HH:mm")}</p>
+                          </div>
+                          <div className="md:col-span-1">
+                            <p className="truncate">{t.concepto}</p>
+                            {t.notas && <p className="text-xs text-muted-foreground truncate">{t.notas}</p>}
+                          </div>
+                          <div className="hidden md:block">
+                            <Badge 
+                              variant="outline" 
+                              className={t.tipo === 'ingreso' ? 'border-green-500 text-green-600' : 'border-red-500 text-red-600'}
+                            >
+                              {t.tipo === 'ingreso' ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                              {t.tipo}
+                            </Badge>
+                          </div>
+                          <div className={`text-right font-medium ${t.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}>
+                            {t.tipo === 'ingreso' ? '+' : '-'} S/ {t.monto}
+                          </div>
+                          <div className="text-right text-muted-foreground hidden md:block">
+                            S/ {t.saldoAnterior}
+                          </div>
+                          <div className="text-right font-medium hidden md:block">
+                            S/ {t.saldoNuevo}
+                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -602,6 +819,83 @@ export default function PanelUsuarioPage() {
                         Ir a Panel de Taxi
                       </Button>
                     </Link>
+
+                    {/* Historial de Viajes del Conductor */}
+                    <div className="mt-6">
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <History className="h-4 w-4" />
+                        Historial de Pasajeros Atendidos
+                      </h4>
+                      {loadingHistorialViajes ? (
+                        <div className="flex justify-center py-4">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : historialViajes.length === 0 ? (
+                        <p className="text-muted-foreground text-sm text-center py-4">
+                          Aún no tienes viajes completados como conductor
+                        </p>
+                      ) : (
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {historialViajes.map((viaje) => (
+                            <div 
+                              key={viaje.id} 
+                              className="flex items-center justify-between p-3 border rounded-lg"
+                              data-testid={`card-viaje-${viaje.id}`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                  <span className="text-sm truncate">{viaje.origenDireccion || 'Origen no especificado'}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                  <span className="text-sm truncate">{viaje.destinoDireccion || 'Destino no especificado'}</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {format(new Date(viaje.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
+                                </p>
+                              </div>
+                              <div className="flex flex-col items-end gap-1 ml-2">
+                                {viaje.precio && (
+                                  <span className="font-medium text-green-600">
+                                    S/ {parseFloat(viaje.precio).toFixed(2)}
+                                  </span>
+                                )}
+                                <Badge 
+                                  variant={viaje.estado === 'completado' ? 'default' : 'secondary'}
+                                  className={viaje.estado === 'completado' ? 'bg-green-500' : ''}
+                                >
+                                  {viaje.estado || 'Pendiente'}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {historialViajes.length > 0 && (
+                        <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Total viajes:</span>
+                            <span className="font-medium">{historialViajes.length}</span>
+                          </div>
+                          <div className="flex justify-between items-center mt-1">
+                            <span className="text-sm text-muted-foreground">Viajes completados:</span>
+                            <span className="font-medium text-green-600">
+                              {historialViajes.filter(v => v.estado === 'completado').length}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center mt-1">
+                            <span className="text-sm text-muted-foreground">Ganancias totales:</span>
+                            <span className="font-medium text-green-600">
+                              S/ {historialViajes
+                                .filter(v => v.estado === 'completado' && v.precio)
+                                .reduce((sum, v) => sum + parseFloat(v.precio || '0'), 0)
+                                .toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">

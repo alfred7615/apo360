@@ -2339,6 +2339,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Historial de viajes del conductor
+  app.get('/api/taxi/historial-conductor', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const viajes = await storage.getViajesConductor(userId);
+      res.json(viajes);
+    } catch (error) {
+      console.error("Error al obtener historial del conductor:", error);
+      res.status(500).json({ message: "Error al obtener historial del conductor" });
+    }
+  });
+
   // ============================================================
   // RUTAS DE DELIVERY
   // ============================================================
@@ -4414,6 +4426,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al rechazar solicitud:", error);
       res.status(500).json({ message: "Error al rechazar solicitud" });
+    }
+  });
+
+  // Observar solicitud (cambiar estado a observado)
+  app.post('/api/solicitudes-saldo/:id/observar', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { notas } = req.body;
+      const solicitud = await storage.observarSolicitudSaldo(req.params.id, notas || null);
+      
+      if (!solicitud) {
+        return res.status(404).json({ message: "Solicitud no encontrada" });
+      }
+      
+      res.json(solicitud);
+    } catch (error) {
+      console.error("Error al observar solicitud:", error);
+      res.status(500).json({ message: "Error al observar solicitud" });
     }
   });
 

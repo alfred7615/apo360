@@ -266,6 +266,18 @@ export default function GestionCarteraScreen() {
     },
   });
 
+  const observarMutation = useMutation({
+    mutationFn: ({ id, notas }: { id: string; notas?: string }) =>
+      apiRequest("POST", `/api/solicitudes-saldo/${id}/observar`, { notas }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/solicitudes-saldo"] });
+      toast({ title: "Solicitud marcada como observada", description: "Requiere revisión adicional" });
+    },
+    onError: () => {
+      toast({ title: "Error al observar solicitud", variant: "destructive" });
+    },
+  });
+
   const crearMetodoMutation = useMutation({
     mutationFn: (data: typeof nuevoMetodo) => apiRequest("POST", "/api/metodos-pago", data),
     onSuccess: () => {
@@ -615,6 +627,8 @@ export default function GestionCarteraScreen() {
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300"><Check className="h-3 w-3 mr-1" />Aprobado</Badge>;
       case "rechazado":
         return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300"><X className="h-3 w-3 mr-1" />Rechazado</Badge>;
+      case "observado":
+        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300"><Eye className="h-3 w-3 mr-1" />Observado</Badge>;
       default:
         return <Badge variant="outline">{estado}</Badge>;
     }
@@ -866,7 +880,7 @@ export default function GestionCarteraScreen() {
                         
                         {getEstadoBadge(solicitud.estado)}
                         
-                        {solicitud.estado === "pendiente" && (
+                        {(solicitud.estado === "pendiente" || solicitud.estado === "observado") && (
                           <div className="flex gap-2">
                             <Button 
                               size="sm" 
@@ -877,6 +891,19 @@ export default function GestionCarteraScreen() {
                             >
                               <Check className="h-4 w-4" />
                             </Button>
+                            {solicitud.estado === "pendiente" && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                                onClick={() => observarMutation.mutate({ id: solicitud.id })}
+                                disabled={observarMutation.isPending}
+                                data-testid={`button-observar-${solicitud.id}`}
+                                title="Marcar como observado"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button 
                               size="sm" 
                               variant="destructive"

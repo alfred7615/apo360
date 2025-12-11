@@ -215,6 +215,7 @@ export interface IStorage {
   
   // Operaciones de taxi
   getViajesTaxi(usuarioId?: string): Promise<ViajeTaxi[]>;
+  getViajesConductor(conductorId: string): Promise<ViajeTaxi[]>;
   createViajeTaxi(viaje: ViajeTaxiInsert): Promise<ViajeTaxi>;
   updateViajeTaxi(id: string, data: Partial<ViajeTaxiInsert>): Promise<ViajeTaxi | undefined>;
   
@@ -353,6 +354,7 @@ export interface IStorage {
   updateSolicitudSaldo(id: string, data: Partial<InsertSolicitudSaldo>): Promise<SolicitudSaldo | undefined>;
   aprobarSolicitudSaldo(id: string, aprobadoPor: string): Promise<SolicitudSaldo | undefined>;
   rechazarSolicitudSaldo(id: string, motivoRechazo: string): Promise<SolicitudSaldo | undefined>;
+  observarSolicitudSaldo(id: string, notas: string | null): Promise<SolicitudSaldo | undefined>;
   
   // Transacciones de saldo
   getTransaccionesSaldo(usuarioId?: string): Promise<TransaccionSaldo[]>;
@@ -1303,6 +1305,13 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(viajesTaxi.createdAt));
     }
     return await db.select().from(viajesTaxi).orderBy(desc(viajesTaxi.createdAt));
+  }
+
+  async getViajesConductor(conductorId: string): Promise<ViajeTaxi[]> {
+    return await db.select()
+      .from(viajesTaxi)
+      .where(eq(viajesTaxi.conductorId, conductorId))
+      .orderBy(desc(viajesTaxi.createdAt));
   }
 
   async createViajeTaxi(viajeData: InsertViajeTaxi): Promise<ViajeTaxi> {
@@ -2870,6 +2879,19 @@ export class DatabaseStorage implements IStorage {
       .set({
         estado: 'rechazado',
         motivoRechazo,
+        updatedAt: new Date(),
+      })
+      .where(eq(solicitudesSaldo.id, id))
+      .returning();
+    return actualizado || undefined;
+  }
+
+  async observarSolicitudSaldo(id: string, notas: string | null): Promise<SolicitudSaldo | undefined> {
+    const [actualizado] = await db
+      .update(solicitudesSaldo)
+      .set({
+        estado: 'observado',
+        notas,
         updatedAt: new Date(),
       })
       .where(eq(solicitudesSaldo.id, id))

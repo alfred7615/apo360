@@ -1273,7 +1273,7 @@ export const solicitudesSaldo = pgTable("solicitudes_saldo", {
   metodoPagoDestino: varchar("metodo_pago_destino"), // Descripción del método de destino
   comprobante: varchar("comprobante"), // URL imagen de comprobante
   numeroOperacion: varchar("numero_operacion", { length: 100 }),
-  estado: varchar("estado", { length: 20 }).default("pendiente"), // 'pendiente', 'aprobado', 'rechazado', 'cancelado'
+  estado: varchar("estado", { length: 20 }).default("pendiente"), // 'pendiente', 'aprobado', 'rechazado', 'observado', 'cancelado'
   motivoRechazo: text("motivo_rechazo"),
   aprobadoPor: varchar("aprobado_por").references(() => usuarios.id),
   fechaAprobacion: timestamp("fecha_aprobacion"),
