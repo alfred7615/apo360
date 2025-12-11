@@ -1,0 +1,125 @@
+root@srv1170282:/var/www/apo360.net# git pull origin main
+From https://github.com/alfred7615/apo360
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+root@srv1170282:/var/www/apo360.net# npm install
+
+up to date, audited 523 packages in 2s
+
+69 packages are looking for funding
+  run `npm fund` for details
+
+9 vulnerabilities (3 low, 5 moderate, 1 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+root@srv1170282:/var/www/apo360.net# npm run build
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js
+
+vite v5.4.20 building for production...
+transforming (4) src/App.tsx
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 2792 modules transformed.
+../dist/public/index.html                     1.53 kB │ gzip:   0.66 kB
+../dist/public/assets/index-BnNusofl.css    147.72 kB │ gzip:  27.36 kB
+../dist/public/assets/index-8rziSsO1.js   1,497.09 kB │ gzip: 374.43 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 16.57s
+▲ [WARNING] Duplicate member "updateServicio" in class body [duplicate-class-member]
+
+    server/storage.ts:1885:8:
+      1885 │   async updateServicio(id: string, data: any): Promise<any> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "updateServicio" is here:
+
+    server/storage.ts:827:8:
+      827 │   async updateServicio(id: string, data: Partial<InsertServicio>): Promise<Servicio | undefined> {
+          ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getFavoritosUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2450:8:
+      2450 │   async getFavoritosUsuario(usuarioId: string, tipo?: string): Promise<any[]> {
+           ╵         ~~~~~~~~~~~~~~~~~~~
+
+  The original member "getFavoritosUsuario" is here:
+
+    server/storage.ts:795:8:
+      795 │   async getFavoritosUsuario(usuarioId: string): Promise<any[]> {
+          ╵         ~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getInteraccionesUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2633:8:
+      2633 │   async getInteraccionesUsuario(
+           ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "getInteraccionesUsuario" is here:
+
+    server/storage.ts:571:8:
+      571 │   async getInteraccionesUsuario(publicidadId: string, usuarioId: string): Promise<{ hasLike: boolean; has...
+          ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getComentarios" in class body [duplicate-class-member]
+
+    server/storage.ts:2657:8:
+      2657 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "getComentarios" is here:
+
+    server/storage.ts:1854:8:
+      1854 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "createComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2673:8:
+      2673 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "createComentario" is here:
+
+    server/storage.ts:1867:8:
+      1867 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "deleteComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2687:8:
+      2687 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "deleteComentario" is here:
+
+    server/storage.ts:1875:8:
+      1875 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+6 of 7 warnings shown (disable the message limit with --log-limit=0)
+
+  dist/index.js  405.7kb
+
+⚡ Done in 55ms
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 8    │ online    │ 0%       │ 40.6mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net#
