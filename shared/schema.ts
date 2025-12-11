@@ -1,4 +1,4 @@
-import { pgTable, varchar, serial, text, integer, decimal, real, boolean, timestamp, json, date, pgEnum, unique } from "drizzle-orm/pg-core";
+import { pgTable, varchar, serial, text, integer, decimal, real, boolean, timestamp, json, date, pgEnum, unique, numeric } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -167,8 +167,77 @@ export const usuarioRoles = pgTable("usuario_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   usuarioId: varchar("usuario_id").references(() => usuarios.id),
   rol: varchar("rol", { length: 50 }).notNull(),
+  categoriaRolId: varchar("categoria_rol_id"),
+  subcategoriaRolId: varchar("subcategoria_rol_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// ============================================================
+// DATOS DE NEGOCIO LOCAL (para usuarios con rol local_comercial)
+// ============================================================
+export const datosNegocio = pgTable("datos_negocio", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id).notNull(),
+  nombreNegocio: varchar("nombre_negocio", { length: 200 }).notNull(),
+  descripcion: text("descripcion"),
+  logoUrl: varchar("logo_url"),
+  bannerUrl: varchar("banner_url"),
+  direccion: text("direccion"),
+  latitud: real("latitud"),
+  longitud: real("longitud"),
+  telefono: varchar("telefono", { length: 20 }),
+  whatsapp: varchar("whatsapp", { length: 20 }),
+  email: varchar("email", { length: 100 }),
+  horarioAtencion: text("horario_atencion"),
+  // Redes Sociales
+  facebook: varchar("facebook"),
+  instagram: varchar("instagram"),
+  tiktok: varchar("tiktok"),
+  youtube: varchar("youtube"),
+  paginaWeb: varchar("pagina_web"),
+  // Configuración
+  tipoNegocio: varchar("tipo_negocio", { length: 50 }), // 'restaurante', 'tienda', 'servicios', etc.
+  categoriaId: varchar("categoria_id"),
+  subcategoriaId: varchar("subcategoria_id"),
+  activo: boolean("activo").default(true),
+  verificado: boolean("verificado").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertDatosNegocioSchema = createInsertSchema(datosNegocio).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertDatosNegocio = z.infer<typeof insertDatosNegocioSchema>;
+export type DatosNegocio = typeof datosNegocio.$inferSelect;
+
+// ============================================================
+// CATÁLOGO DE PRODUCTOS/SERVICIOS DE NEGOCIO
+// ============================================================
+export const catalogoNegocio = pgTable("catalogo_negocio", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  negocioId: varchar("negocio_id").references(() => datosNegocio.id).notNull(),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id).notNull(),
+  nombre: varchar("nombre", { length: 200 }).notNull(),
+  descripcion: text("descripcion"),
+  precio: numeric("precio", { precision: 10, scale: 2 }),
+  precioOferta: numeric("precio_oferta", { precision: 10, scale: 2 }),
+  imagenUrl: varchar("imagen_url"),
+  categoria: varchar("categoria", { length: 100 }),
+  disponible: boolean("disponible").default(true),
+  destacado: boolean("destacado").default(false),
+  orden: integer("orden").default(0),
+  // Para menús de restaurantes
+  tipoItem: varchar("tipo_item", { length: 50 }).default('producto'), // 'producto', 'plato', 'servicio'
+  ingredientes: text("ingredientes"),
+  tiempoPreparacion: varchar("tiempo_preparacion", { length: 50 }),
+  // Costos
+  costoPublicacion: numeric("costo_publicacion", { precision: 10, scale: 2 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCatalogoNegocioSchema = createInsertSchema(catalogoNegocio).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCatalogoNegocio = z.infer<typeof insertCatalogoNegocioSchema>;
+export type CatalogoNegocio = typeof catalogoNegocio.$inferSelect;
 
 // ============================================================
 // ADMINISTRADORES DE SEGUNDO NIVEL

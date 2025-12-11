@@ -46,6 +46,8 @@ import {
   lugaresUsuario,
   tasasCambioLocales,
   configuracionMonedas,
+  datosNegocio,
+  catalogoNegocio,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -159,6 +161,10 @@ import {
   type InsertCategoriaRol,
   type SubcategoriaRol,
   type InsertSubcategoriaRol,
+  type DatosNegocio,
+  type InsertDatosNegocio,
+  type CatalogoNegocio,
+  type InsertCatalogoNegocio,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -3369,6 +3375,107 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSubcategoriaRol(id: string): Promise<void> {
     await db.delete(subcategoriasRol).where(eq(subcategoriasRol.id, id));
+  }
+
+  // ============================================================
+  // DATOS DE NEGOCIO (Local Comercial)
+  // ============================================================
+  async getDatosNegocio(usuarioId: string): Promise<DatosNegocio | undefined> {
+    const [negocio] = await db.select().from(datosNegocio)
+      .where(eq(datosNegocio.usuarioId, usuarioId));
+    return negocio;
+  }
+
+  async getDatosNegocioById(id: string): Promise<DatosNegocio | undefined> {
+    const [negocio] = await db.select().from(datosNegocio)
+      .where(eq(datosNegocio.id, id));
+    return negocio;
+  }
+
+  async getAllDatosNegocios(): Promise<DatosNegocio[]> {
+    return await db.select().from(datosNegocio).orderBy(desc(datosNegocio.createdAt));
+  }
+
+  async createDatosNegocio(data: InsertDatosNegocio): Promise<DatosNegocio> {
+    const [negocio] = await db.insert(datosNegocio).values(data).returning();
+    return negocio;
+  }
+
+  async updateDatosNegocio(id: string, data: Partial<InsertDatosNegocio>): Promise<DatosNegocio | undefined> {
+    const [actualizado] = await db.update(datosNegocio)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(datosNegocio.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteDatosNegocio(id: string): Promise<void> {
+    await db.delete(datosNegocio).where(eq(datosNegocio.id, id));
+  }
+
+  // ============================================================
+  // CATÁLOGO DE NEGOCIO (Productos/Servicios)
+  // ============================================================
+  async getCatalogoNegocio(negocioId: string): Promise<CatalogoNegocio[]> {
+    return await db.select().from(catalogoNegocio)
+      .where(eq(catalogoNegocio.negocioId, negocioId))
+      .orderBy(catalogoNegocio.orden);
+  }
+
+  async getCatalogoNegocioPorUsuario(usuarioId: string): Promise<CatalogoNegocio[]> {
+    return await db.select().from(catalogoNegocio)
+      .where(eq(catalogoNegocio.usuarioId, usuarioId))
+      .orderBy(catalogoNegocio.orden);
+  }
+
+  async getItemCatalogo(id: string): Promise<CatalogoNegocio | undefined> {
+    const [item] = await db.select().from(catalogoNegocio)
+      .where(eq(catalogoNegocio.id, id));
+    return item;
+  }
+
+  async createItemCatalogo(data: InsertCatalogoNegocio): Promise<CatalogoNegocio> {
+    const [item] = await db.insert(catalogoNegocio).values(data).returning();
+    return item;
+  }
+
+  async updateItemCatalogo(id: string, data: Partial<InsertCatalogoNegocio>): Promise<CatalogoNegocio | undefined> {
+    const [actualizado] = await db.update(catalogoNegocio)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(catalogoNegocio.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteItemCatalogo(id: string): Promise<void> {
+    await db.delete(catalogoNegocio).where(eq(catalogoNegocio.id, id));
+  }
+
+  // ============================================================
+  // ROLES DE USUARIO (con categoría/subcategoría)
+  // ============================================================
+  async getRolesUsuario(usuarioId: string): Promise<any[]> {
+    const roles = await db.select().from(usuarioRoles)
+      .where(eq(usuarioRoles.usuarioId, usuarioId));
+    return roles;
+  }
+
+  async asignarRolConCategoria(usuarioId: string, rol: string, categoriaRolId?: string, subcategoriaRolId?: string): Promise<any> {
+    const [nuevoRol] = await db.insert(usuarioRoles).values({
+      usuarioId,
+      rol,
+      categoriaRolId: categoriaRolId || null,
+      subcategoriaRolId: subcategoriaRolId || null,
+    }).returning();
+    return nuevoRol;
+  }
+
+  async actualizarRolUsuario(id: string, data: { categoriaRolId?: string; subcategoriaRolId?: string }): Promise<any> {
+    const [actualizado] = await db.update(usuarioRoles)
+      .set(data)
+      .where(eq(usuarioRoles.id, id))
+      .returning();
+    return actualizado;
   }
 }
 

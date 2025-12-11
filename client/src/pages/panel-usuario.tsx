@@ -24,6 +24,17 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Link, useSearch } from "wouter";
 import BloqueoServicio, { useVerificarPerfil } from "@/components/BloqueoServicio";
+import LocalComercialPanel from "@/components/LocalComercialPanel";
+
+interface RolUsuario {
+  id: string;
+  usuarioId: string;
+  rol: string;
+  categoriaRolId?: string;
+  subcategoriaRolId?: string;
+  categoria?: any;
+  subcategoria?: any;
+}
 
 interface PlanMembresia {
   id: string;
@@ -167,6 +178,15 @@ export default function PanelUsuarioPage() {
     queryKey: ["/api/taxi/historial-conductor"],
     enabled: isAuthenticated && user?.modoTaxi === "conductor",
   });
+
+  const { data: misRoles = [] } = useQuery<RolUsuario[]>({
+    queryKey: ["/api/mis-roles"],
+    enabled: isAuthenticated,
+  });
+
+  const tieneRolLocal = misRoles.some(r => 
+    r.rol === "local" || r.rol === "local_comercial" || user?.rol === "local"
+  );
 
   const contratarMembresiaMutation = useMutation({
     mutationFn: (planId: string) => apiRequest("POST", "/api/membresias/contratar", { planId }),
@@ -420,6 +440,17 @@ export default function PanelUsuarioPage() {
               <Crown className="h-4 w-4" />
               <span className="text-xs sm:text-sm">Membresia</span>
             </Button>
+            {tieneRolLocal && (
+              <Button
+                variant={activeTab === "negocio" ? "default" : "outline"}
+                onClick={() => setActiveTab("negocio")}
+                className="flex items-center justify-center gap-2 h-auto py-3 col-span-2 sm:col-span-1"
+                data-testid="tab-negocio"
+              >
+                <Store className="h-4 w-4" />
+                <span className="text-xs sm:text-sm">Mi Negocio</span>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -1256,6 +1287,12 @@ export default function PanelUsuarioPage() {
             </Card>
           </div>
         </TabsContent>
+
+        {tieneRolLocal && (
+          <TabsContent value="negocio" className="mt-0">
+            <LocalComercialPanel />
+          </TabsContent>
+        )}
       </Tabs>
 
       <Dialog open={showRecargaModal} onOpenChange={setShowRecargaModal}>

@@ -393,6 +393,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================
+  // DATOS DE NEGOCIO (Local Comercial)
+  // ============================================================
+  
+  // Obtener datos de negocio del usuario actual
+  app.get('/api/mi-negocio', isAuthenticated, async (req, res) => {
+    try {
+      const usuarioId = req.user!.id;
+      const negocio = await storage.getDatosNegocio(usuarioId);
+      res.json(negocio || null);
+    } catch (error: any) {
+      console.error("Error al obtener datos de negocio:", error);
+      res.status(500).json({ message: error.message || "Error al obtener datos" });
+    }
+  });
+
+  // Crear/actualizar datos de negocio
+  app.post('/api/mi-negocio', isAuthenticated, async (req, res) => {
+    try {
+      const usuarioId = req.user!.id;
+      const existente = await storage.getDatosNegocio(usuarioId);
+      
+      if (existente) {
+        const actualizado = await storage.updateDatosNegocio(existente.id, req.body);
+        res.json(actualizado);
+      } else {
+        const negocio = await storage.createDatosNegocio({
+          ...req.body,
+          usuarioId,
+        });
+        res.status(201).json(negocio);
+      }
+    } catch (error: any) {
+      console.error("Error al guardar datos de negocio:", error);
+      res.status(500).json({ message: error.message || "Error al guardar datos" });
+    }
+  });
+
+  // Obtener todos los negocios (admin)
+  app.get('/api/negocios', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const negocios = await storage.getAllDatosNegocios();
+      res.json(negocios);
+    } catch (error: any) {
+      console.error("Error al obtener negocios:", error);
+      res.status(500).json({ message: error.message || "Error al obtener negocios" });
+    }
+  });
+
+  // ============================================================
+  // CATÁLOGO DE NEGOCIO
+  // ============================================================
+  
+  // Obtener catálogo del usuario actual
+  app.get('/api/mi-catalogo', isAuthenticated, async (req, res) => {
+    try {
+      const usuarioId = req.user!.id;
+      const catalogo = await storage.getCatalogoNegocioPorUsuario(usuarioId);
+      res.json(catalogo);
+    } catch (error: any) {
+      console.error("Error al obtener catálogo:", error);
+      res.status(500).json({ message: error.message || "Error al obtener catálogo" });
+    }
+  });
+
+  // Agregar item al catálogo
+  app.post('/api/mi-catalogo', isAuthenticated, async (req, res) => {
+    try {
+      const usuarioId = req.user!.id;
+      const negocio = await storage.getDatosNegocio(usuarioId);
+      
+      if (!negocio) {
+        return res.status(400).json({ message: "Debes configurar tu negocio primero" });
+      }
+
+      const item = await storage.createItemCatalogo({
+        ...req.body,
+        negocioId: negocio.id,
+        usuarioId,
+      });
+      res.status(201).json(item);
+    } catch (error: any) {
+      console.error("Error al agregar item:", error);
+      res.status(500).json({ message: error.message || "Error al agregar item" });
+    }
+  });
+
+  // Actualizar item del catálogo
+  app.patch('/api/mi-catalogo/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const item = await storage.updateItemCatalogo(id, req.body);
+      res.json(item);
+    } catch (error: any) {
+      console.error("Error al actualizar item:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar item" });
+    }
+  });
+
+  // Eliminar item del catálogo
+  app.delete('/api/mi-catalogo/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteItemCatalogo(id);
+      res.json({ message: "Item eliminado correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar item:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar item" });
+    }
+  });
+
+  // ============================================================
+  // MÓDULOS DE USUARIO POR ROL
+  // ============================================================
+  
+  // Obtener roles y módulos del usuario actual
+  app.get('/api/mis-roles', isAuthenticated, async (req, res) => {
+    try {
+      const usuarioId = req.user!.id;
+      const roles = await storage.getRolesUsuario(usuarioId);
+      
+      // Enriquecer con información de categorías y subcategorías
+      const rolesEnriquecidos = await Promise.all(roles.map(async (rol) => {
+        let categoria = null;
+        let subcategoria = null;
+        
+        if (rol.categoriaRolId) {
+          categoria = await storage.getCategoriaRol(rol.categoriaRolId);
+        }
+        if (rol.subcategoriaRolId) {
+          subcategoria = await storage.getSubcategoriaRol(rol.subcategoriaRolId);
+        }
+        
+        return {
+          ...rol,
+          categoria,
+          subcategoria,
+        };
+      }));
+      
+      res.json(rolesEnriquecidos);
+    } catch (error: any) {
+      console.error("Error al obtener roles:", error);
+      res.status(500).json({ message: error.message || "Error al obtener roles" });
+    }
+  });
+
+  // Asignar rol con categoría a usuario (admin)
+  app.post('/api/usuarios/:id/roles', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { rol, categoriaRolId, subcategoriaRolId } = req.body;
+      
+      const nuevoRol = await storage.asignarRolConCategoria(id, rol, categoriaRolId, subcategoriaRolId);
+      res.status(201).json(nuevoRol);
+    } catch (error: any) {
+      console.error("Error al asignar rol:", error);
+      res.status(500).json({ message: error.message || "Error al asignar rol" });
+    }
+  });
+
   // Registrar rutas de administración
   registerAdminRoutes(app);
 
