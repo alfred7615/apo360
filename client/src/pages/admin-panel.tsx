@@ -67,6 +67,7 @@ import GestionTaxiScreen from "@/pages/admin/gestiones/gestion-taxi";
 import GestionBusesScreen from "@/pages/admin/gestiones/gestion-buses";
 import GestionMonedaScreen from "@/pages/admin/gestiones/gestion-moneda";
 import GestionConfiguracionScreen from "@/pages/admin/gestiones/gestion-configuracion";
+import GestionCategoriasRolScreen from "@/pages/admin/gestiones/gestion-categorias-rol";
 
 type AdminScreen = 
   | "dashboard" 
@@ -85,7 +86,8 @@ type AdminScreen =
   | "gestion-taxi"
   | "gestion-buses"
   | "gestion-moneda"
-  | "gestion-configuracion";
+  | "gestion-configuracion"
+  | "gestion-categorias-rol";
 
 const mainMenuItems = [
   { id: "dashboard" as AdminScreen, title: "Dashboard", icon: LayoutDashboard },
@@ -107,6 +109,7 @@ const gestionesMenuItems = [
   { id: "gestion-taxi" as AdminScreen, title: "Taxi", icon: Car },
   { id: "gestion-buses" as AdminScreen, title: "Buses", icon: Bus },
   { id: "gestion-moneda" as AdminScreen, title: "Moneda", icon: Coins },
+  { id: "gestion-categorias-rol" as AdminScreen, title: "Categorías Roles", icon: Shield },
   { id: "gestion-configuracion" as AdminScreen, title: "Configuración", icon: Settings },
 ];
 
@@ -127,6 +130,7 @@ const screenComponents: Record<AdminScreen, React.ComponentType> = {
   "gestion-taxi": GestionTaxiScreen,
   "gestion-buses": GestionBusesScreen,
   "gestion-moneda": GestionMonedaScreen,
+  "gestion-categorias-rol": GestionCategoriasRolScreen,
   "gestion-configuracion": GestionConfiguracionScreen,
 };
 
