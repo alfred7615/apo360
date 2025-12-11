@@ -228,17 +228,17 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
       <>
         <div
           className="relative w-full overflow-hidden bg-gray-100 dark:bg-gray-800"
-          style={{ height: "350px" }}
+          style={{ height: "clamp(200px, 40vw, 400px)" }}
           data-testid="carousel-principal"
         >
           <div 
-            className="relative h-full w-full flex items-center justify-center cursor-pointer"
+            className="relative h-full w-full cursor-pointer"
             onClick={() => abrirVisualizador(publicidadActual)}
           >
             <img
               src={publicidadActual.imagenUrl || undefined}
               alt={publicidadActual.titulo || "Publicidad"}
-              className="h-[350px] w-auto object-contain transition-opacity duration-500 hover:opacity-90"
+              className="w-full h-full object-cover transition-opacity duration-500 hover:opacity-95"
               data-testid="img-carousel-principal"
             />
           </div>

@@ -372,28 +372,56 @@ export default function PanelUsuarioPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-5 mb-6">
-          <TabsTrigger value="favoritos" className="gap-2" data-testid="tab-favoritos">
-            <Star className="h-4 w-4" />
-            <span className="hidden sm:inline">Favoritos</span>
-          </TabsTrigger>
-          <TabsTrigger value="historial" className="gap-2" data-testid="tab-historial">
-            <History className="h-4 w-4" />
-            <span className="hidden sm:inline">Historial</span>
-          </TabsTrigger>
-          <TabsTrigger value="marketplace" className="gap-2" data-testid="tab-marketplace">
-            <ShoppingBag className="h-4 w-4" />
-            <span className="hidden sm:inline">Mi Tienda</span>
-          </TabsTrigger>
-          <TabsTrigger value="conductor" className="gap-2" data-testid="tab-conductor">
-            <Car className="h-4 w-4" />
-            <span className="hidden sm:inline">Conductor</span>
-          </TabsTrigger>
-          <TabsTrigger value="membresia" className="gap-2" data-testid="tab-membresia">
-            <Wallet className="h-4 w-4" />
-            <span className="hidden sm:inline">Membresia</span>
-          </TabsTrigger>
-        </TabsList>
+        {/* Botones de navegación responsivos y centrados */}
+        <div className="flex justify-center mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 w-full max-w-3xl">
+            <Button
+              variant={activeTab === "favoritos" ? "default" : "outline"}
+              onClick={() => setActiveTab("favoritos")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-favoritos"
+            >
+              <Star className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Favoritos</span>
+            </Button>
+            <Button
+              variant={activeTab === "historial" ? "default" : "outline"}
+              onClick={() => setActiveTab("historial")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-historial"
+            >
+              <History className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Historial</span>
+            </Button>
+            <Button
+              variant={activeTab === "marketplace" ? "default" : "outline"}
+              onClick={() => setActiveTab("marketplace")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-marketplace"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Mi Tienda</span>
+            </Button>
+            <Button
+              variant={activeTab === "conductor" ? "default" : "outline"}
+              onClick={() => setActiveTab("conductor")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-conductor"
+            >
+              <Car className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Conductor</span>
+            </Button>
+            <Button
+              variant={activeTab === "membresia" ? "default" : "outline"}
+              onClick={() => setActiveTab("membresia")}
+              className="flex items-center justify-center gap-2 h-auto py-3 col-span-2 sm:col-span-1"
+              data-testid="tab-membresia"
+            >
+              <Crown className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Membresia</span>
+            </Button>
+          </div>
+        </div>
 
         <TabsContent value="favoritos" className="mt-0">
           <Card>

@@ -724,49 +724,91 @@ export default function GestionCarteraScreen() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <TabsList>
-            <TabsTrigger value="solicitudes" data-testid="tab-solicitudes">
-              <Clock className="h-4 w-4 mr-2" />
-              Solicitudes
-            </TabsTrigger>
-            <TabsTrigger value="saldos" data-testid="tab-saldos">
-              <Wallet className="h-4 w-4 mr-2" />
-              Saldos
-            </TabsTrigger>
-            <TabsTrigger value="transacciones" data-testid="tab-transacciones">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Transacciones
-            </TabsTrigger>
-            <TabsTrigger value="metodos" data-testid="tab-metodos">
-              <Banknote className="h-4 w-4 mr-2" />
-              Metodos de Pago
-            </TabsTrigger>
-            <TabsTrigger value="monedas" data-testid="tab-monedas">
-              <DollarSign className="h-4 w-4 mr-2" />
-              Monedas
-            </TabsTrigger>
-            <TabsTrigger value="planes" data-testid="tab-planes">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Planes
-            </TabsTrigger>
-            <TabsTrigger value="membresias" data-testid="tab-membresias">
-              <Check className="h-4 w-4 mr-2" />
-              Membresias
-            </TabsTrigger>
-            <TabsTrigger value="costos" data-testid="tab-costos">
-              <Percent className="h-4 w-4 mr-2" />
-              Costos
-            </TabsTrigger>
-          </TabsList>
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-4">
+          {/* Botones de navegación responsivos */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+            <Button
+              variant={activeTab === "solicitudes" ? "default" : "outline"}
+              onClick={() => setActiveTab("solicitudes")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-solicitudes"
+            >
+              <Clock className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Solicitudes</span>
+            </Button>
+            <Button
+              variant={activeTab === "saldos" ? "default" : "outline"}
+              onClick={() => setActiveTab("saldos")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-saldos"
+            >
+              <Wallet className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Saldos</span>
+            </Button>
+            <Button
+              variant={activeTab === "transacciones" ? "default" : "outline"}
+              onClick={() => setActiveTab("transacciones")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-transacciones"
+            >
+              <CreditCard className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Transacciones</span>
+            </Button>
+            <Button
+              variant={activeTab === "metodos" ? "default" : "outline"}
+              onClick={() => setActiveTab("metodos")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-metodos"
+            >
+              <Banknote className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Metodos</span>
+            </Button>
+            <Button
+              variant={activeTab === "monedas" ? "default" : "outline"}
+              onClick={() => setActiveTab("monedas")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-monedas"
+            >
+              <DollarSign className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Monedas</span>
+            </Button>
+            <Button
+              variant={activeTab === "planes" ? "default" : "outline"}
+              onClick={() => setActiveTab("planes")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-planes"
+            >
+              <CreditCard className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Planes</span>
+            </Button>
+            <Button
+              variant={activeTab === "membresias" ? "default" : "outline"}
+              onClick={() => setActiveTab("membresias")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-membresias"
+            >
+              <Check className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Membresias</span>
+            </Button>
+            <Button
+              variant={activeTab === "costos" ? "default" : "outline"}
+              onClick={() => setActiveTab("costos")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-costos"
+            >
+              <Percent className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Costos</span>
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-2 justify-end">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64"
+                className="pl-10 w-48 sm:w-64"
                 data-testid="input-search-cartera"
               />
             </div>
