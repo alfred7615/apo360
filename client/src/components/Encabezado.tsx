@@ -16,7 +16,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAudioController } from "@/contexts/AudioControllerContext";
 import { useQuery } from "@tanstack/react-query";
 import SelectorAudio from "./SelectorAudio";
-import ReproductorMini from "./ReproductorMini";
 
 export default function Encabezado() {
   const [location, setLocation] = useLocation();
@@ -115,18 +114,28 @@ export default function Encabezado() {
 
           {/* Acciones derecha */}
           <div className="flex items-center gap-2">
-            {/* Selector de audio moderno */}
+            {/* Control de audio: clic = play/pause, doble clic = selector */}
             <Button
               variant="ghost"
               size="icon"
               className={`text-white hover:bg-white/20 relative touch-manipulation ${audio.reproduciendo ? '' : ''}`}
-              onClick={() => setSelectorAudioAbierto(true)}
-              onTouchEnd={(e) => {
-                e.preventDefault();
+              onClick={(e) => {
+                // Un clic alterna play/pause
+                if (e.detail === 1) {
+                  audio.alternarReproduccion();
+                }
+              }}
+              onDoubleClick={() => {
+                // Doble clic abre el selector
                 setSelectorAudioAbierto(true);
               }}
-              data-testid="button-audio-selector"
-              title="Selector de audio"
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                // En touch, un tap alterna play/pause
+                audio.alternarReproduccion();
+              }}
+              data-testid="button-audio-control"
+              title={audio.reproduciendo ? "Pausar audio (doble clic para cambiar)" : "Reproducir audio (doble clic para cambiar)"}
             >
               {audio.reproduciendo ? (
                 <Volume2 className="h-5 w-5" />
@@ -136,6 +145,20 @@ export default function Encabezado() {
               {audio.reproduciendo && (
                 <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-purple-600 animate-pulse"></span>
               )}
+            </Button>
+            
+            {/* Botón para abrir selector de audio */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/20 touch-manipulation"
+              onClick={() => setSelectorAudioAbierto(true)}
+              data-testid="button-audio-selector"
+              title="Cambiar radio/musica"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </Button>
             
             <SelectorAudio 
@@ -268,8 +291,6 @@ export default function Encabezado() {
           </div>
         </div>
       </div>
-      
-      <ReproductorMini onAbrirSelector={() => setSelectorAudioAbierto(true)} />
 
       {/* Dialog de Billetera */}
       <Dialog open={billeteraAbierta} onOpenChange={setBilleteraAbierta}>

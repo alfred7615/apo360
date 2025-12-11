@@ -18,7 +18,6 @@ import CarruselPublicidad from "@/components/CarruselPublicidad";
 import GaleriaServiciosLocales from "@/components/GaleriaServiciosLocales";
 import ModuloAudio from "@/components/ModuloAudio";
 import CartillasBeneficios from "@/components/CartillasBeneficios";
-import BannerActivarAudio from "@/components/BannerActivarAudio";
 import { CalculadoraCambio } from "@/components/CalculadoraCambio";
 import { useQuery } from "@tanstack/react-query";
 import type { Emergencia, ContactoFamiliar } from "@shared/schema";
@@ -871,8 +870,6 @@ export default function Home() {
         </DialogContent>
       </Dialog>
 
-      {/* Banner para activar audio - disponible para todos */}
-      <BannerActivarAudio />
     </div>
   );
 }
