@@ -26,6 +26,7 @@ import BusesPasajero from "@/pages/buses-pasajero";
 import Billetera from "@/pages/billetera";
 import CalculadoraCambio from "@/pages/calculadora-cambio";
 import NotFound from "@/pages/not-found";
+import NotificacionesAdmin from "@/components/NotificacionesAdmin";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -90,6 +91,7 @@ function App() {
           <AudioControllerProvider>
             <AppContent />
             <Toaster />
+            <NotificacionesAdmin />
           </AudioControllerProvider>
         </ViewModeProvider>
       </TooltipProvider>

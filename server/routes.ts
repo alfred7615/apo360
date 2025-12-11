@@ -36,6 +36,7 @@ import {
 } from "@shared/schema";
 import { paises, departamentosPeru, distritosPorDepartamento, obtenerDepartamentos, obtenerDistritos, buscarDepartamentos, buscarDistritos } from "@shared/ubicaciones-peru";
 import { registerAdminRoutes } from "./routes-admin";
+import { notificarSuperAdmins } from "./websocket";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configurar autenticación
@@ -129,6 +130,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error al actualizar perfil:", error);
       res.status(400).json({ message: error.message || "Error al actualizar perfil" });
+    }
+  });
+
+  // Actualizar usuario por ID (solo super_admin)
+  app.patch('/api/usuarios/:id', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Campos de sistema que no deben ser modificados directamente
+      const camposSistema = ['id', 'createdAt'];
+      
+      // Procesar campos de fecha - convertir strings a Date o null
+      const camposFecha = [
+        'dniEmision', 'dniCaducidad',
+        'breveteEmision', 'breveteCaducidad',
+        'soatEmision', 'soatCaducidad',
+        'revisionTecnicaEmision', 'revisionTecnicaCaducidad',
+        'credencialConductorEmision', 'credencialConductorCaducidad',
+        'credencialTaxiEmision', 'credencialTaxiCaducidad',
+        'fechaSuspension', 'fechaBloqueo'
+      ];
+      
+      const dataProcesada = { ...req.body };
+      
+      // Eliminar campos de sistema que no deben ser modificados
+      for (const campo of camposSistema) {
+        delete dataProcesada[campo];
+      }
+      
+      // Procesar campos de fecha
+      for (const campo of camposFecha) {
+        if (dataProcesada[campo] !== undefined) {
+          const valor = dataProcesada[campo];
+          if (valor === null || valor === '' || valor === undefined) {
+            dataProcesada[campo] = null;
+          } else if (typeof valor === 'string') {
+            const fechaParseada = new Date(valor);
+            dataProcesada[campo] = isNaN(fechaParseada.getTime()) ? null : fechaParseada;
+          } else if (valor instanceof Date) {
+            dataProcesada[campo] = valor;
+          } else {
+            dataProcesada[campo] = null;
+          }
+        }
+      }
+      
+      const user = await storage.updateUser(id, dataProcesada);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      res.json(user);
+    } catch (error: any) {
+      console.error("Error al actualizar usuario:", error);
+      res.status(400).json({ message: error.message || "Error al actualizar usuario" });
     }
   });
 
@@ -4381,6 +4436,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         comprobante,
         notas,
         estado: 'pendiente',
+      });
+      
+      // Notificar a super admins
+      const usuario = await storage.getUser(userId);
+      const nombreUsuario = [usuario?.firstName, usuario?.lastName].filter(Boolean).join(' ') || 'Usuario';
+      
+      notificarSuperAdmins({
+        tipo: tipo === 'recarga' ? 'recarga' : 'retiro',
+        titulo: tipo === 'recarga' ? '💰 Nueva Recarga' : '💸 Nueva Solicitud de Retiro',
+        mensaje: `${nombreUsuario} solicita ${tipo} de S/. ${monto}`,
+        usuarioId: userId,
+        usuarioNombre: nombreUsuario,
+        monto: parseFloat(monto),
       });
       
       res.status(201).json(solicitud);

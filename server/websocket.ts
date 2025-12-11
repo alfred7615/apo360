@@ -406,6 +406,7 @@ export function setupWebSocket(httpServer: Server) {
   });
 
   console.log('🚀 Servidor WebSocket configurado en /ws');
+  setGlobalWss(wss);
   return wss;
 }
 
@@ -433,4 +434,62 @@ function broadcastToGroup(
   });
 
   console.log(`📢 Broadcast a ${sent} clientes en grupo ${grupoId}`);
+}
+
+// Map global para almacenar el WSS y poder usarlo desde otros módulos
+let globalWss: WebSocketServer | null = null;
+
+export function getGlobalWss(): WebSocketServer | null {
+  return globalWss;
+}
+
+export function setGlobalWss(wss: WebSocketServer) {
+  globalWss = wss;
+}
+
+/**
+ * Envía una notificación a todos los super admins conectados
+ */
+export async function notificarSuperAdmins(notificacion: {
+  tipo: 'recarga' | 'retiro' | 'favorito' | 'like' | 'comentario' | 'emergencia' | 'nuevo_usuario';
+  titulo: string;
+  mensaje: string;
+  usuarioId?: string;
+  usuarioNombre?: string;
+  monto?: number;
+  metadata?: any;
+}) {
+  const wss = globalWss;
+  if (!wss) {
+    console.log('⚠️ WebSocket no inicializado para notificaciones');
+    return;
+  }
+
+  try {
+    // Obtener IDs de super admins
+    const superAdmins = await storage.getUsersByRole('super_admin');
+    const adminIds = new Set(superAdmins.map(u => u.id));
+
+    const messageStr = JSON.stringify({
+      type: 'admin_notification',
+      ...notificacion,
+      timestamp: new Date().toISOString(),
+    });
+
+    let sent = 0;
+    wss.clients.forEach((client: ExtendedWebSocket) => {
+      if (
+        client.readyState === WebSocket.OPEN &&
+        client.usuarioId &&
+        adminIds.has(client.usuarioId)
+      ) {
+        client.send(messageStr);
+        sent++;
+      }
+    });
+
+    console.log(`🔔 Notificación enviada a ${sent} super admins: ${notificacion.tipo}`);
+  } catch (error) {
+    console.error('❌ Error enviando notificación a admins:', error);
+  }
 }

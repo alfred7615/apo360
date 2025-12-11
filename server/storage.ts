@@ -165,6 +165,7 @@ export interface IStorage {
   createUser(data: Partial<InsertUsuario> & { id: string }): Promise<Usuario>;
   upsertUsuario(usuario: Partial<InsertUsuario> & { id: string }): Promise<Usuario>;
   getAllUsers(): Promise<Usuario[]>;
+  getUsersByRole(rol: string): Promise<Usuario[]>;
   updateUser(id: string, data: Partial<InsertUsuario>): Promise<Usuario | undefined>;
   
   // Operaciones de publicidad
@@ -482,6 +483,10 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<Usuario[]> {
     return await db.select().from(usuarios).orderBy(desc(usuarios.createdAt));
+  }
+
+  async getUsersByRole(rol: string): Promise<Usuario[]> {
+    return await db.select().from(usuarios).where(eq(usuarios.rol, rol));
   }
 
   async updateUser(id: string, data: Partial<InsertUsuario>): Promise<Usuario | undefined> {
