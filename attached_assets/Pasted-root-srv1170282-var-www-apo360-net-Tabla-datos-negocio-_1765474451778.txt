@@ -1,0 +1,130 @@
+root@srv1170282:/var/www/apo360.net# -- Tabla datos_negocio
+OT EXISTS datos_negocio (
+  id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+  usuario_id VARCHAR(255) NOT NULL,
+  nombre_negocio VARCHAR(255),
+  descripcion TEXT,
+  logo_url VARCHAR(500),
+  direccion VARCHAR(500),
+  telefono VARCHAR(50),
+  email VARCHAR(255),
+  sitio_web VARCHAR(500),
+  facebook VARCHAR(500),
+  instagram VARCHAR(500),
+  tiktok VARCHAR(500),
+  whatsapp VARCHAR(50),
+  gps_latitud DECIMAL(10, 8),
+  gps_longitud DECIMAL(11, 8),
+  horario_apertura VARCHAR(10),
+  horario_cierre VARCHAR(10),
+  dias_atencion TEXT,
+  activo BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabla catalogo_negocio
+CREATE TABLE IF NOT EXISTS catalogo_negocio (
+  id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+  negocio_id VARCHAR(255) REFERENCES datos_negocio(id),
+  usuario_id VARCHAR(255) NOT NULL,
+  nombre VARCHAR(255) NOT NULL,
+  descripcion TEXT,
+  precio DECIMAL(10, 2),
+  precio_oferta DECIMAL(10, 2),
+  categoria VARCHAR(100),
+  imagen_url VARCHAR(500),
+  disponible BOOLEAN DEFAULT true,
+  destacado BOOLEAN DEFAULT false,
+  orden INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);--: command not found
+root@srv1170282:/var/www/apo360.net# CREATE TABLE IF NOT EXISTS datos_negocio (
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   usuario_id VARCHAR(255) NOT NULL,
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   nombre_negocio VARCHAR(255),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   descripcion TEXT,
+descripcion: command not found
+root@srv1170282:/var/www/apo360.net#   logo_url VARCHAR(500),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   direccion VARCHAR(500),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   telefono VARCHAR(50),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   email VARCHAR(255),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   sitio_web VARCHAR(500),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   facebook VARCHAR(500),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   instagram VARCHAR(500),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   tiktok VARCHAR(500),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   whatsapp VARCHAR(50),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   gps_latitud DECIMAL(10, 8),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   gps_longitud DECIMAL(11, 8),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   horario_apertura VARCHAR(10),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   horario_cierre VARCHAR(10),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   dias_atencion TEXT,
+dias_atencion: command not found
+root@srv1170282:/var/www/apo360.net#   activo BOOLEAN DEFAULT true,
+activo: command not found
+root@srv1170282:/var/www/apo360.net#   created_at TIMESTAMP DEFAULT NOW(),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   updated_at TIMESTAMP DEFAULT NOW()
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net# );
+-bash: syntax error near unexpected token `)'
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# -- Tabla catalogo_negocio
+--: command not found
+root@srv1170282:/var/www/apo360.net# CREATE TABLE IF NOT EXISTS catalogo_negocio (
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   negocio_id VARCHAR(255) REFERENCES datos_negocio(id),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   usuario_id VARCHAR(255) NOT NULL,
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   nombre VARCHAR(255) NOT NULL,
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   descripcion TEXT,
+descripcion: command not found
+root@srv1170282:/var/www/apo360.net#   precio DECIMAL(10, 2),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   precio_oferta DECIMAL(10, 2),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   categoria VARCHAR(100),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   imagen_url VARCHAR(500),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   disponible BOOLEAN DEFAULT true,
+disponible: command not found
+root@srv1170282:/var/www/apo360.net#   destacado BOOLEAN DEFAULT false,
+destacado: command not found
+root@srv1170282:/var/www/apo360.net#   orden INTEGER DEFAULT 0,
+Command 'orden' not found, did you mean:
+  command 'order' from deb lagan (2.0-9)
+Try: apt install <deb name>
+root@srv1170282:/var/www/apo360.net#   created_at TIMESTAMP DEFAULT NOW(),
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net#   updated_at TIMESTAMP DEFAULT NOW()
+-bash: syntax error near unexpected token `('
+root@srv1170282:/var/www/apo360.net# );psql $DATABASE_URL -c "CREATE TABLE IF NOT EXISTS datos_negocio (id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(), usuario_id VARCHAR(255) NOT NULL, nombre_negocio VARCHAR(255), descripcion TEXT, logo_url VARCHAR(500), direccion VARCHAR(500), telefono VARCHAR(50), email VARCHAR(255), sitio_web VARCHAR(500), facebook VARCHAR(500), instagram VARCHAR(500), tiktok VARCHAR(500), whatsapp VARCHAR(50), gps_latitud DECIMAL(10, 8), gps_longitud DECIMAL(11, 8), horario_apertura VARCHAR(10), horario_cierre VARCHAR(10), dias_atencion TEXT, activo BOOLEAN DEFAULT true, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW());"
+-bash: syntax error near unexpected token `)'
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# psql $DATABASE_URL -c "CREATE TABLE IF NOT EXISTS catalogo_negocio (id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(), negocio_id VARCHAR(255) REFERENCES datos_negocio(id), usuario_id VARCHAR(255) NOT NULL, nombre VARCHAR(255) NOT NULL, descripcion TEXT, precio DECIMAL(10, 2), precio_oferta DECIMAL(10, 2), categoria VARCHAR(100), imagen_url VARCHAR(500), disponible BOOLEAN DEFAULT true, destacado BOOLEAN DEFAULT false, orden INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW());"psql $DATABASE_URL -c "CREATE TABLE IF NOT EXISTS datos_negocio (id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(), usuario_id VARCHAR(255) NOT NULL, nombre_negocio VARCHAR(255), descripcion TEXT, logo_url VARCHAR(500), direccion VARCHAR(500), telefono VARCHAR(50), email VARCHAR(255), sitio_web VARCHAR(500), facebook VARCHAR(500), instagram VARCHAR(500), tiktok VARCHAR(500), whatsapp VARCHAR(50), gps_latitud DECIMAL(10, 8), gps_longitud DECIMAL(11, 8), horario_apertura VARCHAR(10), horario_cierre VARCHAR(10), dias_atencion TEXT, activo BOOLEAN DEFAULT true, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW());"
+Password for user root:
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  password authentication failed for user "root"
+root@srv1170282:/var/www/apo360.net#
