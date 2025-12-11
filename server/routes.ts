@@ -154,6 +154,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const dataProcesada = { ...req.body };
       
+      // Validar y normalizar el campo rol
+      if (dataProcesada.rol !== undefined) {
+        if (typeof dataProcesada.rol !== 'string') {
+          if (Array.isArray(dataProcesada.rol)) {
+            dataProcesada.rol = dataProcesada.rol[0] || 'usuario';
+          } else {
+            dataProcesada.rol = 'usuario';
+          }
+        }
+      }
+      
       // Eliminar campos de sistema que no deben ser modificados
       for (const campo of camposSistema) {
         delete dataProcesada[campo];
@@ -271,6 +282,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error al verificar perfil:", error);
       res.status(500).json({ message: error.message || "Error al verificar perfil" });
+    }
+  });
+
+  // ============================================================
+  // CATEGORÍAS DE ROLES (para roles con jerarquía)
+  // ============================================================
+  
+  // Obtener todas las categorías de un rol
+  app.get('/api/categorias-rol', async (req, res) => {
+    try {
+      const { rolBase } = req.query;
+      const categorias = await storage.getCategoriasRol(rolBase as string | undefined);
+      res.json(categorias);
+    } catch (error: any) {
+      console.error("Error al obtener categorías de rol:", error);
+      res.status(500).json({ message: error.message || "Error al obtener categorías" });
+    }
+  });
+
+  // Crear categoría de rol
+  app.post('/api/categorias-rol', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const categoria = await storage.createCategoriaRol(req.body);
+      res.status(201).json(categoria);
+    } catch (error: any) {
+      console.error("Error al crear categoría de rol:", error);
+      res.status(500).json({ message: error.message || "Error al crear categoría" });
+    }
+  });
+
+  // Actualizar categoría de rol
+  app.patch('/api/categorias-rol/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const categoria = await storage.updateCategoriaRol(id, req.body);
+      if (!categoria) {
+        return res.status(404).json({ message: "Categoría no encontrada" });
+      }
+      res.json(categoria);
+    } catch (error: any) {
+      console.error("Error al actualizar categoría de rol:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar categoría" });
+    }
+  });
+
+  // Eliminar categoría de rol
+  app.delete('/api/categorias-rol/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteCategoriaRol(id);
+      res.json({ message: "Categoría eliminada correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar categoría de rol:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar categoría" });
+    }
+  });
+
+  // ============================================================
+  // SUBCATEGORÍAS DE ROLES
+  // ============================================================
+  
+  // Obtener todas las subcategorías de una categoría
+  app.get('/api/subcategorias-rol', async (req, res) => {
+    try {
+      const { categoriaId } = req.query;
+      const subcategorias = await storage.getSubcategoriasRol(categoriaId as string | undefined);
+      res.json(subcategorias);
+    } catch (error: any) {
+      console.error("Error al obtener subcategorías de rol:", error);
+      res.status(500).json({ message: error.message || "Error al obtener subcategorías" });
+    }
+  });
+
+  // Crear subcategoría de rol
+  app.post('/api/subcategorias-rol', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const subcategoria = await storage.createSubcategoriaRol(req.body);
+      res.status(201).json(subcategoria);
+    } catch (error: any) {
+      console.error("Error al crear subcategoría de rol:", error);
+      res.status(500).json({ message: error.message || "Error al crear subcategoría" });
+    }
+  });
+
+  // Actualizar subcategoría de rol
+  app.patch('/api/subcategorias-rol/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const subcategoria = await storage.updateSubcategoriaRol(id, req.body);
+      if (!subcategoria) {
+        return res.status(404).json({ message: "Subcategoría no encontrada" });
+      }
+      res.json(subcategoria);
+    } catch (error: any) {
+      console.error("Error al actualizar subcategoría de rol:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar subcategoría" });
+    }
+  });
+
+  // Eliminar subcategoría de rol
+  app.delete('/api/subcategorias-rol/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteSubcategoriaRol(id);
+      res.json({ message: "Subcategoría eliminada correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar subcategoría de rol:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar subcategoría" });
     }
   });
 

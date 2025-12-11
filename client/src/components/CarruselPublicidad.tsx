@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Info, MapPin, Calendar, Link2, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Info, MapPin, Calendar, Link2, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { filtrarPublicidadesActivas, type Publicidad, getGoogleMapsUrl } from "@/lib/publicidadUtils";
 import VisualizadorPantallaCompleta from "./VisualizadorPantallaCompleta";
@@ -214,21 +213,15 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   if (tipo === "carrusel_principal") {
     const publicidadActual = publicidadesActivas[indiceActual];
 
-    const irAnterior = () => {
-      setIndiceActual((prev) =>
-        prev === 0 ? publicidadesActivas.length - 1 : prev - 1
-      );
-    };
-
-    const irSiguiente = () => {
-      setIndiceActual((prev) => (prev + 1) % publicidadesActivas.length);
-    };
-
     return (
       <>
         <div
-          className="relative w-full overflow-hidden bg-black flex items-center justify-center"
-          style={{ height: "clamp(200px, 40vw, 400px)" }}
+          className="relative w-screen overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center"
+          style={{ 
+            height: "clamp(200px, 40vw, 400px)",
+            marginLeft: "calc(-50vw + 50%)",
+            marginRight: "calc(-50vw + 50%)"
+          }}
           data-testid="carousel-principal"
         >
           <div 
@@ -242,30 +235,6 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
               data-testid="img-carousel-principal"
             />
           </div>
-
-          {publicidadesActivas.length > 1 && (
-            <>
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={(e) => { e.stopPropagation(); irAnterior(); }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg"
-                data-testid="button-carousel-prev"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={(e) => { e.stopPropagation(); irSiguiente(); }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-lg"
-                data-testid="button-carousel-next"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </>
-          )}
         </div>
 
         <VisualizadorPantallaCompleta

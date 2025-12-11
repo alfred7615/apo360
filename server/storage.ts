@@ -153,6 +153,12 @@ import {
   type InsertProductoUsuario,
   type ConfiguracionCosto,
   type InsertConfiguracionCosto,
+  categoriasRol,
+  subcategoriasRol,
+  type CategoriaRol,
+  type InsertCategoriaRol,
+  type SubcategoriaRol,
+  type InsertSubcategoriaRol,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -3293,6 +3299,76 @@ export class DatabaseStorage implements IStorage {
     
     const [nuevo] = await db.insert(configuracionCostos).values(data).returning();
     return nuevo;
+  }
+
+  // ============================================================
+  // CATEGORÍAS DE ROLES
+  // ============================================================
+  async getCategoriasRol(rolBase?: string): Promise<CategoriaRol[]> {
+    if (rolBase) {
+      return await db.select().from(categoriasRol)
+        .where(eq(categoriasRol.rolBase, rolBase))
+        .orderBy(categoriasRol.orden);
+    }
+    return await db.select().from(categoriasRol).orderBy(categoriasRol.orden);
+  }
+
+  async getCategoriaRol(id: string): Promise<CategoriaRol | undefined> {
+    const [categoria] = await db.select().from(categoriasRol)
+      .where(eq(categoriasRol.id, id));
+    return categoria;
+  }
+
+  async createCategoriaRol(data: InsertCategoriaRol): Promise<CategoriaRol> {
+    const [categoria] = await db.insert(categoriasRol).values(data).returning();
+    return categoria;
+  }
+
+  async updateCategoriaRol(id: string, data: Partial<InsertCategoriaRol>): Promise<CategoriaRol | undefined> {
+    const [actualizado] = await db.update(categoriasRol)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(categoriasRol.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteCategoriaRol(id: string): Promise<void> {
+    await db.delete(categoriasRol).where(eq(categoriasRol.id, id));
+  }
+
+  // ============================================================
+  // SUBCATEGORÍAS DE ROLES
+  // ============================================================
+  async getSubcategoriasRol(categoriaId?: string): Promise<SubcategoriaRol[]> {
+    if (categoriaId) {
+      return await db.select().from(subcategoriasRol)
+        .where(eq(subcategoriasRol.categoriaId, categoriaId))
+        .orderBy(subcategoriasRol.orden);
+    }
+    return await db.select().from(subcategoriasRol).orderBy(subcategoriasRol.orden);
+  }
+
+  async getSubcategoriaRol(id: string): Promise<SubcategoriaRol | undefined> {
+    const [subcategoria] = await db.select().from(subcategoriasRol)
+      .where(eq(subcategoriasRol.id, id));
+    return subcategoria;
+  }
+
+  async createSubcategoriaRol(data: InsertSubcategoriaRol): Promise<SubcategoriaRol> {
+    const [subcategoria] = await db.insert(subcategoriasRol).values(data).returning();
+    return subcategoria;
+  }
+
+  async updateSubcategoriaRol(id: string, data: Partial<InsertSubcategoriaRol>): Promise<SubcategoriaRol | undefined> {
+    const [actualizado] = await db.update(subcategoriasRol)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(subcategoriasRol.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteSubcategoriaRol(id: string): Promise<void> {
+    await db.delete(subcategoriasRol).where(eq(subcategoriasRol.id, id));
   }
 }
 
