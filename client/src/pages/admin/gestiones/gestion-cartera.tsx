@@ -39,6 +39,8 @@ type MetodoPago = {
   numeroCuenta?: string;
   cci?: string;
   numero?: string;
+  telefono?: string;
+  email?: string;
   titular?: string;
   banco?: string;
   moneda: string;
@@ -1497,7 +1499,14 @@ export default function GestionCarteraScreen() {
                   crearMetodoMutation.mutate(nuevoMetodo);
                 }
               }}
-              disabled={!nuevoMetodo.nombre || !nuevoMetodo.numeroCuenta || crearMetodoMutation.isPending || actualizarMetodoMutation?.isPending}
+              disabled={
+                !nuevoMetodo.nombre || 
+                crearMetodoMutation.isPending || 
+                actualizarMetodoMutation?.isPending ||
+                (nuevoMetodo.tipo === "cuenta_bancaria" && !nuevoMetodo.numeroCuenta) ||
+                ((nuevoMetodo.tipo === "yape" || nuevoMetodo.tipo === "plin") && !nuevoMetodo.telefono) ||
+                (nuevoMetodo.tipo === "paypal" && !nuevoMetodo.email)
+              }
               data-testid="button-guardar-metodo"
             >
               {metodoEditando ? 'Actualizar' : 'Guardar'} Metodo
