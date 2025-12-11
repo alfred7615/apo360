@@ -112,7 +112,7 @@ export default function PanelUsuarioPage() {
   });
 
   const { data: miSaldo, isLoading: loadingSaldo } = useQuery<SaldoUsuario>({
-    queryKey: ["/api/mi-saldo"],
+    queryKey: ["/api/saldos/mi-saldo"],
     enabled: isAuthenticated,
   });
 
@@ -126,7 +126,7 @@ export default function PanelUsuarioPage() {
     mutationFn: (planId: string) => apiRequest("POST", "/api/membresias/contratar", { planId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mi-membresia"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mi-saldo"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/saldos/mi-saldo"] });
       setShowPlanModal(false);
       setPlanSeleccionado(null);
       toast({ title: "Membresia contratada exitosamente", description: "Tu membresia ha sido registrada y esta pendiente de aprobacion" });
@@ -146,7 +146,7 @@ export default function PanelUsuarioPage() {
         numeroOperacion: data.numeroOperacion || null
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/mi-saldo"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/saldos/mi-saldo"] });
       setShowRecargaModal(false);
       setMontoRecarga("10.00");
       setMetodoPagoId("");

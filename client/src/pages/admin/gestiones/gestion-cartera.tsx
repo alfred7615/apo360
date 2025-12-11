@@ -24,13 +24,17 @@ import {
 import { 
   Wallet, CreditCard, TrendingUp, TrendingDown, Search, Plus, DollarSign, 
   Percent, Check, X, Clock, AlertCircle, Banknote, Building, Smartphone,
-  Globe, ArrowUpRight, ArrowDownRight, RefreshCw, Eye, Trash2, Edit, ZoomIn, Image as ImageIcon
+  Globe, ArrowUpRight, ArrowDownRight, RefreshCw, Eye, Trash2, Edit, ZoomIn, Image as ImageIcon,
+  Phone, MessageCircle
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SiWhatsapp } from "react-icons/si";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useLocation } from "wouter";
 
 type MetodoPago = {
   id: string;
@@ -139,6 +143,7 @@ type ConfiguracionCosto = {
 };
 
 export default function GestionCarteraScreen() {
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("solicitudes");
   const [searchTerm, setSearchTerm] = useState("");
   const [showMetodoModal, setShowMetodoModal] = useState(false);
@@ -148,6 +153,8 @@ export default function GestionCarteraScreen() {
   const [comprobanteUrl, setComprobanteUrl] = useState("");
   const [selectedSolicitud, setSelectedSolicitud] = useState<SolicitudSaldo | null>(null);
   const [motivoRechazo, setMotivoRechazo] = useState("");
+  const [showContactoModal, setShowContactoModal] = useState(false);
+  const [usuarioContacto, setUsuarioContacto] = useState<any>(null);
   const [nuevoMetodo, setNuevoMetodo] = useState({
     tipo: "cuenta_bancaria",
     nombre: "",
@@ -564,7 +571,40 @@ export default function GestionCarteraScreen() {
 
   const getUserName = (userId: string) => {
     const user = usuarios.find((u: any) => u.id === userId);
-    return user?.nombre || user?.email || "Usuario desconocido";
+    return user?.nombre || user?.primerNombre || user?.email || "Usuario desconocido";
+  };
+
+  const getUser = (userId: string) => {
+    return usuarios.find((u: any) => u.id === userId);
+  };
+
+  const getUserSaldo = (userId: string) => {
+    const saldo = saldos.find((s: SaldoUsuario) => s.usuarioId === userId);
+    return parseFloat(saldo?.saldo || "0");
+  };
+
+  const calcularSaldoFinal = (solicitud: SolicitudSaldo) => {
+    const saldoActual = getUserSaldo(solicitud.usuarioId);
+    const monto = parseFloat(solicitud.monto);
+    if (solicitud.tipo === 'recarga') {
+      // Para recargas: saldo actual + monto de recarga
+      return (saldoActual + monto).toFixed(2);
+    } else {
+      // Para retiros: saldo actual - monto de retiro (sin permitir negativo)
+      const resultado = saldoActual - monto;
+      return Math.max(0, resultado).toFixed(2);
+    }
+  };
+
+  const abrirContacto = (userId: string) => {
+    const user = getUser(userId);
+    setUsuarioContacto(user);
+    setShowContactoModal(true);
+  };
+
+  const formatearTelefono = (telefono: string) => {
+    // Limpiar el número de cualquier carácter que no sea dígito
+    return telefono?.replace(/\D/g, '') || '';
   };
 
   const getEstadoBadge = (estado: string) => {
@@ -734,26 +774,71 @@ export default function GestionCarteraScreen() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {filteredSolicitudes.map((solicitud) => (
-                    <div key={solicitud.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`card-solicitud-${solicitud.id}`}>
-                      <div className="flex items-center gap-4">
-                        <div className={`p-2 rounded-full ${solicitud.tipo === 'recarga' ? 'bg-green-100' : 'bg-red-100'}`}>
+                  {filteredSolicitudes.map((solicitud) => {
+                    const usuario = getUser(solicitud.usuarioId);
+                    const saldoActual = getUserSaldo(solicitud.usuarioId);
+                    const saldoFinal = calcularSaldoFinal(solicitud);
+                    
+                    return (
+                    <div key={solicitud.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border rounded-lg gap-4" data-testid={`card-solicitud-${solicitud.id}`}>
+                      <div className="flex items-center gap-3">
+                        {/* Foto de perfil */}
+                        <Avatar className="h-12 w-12 flex-shrink-0">
+                          <AvatarImage src={usuario?.imagenPerfil} alt={getUserName(solicitud.usuarioId)} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                            {getUserName(solicitud.usuarioId).slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className={`p-2 rounded-full flex-shrink-0 ${solicitud.tipo === 'recarga' ? 'bg-green-100' : 'bg-red-100'}`}>
                           {solicitud.tipo === 'recarga' ? (
                             <ArrowDownRight className="h-4 w-4 text-green-600" />
                           ) : (
                             <ArrowUpRight className="h-4 w-4 text-red-600" />
                           )}
                         </div>
-                        <div>
-                          <p className="font-medium">{getUserName(solicitud.usuarioId)}</p>
+                        
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{getUserName(solicitud.usuarioId)}</p>
+                          
+                          {/* Botón de celular clickeable */}
+                          {usuario?.celular && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto p-0 text-sm text-blue-600 hover:text-blue-800 font-normal"
+                              onClick={() => abrirContacto(solicitud.usuarioId)}
+                              data-testid={`button-telefono-${solicitud.id}`}
+                            >
+                              <Phone className="h-3 w-3 mr-1" />
+                              {usuario.celular}
+                            </Button>
+                          )}
+                          
                           <p className="text-sm text-muted-foreground capitalize">{solicitud.tipo}</p>
                           <p className="text-xs text-muted-foreground">
                             {format(new Date(solicitud.createdAt), "dd MMM yyyy HH:mm", { locale: es })}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
+                      
+                      <div className="flex flex-wrap items-center gap-3 md:gap-4">
+                        {/* Información de montos */}
+                        <div className="text-left md:text-right space-y-0.5">
+                          {/* Saldo Final (si es pendiente) */}
+                          {solicitud.estado === "pendiente" && (
+                            <div className="text-xs text-muted-foreground">
+                              Saldo actual: S/ {saldoActual.toFixed(2)}
+                            </div>
+                          )}
+                          
+                          {/* Saldo Final calculado */}
+                          {solicitud.estado === "pendiente" && (
+                            <p className="text-sm font-semibold text-primary">
+                              Saldo Final: S/ {saldoFinal}
+                            </p>
+                          )}
+                          
                           <p className={`text-lg font-bold ${solicitud.tipo === 'recarga' ? 'text-green-600' : 'text-red-600'}`}>
                             {solicitud.tipo === 'recarga' ? '+' : '-'} S/ {solicitud.monto}
                           </p>
@@ -761,21 +846,26 @@ export default function GestionCarteraScreen() {
                             <p className="text-xs text-muted-foreground">Op: {solicitud.numeroOperacion}</p>
                           )}
                         </div>
+                        
+                        {/* Botón ver comprobante (solo icono) */}
                         {solicitud.comprobante && (
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="outline"
                             onClick={() => {
                               setComprobanteUrl(solicitud.comprobante!);
+                              setSelectedSolicitud(solicitud);
                               setShowComprobanteModal(true);
                             }}
                             data-testid={`button-ver-comprobante-${solicitud.id}`}
+                            title="Ver comprobante"
                           >
-                            <ImageIcon className="h-4 w-4 mr-1" />
-                            Ver Boucher
+                            <ImageIcon className="h-4 w-4" />
                           </Button>
                         )}
+                        
                         {getEstadoBadge(solicitud.estado)}
+                        
                         {solicitud.estado === "pendiente" && (
                           <div className="flex gap-2">
                             <Button 
@@ -783,6 +873,7 @@ export default function GestionCarteraScreen() {
                               onClick={() => aprobarMutation.mutate(solicitud.id)}
                               disabled={aprobarMutation.isPending}
                               data-testid={`button-aprobar-${solicitud.id}`}
+                              title="Aprobar"
                             >
                               <Check className="h-4 w-4" />
                             </Button>
@@ -794,6 +885,7 @@ export default function GestionCarteraScreen() {
                                 setShowRechazoModal(true);
                               }}
                               data-testid={`button-rechazar-${solicitud.id}`}
+                              title="Rechazar"
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -801,7 +893,7 @@ export default function GestionCarteraScreen() {
                         )}
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               )}
             </CardContent>
@@ -1320,48 +1412,201 @@ export default function GestionCarteraScreen() {
       </Dialog>
 
       <Dialog open={showComprobanteModal} onOpenChange={setShowComprobanteModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <ImageIcon className="h-5 w-5" />
-              Boucher / Comprobante de Pago
+              Comprobante de Pago
             </DialogTitle>
             <DialogDescription>
-              Imagen del comprobante enviado por el usuario
+              {selectedSolicitud && (
+                <span className="flex items-center gap-2 flex-wrap">
+                  Usuario: <strong>{getUserName(selectedSolicitud.usuarioId)}</strong>
+                  {" - "}
+                  Monto: <strong className={selectedSolicitud.tipo === 'recarga' ? 'text-green-600' : 'text-red-600'}>
+                    S/ {selectedSolicitud.monto}
+                  </strong>
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex items-center justify-center p-4 bg-muted/30 rounded-lg min-h-[400px]">
-            {comprobanteUrl ? (
-              <img 
-                src={comprobanteUrl} 
-                alt="Comprobante de pago" 
-                className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
-                data-testid="img-comprobante-fullscreen"
-              />
-            ) : (
-              <div className="text-center text-muted-foreground">
-                <ImageIcon className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <p>No hay imagen disponible</p>
-              </div>
-            )}
+          
+          <div className="flex-1 overflow-auto">
+            <div className="flex items-center justify-center p-2 md:p-4 bg-muted/30 rounded-lg min-h-[200px] md:min-h-[400px]">
+              {comprobanteUrl ? (
+                <img 
+                  src={comprobanteUrl} 
+                  alt="Comprobante de pago" 
+                  className="max-w-full max-h-[50vh] md:max-h-[60vh] object-contain rounded-lg shadow-lg"
+                  data-testid="img-comprobante-fullscreen"
+                />
+              ) : (
+                <div className="text-center text-muted-foreground">
+                  <ImageIcon className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p>No hay imagen disponible</p>
+                </div>
+              )}
+            </div>
           </div>
+          
+          <div className="flex-shrink-0 pt-4 space-y-3">
+            {/* Botones de contacto */}
+            {selectedSolicitud && (() => {
+              const usuario = getUser(selectedSolicitud.usuarioId);
+              if (!usuario) return null;
+              const telefono = formatearTelefono(usuario.celular || '');
+              
+              return (
+                <div className="flex flex-wrap gap-2 justify-center border-t pt-3">
+                  <span className="text-sm text-muted-foreground w-full text-center mb-1">Contactar al usuario:</span>
+                  
+                  {telefono && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`tel:${telefono}`, '_self')}
+                        data-testid="button-llamar-comprobante"
+                      >
+                        <Phone className="h-4 w-4 mr-1" />
+                        Llamar
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-green-600 border-green-300 hover:bg-green-50"
+                        onClick={() => window.open(`https://wa.me/51${telefono}`, '_blank')}
+                        data-testid="button-whatsapp-comprobante"
+                      >
+                        <SiWhatsapp className="h-4 w-4 mr-1" />
+                        WhatsApp
+                      </Button>
+                    </>
+                  )}
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                    onClick={() => {
+                      setShowComprobanteModal(false);
+                      setLocation(`/chat?userId=${selectedSolicitud.usuarioId}`);
+                    }}
+                    data-testid="button-chat-comprobante"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    Chat Interno
+                  </Button>
+                </div>
+              );
+            })()}
+            
+            <DialogFooter className="flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowComprobanteModal(false)}
+                data-testid="button-cerrar-comprobante"
+              >
+                Cerrar
+              </Button>
+              {comprobanteUrl && (
+                <Button 
+                  onClick={() => window.open(comprobanteUrl, '_blank')}
+                  data-testid="button-abrir-nueva-pestaña"
+                >
+                  <ZoomIn className="h-4 w-4 mr-2" />
+                  Ver Ampliado
+                </Button>
+              )}
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de contacto rápido */}
+      <Dialog open={showContactoModal} onOpenChange={setShowContactoModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Phone className="h-5 w-5" />
+              Contactar Usuario
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona cómo deseas comunicarte con el usuario
+            </DialogDescription>
+          </DialogHeader>
+          
+          {usuarioContacto && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={usuarioContacto.imagenPerfil} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                    {(usuarioContacto.nombre || usuarioContacto.primerNombre || usuarioContacto.email || '??').slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{usuarioContacto.nombre || usuarioContacto.primerNombre || usuarioContacto.email}</p>
+                  {usuarioContacto.celular && (
+                    <p className="text-sm text-muted-foreground">{usuarioContacto.celular}</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-2">
+                {usuarioContacto.celular && (
+                  <>
+                    <Button
+                      className="w-full justify-start"
+                      variant="outline"
+                      onClick={() => {
+                        const tel = formatearTelefono(usuarioContacto.celular);
+                        window.open(`tel:${tel}`, '_self');
+                        setShowContactoModal(false);
+                      }}
+                      data-testid="button-llamar-modal"
+                    >
+                      <Phone className="h-5 w-5 mr-3 text-blue-600" />
+                      Llamar al {usuarioContacto.celular}
+                    </Button>
+                    
+                    <Button
+                      className="w-full justify-start text-green-600 border-green-300 hover:bg-green-50"
+                      variant="outline"
+                      onClick={() => {
+                        const tel = formatearTelefono(usuarioContacto.celular);
+                        window.open(`https://wa.me/51${tel}`, '_blank');
+                        setShowContactoModal(false);
+                      }}
+                      data-testid="button-whatsapp-modal"
+                    >
+                      <SiWhatsapp className="h-5 w-5 mr-3" />
+                      Enviar WhatsApp
+                    </Button>
+                  </>
+                )}
+                
+                <Button
+                  className="w-full justify-start text-purple-600 border-purple-300 hover:bg-purple-50"
+                  variant="outline"
+                  onClick={() => {
+                    setShowContactoModal(false);
+                    setLocation(`/chat?userId=${usuarioContacto.id}`);
+                  }}
+                  data-testid="button-chat-modal"
+                >
+                  <MessageCircle className="h-5 w-5 mr-3" />
+                  Abrir Chat Interno
+                </Button>
+              </div>
+            </div>
+          )}
+          
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowComprobanteModal(false)}
-              data-testid="button-cerrar-comprobante"
-            >
+            <Button variant="outline" onClick={() => setShowContactoModal(false)}>
               Cerrar
             </Button>
-            {comprobanteUrl && (
-              <Button 
-                onClick={() => window.open(comprobanteUrl, '_blank')}
-                data-testid="button-abrir-nueva-pestaña"
-              >
-                <ZoomIn className="h-4 w-4 mr-2" />
-                Abrir en nueva pestaña
-              </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
