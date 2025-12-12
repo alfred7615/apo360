@@ -1,0 +1,173 @@
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# git pull origin main
+From https://github.com/alfred7615/apo360
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+root@srv1170282:/var/www/apo360.net# psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable" -f scripts/schema-produccion.sql
+psql: error: scripts/schema-produccion.sql: No such file or directory
+root@srv1170282:/var/www/apo360.net# psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable" -c "\dt"
+
+
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# npm run build
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js
+
+vite v5.4.20 building for production...
+transforming (4) src/App.tsx
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 2792 modules transformed.
+../dist/public/index.html                     1.53 kB │ gzip:   0.66 kB
+../dist/public/assets/index-BnNusofl.css    147.72 kB │ gzip:  27.36 kB
+../dist/public/assets/index-8rziSsO1.js   1,497.09 kB │ gzip: 374.43 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 23.59s
+▲ [WARNING] Duplicate member "updateServicio" in class body [duplicate-class-member]
+
+    server/storage.ts:1885:8:
+      1885 │   async updateServicio(id: string, data: any): Promise<any> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "updateServicio" is here:
+
+    server/storage.ts:827:8:
+      827 │   async updateServicio(id: string, data: Partial<InsertServicio>): Promise<Servicio | undefined> {
+          ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getFavoritosUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2450:8:
+      2450 │   async getFavoritosUsuario(usuarioId: string, tipo?: string): Promise<any[]> {
+           ╵         ~~~~~~~~~~~~~~~~~~~
+
+  The original member "getFavoritosUsuario" is here:
+
+    server/storage.ts:795:8:
+      795 │   async getFavoritosUsuario(usuarioId: string): Promise<any[]> {
+          ╵         ~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getInteraccionesUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2633:8:
+      2633 │   async getInteraccionesUsuario(
+           ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "getInteraccionesUsuario" is here:
+
+    server/storage.ts:571:8:
+      571 │   async getInteraccionesUsuario(publicidadId: string, usuarioId: string): Promise<{ hasLike: boolean; has...
+          ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getComentarios" in class body [duplicate-class-member]
+
+    server/storage.ts:2657:8:
+      2657 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "getComentarios" is here:
+
+    server/storage.ts:1854:8:
+      1854 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "createComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2673:8:
+      2673 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "createComentario" is here:
+
+    server/storage.ts:1867:8:
+      1867 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "deleteComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2687:8:
+      2687 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "deleteComentario" is here:
+
+    server/storage.ts:1875:8:
+      1875 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+6 of 7 warnings shown (disable the message limit with --log-limit=0)
+
+  dist/index.js  405.7kb
+
+⚡ Done in 132ms
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 12   │ online    │ 0%       │ 40.1mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 logs apo360 --lines 20
+[TAILING] Tailing last 20 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/error-0.log last 20 lines:
+0|apo360   |     at async DatabaseStorage.getUserRoles (file:///var/www/apo360.net/dist/index.js:2040:33)
+0|apo360   |     at async file:///var/www/apo360.net/dist/index.js:9323:25 {
+0|apo360   |   length: 116,
+0|apo360   |   severity: 'ERROR',
+0|apo360   |   code: '42703',
+0|apo360   |   detail: undefined,
+0|apo360   |   hint: undefined,
+0|apo360   |   position: '35',
+0|apo360   |   internalPosition: undefined,
+0|apo360   |   internalQuery: undefined,
+0|apo360   |   where: undefined,
+0|apo360   |   schema: undefined,
+0|apo360   |   table: undefined,
+0|apo360   |   column: undefined,
+0|apo360   |   dataType: undefined,
+0|apo360   |   constraint: undefined,
+0|apo360   |   file: 'parse_relation.c',
+0|apo360   |   line: '3722',
+0|apo360   |   routine: 'errorMissingColumn'
+0|apo360   | }
+
+/var/www/apo360.net/logs/output-0.log last 20 lines:
+0|apo360   | 2025-12-12T03:57:42: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:57:46: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:57:47: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:57:52: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:57:53: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:57:58: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:57:58: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:58:04: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:58:04: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:58:07: 🗄️ Usando PostgreSQL local (producción)
+0|apo360   | 2025-12-12T03:58:07: 🔐 Modo de autenticación solicitado: basic
+0|apo360   | 2025-12-12T03:58:07: 🔐 Configurando autenticación básica (email/contraseña)...
+0|apo360   | 2025-12-12T03:58:07: ✅ Autenticación básica configurada
+0|apo360   | 2025-12-12T03:58:07:    📧 Login: POST /api/auth/login
+0|apo360   | 2025-12-12T03:58:07:    📝 Registro: POST /api/auth/register
+0|apo360   | 2025-12-12T03:58:07: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-12T03:58:07: 3:58:07 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-12T03:58:07: 3:58:07 AM [express] ✅ Tabla miembros_grupo ya está sincronizada
+0|apo360   | 2025-12-12T03:58:07: 3:58:07 AM [express] serving on port 5000
+0|apo360   | 2025-12-12T03:58:09: ❌ WebSocket rechazado: Usuario no autenticado
+
+0|apo360  | 2025-12-12T03:58:10: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360  | 2025-12-12T03:58:14: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360  | 2025-12-12T03:58:16: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360  | 2025-12-12T03:58:20: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360  | 2025-12-12T03:58:22: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360  | 2025-12-12T03:58:25: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360  | 2025-12-12T03:58:28: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360  | 2025-12-12T03:58:30: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360  | 2025-12-12T03:58:34: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360  | 2025-12-12T03:58:36: ❌ WebSocket rechazado: Usuario no autenticado
