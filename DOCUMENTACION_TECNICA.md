@@ -119,15 +119,17 @@ Q1WbrRv7MMG7ElYk08ePw7QuIhCkp3hzMEqQJ5tUn2ZNtzOBGgRCOizEpXoYl/1r/Bt7eCWtKMVEseEv
 ├── shared/                    # Código compartido
 │   └── schema.ts              # Esquema de base de datos (Drizzle)
 ├── public/                    # Archivos estáticos
-│   └── assets/                # Imágenes subidas
-│       ├── carrusel/          # Imágenes del slider principal
+│   └── assets/                # Imágenes subidas (Actualizado 12/12/2025)
+│       ├── carrusel/          # Imágenes del slider/publicidad
 │       ├── galeria/           # Galería de imágenes
-│       ├── servicios/         # Logos de servicios
-│       ├── perfiles/          # Fotos de perfil
-│       ├── chat/              # Archivos del chat
-│       ├── img/               # Imágenes generales (comprobantes)
-│       ├── mp3/               # Archivos de audio
-│       └── documentos/        # Documentos
+│       ├── servicios/         # Logos de servicios locales
+│       ├── perfiles/          # Fotos de perfil de usuarios
+│       ├── chat/              # Archivos multimedia del chat
+│       ├── comprobantes/      # Comprobantes de recarga de saldo (NUEVO 12/12/2025)
+│       ├── locales/           # Imágenes de locales comerciales (NUEVO 12/12/2025)
+│       ├── videos/            # Videos de perfil de negocios (NUEVO 12/12/2025)
+│       ├── documentos/        # Documentos generales
+│       └── mp3/               # Archivos de audio/radio
 └── dist/                      # Build de producción
     └── public/
         ├── index.html
@@ -142,15 +144,17 @@ Q1WbrRv7MMG7ElYk08ePw7QuIhCkp3hzMEqQJ5tUn2ZNtzOBGgRCOizEpXoYl/1r/Bt7eCWtKMVEseEv
 │       ├── index.html
 │       └── assets/            # JS/CSS (index-*.js, index-*.css)
 ├── public/
-│   └── assets/                # Imágenes subidas (persistentes)
-│       ├── carrusel/
-│       ├── galeria/
-│       ├── servicios/
-│       ├── perfiles/
-│       ├── chat/
-│       ├── img/
-│       ├── mp3/
-│       └── documentos/
+│   └── assets/                # Imágenes subidas (Actualizado 12/12/2025)
+│       ├── carrusel/          # Slider/publicidad
+│       ├── galeria/           # Galería
+│       ├── servicios/         # Logos servicios
+│       ├── perfiles/          # Fotos perfil usuarios
+│       ├── chat/              # Archivos chat
+│       ├── comprobantes/      # Comprobantes recarga (NUEVO)
+│       ├── locales/           # Imágenes locales comerciales (NUEVO)
+│       ├── videos/            # Videos negocios (NUEVO)
+│       ├── documentos/        # Documentos
+│       └── mp3/               # Audio/radio
 ├── logs/                      # Logs de PM2
 │   ├── error.log
 │   ├── output.log
@@ -434,17 +438,22 @@ El regex detecta extensiones de build (js, css, map, woff, ttf, eot) y las sirve
 - image/tiff
 - image/svg+xml
 
-### Carpetas de Destino
-| Tipo | Carpeta | Ruta Completa |
-|------|---------|---------------|
-| Publicidad/Carrusel | carrusel | /public/assets/carrusel/ |
-| Galería | galeria | /public/assets/galeria/ |
-| Servicios | servicios | /public/assets/servicios/ |
-| Perfiles | perfiles | /public/assets/perfiles/ |
-| Chat | chat | /public/assets/chat/ |
-| MP3 | mp3 | /public/assets/mp3/ |
-| Documentos | documentos | /public/assets/documentos/ |
-| Imágenes generales | img | /public/assets/img/ |
+### Carpetas de Destino (Actualizado 12/12/2025)
+
+| Tipo | Carpeta | Ruta Hostinger | Endpoint API |
+|------|---------|----------------|--------------|
+| Publicidad/Carrusel | carrusel | /var/www/apo360.net/public/assets/carrusel/ | /api/upload/publicidad |
+| Galería | galeria | /var/www/apo360.net/public/assets/galeria/ | /api/upload/galeria |
+| Servicios Locales | servicios | /var/www/apo360.net/public/assets/servicios/ | /api/upload/servicios |
+| Fotos de Perfil | perfiles | /var/www/apo360.net/public/assets/perfiles/ | /api/usuarios/:id/foto |
+| Chat Multimedia | chat | /var/www/apo360.net/public/assets/chat/ | /api/chat/upload |
+| **Comprobantes Recarga** | comprobantes | /var/www/apo360.net/public/assets/comprobantes/ | /api/upload/comprobantes |
+| **Imágenes Locales** | locales | /var/www/apo360.net/public/assets/locales/ | /api/upload/perfil-imagenes |
+| **Videos Negocios** | videos | /var/www/apo360.net/public/assets/videos/ | /api/upload/perfil-videos |
+| Documentos | documentos | /var/www/apo360.net/public/assets/documentos/ | /api/upload/documentos |
+| Audio/MP3 | mp3 | /var/www/apo360.net/public/assets/mp3/ | (admin panel) |
+
+**Nota**: Las carpetas marcadas con **negrita** son NUEVAS agregadas el 12/12/2025.
 
 ---
 
