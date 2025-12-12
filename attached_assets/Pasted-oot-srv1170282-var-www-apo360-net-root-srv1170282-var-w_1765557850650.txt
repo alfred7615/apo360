@@ -1,0 +1,45 @@
+oot@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# git config pull.rebase false
+root@srv1170282:/var/www/apo360.net# git pull origin main
+From https://github.com/alfred7615/apo360
+ * branch            main       -> FETCH_HEAD
+Merge made by the 'ort' strategy.
+ GUIA_MIGRACION_DICIEMBRE_2025.md                                            | 262 +++++++++++++
+ PROCESO_SINCRONIZACION_BD.md                                                |  66 ++++
+ ...ed--3-TIPO-DE-ROLES-3-ROL-CATEGORIA-SUBC-1765524109067_1765524109068.txt | 245 ++++++++++++
+ ...ed--3-TIPO-DE-ROLES-3-ROL-CATEGORIA-SUBC-1765524672725_1765524672727.txt | 245 ++++++++++++
+ ...ed--3-TIPO-DE-ROLES-3-ROL-CATEGORIA-SUBC-1765524716719_1765524716722.txt | 245 ++++++++++++
+ ...IPO-DE-ROLES-3-ROL-CATEGORIA-SUBCATEGORIA-DESCRIPCION-_1765555605576.txt | 244 ++++++++++++
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765486955262.txt | 758 ++++++++++++++++++++++++++++++++++++
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765487028920.txt |  78 ++++
+ client/src/components/CalculadoraCambio.tsx                                 | 127 +++---
+ client/src/components/CambistaPanelUsuario.tsx                              | 506 ++++++++++++++++++++++++
+ client/src/components/admin/categorias-rol-section.tsx                      | 242 +++++++++++-
+ client/src/pages/admin/gestiones/gestion-categorias-rol.tsx                 | 314 ++++++++++++++-
+ client/src/pages/admin/gestiones/gestion-moneda.tsx                         | 259 ++++++++----
+ client/src/pages/admin/gestiones/gestion-usuarios.tsx                       |  49 ++-
+ client/src/pages/panel-usuario.tsx                                          | 431 +++++++++++++++++++-
+ .../assets/comprobantes/firma-alfredo-apomayta-1765554917593-12284475.png   | Bin 0 -> 41913 bytes
+ .../assets/comprobantes/firma-alfredo-apomayta-1765554967429-898775937.png  | Bin 0 -> 41913 bytes
+ .../assets/comprobantes/firma-alfredo-apomayta-1765556634402-371825771.png  | Bin 0 -> 41913 bytes
+ replit.md                                                                   |   4 +-
+ scripts/actualizar-estructura.sql                                           |  97 +++++
+ scripts/sistema-roles.sql                                                   | 355 +++++++++++++++++
+ server/routes-admin.ts                                                      |  11 +-
+ server/routes.ts                                                            | 523 +++++++++++++++++++++++--
+ server/storage.ts                                                           | 328 ++++++++++++++--
+ shared/schema.ts                                                            | 168 +++++---
+ 25 files changed, 5243 insertions(+), 314 deletions(-)
+ create mode 100644 GUIA_MIGRACION_DICIEMBRE_2025.md
+ create mode 100644 attached_assets/Pasted--3-TIPO-DE-ROLES-3-ROL-CATEGORIA-SUBC-1765524109067_1765524109068.txt
+ create mode 100644 attached_assets/Pasted--3-TIPO-DE-ROLES-3-ROL-CATEGORIA-SUBC-1765524672725_1765524672727.txt
+ create mode 100644 attached_assets/Pasted--3-TIPO-DE-ROLES-3-ROL-CATEGORIA-SUBC-1765524716719_1765524716722.txt
+ create mode 100644 attached_assets/Pasted-TIPO-DE-ROLES-3-ROL-CATEGORIA-SUBCATEGORIA-DESCRIPCION-_1765555605576.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765486955262.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765487028920.txt
+ create mode 100644 client/src/components/CambistaPanelUsuario.tsx
+ create mode 100644 public/assets/comprobantes/firma-alfredo-apomayta-1765554917593-12284475.png
+ create mode 100644 public/assets/comprobantes/firma-alfredo-apomayta-1765554967429-898775937.png
+ create mode 100644 public/assets/comprobantes/firma-alfredo-apomayta-1765556634402-371825771.png
+ create mode 100644 scripts/sistema-roles.sql
+root@srv1170282:/var/www/apo360.net#
