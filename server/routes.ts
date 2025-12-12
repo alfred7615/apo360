@@ -3122,6 +3122,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener historial de cambios del cambista actual
+  app.get('/api/monedas/historial-cambista', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const historial = await storage.getHistorialTasasCambista(userId);
+      res.json(historial);
+    } catch (error) {
+      console.error("Error al obtener historial cambista:", error);
+      res.status(500).json({ message: "Error al obtener historial" });
+    }
+  });
+
   // Crear/actualizar tasa de cambio local (cambista o super_admin)
   app.post('/api/monedas/tasas-locales', isAuthenticated, async (req: any, res) => {
     try {
@@ -3149,8 +3161,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Actualizar tasa de cambio local
+  // Actualizar tasa de cambio local (PATCH)
   app.patch('/api/monedas/tasas-locales/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const tasa = await storage.getTasaCambioLocal(id);
+      
+      if (!tasa) {
+        return res.status(404).json({ message: "Tasa no encontrada" });
+      }
+      
+      const roles = await storage.getUserRoles(userId);
+      const esSuperAdmin = roles.includes('super_admin');
+      
+      if (tasa.cambistaId !== userId && !esSuperAdmin) {
+        return res.status(403).json({ message: "No puedes editar esta tasa" });
+      }
+      
+      const actualizada = await storage.updateTasaCambioLocal(id, req.body);
+      res.json(actualizada);
+    } catch (error) {
+      console.error("Error al actualizar tasa local:", error);
+      res.status(500).json({ message: "Error al actualizar tasa local" });
+    }
+  });
+
+  // Actualizar tasa de cambio local (PUT)
+  app.put('/api/monedas/tasas-locales/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { id } = req.params;

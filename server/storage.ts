@@ -3074,6 +3074,13 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
+  async getHistorialTasasCambista(cambistaId: string): Promise<TasaCambioLocal[]> {
+    return await db.select().from(tasasCambioLocales)
+      .where(eq(tasasCambioLocales.cambistaId, cambistaId))
+      .orderBy(desc(tasasCambioLocales.updatedAt))
+      .limit(50);
+  }
+
   async getPromedioTasasLocales(monedaOrigenCodigo: string, monedaDestinoCodigo: string): Promise<{ promedioCompra: number; promedioVenta: number } | null> {
     const tasas = await db.select().from(tasasCambioLocales)
       .where(and(

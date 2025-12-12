@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Coins, TrendingUp, TrendingDown, DollarSign, Edit, RefreshCw, History, Users, Calculator, Settings } from "lucide-react";
+import { Coins, TrendingUp, TrendingDown, DollarSign, Edit, RefreshCw, History, Users, Calculator, Settings, Globe, MapPin } from "lucide-react";
 import { CambistasSection } from "@/components/admin/cambistas-section";
+import { CalculadoraCambio } from "@/components/CalculadoraCambio";
 import type { ConfiguracionMoneda, TasaCambioLocal } from "@shared/schema";
 
 export default function GestionMonedaScreen() {
@@ -113,48 +114,72 @@ export default function GestionMonedaScreen() {
         </div>
 
         <TabsContent value="calculadora" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Vista Previa de Calculadora</CardTitle>
-              <CardDescription>
-                Así se verá la calculadora para los usuarios. Accede desde /calculadora-cambio
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-muted/30 rounded-lg p-6">
-                <div className="max-w-lg mx-auto space-y-4">
-                  <div className="text-center">
-                    <DollarSign className="h-12 w-12 mx-auto text-primary mb-2" />
-                    <h3 className="text-xl font-bold">Calculadora de Cambio</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Los usuarios pueden convertir entre 5 monedas con tasas actualizadas
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CalculadoraCambio />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-blue-500" />
+                  Tasas de Referencia
+                </CardTitle>
+                <CardDescription>
+                  Comparación de tasas Internet vs Locales
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {monedas?.filter(m => !m.esPrincipal).map((moneda) => (
+                    <div 
+                      key={moneda.id} 
+                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
+                      data-testid={`item-comparacion-${moneda.codigo}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{moneda.banderaUrl || "💱"}</span>
+                        <div>
+                          <p className="font-medium">{moneda.codigo}</p>
+                          <p className="text-xs text-muted-foreground">{moneda.nombreCorto}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="text-center">
+                          <div className="flex items-center gap-1 text-blue-500">
+                            <Globe className="h-3 w-3" />
+                            <span className="text-xs">Internet</span>
+                          </div>
+                          <p className="font-semibold">
+                            {moneda.tasaPromedioInternet 
+                              ? parseFloat(moneda.tasaPromedioInternet).toFixed(4) 
+                              : "N/A"}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <div className="flex items-center gap-1 text-green-500">
+                            <MapPin className="h-3 w-3" />
+                            <span className="text-xs">Local</span>
+                          </div>
+                          <p className="font-semibold text-green-600">
+                            {moneda.tasaPromedioLocal 
+                              ? parseFloat(moneda.tasaPromedioLocal).toFixed(4) 
+                              : "Sin datos"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="pt-4 border-t">
+                    <p className="text-xs text-muted-foreground text-center">
+                      Las tasas locales se calculan como promedio de los cambistas activos.
+                      <br />
+                      Actualización automática cada hora.
                     </p>
                   </div>
-                  
-                  <div className="grid grid-cols-5 gap-2 justify-center">
-                    {monedas?.slice(0, 5).map((m) => (
-                      <div 
-                        key={m.codigo} 
-                        className="text-center p-2 bg-background rounded-lg"
-                      >
-                        <span className="text-lg">{m.banderaUrl || "💱"}</span>
-                        <p className="text-xs font-medium">{m.codigo}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <Button 
-                    className="w-full" 
-                    onClick={() => window.open("/calculadora-cambio", "_blank")}
-                    data-testid="button-abrir-calculadora"
-                  >
-                    <Calculator className="h-4 w-4 mr-2" />
-                    Abrir Calculadora
-                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="cambistas" className="mt-6">

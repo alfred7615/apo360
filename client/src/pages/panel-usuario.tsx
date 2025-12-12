@@ -18,13 +18,14 @@ import {
   Plus, Edit, Loader2, Crown, CheckCircle,
   User, Camera, AlertCircle, Wallet, DollarSign,
   Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn, Copy, Building, Phone,
-  History, TrendingUp, TrendingDown, Megaphone, UtensilsCrossed, Wrench, FileText
+  History, TrendingUp, TrendingDown, Megaphone, UtensilsCrossed, Wrench, FileText, Coins
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Link, useSearch } from "wouter";
 import BloqueoServicio, { useVerificarPerfil } from "@/components/BloqueoServicio";
 import LocalComercialPanel from "@/components/LocalComercialPanel";
+import CambistaPanelUsuario from "@/components/CambistaPanelUsuario";
 
 interface RolUsuario {
   id: string;
@@ -187,6 +188,8 @@ export default function PanelUsuarioPage() {
   const tieneRolLocal = misRoles.some(r => 
     r.rol === "local" || r.rol === "local_comercial" || user?.rol === "local"
   );
+
+  const tieneRolCambista = misRoles.some(r => r.rol === "cambista") || user?.rol === "cambista";
 
   const contratarMembresiaMutation = useMutation({
     mutationFn: (planId: string) => apiRequest("POST", "/api/membresias/contratar", { planId }),
@@ -449,6 +452,17 @@ export default function PanelUsuarioPage() {
               >
                 <Store className="h-4 w-4" />
                 <span className="text-xs sm:text-sm">Mi Negocio</span>
+              </Button>
+            )}
+            {tieneRolCambista && (
+              <Button
+                variant={activeTab === "cambista" ? "default" : "outline"}
+                onClick={() => setActiveTab("cambista")}
+                className="flex items-center justify-center gap-2 h-auto py-3 col-span-2 sm:col-span-1"
+                data-testid="tab-cambista"
+              >
+                <Coins className="h-4 w-4" />
+                <span className="text-xs sm:text-sm">Cambista</span>
               </Button>
             )}
           </div>
@@ -1291,6 +1305,12 @@ export default function PanelUsuarioPage() {
         {tieneRolLocal && (
           <TabsContent value="negocio" className="mt-0">
             <LocalComercialPanel />
+          </TabsContent>
+        )}
+
+        {tieneRolCambista && (
+          <TabsContent value="cambista" className="mt-0">
+            <CambistaPanelUsuario />
           </TabsContent>
         )}
       </Tabs>

@@ -6,6 +6,100 @@
 -- ============================================================
 
 -- ============================================================
+-- CREAR TABLAS NUEVAS SI NO EXISTEN
+-- ============================================================
+
+-- CATEGORÍAS DE ROLES (para locales comerciales, policía, etc.)
+CREATE TABLE IF NOT EXISTS categorias_rol (
+  id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+  rol_base VARCHAR(50) NOT NULL,
+  nombre VARCHAR(100) NOT NULL,
+  descripcion TEXT,
+  icono VARCHAR(50),
+  color VARCHAR(20),
+  orden INTEGER DEFAULT 0,
+  activo BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- SUBCATEGORÍAS DE ROLES
+CREATE TABLE IF NOT EXISTS subcategorias_rol (
+  id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+  categoria_id VARCHAR(255) NOT NULL REFERENCES categorias_rol(id) ON DELETE CASCADE,
+  nombre VARCHAR(100) NOT NULL,
+  descripcion TEXT,
+  icono VARCHAR(50),
+  color VARCHAR(20),
+  orden INTEGER DEFAULT 0,
+  activo BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- HISTORIAL DE CAMBIOS DE MONEDA (internet + locales)
+CREATE TABLE IF NOT EXISTS historial_tasas_cambio (
+  id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+  fuente VARCHAR(20) NOT NULL DEFAULT 'internet', -- 'internet' o 'local'
+  cambista_id VARCHAR(255) REFERENCES users(id),
+  moneda_origen_codigo VARCHAR(10) NOT NULL,
+  moneda_destino_codigo VARCHAR(10) NOT NULL,
+  tasa_compra DECIMAL(12,6),
+  tasa_venta DECIMAL(12,6),
+  tasa_promedio DECIMAL(12,6),
+  notas TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- CONFIGURACIÓN DE MONEDAS
+CREATE TABLE IF NOT EXISTS configuracion_monedas (
+  id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+  codigo VARCHAR(10) NOT NULL UNIQUE,
+  nombre VARCHAR(100) NOT NULL,
+  nombre_corto VARCHAR(50) NOT NULL,
+  simbolo VARCHAR(10) NOT NULL,
+  bandera_url VARCHAR(255),
+  tasa_promedio_internet DECIMAL(12,6),
+  tasa_promedio_local DECIMAL(12,6),
+  es_principal BOOLEAN DEFAULT false,
+  orden INTEGER DEFAULT 0,
+  activo BOOLEAN DEFAULT true,
+  ultima_actualizacion TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- TASAS DE CAMBIO LOCALES (Cambistas)
+CREATE TABLE IF NOT EXISTS tasas_cambio_locales (
+  id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+  cambista_id VARCHAR(255) NOT NULL REFERENCES users(id),
+  moneda_origen_codigo VARCHAR(10) NOT NULL,
+  moneda_destino_codigo VARCHAR(10) NOT NULL,
+  tasa_compra DECIMAL(12,6) NOT NULL,
+  tasa_venta DECIMAL(12,6) NOT NULL,
+  ubicacion VARCHAR(200),
+  gps_latitud REAL,
+  gps_longitud REAL,
+  horario_atencion VARCHAR(200),
+  telefono VARCHAR(20),
+  whatsapp VARCHAR(20),
+  activo BOOLEAN DEFAULT true,
+  verificado BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Insertar monedas por defecto si no existen
+INSERT INTO configuracion_monedas (codigo, nombre, nombre_corto, simbolo, bandera_url, tasa_promedio_internet, es_principal, orden, activo)
+VALUES 
+  ('PEN', 'Sol Peruano', 'Sol', 'S/', '🇵🇪', 1.0000, true, 1, true),
+  ('USD', 'Dólar Estadounidense', 'Dólar', '$', '🇺🇸', 3.7500, false, 2, true),
+  ('CLP', 'Peso Chileno', 'Peso CLP', '$', '🇨🇱', 0.0042, false, 3, true),
+  ('ARS', 'Peso Argentino', 'Peso ARS', '$', '🇦🇷', 0.0037, false, 4, true),
+  ('BOB', 'Boliviano', 'Boliviano', 'Bs', '🇧🇴', 0.5400, false, 5, true)
+ON CONFLICT (codigo) DO NOTHING;
+
+-- ============================================================
 -- TABLA: users
 -- ============================================================
 ALTER TABLE users ADD COLUMN IF NOT EXISTS telefono VARCHAR(20);
