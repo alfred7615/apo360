@@ -404,6 +404,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener usuarios básicos para selección
+  app.get('/api/usuarios-basico', isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const usuarios = await storage.getUsuariosBasico();
+      res.json(usuarios);
+    } catch (error: any) {
+      console.error("Error al obtener usuarios básicos:", error);
+      res.status(500).json({ message: error.message || "Error al obtener usuarios" });
+    }
+  });
+
+  // Obtener usuarios asignados a una subcategoría
+  app.get('/api/subcategorias-rol/:id/usuarios', isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const usuarios = await storage.getUsuariosSubcategoria(id);
+      res.json(usuarios);
+    } catch (error: any) {
+      console.error("Error al obtener usuarios de subcategoría:", error);
+      res.status(500).json({ message: error.message || "Error al obtener usuarios" });
+    }
+  });
+
+  // Asignar usuarios a una subcategoría
+  app.post('/api/subcategorias-rol/:id/usuarios', isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { usuarioIds } = req.body;
+      
+      if (!Array.isArray(usuarioIds) || usuarioIds.length === 0) {
+        return res.status(400).json({ message: "Debe proporcionar al menos un usuario" });
+      }
+      
+      // Obtener información de la subcategoría y categoría
+      const subcategoria = await storage.getSubcategoriaRol(id);
+      if (!subcategoria) {
+        return res.status(404).json({ message: "Subcategoría no encontrada" });
+      }
+      
+      const categoria = await storage.getCategoriaRol(subcategoria.categoriaRolId);
+      if (!categoria) {
+        return res.status(404).json({ message: "Categoría no encontrada" });
+      }
+      
+      // Asignar usuarios a la subcategoría
+      await storage.asignarUsuariosSubcategoria(id, usuarioIds, categoria.rol, categoria.id);
+      
+      // Enviar notificaciones a los usuarios asignados
+      for (const usuarioId of usuarioIds) {
+        try {
+          await storage.crearNotificacionChat({
+            usuarioId,
+            tipo: 'rol_asignado',
+            mensaje: `Has sido asignado al rol ${categoria.rol} - ${categoria.nombre} - ${subcategoria.nombre}`,
+            leido: false,
+          });
+        } catch (notifError) {
+          console.error("Error al enviar notificación:", notifError);
+        }
+      }
+      
+      res.json({ message: "Usuarios asignados correctamente", cantidad: usuarioIds.length });
+    } catch (error: any) {
+      console.error("Error al asignar usuarios:", error);
+      res.status(500).json({ message: error.message || "Error al asignar usuarios" });
+    }
+  });
+
   // ============================================================
   // DATOS DE NEGOCIO (Local Comercial)
   // ============================================================

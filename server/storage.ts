@@ -3464,6 +3464,78 @@ export class DatabaseStorage implements IStorage {
     await db.delete(subcategoriasRoles).where(eq(subcategoriasRoles.id, id));
   }
 
+  // Obtener usuarios básicos para selección
+  async getUsuariosBasico(): Promise<{ id: string; nombre: string; email: string; profileImageUrl?: string }[]> {
+    const result = await db.select({
+      id: usuarios.id,
+      firstName: usuarios.firstName,
+      lastName: usuarios.lastName,
+      email: usuarios.email,
+      profileImageUrl: usuarios.profileImageUrl,
+    }).from(usuarios).orderBy(usuarios.firstName).limit(100);
+    
+    return result.map(u => ({
+      id: u.id,
+      nombre: [u.firstName, u.lastName].filter(Boolean).join(' ') || 'Usuario',
+      email: u.email || '',
+      profileImageUrl: u.profileImageUrl || undefined,
+    }));
+  }
+
+  // Obtener usuarios asignados a una subcategoría
+  async getUsuariosSubcategoria(subcategoriaRolId: string): Promise<{ id: string; nombre: string; email: string; profileImageUrl?: string }[]> {
+    const result = await db.select({
+      id: usuarios.id,
+      firstName: usuarios.firstName,
+      lastName: usuarios.lastName,
+      email: usuarios.email,
+      profileImageUrl: usuarios.profileImageUrl,
+    })
+    .from(usuarios)
+    .innerJoin(usuarioRoles, eq(usuarios.id, usuarioRoles.usuarioId))
+    .where(eq(usuarioRoles.subcategoriaRolId, subcategoriaRolId))
+    .orderBy(usuarios.firstName);
+    
+    return result.map(u => ({
+      id: u.id,
+      nombre: [u.firstName, u.lastName].filter(Boolean).join(' ') || 'Usuario',
+      email: u.email || '',
+      profileImageUrl: u.profileImageUrl || undefined,
+    }));
+  }
+
+  // Asignar usuarios a una subcategoría
+  async asignarUsuariosSubcategoria(subcategoriaRolId: string, usuarioIds: string[], rol: string, categoriaRolId: string): Promise<void> {
+    for (const usuarioId of usuarioIds) {
+      // Verificar si ya está asignado
+      const existente = await db.select().from(usuarioRoles)
+        .where(and(
+          eq(usuarioRoles.usuarioId, usuarioId),
+          eq(usuarioRoles.subcategoriaRolId, subcategoriaRolId)
+        ));
+      
+      if (existente.length === 0) {
+        await db.insert(usuarioRoles).values({
+          usuarioId,
+          rol,
+          categoriaRolId,
+          subcategoriaRolId,
+          estado: 'activo',
+        });
+      }
+    }
+  }
+
+  // Crear notificación de chat
+  async crearNotificacionChat(data: { usuarioId: string; tipo: string; mensaje: string; leido: boolean }): Promise<void> {
+    await db.insert(notificacionesChat).values({
+      usuarioId: data.usuarioId,
+      tipo: data.tipo,
+      mensaje: data.mensaje,
+      leido: data.leido,
+    });
+  }
+
   // ============================================================
   // SOLICITUDES DE ROLES
   // ============================================================
