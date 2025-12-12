@@ -18,7 +18,7 @@ import {
   Plus, Edit, Loader2, Crown, CheckCircle,
   User, Camera, AlertCircle, Wallet, DollarSign,
   Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn, Copy, Building, Phone,
-  History, TrendingUp, TrendingDown, Megaphone, UtensilsCrossed, Wrench, FileText, Coins
+  History, TrendingUp, TrendingDown, Megaphone, UtensilsCrossed, Wrench, FileText, Coins, ThumbsUp
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -554,13 +554,23 @@ export default function PanelUsuarioPage() {
                                 <img 
                                   src={fav.detalle.imagenUrl} 
                                   alt={fav.detalle.titulo} 
-                                  className="w-full h-24 object-cover rounded mb-3" 
+                                  className="w-full h-32 object-cover rounded mb-3" 
                                 />
                               )}
                               <h3 className="font-medium truncate">{fav.detalle.titulo}</h3>
-                              <Badge variant="outline" className="mt-1">
-                                {fav.detalle.tipo || "publicidad"}
-                              </Badge>
+                              <div className="flex items-center justify-between mt-2">
+                                <Badge variant="outline">
+                                  {fav.detalle.tipo || "publicidad"}
+                                </Badge>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <ThumbsUp className="h-3 w-3" /> {fav.detalle.totalLikes || 0}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Heart className="h-3 w-3" /> {fav.detalle.totalFavoritos || 0}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
                           )}
 

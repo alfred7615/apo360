@@ -2451,6 +2451,60 @@ export class DatabaseStorage implements IStorage {
   // FAVORITOS DEL USUARIO
   // ============================================================
   async getFavoritosUsuario(usuarioId: string, tipo?: string): Promise<any[]> {
+    const todosLosFavoritos: any[] = [];
+    
+    // 1. Obtener favoritos del sistema viejo (favoritos_usuario - para publicidad)
+    if (!tipo || tipo === 'publicidad') {
+      const favoritosPublicidadResult = await db.execute(sql`
+        SELECT 
+          f.id,
+          f.usuario_id as "usuarioId",
+          f.publicidad_id as "contenidoId",
+          'publicidad' as "tipoContenido",
+          'favorito' as "tipoInteraccion",
+          f.created_at as "createdAt",
+          p.id as pub_id,
+          p.titulo,
+          p.descripcion,
+          p.imagen_url as "imagenUrl",
+          p.tipo,
+          p.activo,
+          COALESCE(c.likes, 0) as "totalLikes",
+          COALESCE(c.favoritos, 0) as "totalFavoritos",
+          COALESCE(c.compartidos, 0) as "totalCompartidos",
+          COALESCE(c.comentarios, 0) as "totalComentarios"
+        FROM favoritos_usuario f
+        JOIN publicidad p ON f.publicidad_id = p.id
+        LEFT JOIN contadores_publicidad c ON p.id = c.publicidad_id
+        WHERE f.usuario_id = ${usuarioId}
+        ORDER BY f.created_at DESC
+      `);
+      
+      for (const row of favoritosPublicidadResult.rows as any[]) {
+        todosLosFavoritos.push({
+          id: row.id,
+          usuarioId: row.usuarioId,
+          contenidoId: row.contenidoId,
+          tipoContenido: 'publicidad',
+          tipoInteraccion: 'favorito',
+          createdAt: row.createdAt,
+          detalle: {
+            id: row.pub_id,
+            titulo: row.titulo,
+            descripcion: row.descripcion,
+            imagenUrl: row.imagenUrl,
+            tipo: row.tipo,
+            activo: row.activo,
+            totalLikes: parseInt(row.totalLikes) || 0,
+            totalFavoritos: parseInt(row.totalFavoritos) || 0,
+            totalCompartidos: parseInt(row.totalCompartidos) || 0,
+            totalComentarios: parseInt(row.totalComentarios) || 0,
+          }
+        });
+      }
+    }
+    
+    // 2. Obtener favoritos del sistema nuevo (interacciones_sociales)
     let query = db.select().from(interaccionesSociales)
       .where(
         and(
@@ -2459,14 +2513,14 @@ export class DatabaseStorage implements IStorage {
         )
       );
     
-    if (tipo) {
+    if (tipo && tipo !== 'publicidad') {
       query = query.where(eq(interaccionesSociales.tipoContenido, tipo)) as any;
     }
     
-    const favoritos = await query.orderBy(desc(interaccionesSociales.createdAt));
+    const favoritosNuevos = await query.orderBy(desc(interaccionesSociales.createdAt));
     
-    const favoritosConDetalles = await Promise.all(
-      favoritos.map(async (fav) => {
+    const favoritosNuevosConDetalles = await Promise.all(
+      favoritosNuevos.map(async (fav) => {
         let detalle = null;
         if (fav.tipoContenido === 'producto_servicio') {
           detalle = await this.getProductoServicio(fav.contenidoId);
@@ -2474,14 +2528,21 @@ export class DatabaseStorage implements IStorage {
           detalle = await this.getLogoServicio(fav.contenidoId);
         } else if (fav.tipoContenido === 'popup') {
           detalle = await this.getPopup(fav.contenidoId);
-        } else if (fav.tipoContenido === 'publicidad') {
-          detalle = await this.getPublicidad(fav.contenidoId);
         }
         return { ...fav, detalle };
       })
     );
     
-    return favoritosConDetalles;
+    todosLosFavoritos.push(...favoritosNuevosConDetalles);
+    
+    // Ordenar por fecha de creación descendente
+    todosLosFavoritos.sort((a, b) => {
+      const fechaA = new Date(a.createdAt).getTime();
+      const fechaB = new Date(b.createdAt).getTime();
+      return fechaB - fechaA;
+    });
+    
+    return todosLosFavoritos;
   }
 
   // ============================================================
