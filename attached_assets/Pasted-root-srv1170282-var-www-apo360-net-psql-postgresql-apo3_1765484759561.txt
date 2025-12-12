@@ -1,0 +1,145 @@
+root@srv1170282:/var/www/apo360.net# psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable"
+psql (16.11 (Ubuntu 16.11-0ubuntu0.24.04.1))
+Type "help" for help.
+
+apo360_prod=> CREATE TABLE IF NOT EXISTS metodos_pago (
+apo360_prod(>   id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+apo360_prod(>   usuario_id VARCHAR(255) REFERENCES usuarios(id),
+apo360_prod(>   tipo VARCHAR(50) NOT NULL,
+apo360_prod(>   nombre VARCHAR(100) NOT NULL,
+apo360_prod(>   numero_cuenta VARCHAR(100),
+apo360_prod(>   cci VARCHAR(30),
+apo360_prod(>   email VARCHAR(255),
+apo360_prod(>   telefono VARCHAR(20),
+apo360_prod(>   titular VARCHAR(200),
+apo360_prod(>   moneda VARCHAR(10) DEFAULT 'PEN',
+apo360_prod(>   es_plataforma BOOLEAN DEFAULT false,
+apo360_prod(>   activo BOOLEAN DEFAULT true,
+apo360_prod(>   verificado BOOLEAN DEFAULT false,
+apo360_prod(>   orden INTEGER DEFAULT 0,
+apo360_prod(>   notas TEXT,
+apo360_prod(>   created_at TIMESTAMP DEFAULT NOW(),
+apo360_prod(>   updated_at TIMESTAMP DEFAULT NOW()
+apo360_prod(> );
+NOTICE:  relation "metodos_pago" already exists, skipping
+CREATE TABLE
+apo360_prod=> CREATE TABLE IF NOT EXISTS solicitudes_saldo (
+apo360_prod(>   id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+apo360_prod(>   usuario_id VARCHAR(255) NOT NULL REFERENCES usuarios(id),
+apo360_prod(>   tipo VARCHAR(20) NOT NULL,
+apo360_prod(>   monto DECIMAL(10,2) NOT NULL,
+apo360_prod(>   moneda VARCHAR(10) DEFAULT 'PEN',
+apo360_prod(>   metodo_pago_id VARCHAR(255) REFERENCES metodos_pago(id),
+apo360_prod(>   metodo_pago_destino VARCHAR(255),
+apo360_prod(>   comprobante VARCHAR(255),
+apo360_prod(>   numero_operacion VARCHAR(100),
+apo360_prod(>   estado VARCHAR(20) DEFAULT 'pendiente',
+apo360_prod(>   motivo_rechazo TEXT,
+apo360_prod(>   aprobado_por VARCHAR(255) REFERENCES usuarios(id),
+apo360_prod(>   fecha_aprobacion TIMESTAMP,
+apo360_prod(>   notas TEXT,
+apo360_prod(>   created_at TIMESTAMP DEFAULT NOW(),
+apo360_prod(>   updated_at TIMESTAMP DEFAULT NOW()
+apo360_prod(> );
+NOTICE:  relation "solicitudes_saldo" already exists, skipping
+CREATE TABLE
+apo360_prod=> CREATE TABLE IF NOT EXISTS transacciones_saldo (
+apo360_prod(>   id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+apo360_prod(>   usuario_id VARCHAR(255) NOT NULL REFERENCES usuarios(id),
+apo360_prod(>   tipo VARCHAR(50) NOT NULL,
+apo360_prod(>   concepto VARCHAR(255) NOT NULL,
+apo360_prod(>   monto DECIMAL(10,2) NOT NULL,
+apo360_prod(>   saldo_anterior DECIMAL(10,2) DEFAULT 0,
+apo360_prod(>   saldo_nuevo DECIMAL(10,2) DEFAULT 0,
+apo360_prod(>   referencia_id VARCHAR(255),
+apo360_prod(>   referencia_tipo VARCHAR(50),
+apo360_prod(>   estado VARCHAR(20) DEFAULT 'completado',
+apo360_prod(>   notas TEXT,
+apo360_prod(>   created_at TIMESTAMP DEFAULT NOW()
+apo360_prod(> );
+NOTICE:  relation "transacciones_saldo" already exists, skipping
+CREATE TABLE
+apo360_prod=> CREATE TABLE IF NOT EXISTS saldos_usuarios (
+apo360_prod(>   id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+apo360_prod(>   usuario_id VARCHAR(255) NOT NULL REFERENCES usuarios(id) UNIQUE,
+apo360_prod(>   saldo DECIMAL(12,2) DEFAULT 0 NOT NULL,
+apo360_prod(>   moneda_preferida VARCHAR(10) DEFAULT 'PEN',
+apo360_prod(>   total_ingresos DECIMAL(12,2) DEFAULT 0,
+apo360_prod(>   total_egresos DECIMAL(12,2) DEFAULT 0,
+apo360_prod(>   ultima_actualizacion TIMESTAMP DEFAULT NOW(),
+apo360_prod(>   created_at TIMESTAMP DEFAULT NOW()
+apo360_prod(> );
+NOTICE:  relation "saldos_usuarios" already exists, skipping
+CREATE TABLE
+apo360_prod=> \dt
+
+[1]+  Stopped                 psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable"
+[1]+  Stopped                 psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable"
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# \q
+restart apo360Command 'q' not found, but can be installed with:
+snap install q                       # version 1.6.3-1, or
+apt  install python3-q-text-as-data  # version 3.1.6-3
+See 'snap info q' for additional versions.
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 11   │ online    │ 0%       │ 41.5mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 logs apo360 --lines 20
+[TAILING] Tailing last 20 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/error-0.log last 20 lines:
+0|apo360   |     at async DatabaseStorage.getUserRoles (file:///var/www/apo360.net/dist/index.js:2040:33)
+0|apo360   |     at async file:///var/www/apo360.net/dist/index.js:9323:25 {
+0|apo360   |   length: 116,
+0|apo360   |   severity: 'ERROR',
+0|apo360   |   code: '42703',
+0|apo360   |   detail: undefined,
+0|apo360   |   hint: undefined,
+0|apo360   |   position: '35',
+0|apo360   |   internalPosition: undefined,
+0|apo360   |   internalQuery: undefined,
+0|apo360   |   where: undefined,
+0|apo360   |   schema: undefined,
+0|apo360   |   table: undefined,
+0|apo360   |   column: undefined,
+0|apo360   |   dataType: undefined,
+0|apo360   |   constraint: undefined,
+0|apo360   |   file: 'parse_relation.c',
+0|apo360   |   line: '3722',
+0|apo360   |   routine: 'errorMissingColumn'
+0|apo360   | }
+
+/var/www/apo360.net/logs/output-0.log last 20 lines:
+0|apo360   | 2025-12-12T03:39:37: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:39:38: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:39:42: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:39:48: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:39:48: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:39:53: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:39:56: 🗄️ Usando PostgreSQL local (producción)
+0|apo360   | 2025-12-12T03:39:56: 🔐 Modo de autenticación solicitado: basic
+0|apo360   | 2025-12-12T03:39:56: 🔐 Configurando autenticación básica (email/contraseña)...
+0|apo360   | 2025-12-12T03:39:56: ✅ Autenticación básica configurada
+0|apo360   | 2025-12-12T03:39:56:    📧 Login: POST /api/auth/login
+0|apo360   | 2025-12-12T03:39:56:    📝 Registro: POST /api/auth/register
+0|apo360   | 2025-12-12T03:39:56: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-12T03:39:56: 3:39:56 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-12T03:39:57: 3:39:57 AM [express] ✅ Tabla miembros_grupo ya está sincronizada
+0|apo360   | 2025-12-12T03:39:57: 3:39:57 AM [express] serving on port 5000
+0|apo360   | 2025-12-12T03:39:57: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:39:58: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:40:04: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T03:40:08: ❌ WebSocket rechazado: Usuario no autenticado
+
+0|apo360  | 2025-12-12T03:40:09: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360  | 2025-12-12T03:40:14: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360  | 2025-12-12T03:40:15: ❌ WebSocket rechazado: Usuario no autenticado
