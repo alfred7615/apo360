@@ -398,9 +398,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============================================================
   
   // Obtener datos de negocio del usuario actual
-  app.get('/api/mi-negocio', isAuthenticated, async (req, res) => {
+  app.get('/api/mi-negocio', isAuthenticated, async (req: any, res) => {
     try {
-      const usuarioId = req.user!.id;
+      const usuarioId = req.user.claims.sub;
       const negocio = await storage.getDatosNegocio(usuarioId);
       res.json(negocio || null);
     } catch (error: any) {
@@ -410,9 +410,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Crear/actualizar datos de negocio
-  app.post('/api/mi-negocio', isAuthenticated, async (req, res) => {
+  app.post('/api/mi-negocio', isAuthenticated, async (req: any, res) => {
     try {
-      const usuarioId = req.user!.id;
+      const usuarioId = req.user.claims.sub;
       const existente = await storage.getDatosNegocio(usuarioId);
       
       if (existente) {
@@ -447,9 +447,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============================================================
   
   // Obtener catálogo del usuario actual
-  app.get('/api/mi-catalogo', isAuthenticated, async (req, res) => {
+  app.get('/api/mi-catalogo', isAuthenticated, async (req: any, res) => {
     try {
-      const usuarioId = req.user!.id;
+      const usuarioId = req.user.claims.sub;
       const catalogo = await storage.getCatalogoNegocioPorUsuario(usuarioId);
       res.json(catalogo);
     } catch (error: any) {
@@ -459,9 +459,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agregar item al catálogo
-  app.post('/api/mi-catalogo', isAuthenticated, async (req, res) => {
+  app.post('/api/mi-catalogo', isAuthenticated, async (req: any, res) => {
     try {
-      const usuarioId = req.user!.id;
+      const usuarioId = req.user.claims.sub;
       const negocio = await storage.getDatosNegocio(usuarioId);
       
       if (!negocio) {
@@ -509,9 +509,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============================================================
   
   // Obtener roles y módulos del usuario actual
-  app.get('/api/mis-roles', isAuthenticated, async (req, res) => {
+  app.get('/api/mis-roles', isAuthenticated, async (req: any, res) => {
     try {
-      const usuarioId = req.user!.id;
+      const usuarioId = req.user.claims.sub;
       const roles = await storage.getRolesUsuario(usuarioId);
       
       // Enriquecer con información de categorías y subcategorías
@@ -541,12 +541,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Asignar rol con categoría a usuario (admin)
-  app.post('/api/usuarios/:id/roles', isAuthenticated, requireSuperAdmin, async (req, res) => {
+  app.post('/api/usuarios/:id/roles', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { rol, categoriaRolId, subcategoriaRolId, notas } = req.body;
       
-      const adminId = req.user!.id;
+      const adminId = req.user.claims.sub;
       const nuevoRol = await storage.asignarRolUsuario({
         usuarioId: id,
         rol,
@@ -630,9 +630,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mis solicitudes de rol
-  app.get('/api/mis-solicitudes-roles', isAuthenticated, async (req, res) => {
+  app.get('/api/mis-solicitudes-roles', isAuthenticated, async (req: any, res) => {
     try {
-      const usuarioId = req.user!.id;
+      const usuarioId = req.user.claims.sub;
       const solicitudes = await storage.getSolicitudesRolesUsuario(usuarioId);
       res.json(solicitudes);
     } catch (error: any) {
@@ -642,9 +642,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Crear solicitud de rol (usuario)
-  app.post('/api/solicitudes-roles', isAuthenticated, async (req, res) => {
+  app.post('/api/solicitudes-roles', isAuthenticated, async (req: any, res) => {
     try {
-      const usuarioId = req.user!.id;
+      const usuarioId = req.user.claims.sub;
       const { rol, categoriaRolId, subcategoriaRolId, comentarios } = req.body;
       
       if (!rol) {
@@ -667,10 +667,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Aprobar solicitud de rol (admin)
-  app.post('/api/solicitudes-roles/:id/aprobar', isAuthenticated, requireSuperAdmin, async (req, res) => {
+  app.post('/api/solicitudes-roles/:id/aprobar', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const adminId = req.user!.id;
+      const adminId = req.user.claims.sub;
       
       // Obtener la solicitud
       const solicitud = await storage.getSolicitudRol(id);
@@ -703,10 +703,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rechazar solicitud de rol (admin)
-  app.post('/api/solicitudes-roles/:id/rechazar', isAuthenticated, requireSuperAdmin, async (req, res) => {
+  app.post('/api/solicitudes-roles/:id/rechazar', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const adminId = req.user!.id;
+      const adminId = req.user.claims.sub;
       const { motivoRechazo } = req.body;
       
       const solicitud = await storage.getSolicitudRol(id);
