@@ -43,7 +43,7 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 - **User Locations (Lugares)**: Users can save multiple GPS locations for services.
 - **User Panel (Panel de Usuario)**: Consolidated dashboard with tabs for Favorites, Marketplace (Mi Tienda Online), and Conductor. Access gated by profile verification.
 - **Profile Verification System**: Backend endpoint validates user profile completeness across 5 areas (perfilBasico, chat, taxiPasajero, conductor, vendedor) with a blocking component for restricted features.
-- **Currency Exchange Calculator System**: Complete system with 5 currencies (PEN, USD, CLP, ARS, BOB), local exchange rates from "cambistas", a responsive calculator (modal and dedicated page), and an admin panel section for management.
+- **Currency Exchange Calculator System**: Complete system with 5 currencies (PEN, USD, CLP, ARS, BOB), local exchange rates from "cambistas", a responsive calculator (modal and dedicated page), and an admin panel section for management. Includes automatic history tracking: every time a cambista creates or updates exchange rates, the change is recorded in `historial_tasas_cambio` table with previous/new values, action type, and timestamp.
 
 ### System Design Choices
 - **Modular Project Structure**: Clear separation between `client`, `server`, and `shared`.
