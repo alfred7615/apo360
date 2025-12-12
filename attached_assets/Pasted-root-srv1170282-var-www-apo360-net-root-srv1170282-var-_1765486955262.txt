@@ -1,0 +1,758 @@
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# cd /var/www/apo360.net
+root@srv1170282:/var/www/apo360.net# git pull origin main
+remote: Enumerating objects: 19, done.
+remote: Counting objects: 100% (19/19), done.
+remote: Compressing objects: 100% (5/5), done.
+remote: Total 16 (delta 11), reused 16 (delta 11), pack-reused 0 (from 0)
+Unpacking objects: 100% (16/16), 11.11 KiB | 599.00 KiB/s, done.
+From https://github.com/alfred7615/apo360
+ * branch            main       -> FETCH_HEAD
+   d62420b..cf0407a  main       -> origin/main
+Updating d62420b..cf0407a
+Fast-forward
+ attached_assets/Pasted--Table-public-users-Column-Type--1765486537429_1765486537430.txt          |  43 +++++++
+ attached_assets/Pasted-Indexes-users-pkey-PRIMARY-KEY-btree-id-Referenced-by-T_1765486583501.txt |  43 +++++++
+ attached_assets/Pasted-gps-latitud-real-gps-l-1765486564440_1765486564441.txt                    |  44 +++++++
+ attached_assets/Pasted-oot-srv1170282-var-www-apo360-net-root-srv1170282-var-w_1765486336427.txt | 166 +++++++++++++++++++++++++
+ attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765486169317.txt | 172 ++++++++++++++++++++++++++
+ scripts/actualizar-estructura.sql                                                                | 414 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 882 insertions(+)
+ create mode 100644 attached_assets/Pasted--Table-public-users-Column-Type--1765486537429_1765486537430.txt
+ create mode 100644 attached_assets/Pasted-Indexes-users-pkey-PRIMARY-KEY-btree-id-Referenced-by-T_1765486583501.txt
+ create mode 100644 attached_assets/Pasted-gps-latitud-real-gps-l-1765486564440_1765486564441.txt
+ create mode 100644 attached_assets/Pasted-oot-srv1170282-var-www-apo360-net-root-srv1170282-var-w_1765486336427.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765486169317.txt
+ create mode 100644 scripts/actualizar-estructura.sql
+root@srv1170282:/var/www/apo360.net# psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable" -f scripts/actualizar-estructura.sql
+psql:scripts/actualizar-estructura.sql:11: NOTICE:  column "telefono" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:12: NOTICE:  column "imei_dispositivo" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:13: NOTICE:  column "first_name" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:14: NOTICE:  column "last_name" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:15: NOTICE:  column "profile_image_url" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:16: NOTICE:  column "rol" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:17: NOTICE:  column "estado" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:18: NOTICE:  column "latitud" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:19: NOTICE:  column "longitud" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:20: NOTICE:  column "en_linea" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:21: NOTICE:  column "ultima_conexion" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:22: NOTICE:  column "modo_taxi" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:23: NOTICE:  column "vehiculo_modelo" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:24: NOTICE:  column "vehiculo_placa" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:25: NOTICE:  column "disponible_taxi" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:26: NOTICE:  column "nombre_local" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:27: NOTICE:  column "categoria_local" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:28: NOTICE:  column "direccion_local" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:29: NOTICE:  column "logo_local" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:30: NOTICE:  column "descripcion_local" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:31: NOTICE:  column "created_at" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:32: NOTICE:  column "updated_at" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:33: NOTICE:  column "nivel_usuario" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:34: NOTICE:  column "alias" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:35: NOTICE:  column "dni" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:36: NOTICE:  column "dni_imagen_frente" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:37: NOTICE:  column "dni_imagen_posterior" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:38: NOTICE:  column "dni_emision" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:39: NOTICE:  column "dni_caducidad" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:40: NOTICE:  column "pais" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:41: NOTICE:  column "departamento" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:42: NOTICE:  column "distrito" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:43: NOTICE:  column "sector" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:44: NOTICE:  column "direccion" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:45: NOTICE:  column "manzana_lote" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:46: NOTICE:  column "avenida_calle" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:47: NOTICE:  column "gps_latitud" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:48: NOTICE:  column "gps_longitud" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:49: NOTICE:  column "ruc" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:50: NOTICE:  column "gps_local_latitud" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:51: NOTICE:  column "gps_local_longitud" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:52: NOTICE:  column "brevete_imagen_frente" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:53: NOTICE:  column "brevete_imagen_posterior" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:54: NOTICE:  column "brevete_emision" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:55: NOTICE:  column "brevete_caducidad" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:56: NOTICE:  column "soat_imagen_frente" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:57: NOTICE:  column "soat_imagen_posterior" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:58: NOTICE:  column "soat_emision" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:59: NOTICE:  column "soat_caducidad" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:60: NOTICE:  column "revision_tecnica_imagen_frente" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:61: NOTICE:  column "revision_tecnica_imagen_posterior" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:62: NOTICE:  column "revision_tecnica_emision" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:63: NOTICE:  column "revision_tecnica_caducidad" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:64: NOTICE:  column "credencial_conductor_imagen_frente" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:65: NOTICE:  column "credencial_conductor_imagen_posterior" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:66: NOTICE:  column "credencial_conductor_emision" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:67: NOTICE:  column "credencial_conductor_caducidad" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:68: NOTICE:  column "credencial_taxi_imagen_frente" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:69: NOTICE:  column "credencial_taxi_imagen_posterior" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:70: NOTICE:  column "credencial_taxi_emision" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:71: NOTICE:  column "credencial_taxi_caducidad" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:72: NOTICE:  column "tipo_vehiculo" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:73: NOTICE:  column "vehiculo_foto_frente" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:74: NOTICE:  column "vehiculo_foto_posterior" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:75: NOTICE:  column "vehiculo_foto_lateral_izq" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:76: NOTICE:  column "vehiculo_foto_lateral_der" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:77: NOTICE:  column "foto_domicilio" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:78: NOTICE:  column "password_hash" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:79: NOTICE:  column "motivo_suspension" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:80: NOTICE:  column "fecha_suspension" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:81: NOTICE:  column "motivo_bloqueo" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:82: NOTICE:  column "fecha_bloqueo" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:83: NOTICE:  column "local_foto_1" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:84: NOTICE:  column "local_foto_2" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:85: NOTICE:  column "local_foto_3" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:86: NOTICE:  column "local_foto_4" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:87: NOTICE:  column "local_video_1" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:88: NOTICE:  column "local_video_2" of relation "users" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:93: NOTICE:  column "usuario_id" of relation "usuario_roles" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:94: NOTICE:  column "rol" of relation "usuario_roles" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:95: NOTICE:  column "categoria_rol_id" of relation "usuario_roles" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:96: NOTICE:  column "subcategoria_rol_id" of relation "usuario_roles" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:97: NOTICE:  column "created_at" of relation "usuario_roles" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:102: NOTICE:  column "usuario_id" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:103: NOTICE:  column "nombre_negocio" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:104: NOTICE:  column "descripcion" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:105: NOTICE:  column "logo_url" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:107: NOTICE:  column "direccion" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:110: NOTICE:  column "telefono" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:111: NOTICE:  column "whatsapp" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:112: NOTICE:  column "email" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:114: NOTICE:  column "facebook" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:115: NOTICE:  column "instagram" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:116: NOTICE:  column "tiktok" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:122: NOTICE:  column "activo" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:124: NOTICE:  column "created_at" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:125: NOTICE:  column "updated_at" of relation "datos_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:130: NOTICE:  column "negocio_id" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:131: NOTICE:  column "usuario_id" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:132: NOTICE:  column "nombre" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:133: NOTICE:  column "descripcion" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:134: NOTICE:  column "precio" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:135: NOTICE:  column "precio_oferta" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:136: NOTICE:  column "imagen_url" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:137: NOTICE:  column "categoria" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:138: NOTICE:  column "disponible" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:139: NOTICE:  column "destacado" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:140: NOTICE:  column "orden" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:145: NOTICE:  column "created_at" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:146: NOTICE:  column "updated_at" of relation "catalogo_negocio" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:151: NOTICE:  column "nombre" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:152: NOTICE:  column "descripcion" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:153: NOTICE:  column "tipo" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:154: NOTICE:  column "avatar_url" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:155: NOTICE:  column "creador_id" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:156: NOTICE:  column "admin_grupo_id" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:157: NOTICE:  column "estado" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:158: NOTICE:  column "estrellas_minimas" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:159: NOTICE:  column "tipo_cobro" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:160: NOTICE:  column "tarifa_grupo" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:161: NOTICE:  column "tarifa_usuario" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:162: NOTICE:  column "es_emergencia" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:163: NOTICE:  column "total_miembros" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:164: NOTICE:  column "total_mensajes" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:165: NOTICE:  column "ultimo_mensaje_at" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:166: NOTICE:  column "motivo_suspension" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:167: NOTICE:  column "fecha_suspension" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:168: NOTICE:  column "created_at" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:169: NOTICE:  column "updated_at" of relation "grupos_chat" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:174: NOTICE:  column "grupo_id" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:175: NOTICE:  column "usuario_id" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:176: NOTICE:  column "rol" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:177: NOTICE:  column "estado" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:178: NOTICE:  column "nivel_estrellas" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:179: NOTICE:  column "pago_confirmado" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:180: NOTICE:  column "fecha_pago" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:181: NOTICE:  column "motivo_suspension" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:182: NOTICE:  column "fecha_suspension" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:183: NOTICE:  column "silenciado" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:184: NOTICE:  column "notificaciones" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:185: NOTICE:  column "mensajes_no_leidos" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:186: NOTICE:  column "ultimo_mensaje_visto" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:187: NOTICE:  column "created_at" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:188: NOTICE:  column "updated_at" of relation "miembros_grupo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:193: NOTICE:  column "grupo_id" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:194: NOTICE:  column "remitente_id" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:195: NOTICE:  column "destinatario_id" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:196: NOTICE:  column "contenido" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:197: NOTICE:  column "tipo" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:198: NOTICE:  column "archivo_url" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:199: NOTICE:  column "thumbnail_url" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:200: NOTICE:  column "metadata_foto" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:201: NOTICE:  column "duracion_audio" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:202: NOTICE:  column "es_emergencia" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:203: NOTICE:  column "gps_latitud" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:204: NOTICE:  column "gps_longitud" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:205: NOTICE:  column "leido" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:206: NOTICE:  column "eliminado" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:207: NOTICE:  column "eliminado_por" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:208: NOTICE:  column "fecha_eliminacion" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:209: NOTICE:  column "created_at" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:210: NOTICE:  column "estado_mensaje" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:211: NOTICE:  column "entregado_en" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:212: NOTICE:  column "leido_en" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:213: NOTICE:  column "leido_por" of relation "mensajes" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:218: NOTICE:  column "usuario_id" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:219: NOTICE:  column "tipo" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:220: NOTICE:  column "descripcion" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:221: NOTICE:  column "latitud" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:222: NOTICE:  column "longitud" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:223: NOTICE:  column "direccion" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:224: NOTICE:  column "estado" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:225: NOTICE:  column "prioridad" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:226: NOTICE:  column "grupos_notificados" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:227: NOTICE:  column "entidades_notificadas" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:228: NOTICE:  column "atendido_por" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:229: NOTICE:  column "imagen_url" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:230: NOTICE:  column "audio_url" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:231: NOTICE:  column "video_url" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:232: NOTICE:  column "mensaje_voz" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:233: NOTICE:  column "metadata_gps" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:234: NOTICE:  column "vista_por_admin" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:235: NOTICE:  column "fecha_vista_admin" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:236: NOTICE:  column "admin_que_vio" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:237: NOTICE:  column "notas" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:238: NOTICE:  column "created_at" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:239: NOTICE:  column "resolved_at" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:240: NOTICE:  column "updated_at" of relation "emergencias" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:245: NOTICE:  column "titulo" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:246: NOTICE:  column "descripcion" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:247: NOTICE:  column "tipo" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:248: NOTICE:  column "imagen_url" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:249: NOTICE:  column "enlace_url" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:250: NOTICE:  column "fecha_inicio" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:251: NOTICE:  column "fecha_fin" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:252: NOTICE:  column "fecha_caducidad" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:253: NOTICE:  column "estado" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:254: NOTICE:  column "usuario_id" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:255: NOTICE:  column "orden" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:256: NOTICE:  column "latitud" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:257: NOTICE:  column "longitud" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:258: NOTICE:  column "direccion" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:259: NOTICE:  column "facebook" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:260: NOTICE:  column "instagram" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:261: NOTICE:  column "whatsapp" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:262: NOTICE:  column "tiktok" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:263: NOTICE:  column "twitter" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:264: NOTICE:  column "youtube" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:265: NOTICE:  column "linkedin" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:266: NOTICE:  column "created_at" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:267: NOTICE:  column "updated_at" of relation "publicidad" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:272: NOTICE:  column "categoria_id" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:273: NOTICE:  column "subcategoria_id" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:274: NOTICE:  column "usuario_id" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:275: NOTICE:  column "nombre" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:276: NOTICE:  column "descripcion" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:277: NOTICE:  column "logo_url" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:278: NOTICE:  column "direccion" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:279: NOTICE:  column "telefono" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:280: NOTICE:  column "whatsapp" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:281: NOTICE:  column "email" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:282: NOTICE:  column "horario" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:283: NOTICE:  column "gps_latitud" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:284: NOTICE:  column "gps_longitud" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:285: NOTICE:  column "redes" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:286: NOTICE:  column "estado" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:287: NOTICE:  column "destacado" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:288: NOTICE:  column "verificado" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:289: NOTICE:  column "total_likes" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:290: NOTICE:  column "total_favoritos" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:291: NOTICE:  column "total_comentarios" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:292: NOTICE:  column "total_compartidos" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:293: NOTICE:  column "created_at" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:294: NOTICE:  column "updated_at" of relation "logos_servicios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:299: NOTICE:  column "usuario_id" of relation "saldos_usuarios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:300: NOTICE:  column "saldo" of relation "saldos_usuarios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:301: NOTICE:  column "moneda_preferida" of relation "saldos_usuarios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:302: NOTICE:  column "total_ingresos" of relation "saldos_usuarios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:303: NOTICE:  column "total_egresos" of relation "saldos_usuarios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:304: NOTICE:  column "ultima_actualizacion" of relation "saldos_usuarios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:305: NOTICE:  column "created_at" of relation "saldos_usuarios" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:310: NOTICE:  column "usuario_id" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:311: NOTICE:  column "tipo" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:312: NOTICE:  column "monto" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:313: NOTICE:  column "moneda" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:314: NOTICE:  column "metodo_pago_id" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:315: NOTICE:  column "metodo_pago_destino" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:316: NOTICE:  column "comprobante" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:317: NOTICE:  column "numero_operacion" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:318: NOTICE:  column "estado" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:319: NOTICE:  column "motivo_rechazo" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:320: NOTICE:  column "aprobado_por" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:321: NOTICE:  column "fecha_aprobacion" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:322: NOTICE:  column "notas" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:323: NOTICE:  column "created_at" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:324: NOTICE:  column "updated_at" of relation "solicitudes_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:329: NOTICE:  column "usuario_id" of relation "transacciones_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:330: NOTICE:  column "tipo" of relation "transacciones_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:331: NOTICE:  column "concepto" of relation "transacciones_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:332: NOTICE:  column "monto" of relation "transacciones_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:333: NOTICE:  column "saldo_anterior" of relation "transacciones_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:334: NOTICE:  column "saldo_nuevo" of relation "transacciones_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:335: NOTICE:  column "referencia_id" of relation "transacciones_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:336: NOTICE:  column "referencia_tipo" of relation "transacciones_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:337: NOTICE:  column "estado" of relation "transacciones_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:338: NOTICE:  column "notas" of relation "transacciones_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:339: NOTICE:  column "created_at" of relation "transacciones_saldo" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:344: NOTICE:  column "usuario_id" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:345: NOTICE:  column "tipo" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:346: NOTICE:  column "nombre" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:347: NOTICE:  column "numero_cuenta" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:348: NOTICE:  column "cci" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:349: NOTICE:  column "email" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:350: NOTICE:  column "telefono" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:351: NOTICE:  column "titular" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:352: NOTICE:  column "moneda" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:353: NOTICE:  column "es_plataforma" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:354: NOTICE:  column "activo" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:355: NOTICE:  column "verificado" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:356: NOTICE:  column "orden" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:357: NOTICE:  column "notas" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:358: NOTICE:  column "created_at" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:359: NOTICE:  column "updated_at" of relation "metodos_pago" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:364: NOTICE:  column "usuario_id" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:365: NOTICE:  column "categoria_id" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:366: NOTICE:  column "subcategoria_id" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:367: NOTICE:  column "codigo" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:368: NOTICE:  column "nombre" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:369: NOTICE:  column "descripcion" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:370: NOTICE:  column "precio" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:371: NOTICE:  column "precio_oferta" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:372: NOTICE:  column "moneda" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:373: NOTICE:  column "imagenes" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:374: NOTICE:  column "stock" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:375: NOTICE:  column "disponible" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:376: NOTICE:  column "destacado" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:377: NOTICE:  column "gps_latitud" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:378: NOTICE:  column "gps_longitud" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:379: NOTICE:  column "direccion" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:380: NOTICE:  column "costo_creacion" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:381: NOTICE:  column "likes" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:382: NOTICE:  column "favoritos" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:383: NOTICE:  column "compartidos" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:384: NOTICE:  column "vistas" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:385: NOTICE:  column "estado" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:386: NOTICE:  column "created_at" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:387: NOTICE:  column "updated_at" of relation "productos_usuario" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:392: NOTICE:  column "titulo" of relation "eventos" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:393: NOTICE:  column "descripcion" of relation "eventos" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:397: NOTICE:  column "ubicacion" of relation "eventos" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:400: NOTICE:  column "imagen_url" of relation "eventos" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:408: NOTICE:  column "created_at" of relation "eventos" already exists, skipping
+ALTER TABLE
+psql:scripts/actualizar-estructura.sql:409: NOTICE:  column "updated_at" of relation "eventos" already exists, skipping
+ALTER TABLE
+                    resultado
+--------------------------------------------------
+ Script de actualización completado exitosamente.
+(1 row)
+
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬───────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name      │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼───────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ apo360    │ default     │ 1.0.0   │ cluster │ 228011   │ 0s     │ 14   │ online    │ 0%       │ 40.6mb   │ root     │ disabled │
+└────┴───────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 logs apo360 --lines 30
+[TAILING] Tailing last 30 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/error-0.log last 30 lines:
+0|apo360   |   dataType: undefined,
+0|apo360   |   constraint: undefined,
+0|apo360   |   file: 'parse_relation.c',
+0|apo360   |   line: '3722',
+0|apo360   |   routine: 'errorMissingColumn'
+0|apo360   | }
+0|apo360   | 2025-12-12T03:41:11: Error al crear método de pago: error: column "categoria_rol_id" does not exist
+0|apo360   |     at /var/www/apo360.net/node_modules/pg-pool/index.js:45:11
+0|apo360   |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|apo360   |     at async file:///var/www/apo360.net/node_modules/drizzle-orm/node-postgres/session.js:83:22
+0|apo360   |     at async DatabaseStorage.getUserRoles (file:///var/www/apo360.net/dist/index.js:2040:33)
+0|apo360   |     at async file:///var/www/apo360.net/dist/index.js:9323:25 {
+0|apo360   |   length: 116,
+0|apo360   |   severity: 'ERROR',
+0|apo360   |   code: '42703',
+0|apo360   |   detail: undefined,
+0|apo360   |   hint: undefined,
+0|apo360   |   position: '35',
+0|apo360   |   internalPosition: undefined,
+0|apo360   |   internalQuery: undefined,
+0|apo360   |   where: undefined,
+0|apo360   |   schema: undefined,
+0|apo360   |   table: undefined,
+0|apo360   |   column: undefined,
+0|apo360   |   dataType: undefined,
+0|apo360   |   constraint: undefined,
+0|apo360   |   file: 'parse_relation.c',
+0|apo360   |   line: '3722',
+0|apo360   |   routine: 'errorMissingColumn'
+0|apo360   | }
+
+/var/www/apo360.net/logs/output-0.log last 30 lines:
+0|apo360   | 2025-12-12T04:15:08: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:09: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:15: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:17: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:23: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:26: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:30: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:33: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:40: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:41: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:49: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:50: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:15:56: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:16:01: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:16:03: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:16:11: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:16:13: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:16:20: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:16:22: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:16:28: ❌ WebSocket rechazado: Usuario no autenticado
+0|apo360   | 2025-12-12T04:16:30: 🗄️ Usando PostgreSQL local (producción)
+0|apo360   | 2025-12-12T04:16:30: 🔐 Modo de autenticación solicitado: basic
+0|apo360   | 2025-12-12T04:16:30: 🔐 Configurando autenticación básica (email/contraseña)...
+0|apo360   | 2025-12-12T04:16:30: ✅ Autenticación básica configurada
+0|apo360   | 2025-12-12T04:16:30:    📧 Login: POST /api/auth/login
+0|apo360   | 2025-12-12T04:16:30:    📝 Registro: POST /api/auth/register
+0|apo360   | 2025-12-12T04:16:30: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-12T04:16:30: 4:16:30 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-12T04:16:30: 4:16:30 AM [express] ✅ Tabla miembros_grupo ya está sincronizada
+0|apo360   | 2025-12-12T04:16:30: 4:16:30 AM [express] serving on port 5000
