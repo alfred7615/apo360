@@ -8,6 +8,7 @@ import { eq, and, ne, sql } from "drizzle-orm";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { createUploadMiddleware, getPublicUrl } from "./uploadConfigByEndpoint";
 import { requireSuperAdmin } from "./authMiddleware";
+import { requireAdmin } from "./middleware/authorization";
 import { 
   insertPublicidadSchema, 
   insertServicioSchema, 
@@ -51,17 +52,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Las rutas /api/usuarios/me deben registrarse antes de /api/usuarios/:id
   // ============================================================
 
-  app.get('/api/usuarios', isAuthenticated, async (req: any, res) => {
+  app.get('/api/usuarios', isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const roles = await storage.getUserRoles(userId);
-      
-      if (!roles.includes('super_admin')) {
-        return res.status(403).json({ message: "Acceso denegado" });
-      }
-      
       const usuarios = await storage.getAllUsers();
-      res.json(usuarios);
+      
+      // Enriquecer usuarios con sus roles jerárquicos
+      const usuariosConRoles = await Promise.all(usuarios.map(async (usuario) => {
+        try {
+          const rolesJerarquicos = await storage.getRolesUsuario(usuario.id);
+          return {
+            ...usuario,
+            rolesJerarquicos: rolesJerarquicos || [],
+          };
+        } catch (e) {
+          return {
+            ...usuario,
+            rolesJerarquicos: [],
+          };
+        }
+      }));
+      
+      res.json(usuariosConRoles);
     } catch (error) {
       console.error("Error al obtener usuarios:", error);
       res.status(500).json({ message: "Error al obtener usuarios" });
@@ -877,6 +888,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error al subir comprobante:', error);
       res.status(500).json({ message: error.message || 'Error al subir comprobante' });
+    }
+  });
+
+  // Upload de imágenes de productos de usuario (Mi Tienda Online)
+  app.post('/api/upload/productos', isAuthenticated, createUploadMiddleware('productos', 'imagen'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
+      }
+
+      const url = getPublicUrl(req.file.path);
+      res.json({ 
+        url, 
+        path: req.file.path,
+        filename: req.file.filename,
+        size: req.file.size,
+      });
+    } catch (error: any) {
+      console.error('Error al subir imagen de producto:', error);
+      res.status(500).json({ message: error.message || 'Error al subir imagen de producto' });
     }
   });
 

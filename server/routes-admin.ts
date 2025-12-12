@@ -109,17 +109,8 @@ export function registerAdminRoutes(app: Express) {
 
   // ============================================================
   // USUARIOS - Gestión básica
+  // NOTA: GET /api/usuarios está definido en routes.ts con enriquecimiento de roles
   // ============================================================
-
-  app.get('/api/usuarios', isAuthenticated, requireAdmin, async (req, res) => {
-    try {
-      const usuarios = await storage.getAllUsers();
-      res.json(usuarios);
-    } catch (error) {
-      console.error('Error al obtener usuarios:', error);
-      res.status(500).json({ message: 'Error al obtener usuarios' });
-    }
-  });
 
   app.post('/api/usuarios', isAuthenticated, requireSuperAdmin, async (req, res) => {
     try {

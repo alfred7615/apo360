@@ -159,6 +159,7 @@ export default function PanelUsuarioPage() {
     imagenUrl: "",
     categoria: "",
   });
+  const [subiendoImagenProducto, setSubiendoImagenProducto] = useState(false);
 
   const { data: favoritos = [], isLoading: loadingFavoritos } = useQuery<any[]>({
     queryKey: ["/api/favoritos"],
@@ -321,6 +322,46 @@ export default function PanelUsuarioPage() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
+
+  const crearProductoMutation = useMutation({
+    mutationFn: (data: { nombre: string; descripcion: string; precio: string; imagenUrl: string; categoria: string }) => 
+      apiRequest("POST", "/api/productos-usuario", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-productos"] });
+      setShowProductoModal(false);
+      setProductoForm({ nombre: "", descripcion: "", precio: "", imagenUrl: "", categoria: "" });
+      toast({ title: "Producto publicado exitosamente" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al publicar producto", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleSubirImagenProducto = async (file: File) => {
+    setSubiendoImagenProducto(true);
+    try {
+      const formData = new FormData();
+      formData.append('imagen', file);
+      
+      const response = await fetch('/api/upload/productos', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al subir la imagen');
+      }
+      
+      const data = await response.json();
+      setProductoForm(prev => ({ ...prev, imagenUrl: data.url }));
+      toast({ title: "Imagen subida correctamente" });
+    } catch (error: any) {
+      toast({ title: "Error al subir imagen", description: error.message, variant: "destructive" });
+    } finally {
+      setSubiendoImagenProducto(false);
+    }
+  };
 
   if (authLoading) {
     return (
@@ -1887,22 +1928,75 @@ export default function PanelUsuarioPage() {
             </div>
             <div className="grid gap-2">
               <Label>Imagen del producto</Label>
-              <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                <Camera className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Haz clic para subir una imagen
-                </p>
-              </div>
+              {productoForm.imagenUrl ? (
+                <div className="relative">
+                  <img 
+                    src={productoForm.imagenUrl} 
+                    alt="Preview" 
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                  <Button 
+                    type="button"
+                    variant="destructive" 
+                    size="sm" 
+                    className="absolute top-2 right-2"
+                    onClick={() => setProductoForm({ ...productoForm, imagenUrl: "" })}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <label className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover-elevate">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleSubirImagenProducto(file);
+                    }}
+                    data-testid="input-producto-imagen"
+                  />
+                  {subiendoImagenProducto ? (
+                    <Loader2 className="h-8 w-8 text-primary mx-auto mb-2 animate-spin" />
+                  ) : (
+                    <Camera className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    {subiendoImagenProducto ? "Subiendo imagen..." : "Haz clic para subir una imagen"}
+                  </p>
+                </label>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowProductoModal(false)}>
               Cancelar
             </Button>
-            <Button onClick={() => {
-              toast({ title: "Producto publicado (demo)", description: "Esta funcionalidad se implementará próximamente" });
-              setShowProductoModal(false);
-            }} data-testid="button-guardar-producto">
+            <Button 
+              onClick={() => {
+                if (!productoForm.nombre.trim()) {
+                  toast({ title: "Error", description: "El nombre es requerido", variant: "destructive" });
+                  return;
+                }
+                if (!productoForm.precio) {
+                  toast({ title: "Error", description: "El precio es requerido", variant: "destructive" });
+                  return;
+                }
+                crearProductoMutation.mutate({
+                  nombre: productoForm.nombre,
+                  descripcion: productoForm.descripcion,
+                  precio: productoForm.precio,
+                  imagenUrl: productoForm.imagenUrl,
+                  categoria: productoForm.categoria,
+                });
+              }} 
+              disabled={crearProductoMutation.isPending}
+              data-testid="button-guardar-producto"
+            >
+              {crearProductoMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : null}
               Publicar Producto
             </Button>
           </DialogFooter>

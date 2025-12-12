@@ -17,6 +17,19 @@ import { UsuarioEditModal } from "@/components/admin/usuario-edit-modal";
 import { UsuarioDetailDrawer } from "@/components/admin/usuario-detail-drawer";
 import type { Usuario } from "@shared/schema";
 
+interface RolJerarquico {
+  id: string;
+  rol: string;
+  categoriaRolId?: string | null;
+  subcategoriaRolId?: string | null;
+  categoria?: { id: string; nombre: string } | null;
+  subcategoria?: { id: string; nombre: string } | null;
+}
+
+interface UsuarioConRoles extends Usuario {
+  rolesJerarquicos?: RolJerarquico[];
+}
+
 const FILTROS_ROL = [
   { value: "todos", label: "Todos los roles" },
   { value: "usuario", label: "Usuarios" },
@@ -80,15 +93,15 @@ export default function GestionUsuariosScreen() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroRol, setFiltroRol] = useState("todos");
   const [filtroEstado, setFiltroEstado] = useState("todos");
-  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<Usuario | null>(null);
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<UsuarioConRoles | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const { data: usuarios = [], isLoading, refetch } = useQuery<Usuario[]>({
+  const { data: usuarios = [], isLoading, refetch } = useQuery<UsuarioConRoles[]>({
     queryKey: ["/api/usuarios"],
   });
 
-  const filteredUsuarios = (usuarios as Usuario[]).filter((u) => {
+  const filteredUsuarios = (usuarios as UsuarioConRoles[]).filter((u) => {
     const matchSearch = 
       (u.firstName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
       (u.lastName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
@@ -201,6 +214,17 @@ export default function GestionUsuariosScreen() {
               <RolIcon className="h-3 w-3 mr-1" />
               {user.rol}
             </Badge>
+            {/* Mostrar roles jerárquicos asignados */}
+            {user.rolesJerarquicos && user.rolesJerarquicos.length > 0 && (
+              <div className="flex flex-wrap justify-end gap-1 max-w-[200px]">
+                {user.rolesJerarquicos.map((rolH) => (
+                  <Badge key={rolH.id} variant="outline" className="text-xs">
+                    <Shield className="h-2 w-2 mr-1" />
+                    {rolH.rol.replace(/_/g, ' ')}
+                  </Badge>
+                ))}
+              </div>
+            )}
             {getEstadoBadge(user.estado || "activo")}
           </div>
           
