@@ -1,18 +1,21 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Coins, TrendingUp, TrendingDown, DollarSign, Edit, RefreshCw, History, Users, Calculator, Settings, Globe, MapPin } from "lucide-react";
+import { Coins, TrendingUp, TrendingDown, DollarSign, Edit, RefreshCw, History, Users, Calculator, Settings, Globe, MapPin, Database, Loader2, Clock } from "lucide-react";
 import { CambistasSection } from "@/components/admin/cambistas-section";
 import { CalculadoraCambio } from "@/components/CalculadoraCambio";
-import type { ConfiguracionMoneda, TasaCambioLocal } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { ConfiguracionMoneda, TasaCambioLocal, HistorialTasaCambio } from "@shared/schema";
 
 export default function GestionMonedaScreen() {
   const [activeTab, setActiveTab] = useState("calculadora");
+  const { toast } = useToast();
 
   const { data: monedas, isLoading: cargandoMonedas, refetch: refetchMonedas } = useQuery<ConfiguracionMoneda[]>({
     queryKey: ["/api/monedas/configuracion"],
@@ -22,8 +25,40 @@ export default function GestionMonedaScreen() {
     queryKey: ["/api/monedas/tasas-locales"],
   });
 
+  const { data: historialTasas, isLoading: cargandoHistorial, refetch: refetchHistorial } = useQuery<HistorialTasaCambio[]>({
+    queryKey: ["/api/admin/historial-tasas-cambio"],
+  });
+
+  const setupHistorialMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/setup-historial-tasas"),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/historial-tasas-cambio"] });
+      toast({ title: "Historial configurado", description: data.message });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const tasaUsdPen = monedas?.find(m => m.codigo === "USD")?.tasaPromedioInternet;
   const cantidadTasasActivas = tasasLocales?.filter(t => t.activo).length || 0;
+
+  const formatearFecha = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString("es-PE", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const monedasInfo: Record<string, { bandera: string }> = {
+    PEN: { bandera: "🇵🇪" },
+    USD: { bandera: "🇺🇸" },
+    CLP: { bandera: "🇨🇱" },
+    ARS: { bandera: "🇦🇷" },
+    BOB: { bandera: "🇧🇴" },
+  };
 
   return (
     <div className="space-y-6" data-testid="screen-gestion-moneda">
@@ -250,47 +285,82 @@ export default function GestionMonedaScreen() {
 
         <TabsContent value="historial" className="mt-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Historial de Tasas</CardTitle>
-              <CardDescription>Cambios recientes en las tasas de cambio locales</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Historial de Cambios de Tasas</CardTitle>
+                <CardDescription>Registro de todas las actualizaciones de tasas de cambio</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => refetchHistorial()}
+                  data-testid="button-refetch-historial"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${cargandoHistorial ? "animate-spin" : ""}`} />
+                  Actualizar
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => setupHistorialMutation.mutate()}
+                  disabled={setupHistorialMutation.isPending}
+                  data-testid="button-setup-historial"
+                >
+                  {setupHistorialMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Database className="h-4 w-4 mr-2" />
+                  )}
+                  Configurar Datos de Prueba
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              {tasasLocales && tasasLocales.length > 0 ? (
+              {cargandoHistorial ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : historialTasas && historialTasas.length > 0 ? (
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-2">
-                    {tasasLocales.map((tasa) => (
+                    {historialTasas.map((registro) => (
                       <div 
-                        key={tasa.id} 
-                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg text-sm"
-                        data-testid={`item-historial-${tasa.id}`}
+                        key={registro.id} 
+                        className="p-3 bg-muted/30 rounded-lg text-sm"
+                        data-testid={`item-historial-${registro.id}`}
                       >
-                        <div>
-                          <span className="font-medium">
-                            {tasa.monedaOrigenCodigo} → {tasa.monedaDestinoCodigo}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={registro.tipoAccion === 'creacion' ? 'default' : 'secondary'} className="text-xs">
+                              {registro.tipoAccion === 'creacion' ? 'Creación' : 'Actualización'}
+                            </Badge>
+                            <span>{monedasInfo[registro.monedaOrigenCodigo]?.bandera || "💱"}</span>
+                            <span className="font-medium">{registro.monedaOrigenCodigo}</span>
+                            <span className="text-muted-foreground">→</span>
+                            <span>{monedasInfo[registro.monedaDestinoCodigo]?.bandera || "💱"}</span>
+                            <span className="font-medium">{registro.monedaDestinoCodigo}</span>
+                          </div>
+                          <span className="text-muted-foreground flex items-center gap-1 text-xs">
+                            <Clock className="h-3 w-3" />
+                            {registro.createdAt ? formatearFecha(String(registro.createdAt)) : "N/A"}
                           </span>
-                          {tasa.ubicacion && (
-                            <span className="text-muted-foreground ml-2">({tasa.ubicacion})</span>
-                          )}
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-green-600">
-                            C: {parseFloat(tasa.tasaCompra).toFixed(4)}
+                        <div className="flex items-center gap-4 text-xs flex-wrap">
+                          {registro.tasaCompraAnterior && (
+                            <span className="text-muted-foreground line-through">
+                              Compra: {parseFloat(registro.tasaCompraAnterior).toFixed(4)}
+                            </span>
+                          )}
+                          <span className="text-green-600 font-medium">
+                            Compra: {parseFloat(registro.tasaCompraNueva).toFixed(4)}
                           </span>
-                          <span className="text-red-600">
-                            V: {parseFloat(tasa.tasaVenta).toFixed(4)}
-                          </span>
-                          <Badge variant={tasa.activo ? "default" : "secondary"} className="text-xs">
-                            {tasa.activo ? "Activa" : "Inactiva"}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {tasa.updatedAt 
-                              ? new Date(tasa.updatedAt).toLocaleDateString("es-PE", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "N/A"}
+                          {registro.tasaVentaAnterior && (
+                            <span className="text-muted-foreground line-through">
+                              Venta: {parseFloat(registro.tasaVentaAnterior).toFixed(4)}
+                            </span>
+                          )}
+                          <span className="text-red-600 font-medium">
+                            Venta: {parseFloat(registro.tasaVentaNueva).toFixed(4)}
                           </span>
                         </div>
                       </div>
@@ -300,8 +370,20 @@ export default function GestionMonedaScreen() {
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No hay tasas de cambio registradas.</p>
-                  <p className="text-sm">Los cambistas pueden agregar sus tasas desde su panel.</p>
+                  <p>No hay historial de cambios registrado.</p>
+                  <p className="text-sm mt-2">Usa el botón "Configurar Datos de Prueba" para crear registros de ejemplo.</p>
+                  <Button 
+                    className="mt-4"
+                    onClick={() => setupHistorialMutation.mutate()}
+                    disabled={setupHistorialMutation.isPending}
+                  >
+                    {setupHistorialMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Database className="h-4 w-4 mr-2" />
+                    )}
+                    Configurar Historial con Datos de Prueba
+                  </Button>
                 </div>
               )}
             </CardContent>

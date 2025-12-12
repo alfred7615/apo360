@@ -134,6 +134,9 @@ import {
   type InsertTasaCambioLocal,
   type ConfiguracionMoneda,
   type InsertConfiguracionMoneda,
+  historialTasasCambio,
+  type HistorialTasaCambio,
+  type InsertHistorialTasaCambio,
   type ContactoFamiliar,
   type InsertContactoFamiliar,
   type Sector,
@@ -3074,11 +3077,22 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
-  async getHistorialTasasCambista(cambistaId: string): Promise<TasaCambioLocal[]> {
-    return await db.select().from(tasasCambioLocales)
-      .where(eq(tasasCambioLocales.cambistaId, cambistaId))
-      .orderBy(desc(tasasCambioLocales.updatedAt))
+  async getHistorialTasasCambista(cambistaId: string): Promise<HistorialTasaCambio[]> {
+    return await db.select().from(historialTasasCambio)
+      .where(eq(historialTasasCambio.cambistaId, cambistaId))
+      .orderBy(desc(historialTasasCambio.createdAt))
       .limit(50);
+  }
+
+  async createHistorialTasaCambio(data: InsertHistorialTasaCambio): Promise<HistorialTasaCambio> {
+    const [historial] = await db.insert(historialTasasCambio).values(data).returning();
+    return historial;
+  }
+
+  async getHistorialTasasCambioAdmin(limite = 100): Promise<HistorialTasaCambio[]> {
+    return await db.select().from(historialTasasCambio)
+      .orderBy(desc(historialTasasCambio.createdAt))
+      .limit(limite);
   }
 
   async getPromedioTasasLocales(monedaOrigenCodigo: string, monedaDestinoCodigo: string): Promise<{ promedioCompra: number; promedioVenta: number } | null> {

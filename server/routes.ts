@@ -4,7 +4,7 @@ import express from "express";
 import path from "path";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and, ne, sql } from "drizzle-orm";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { createUploadMiddleware, getPublicUrl } from "./uploadConfigByEndpoint";
 import { requireSuperAdmin } from "./authMiddleware";
@@ -3154,6 +3154,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const tasa = await storage.createTasaCambioLocal(data);
+      
+      // Registrar en historial
+      try {
+        await storage.createHistorialTasaCambio({
+          cambistaId: userId,
+          tasaLocalId: tasa.id,
+          monedaOrigenCodigo: tasa.monedaOrigenCodigo,
+          monedaDestinoCodigo: tasa.monedaDestinoCodigo,
+          tasaCompraAnterior: null,
+          tasaVentaAnterior: null,
+          tasaCompraNueva: tasa.tasaCompra,
+          tasaVentaNueva: tasa.tasaVenta,
+          tipoAccion: 'creacion',
+          ipOrigen: req.ip || null,
+        });
+      } catch (histErr) {
+        console.log("No se pudo registrar en historial (tabla puede no existir):", histErr);
+      }
+      
       res.status(201).json(tasa);
     } catch (error) {
       console.error("Error al crear tasa local:", error);
@@ -3179,7 +3198,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "No puedes editar esta tasa" });
       }
       
+      const tasaAnterior = { tasaCompra: tasa.tasaCompra, tasaVenta: tasa.tasaVenta };
       const actualizada = await storage.updateTasaCambioLocal(id, req.body);
+      
+      // Registrar en historial si cambió la tasa
+      if (actualizada && (req.body.tasaCompra || req.body.tasaVenta)) {
+        try {
+          await storage.createHistorialTasaCambio({
+            cambistaId: tasa.cambistaId,
+            tasaLocalId: id,
+            monedaOrigenCodigo: tasa.monedaOrigenCodigo,
+            monedaDestinoCodigo: tasa.monedaDestinoCodigo,
+            tasaCompraAnterior: tasaAnterior.tasaCompra,
+            tasaVentaAnterior: tasaAnterior.tasaVenta,
+            tasaCompraNueva: actualizada.tasaCompra,
+            tasaVentaNueva: actualizada.tasaVenta,
+            tipoAccion: 'actualizacion',
+            ipOrigen: req.ip || null,
+          });
+        } catch (histErr) {
+          console.log("No se pudo registrar en historial:", histErr);
+        }
+      }
+      
       res.json(actualizada);
     } catch (error) {
       console.error("Error al actualizar tasa local:", error);
@@ -3205,7 +3246,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "No puedes editar esta tasa" });
       }
       
+      const tasaAnterior = { tasaCompra: tasa.tasaCompra, tasaVenta: tasa.tasaVenta };
       const actualizada = await storage.updateTasaCambioLocal(id, req.body);
+      
+      // Registrar en historial si cambió la tasa
+      if (actualizada && (req.body.tasaCompra || req.body.tasaVenta)) {
+        try {
+          await storage.createHistorialTasaCambio({
+            cambistaId: tasa.cambistaId,
+            tasaLocalId: id,
+            monedaOrigenCodigo: tasa.monedaOrigenCodigo,
+            monedaDestinoCodigo: tasa.monedaDestinoCodigo,
+            tasaCompraAnterior: tasaAnterior.tasaCompra,
+            tasaVentaAnterior: tasaAnterior.tasaVenta,
+            tasaCompraNueva: actualizada.tasaCompra,
+            tasaVentaNueva: actualizada.tasaVenta,
+            tipoAccion: 'actualizacion',
+            ipOrigen: req.ip || null,
+          });
+        } catch (histErr) {
+          console.log("No se pudo registrar en historial:", histErr);
+        }
+      }
+      
       res.json(actualizada);
     } catch (error) {
       console.error("Error al actualizar tasa local:", error);
@@ -3310,6 +3373,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al remover rol de cambista:", error);
       res.status(500).json({ message: "Error al remover rol de cambista" });
+    }
+  });
+
+  // Obtener historial de tasas de cambio (admin)
+  app.get('/api/admin/historial-tasas-cambio', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const roles = await storage.getUserRoles(userId);
+      
+      if (!roles.includes('super_admin')) {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+      
+      const historial = await storage.getHistorialTasasCambioAdmin(100);
+      res.json(historial);
+    } catch (error) {
+      console.error("Error al obtener historial de tasas:", error);
+      res.status(500).json({ message: "Error al obtener historial" });
+    }
+  });
+
+  // Crear tabla de historial y datos de prueba (super_admin)
+  app.post('/api/admin/setup-historial-tasas', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const roles = await storage.getUserRoles(userId);
+      
+      if (!roles.includes('super_admin')) {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+      
+      console.log('🔄 Configurando tabla historial_tasas_cambio y datos de prueba...');
+      
+      // Crear tabla si no existe usando SQL crudo
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS historial_tasas_cambio (
+          id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+          cambista_id VARCHAR(255) NOT NULL REFERENCES users(id),
+          tasa_local_id VARCHAR(255) REFERENCES tasas_cambio_locales(id),
+          moneda_origen_codigo VARCHAR(10) NOT NULL,
+          moneda_destino_codigo VARCHAR(10) NOT NULL,
+          tasa_compra_anterior DECIMAL(12,6),
+          tasa_venta_anterior DECIMAL(12,6),
+          tasa_compra_nueva DECIMAL(12,6) NOT NULL,
+          tasa_venta_nueva DECIMAL(12,6) NOT NULL,
+          tipo_accion VARCHAR(20) NOT NULL DEFAULT 'actualizacion',
+          ip_origen VARCHAR(45),
+          notas TEXT,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+      console.log('✅ Tabla historial_tasas_cambio creada/verificada');
+      
+      // Verificar si hay cambistas para crear datos de prueba
+      const cambistas = await storage.getCambistas();
+      
+      if (cambistas.length > 0) {
+        // Usar el primer cambista para datos de prueba
+        const cambistaId = cambistas[0].id;
+        
+        // Crear datos de prueba
+        const datosPrueba = [
+          { monedaOrigen: 'USD', monedaDestino: 'PEN', compraAnterior: '3.7200', ventaAnterior: '3.7800', compraNueva: '3.7350', ventaNueva: '3.7950', accion: 'actualizacion', horasAtras: 2 },
+          { monedaOrigen: 'USD', monedaDestino: 'PEN', compraAnterior: '3.7100', ventaAnterior: '3.7700', compraNueva: '3.7200', ventaNueva: '3.7800', accion: 'actualizacion', horasAtras: 4 },
+          { monedaOrigen: 'USD', monedaDestino: 'PEN', compraAnterior: null, ventaAnterior: null, compraNueva: '3.7100', ventaNueva: '3.7700', accion: 'creacion', horasAtras: 6 },
+          { monedaOrigen: 'CLP', monedaDestino: 'PEN', compraAnterior: '0.0041', ventaAnterior: '0.0044', compraNueva: '0.0042', ventaNueva: '0.0045', accion: 'actualizacion', horasAtras: 1 },
+          { monedaOrigen: 'CLP', monedaDestino: 'PEN', compraAnterior: null, ventaAnterior: null, compraNueva: '0.0041', ventaNueva: '0.0044', accion: 'creacion', horasAtras: 8 },
+          { monedaOrigen: 'BOB', monedaDestino: 'PEN', compraAnterior: '0.5350', ventaAnterior: '0.5550', compraNueva: '0.5380', ventaNueva: '0.5580', accion: 'actualizacion', horasAtras: 3 },
+          { monedaOrigen: 'BOB', monedaDestino: 'PEN', compraAnterior: null, ventaAnterior: null, compraNueva: '0.5350', ventaNueva: '0.5550', accion: 'creacion', horasAtras: 12 },
+          { monedaOrigen: 'ARS', monedaDestino: 'PEN', compraAnterior: '0.0037', ventaAnterior: '0.0040', compraNueva: '0.0038', ventaNueva: '0.0041', accion: 'actualizacion', horasAtras: 5 },
+          { monedaOrigen: 'ARS', monedaDestino: 'PEN', compraAnterior: null, ventaAnterior: null, compraNueva: '0.0037', ventaNueva: '0.0040', accion: 'creacion', horasAtras: 24 },
+          { monedaOrigen: 'USD', monedaDestino: 'PEN', compraAnterior: '3.7350', ventaAnterior: '3.7950', compraNueva: '3.7400', ventaNueva: '3.8000', accion: 'actualizacion', horasAtras: 0.5 },
+        ];
+        
+        for (const dato of datosPrueba) {
+          const fechaCreacion = new Date(Date.now() - dato.horasAtras * 60 * 60 * 1000);
+          await db.execute(sql`
+            INSERT INTO historial_tasas_cambio (cambista_id, moneda_origen_codigo, moneda_destino_codigo, 
+              tasa_compra_anterior, tasa_venta_anterior, tasa_compra_nueva, tasa_venta_nueva, 
+              tipo_accion, created_at)
+            VALUES (${cambistaId}, ${dato.monedaOrigen}, ${dato.monedaDestino}, 
+              ${dato.compraAnterior}, ${dato.ventaAnterior}, ${dato.compraNueva}, ${dato.ventaNueva},
+              ${dato.accion}, ${fechaCreacion})
+          `);
+        }
+        console.log(`✅ ${datosPrueba.length} registros de prueba creados para cambista ${cambistaId}`);
+        res.json({ message: `Tabla creada y ${datosPrueba.length} registros de prueba insertados`, cambistaId });
+      } else {
+        res.json({ message: "Tabla creada pero no hay cambistas para crear datos de prueba. Asigna el rol 'cambista' a un usuario primero." });
+      }
+    } catch (error) {
+      console.error("Error al configurar historial de tasas:", error);
+      res.status(500).json({ message: "Error al configurar historial de tasas", error: String(error) });
     }
   });
 

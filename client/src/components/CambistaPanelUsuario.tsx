@@ -18,10 +18,15 @@ import type { TasaCambioLocal, ConfiguracionMoneda } from "@shared/schema";
 
 interface HistorialTasa {
   id: string;
+  cambistaId: string;
   monedaOrigenCodigo: string;
   monedaDestinoCodigo: string;
-  tasaCompra: string;
-  tasaVenta: string;
+  tasaCompraAnterior: string | null;
+  tasaVentaAnterior: string | null;
+  tasaCompraNueva: string;
+  tasaVentaNueva: string;
+  tipoAccion: string;
+  notas: string | null;
   createdAt: string;
 }
 
@@ -307,22 +312,41 @@ export default function CambistaPanelUsuario() {
                   {historial.slice(0, 20).map((item) => (
                     <div 
                       key={item.id} 
-                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg text-sm"
+                      className="p-3 bg-muted/30 rounded-lg text-sm"
                       data-testid={`item-historial-${item.id}`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span>{getMonedaInfo(item.monedaOrigenCodigo).bandera}</span>
-                        <span className="font-medium">{item.monedaOrigenCodigo}</span>
-                        <span className="text-muted-foreground">→</span>
-                        <span>{getMonedaInfo(item.monedaDestinoCodigo).bandera}</span>
-                        <span className="font-medium">{item.monedaDestinoCodigo}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs">
-                        <span className="text-green-600">C: {parseFloat(item.tasaCompra).toFixed(4)}</span>
-                        <span className="text-red-600">V: {parseFloat(item.tasaVenta).toFixed(4)}</span>
-                        <span className="text-muted-foreground flex items-center gap-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={item.tipoAccion === 'creacion' ? 'default' : 'secondary'} className="text-xs">
+                            {item.tipoAccion === 'creacion' ? 'Nueva' : 'Actualiz.'}
+                          </Badge>
+                          <span>{getMonedaInfo(item.monedaOrigenCodigo).bandera}</span>
+                          <span className="font-medium">{item.monedaOrigenCodigo}</span>
+                          <span className="text-muted-foreground">→</span>
+                          <span>{getMonedaInfo(item.monedaDestinoCodigo).bandera}</span>
+                          <span className="font-medium">{item.monedaDestinoCodigo}</span>
+                        </div>
+                        <span className="text-muted-foreground flex items-center gap-1 text-xs">
                           <Clock className="h-3 w-3" />
                           {formatearFecha(item.createdAt)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs">
+                        {item.tasaCompraAnterior && (
+                          <span className="text-muted-foreground line-through">
+                            C: {parseFloat(item.tasaCompraAnterior).toFixed(4)}
+                          </span>
+                        )}
+                        <span className="text-green-600 font-medium">
+                          C: {parseFloat(item.tasaCompraNueva).toFixed(4)}
+                        </span>
+                        {item.tasaVentaAnterior && (
+                          <span className="text-muted-foreground line-through">
+                            V: {parseFloat(item.tasaVentaAnterior).toFixed(4)}
+                          </span>
+                        )}
+                        <span className="text-red-600 font-medium">
+                          V: {parseFloat(item.tasaVentaNueva).toFixed(4)}
                         </span>
                       </div>
                     </div>

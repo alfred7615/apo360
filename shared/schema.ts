@@ -1306,6 +1306,29 @@ export type InsertTasaCambioLocal = z.infer<typeof insertTasaCambioLocalSchema>;
 export type TasaCambioLocal = typeof tasasCambioLocales.$inferSelect;
 
 // ============================================================
+// HISTORIAL DE TASAS DE CAMBIO (Registro de cambios de cambistas)
+// ============================================================
+export const historialTasasCambio = pgTable("historial_tasas_cambio", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cambistaId: varchar("cambista_id").notNull().references(() => usuarios.id),
+  tasaLocalId: varchar("tasa_local_id").references(() => tasasCambioLocales.id),
+  monedaOrigenCodigo: varchar("moneda_origen_codigo", { length: 10 }).notNull(),
+  monedaDestinoCodigo: varchar("moneda_destino_codigo", { length: 10 }).notNull(),
+  tasaCompraAnterior: decimal("tasa_compra_anterior", { precision: 12, scale: 6 }),
+  tasaVentaAnterior: decimal("tasa_venta_anterior", { precision: 12, scale: 6 }),
+  tasaCompraNueva: decimal("tasa_compra_nueva", { precision: 12, scale: 6 }).notNull(),
+  tasaVentaNueva: decimal("tasa_venta_nueva", { precision: 12, scale: 6 }).notNull(),
+  tipoAccion: varchar("tipo_accion", { length: 20 }).notNull().default("actualizacion"), // creacion, actualizacion
+  ipOrigen: varchar("ip_origen", { length: 45 }),
+  notas: text("notas"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertHistorialTasaCambioSchema = createInsertSchema(historialTasasCambio).omit({ id: true, createdAt: true });
+export type InsertHistorialTasaCambio = z.infer<typeof insertHistorialTasaCambioSchema>;
+export type HistorialTasaCambio = typeof historialTasasCambio.$inferSelect;
+
+// ============================================================
 // CONFIGURACIÓN DE MONEDAS (Calculadora)
 // ============================================================
 export const configuracionMonedas = pgTable("configuracion_monedas", {

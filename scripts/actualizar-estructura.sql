@@ -40,13 +40,16 @@ CREATE TABLE IF NOT EXISTS subcategorias_rol (
 -- HISTORIAL DE CAMBIOS DE MONEDA (internet + locales)
 CREATE TABLE IF NOT EXISTS historial_tasas_cambio (
   id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
-  fuente VARCHAR(20) NOT NULL DEFAULT 'internet', -- 'internet' o 'local'
-  cambista_id VARCHAR(255) REFERENCES users(id),
+  cambista_id VARCHAR(255) NOT NULL REFERENCES users(id),
+  tasa_local_id VARCHAR(255) REFERENCES tasas_cambio_locales(id),
   moneda_origen_codigo VARCHAR(10) NOT NULL,
   moneda_destino_codigo VARCHAR(10) NOT NULL,
-  tasa_compra DECIMAL(12,6),
-  tasa_venta DECIMAL(12,6),
-  tasa_promedio DECIMAL(12,6),
+  tasa_compra_anterior DECIMAL(12,6),
+  tasa_venta_anterior DECIMAL(12,6),
+  tasa_compra_nueva DECIMAL(12,6) NOT NULL,
+  tasa_venta_nueva DECIMAL(12,6) NOT NULL,
+  tipo_accion VARCHAR(20) NOT NULL DEFAULT 'actualizacion',
+  ip_origen VARCHAR(45),
   notas TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
