@@ -125,7 +125,7 @@ export function CalculadoraCambio({ sinCard = false }: CalculadoraCambioProps) {
             <div className="p-2 rounded-lg bg-gradient-to-br from-rose-500/20 to-pink-500/20">
               <Calculator className="h-5 w-5 text-rose-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-100" data-testid="title-calculadora">Calculadora de Cambio</h3>
+            <h3 className="text-lg font-semibold text-gray-100" data-testid="title-calculadora">CALCULA EL TIPO DE CAMBIO</h3>
           </div>
           <Badge 
             variant="outline" 
@@ -136,11 +136,11 @@ export function CalculadoraCambio({ sinCard = false }: CalculadoraCambioProps) {
           >
             {calcularCambio.fuente === "local" ? (
               <span className="flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" /> Tasa Local
+                <TrendingUp className="h-3 w-3" /> Cambistas
               </span>
             ) : (
               <span className="flex items-center gap-1">
-                <DollarSign className="h-3 w-3" /> Tasa Referencia
+                <DollarSign className="h-3 w-3" /> Internet
               </span>
             )}
           </Badge>
@@ -157,11 +157,11 @@ export function CalculadoraCambio({ sinCard = false }: CalculadoraCambioProps) {
           >
             {calcularCambio.fuente === "local" ? (
               <span className="flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" /> Tasa Local
+                <TrendingUp className="h-3 w-3" /> Cambistas
               </span>
             ) : (
               <span className="flex items-center gap-1">
-                <DollarSign className="h-3 w-3" /> Tasa Referencia
+                <DollarSign className="h-3 w-3" /> Internet
               </span>
             )}
           </Badge>
@@ -337,73 +337,76 @@ export function CalculadoraCambio({ sinCard = false }: CalculadoraCambioProps) {
         <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-4 space-y-4" data-testid="section-detalles-tasas">
           <h4 className="font-medium flex items-center gap-2 text-gray-200">
             <Clock className="h-4 w-4 text-rose-400" />
-            Tasas de Cambistas Locales
+            Comparación de Tasas: Cambistas vs Internet
           </h4>
           
-          {tasasLocales && tasasLocales.length > 0 ? (
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-3 rounded-lg border border-emerald-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-4 w-4 text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-300">Promedio Cambistas</span>
+              </div>
+              {promedioLocal && (promedioLocal.promedioCompra || promedioLocal.promedioVenta) ? (
+                <div className="space-y-1">
+                  {promedioLocal.promedioCompra && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Compra:</span>
+                      <span className="font-bold text-emerald-400">{formatearNumero(promedioLocal.promedioCompra, 4)}</span>
+                    </div>
+                  )}
+                  {promedioLocal.promedioVenta && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Venta:</span>
+                      <span className="font-bold text-rose-400">{formatearNumero(promedioLocal.promedioVenta, 4)}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500">Sin datos de cambistas</p>
+              )}
+            </div>
+            
+            <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 p-3 rounded-lg border border-blue-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="h-4 w-4 text-blue-400" />
+                <span className="text-sm font-medium text-blue-300">Tasa Internet</span>
+              </div>
+              {(() => {
+                const origenInfo = monedas.find(m => m.codigo === monedaOrigen);
+                const destinoInfo = monedas.find(m => m.codigo === monedaDestino);
+                const tasaInternet = origenInfo && destinoInfo ? origenInfo.tasaUSD / destinoInfo.tasaUSD : null;
+                return tasaInternet ? (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Tasa:</span>
+                    <span className="font-bold text-blue-400">{formatearNumero(tasaInternet, 4)}</span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">No disponible</p>
+                );
+              })()}
+            </div>
+          </div>
+          
+          {tasasLocales && tasasLocales.filter(t => t.monedaOrigenCodigo === monedaOrigen && t.monedaDestinoCodigo === monedaDestino).length > 0 && (
+            <div className="space-y-2 mt-3">
+              <p className="text-xs text-gray-400 font-medium">Detalle por cambista:</p>
               {tasasLocales
-                .filter(t => 
-                  t.monedaOrigenCodigo === monedaOrigen && 
-                  t.monedaDestinoCodigo === monedaDestino
-                )
+                .filter(t => t.monedaOrigenCodigo === monedaOrigen && t.monedaDestinoCodigo === monedaDestino)
                 .slice(0, 5)
                 .map((tasa) => (
                   <div
                     key={tasa.id}
-                    className="flex items-center justify-between p-3 bg-gray-700/40 rounded-lg text-sm border border-gray-600/30"
+                    className="flex items-center justify-between p-2 bg-gray-700/30 rounded-lg text-xs border border-gray-600/20"
                     data-testid={`item-tasa-local-${tasa.id}`}
                   >
-                    <span className="text-gray-300">
-                      {tasa.ubicacion || "Cambista Local"}
-                    </span>
-                    <div className="flex gap-4">
-                      <span>
-                        <span className="text-xs text-gray-500">Compra:</span>{" "}
-                        <span className="font-medium text-emerald-400">
-                          {formatearNumero(parseFloat(tasa.tasaCompra), 4)}
-                        </span>
-                      </span>
-                      <span>
-                        <span className="text-xs text-gray-500">Venta:</span>{" "}
-                        <span className="font-medium text-rose-400">
-                          {formatearNumero(parseFloat(tasa.tasaVenta), 4)}
-                        </span>
-                      </span>
+                    <span className="text-gray-300">{tasa.ubicacion || "Cambista"}</span>
+                    <div className="flex gap-3">
+                      <span className="text-emerald-400">C: {formatearNumero(parseFloat(tasa.tasaCompra), 4)}</span>
+                      <span className="text-rose-400">V: {formatearNumero(parseFloat(tasa.tasaVenta), 4)}</span>
                     </div>
                   </div>
                 ))}
-              
-              {promedioLocal && (promedioLocal.promedioCompra || promedioLocal.promedioVenta) && (
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-rose-500/10 to-pink-500/10 rounded-lg text-sm mt-2 border border-rose-500/20">
-                  <span className="font-medium text-gray-200">Promedio Local</span>
-                  <div className="flex gap-4">
-                    {promedioLocal.promedioCompra && (
-                      <span>
-                        <span className="text-xs text-gray-500">Compra:</span>{" "}
-                        <span className="font-bold text-emerald-400">
-                          {formatearNumero(promedioLocal.promedioCompra, 4)}
-                        </span>
-                      </span>
-                    )}
-                    {promedioLocal.promedioVenta && (
-                      <span>
-                        <span className="text-xs text-gray-500">Venta:</span>{" "}
-                        <span className="font-bold text-rose-400">
-                          {formatearNumero(promedioLocal.promedioVenta, 4)}
-                        </span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
-          ) : (
-            <p className="text-sm text-gray-500 text-center py-4">
-              No hay tasas locales disponibles para este par de monedas.
-              <br />
-              Se usa la tasa de referencia de internet.
-            </p>
           )}
         </div>
       )}
@@ -441,7 +444,7 @@ export function CalculadoraCambio({ sinCard = false }: CalculadoraCambioProps) {
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 border border-rose-500/20">
             <Calculator className="h-5 w-5 text-rose-400" />
           </div>
-          <CardTitle className="text-gray-100" data-testid="title-calculadora">Calculadora de Cambio</CardTitle>
+          <CardTitle className="text-gray-100" data-testid="title-calculadora">CALCULA EL TIPO DE CAMBIO</CardTitle>
         </div>
         <Badge 
           variant="outline"
@@ -452,11 +455,11 @@ export function CalculadoraCambio({ sinCard = false }: CalculadoraCambioProps) {
         >
           {calcularCambio.fuente === "local" ? (
             <span className="flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> Tasa Local
+              <TrendingUp className="h-3 w-3" /> Cambistas
             </span>
           ) : (
             <span className="flex items-center gap-1">
-              <DollarSign className="h-3 w-3" /> Tasa Referencia
+              <DollarSign className="h-3 w-3" /> Internet
             </span>
           )}
         </Badge>
