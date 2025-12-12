@@ -1,0 +1,172 @@
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# cd /var/www/apo360.net
+root@srv1170282:/var/www/apo360.net# git pull origin main
+remote: Enumerating objects: 52, done.
+remote: Counting objects: 100% (52/52), done.
+remote: Compressing objects: 100% (14/14), done.
+remote: Total 47 (delta 33), reused 47 (delta 33), pack-reused 0 (from 0)
+Unpacking objects: 100% (47/47), 32.31 KiB | 601.00 KiB/s, done.
+From https://github.com/alfred7615/apo360
+ * branch            main       -> FETCH_HEAD
+   6c4626f..d62420b  main       -> origin/main
+Updating 6c4626f..d62420b
+Fast-forward
+ CREDENCIALES_SISTEMA.md                                                     |  182 ++++++
+ DOCUMENTACION_TECNICA.md                                                    |  585 +++++++++++++-----
+ PROCESO_SINCRONIZACION_BD.md                                                |  196 ++++++
+ ...MAP-para-diferenciar-entre-assets-del-build-y-uploads-_1765482460475.txt |   70 +++
+ ...oot-srv1170282-var-www-apo360-net-Tabla-datos-negocio-_1765474451778.txt |  130 ++++
+ ...oot-srv1170282-var-www-apo360-net-cat-var-www-apo360-n_1765481642959.txt |   59 ++
+ ...oot-srv1170282-var-www-apo360-net-git-pull-origin-main_1765473642827.txt |  125 ++++
+ ...oot-srv1170282-var-www-apo360-net-psql-postgresql-apo3_1765484759561.txt |  145 +++++
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765485900518.txt |  173 ++++++
+ ...oot-srv1170282-var-www-apo360-net-sudo-cp-etc-nginx-si_1765483124178.txt |   30 +
+ ...oot-srv1170282-var-www-apo360-net-sudo-cp-etc-nginx-si_1765483414048.txt |   41 ++
+ nginx.conf                                                                  |   97 ++-
+ scripts/schema-produccion.sql                                               | 1141 +++++++++++++++++++++++++++++++++++
+ 13 files changed, 2807 insertions(+), 167 deletions(-)
+ create mode 100644 CREDENCIALES_SISTEMA.md
+ create mode 100644 PROCESO_SINCRONIZACION_BD.md
+ create mode 100644 attached_assets/Pasted--MAP-para-diferenciar-entre-assets-del-build-y-uploads-_1765482460475.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-Tabla-datos-negocio-_1765474451778.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-cat-var-www-apo360-n_1765481642959.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-git-pull-origin-main_1765473642827.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-psql-postgresql-apo3_1765484759561.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765485900518.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-sudo-cp-etc-nginx-si_1765483124178.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-sudo-cp-etc-nginx-si_1765483414048.txt
+ create mode 100644 scripts/schema-produccion.sql
+root@srv1170282:/var/www/apo360.net# psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable" -f scripts/schema-produccion.sql
+DO
+psql:scripts/schema-produccion.sql:103: NOTICE:  relation "users" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:115: NOTICE:  relation "sectores" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:130: NOTICE:  relation "lugares_usuario" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:142: NOTICE:  relation "usuario_roles" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:173: NOTICE:  relation "datos_negocio" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:197: NOTICE:  relation "catalogo_negocio" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:209: NOTICE:  relation "administradores" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:239: NOTICE:  relation "publicidad" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:252: NOTICE:  relation "interacciones_publicidad" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:265: NOTICE:  relation "comentarios_publicidad" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:280: NOTICE:  relation "contadores_publicidad" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:291: NOTICE:  relation "favoritos_usuario" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:308: NOTICE:  relation "radios_online" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:324: NOTICE:  relation "listas_mp3" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:341: NOTICE:  relation "archivos_mp3" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:359: NOTICE:  relation "servicios" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:374: NOTICE:  relation "productos_delivery" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:400: NOTICE:  relation "grupos_chat" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:423: NOTICE:  relation "miembros_grupo" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:451: NOTICE:  relation "mensajes" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:481: NOTICE:  relation "emergencias" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:498: NOTICE:  relation "contactos_familiares" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:516: NOTICE:  relation "notificaciones_chat" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:537: NOTICE:  relation "viajes_taxi" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:556: NOTICE:  relation "pedidos_delivery" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:570: NOTICE:  relation "configuracion_saldos" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:589: NOTICE:  relation "encuestas" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:611: NOTICE:  relation "popups_publicitarios" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:624: NOTICE:  relation "interacciones_sociales" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:635: NOTICE:  relation "respuestas_encuestas" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:648: NOTICE:  relation "comentarios" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:658: NOTICE:  relation "configuracion_sitio" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:668: NOTICE:  relation "registro_basico" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:686: NOTICE:  relation "registro_chat" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:699: NOTICE:  relation "registro_ubicacion" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:713: NOTICE:  relation "registro_direccion" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:728: NOTICE:  relation "registro_marketplace" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:765: NOTICE:  relation "credenciales_conductor" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:790: NOTICE:  relation "eventos" already exists, skipping
+CREATE TABLE
+CREATE TABLE
+psql:scripts/schema-produccion.sql:817: NOTICE:  relation "tipos_moneda" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:829: NOTICE:  relation "tasas_cambio" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:844: NOTICE:  relation "categorias_servicio" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:860: NOTICE:  relation "subcategorias_servicio" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:890: NOTICE:  relation "logos_servicios" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:916: NOTICE:  relation "productos_servicio" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:934: NOTICE:  relation "transacciones_saldo" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:957: NOTICE:  relation "metodos_pago" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:973: NOTICE:  relation "monedas" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:995: NOTICE:  relation "tasas_cambio_locales" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:1015: NOTICE:  relation "configuracion_monedas" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:1037: NOTICE:  relation "solicitudes_saldo" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:1051: NOTICE:  relation "saldos_usuarios" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:1071: NOTICE:  relation "planes_membresia" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:1090: NOTICE:  relation "membresias_usuarios" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:1105: NOTICE:  relation "categorias_productos_usuario" already exists, skipping
+CREATE TABLE
+psql:scripts/schema-produccion.sql:1136: NOTICE:  relation "productos_usuario" already exists, skipping
+CREATE TABLE
+                          resultado
+--------------------------------------------------------------
+ Script completado exitosamente. Tablas creadas/actualizadas.
+(1 row)
+
+root@srv1170282:/var/www/apo360.net# psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable" -c "\d usuario_roles"
+                            Table "public.usuario_roles"
+   Column   |            Type             | Collation | Nullable |      Default
+------------+-----------------------------+-----------+----------+-------------------
+ id         | character varying           |           | not null | gen_random_uuid()
+ usuario_id | character varying           |           |          |
+ rol        | character varying(50)       |           | not null |
+ created_at | timestamp without time zone |           |          | now()
+Indexes:
+    "usuario_roles_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "usuario_roles_usuario_id_users_id_fk" FOREIGN KEY (usuario_id) REFERENCES users(id)
+
+root@srv1170282:/var/www/apo360.net#
