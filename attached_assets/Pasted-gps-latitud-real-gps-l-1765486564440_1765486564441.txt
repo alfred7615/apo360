@@ -1,0 +1,44 @@
+gps_latitud                           | real                        |           |          |
+ gps_longitud                          | real                        |           |          |
+ ruc                                   | character varying(20)       |           |          |
+ gps_local_latitud                     | real                        |           |          |
+ gps_local_longitud                    | real                        |           |          |
+ brevete_imagen_frente                 | character varying           |           |          |
+ brevete_imagen_posterior              | character varying           |           |          |
+ brevete_emision                       | date                        |           |          |
+ brevete_caducidad                     | date                        |           |          |
+ soat_imagen_frente                    | character varying           |           |          |
+ soat_imagen_posterior                 | character varying           |           |          |
+ soat_emision                          | date                        |           |          |
+ soat_caducidad                        | date                        |           |          |
+ revision_tecnica_imagen_frente        | character varying           |           |          |
+ revision_tecnica_imagen_posterior     | character varying           |           |          |
+ revision_tecnica_emision              | date                        |           |          |
+ revision_tecnica_caducidad            | date                        |           |          |
+ credencial_conductor_imagen_frente    | character varying           |           |          |
+ credencial_conductor_imagen_posterior | character varying           |           |          |
+ credencial_conductor_emision          | date                        |           |          |
+ credencial_conductor_caducidad        | date                        |           |          |
+ credencial_taxi_imagen_frente         | character varying           |           |          |
+ credencial_taxi_imagen_posterior      | character varying           |           |          |
+ credencial_taxi_emision               | date                        |           |          |
+ credencial_taxi_caducidad             | date                        |           |          |
+ tipo_vehiculo                         | character varying(50)       |           |          |
+ vehiculo_foto_frente                  | character varying           |           |          |
+ vehiculo_foto_posterior               | character varying           |           |          |
+ vehiculo_foto_lateral_izq             | character varying           |           |          |
+ vehiculo_foto_lateral_der             | character varying           |           |          |
+ foto_domicilio                        | character varying           |           |          |
+ password_hash                         | character varying           |           |          |
+ motivo_suspension                     | text                        |           |          |
+ fecha_suspension                      | timestamp without time zone |           |          |
+ motivo_bloqueo                        | text                        |           |          |
+ fecha_bloqueo                         | timestamp without time zone |           |          |
+ local_foto_1                          | character varying           |           |          |
+ local_foto_2                          | character varying           |           |          |
+ local_foto_3                          | character varying           |           |          |
+ local_foto_4                          | character varying           |           |          |
+ local_video_1                         | character varying           |           |          |
+ local_video_2                         | character varying           |           |          |
+Indexes:
+:

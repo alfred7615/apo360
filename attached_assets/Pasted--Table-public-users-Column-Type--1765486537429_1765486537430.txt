@@ -1,0 +1,43 @@
+        Table "public.users"
+                Column                 |            Type             | Collation | Nullable |            Default
+---------------------------------------+-----------------------------+-----------+----------+-------------------------------
+ id                                    | character varying           |           | not null | gen_random_uuid()
+ email                                 | character varying           |           |          |
+ telefono                              | character varying(20)       |           |          |
+ imei_dispositivo                      | character varying(20)       |           |          |
+ first_name                            | character varying           |           |          |
+ last_name                             | character varying           |           |          |
+ profile_image_url                     | character varying           |           |          |
+ rol                                   | character varying(50)       |           | not null | 'usuario'::character varying
+ estado                                | character varying(20)       |           |          | 'activo'::character varying
+ latitud                               | real                        |           |          |
+ longitud                              | real                        |           |          |
+ en_linea                              | boolean                     |           |          | false
+ ultima_conexion                       | timestamp without time zone |           |          |
+ modo_taxi                             | character varying(20)       |           |          | 'pasajero'::character varying
+ vehiculo_modelo                       | character varying           |           |          |
+ vehiculo_placa                        | character varying           |           |          |
+ disponible_taxi                       | boolean                     |           |          | false
+ nombre_local                          | character varying           |           |          |
+ categoria_local                       | character varying           |           |          |
+ direccion_local                       | text                        |           |          |
+ logo_local                            | character varying           |           |          |
+ descripcion_local                     | text                        |           |          |
+ created_at                            | timestamp without time zone |           |          | now()
+ updated_at                            | timestamp without time zone |           |          | now()
+ nivel_usuario                         | integer                     |           |          | 1
+ alias                                 | character varying(100)      |           |          |
+ dni                                   | character varying(20)       |           |          |
+ dni_imagen_frente                     | character varying           |           |          |
+ dni_imagen_posterior                  | character varying           |           |          |
+ dni_emision                           | date                        |           |          |
+ dni_caducidad                         | date                        |           |          |
+ pais                                  | character varying(100)      |           |          |
+ departamento                          | character varying(100)      |           |          |
+ distrito                              | character varying(100)      |           |          |
+ sector                                | character varying(100)      |           |          |
+ direccion                             | text                        |           |          |
+ manzana_lote                          | character varying(50)       |           |          |
+ avenida_calle                         | character varying(200)      |           |          |
+ gps_latitud                           | real                        |           |          |
+ gps_longitud                          | real                        |           |          |
