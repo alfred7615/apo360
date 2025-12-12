@@ -1,0 +1,41 @@
+root@srv1170282:/var/www/apo360.net# sudo cp /etc/nginx/sites-available/apo360.net /etc/nginx/sites-available/apo360.net.backup
+root@srv1170282:/var/www/apo360.net# sudo nano /etc/nginx/sites-available/apo360.net
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# sudo cp /etc/nginx/sites-available/apo360.net /etc/nginx/sites-available/apo360.net.backup
+root@srv1170282:/var/www/apo360.net# sudo nano /etc/nginx/sites-available/apo360.net
+root@srv1170282:/var/www/apo360.net# root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# sudo nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+root@srv1170282:/var/www/apo360.net# sudo systemctl reload nginxsudo systemctl reload nginxsudo systemctl reload nginxsudo systemctl reload nginxsudo systemctl reload nginxsudo systemctl reload nginx
+Failed to reload nginxsudo.service: Unit nginxsudo.service not found.
+Failed to reload systemctl.service: Unit systemctl.service not found.
+Failed to reload reload.service: Unit reload.service not found.
+Failed to reload nginxsudo.service: Unit nginxsudo.service not found.
+Failed to reload systemctl.service: Unit systemctl.service not found.
+Failed to reload reload.service: Unit reload.service not found.
+Failed to reload nginxsudo.service: Unit nginxsudo.service not found.
+Failed to reload systemctl.service: Unit systemctl.service not found.
+Failed to reload reload.service: Unit reload.service not found.
+Failed to reload nginxsudo.service: Unit nginxsudo.service not found.
+Failed to reload systemctl.service: Unit systemctl.service not found.
+Failed to reload reload.service: Unit reload.service not found.
+Failed to reload nginxsudo.service: Unit nginxsudo.service not found.
+Failed to reload systemctl.service: Unit systemctl.service not found.
+Failed to reload reload.service: Unit reload.service not found.
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# sudo systemctl reload nginx
+root@srv1170282:/var/www/apo360.net# mkdir -p /var/www/apo360.net/public/assets/comprobantes
+root@srv1170282:/var/www/apo360.net# mkdir -p /var/www/apo360.net/public/assets/locales
+root@srv1170282:/var/www/apo360.net# mkdir -p /var/www/apo360.net/public/assets/videos
+root@srv1170282:/var/www/apo360.net#
