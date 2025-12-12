@@ -176,12 +176,78 @@ SELECT column_name, data_type FROM information_schema.columns WHERE table_name =
 
 ---
 
+## SINCRONIZACIÓN DEL SISTEMA DE ROLES
+
+El sistema de roles jerárquico requiere tablas adicionales que deben sincronizarse a producción.
+
+### Script específico para Sistema de Roles
+
+```bash
+# En Hostinger, ejecutar el script de roles
+psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable" -f scripts/sistema-roles.sql
+```
+
+### Tablas del Sistema de Roles
+
+| Tabla | Descripción |
+|-------|-------------|
+| `categorias_roles` | Categorías por rol (Comisarías, Serenazgos, etc.) |
+| `subcategorias_roles` | Subcategorías (Jefatura, Operaciones, Personal, Vehículo) |
+| `solicitudes_roles` | Solicitudes pendientes de usuarios |
+| `usuario_roles` (actualizada) | Columnas adicionales: estado, asignado_por, fecha_asignacion |
+
+### Flujo de Activación en Producción
+
+1. **Subir código a GitHub**
+```bash
+git add .
+git commit -m "Sistema de roles jerárquico"
+git push origin main
+```
+
+2. **En Hostinger - Actualizar código**
+```bash
+cd /var/www/apo360.net
+git pull origin main
+npm run build
+```
+
+3. **En Hostinger - Ejecutar script de roles**
+```bash
+psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable" -f scripts/sistema-roles.sql
+```
+
+4. **Reiniciar aplicación**
+```bash
+pm2 restart apo360
+```
+
+### Verificar instalación
+
+```sql
+-- Verificar tablas creadas
+\dt categorias_roles
+\dt subcategorias_roles
+\dt solicitudes_roles
+
+-- Verificar datos iniciales
+SELECT COUNT(*) FROM categorias_roles;
+SELECT COUNT(*) FROM subcategorias_roles;
+```
+
+---
+
 ## ARCHIVO DE REFERENCIA
 
 El archivo **`scripts/schema-produccion.sql`** contiene:
 - Todas las tablas del sistema
 - Estructura completa y actualizada
 - Se puede ejecutar múltiples veces (usa IF NOT EXISTS)
+
+El archivo **`scripts/sistema-roles.sql`** contiene:
+- Tablas del sistema de roles jerárquico
+- Categorías y subcategorías para 12 tipos de roles
+- Datos ficticios de ejemplo
 
 **Última generación:** 12/12/2025
 

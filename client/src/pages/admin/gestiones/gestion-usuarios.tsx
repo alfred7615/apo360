@@ -22,10 +22,14 @@ const FILTROS_ROL = [
   { value: "usuario", label: "Usuarios" },
   { value: "conductor", label: "Conductores" },
   { value: "local", label: "Locales comerciales" },
+  { value: "cambista", label: "Cambistas" },
   { value: "serenazgo", label: "Serenazgo" },
   { value: "policia", label: "Policía" },
   { value: "bombero", label: "Bomberos" },
   { value: "samu", label: "SAMU" },
+  { value: "taxi", label: "Taxi" },
+  { value: "buses", label: "Buses" },
+  { value: "institucion", label: "Instituciones" },
   { value: "supervisor", label: "Supervisores" },
   { value: "admin_operaciones", label: "Admins Operaciones" },
   { value: "admin_cartera", label: "Admins Cartera" },
@@ -98,14 +102,17 @@ export default function GestionUsuariosScreen() {
     return matchSearch && matchRol && matchEstado;
   });
 
+  const ADMIN_ROLES = [
+    "super_admin", "admin_cartera", "admin_operaciones", 
+    "supervisor", "admin_publicidad", "admin_radio"
+  ];
+
   const admins = filteredUsuarios.filter((u) => 
-    u.rol === "super_admin" || u.rol === "admin_cartera" || u.rol === "admin_operaciones" || 
-    u.rol === "supervisor" || u.rol === "admin_publicidad" || u.rol === "admin_radio"
+    ADMIN_ROLES.includes(u.rol || "")
   );
 
   const regularUsers = filteredUsuarios.filter((u) => 
-    u.rol === "usuario" || u.rol === "conductor" || u.rol === "local" ||
-    u.rol === "serenazgo" || u.rol === "policia" || u.rol === "bombero" || u.rol === "samu"
+    !ADMIN_ROLES.includes(u.rol || "")
   );
 
   const getRolBadge = (rol: string) => {
@@ -119,10 +126,14 @@ export default function GestionUsuariosScreen() {
       usuario: { color: "bg-gray-500", icon: User },
       conductor: { color: "bg-orange-500", icon: Car },
       local: { color: "bg-pink-500", icon: Store },
+      cambista: { color: "bg-green-600", icon: Store },
       serenazgo: { color: "bg-blue-600", icon: Shield },
       policia: { color: "bg-blue-700", icon: Shield },
       bombero: { color: "bg-red-500", icon: Shield },
       samu: { color: "bg-red-600", icon: Shield },
+      taxi: { color: "bg-yellow-600", icon: Car },
+      buses: { color: "bg-teal-500", icon: Car },
+      institucion: { color: "bg-cyan-500", icon: Shield },
     };
     return config[rol] || { color: "bg-gray-500", icon: User };
   };

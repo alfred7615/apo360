@@ -544,13 +544,197 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/usuarios/:id/roles', isAuthenticated, requireSuperAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const { rol, categoriaRolId, subcategoriaRolId } = req.body;
+      const { rol, categoriaRolId, subcategoriaRolId, notas } = req.body;
       
-      const nuevoRol = await storage.asignarRolConCategoria(id, rol, categoriaRolId, subcategoriaRolId);
+      const adminId = req.user!.id;
+      const nuevoRol = await storage.asignarRolUsuario({
+        usuarioId: id,
+        rol,
+        categoriaRolId: categoriaRolId || null,
+        subcategoriaRolId: subcategoriaRolId || null,
+        asignadoPor: adminId,
+        notas: notas || null,
+      });
       res.status(201).json(nuevoRol);
     } catch (error: any) {
       console.error("Error al asignar rol:", error);
       res.status(500).json({ message: error.message || "Error al asignar rol" });
+    }
+  });
+
+  // Obtener roles de un usuario específico (admin)
+  app.get('/api/usuarios/:id/roles', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const roles = await storage.getRolesUsuarioConDetalles(id);
+      res.json(roles);
+    } catch (error: any) {
+      console.error("Error al obtener roles del usuario:", error);
+      res.status(500).json({ message: error.message || "Error al obtener roles" });
+    }
+  });
+
+  // Eliminar rol de usuario (admin)
+  app.delete('/api/usuarios/:usuarioId/roles/:rolId', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { rolId } = req.params;
+      await storage.removerRolUsuario(rolId);
+      res.json({ message: "Rol eliminado correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar rol:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar rol" });
+    }
+  });
+
+  // ============================================================
+  // SOLICITUDES DE ROLES
+  // ============================================================
+
+  // Obtener todas las solicitudes (admin)
+  app.get('/api/solicitudes-roles', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { estado } = req.query;
+      const solicitudes = await storage.getSolicitudesRoles(estado as string | undefined);
+      
+      // Enriquecer con datos del usuario
+      const solicitudesEnriquecidas = await Promise.all(solicitudes.map(async (sol) => {
+        const usuario = await storage.getUser(sol.usuarioId);
+        let categoria = null;
+        let subcategoria = null;
+        
+        if (sol.categoriaRolId) {
+          categoria = await storage.getCategoriaRol(sol.categoriaRolId);
+        }
+        if (sol.subcategoriaRolId) {
+          subcategoria = await storage.getSubcategoriaRol(sol.subcategoriaRolId);
+        }
+        
+        return {
+          ...sol,
+          usuario: usuario ? {
+            id: usuario.id,
+            nombre: `${usuario.firstName || ''} ${usuario.lastName || ''}`.trim() || usuario.email || 'Sin nombre',
+            email: usuario.email,
+            profileImageUrl: usuario.profileImageUrl,
+          } : null,
+          categoria,
+          subcategoria,
+        };
+      }));
+      
+      res.json(solicitudesEnriquecidas);
+    } catch (error: any) {
+      console.error("Error al obtener solicitudes:", error);
+      res.status(500).json({ message: error.message || "Error al obtener solicitudes" });
+    }
+  });
+
+  // Mis solicitudes de rol
+  app.get('/api/mis-solicitudes-roles', isAuthenticated, async (req, res) => {
+    try {
+      const usuarioId = req.user!.id;
+      const solicitudes = await storage.getSolicitudesRolesUsuario(usuarioId);
+      res.json(solicitudes);
+    } catch (error: any) {
+      console.error("Error al obtener solicitudes:", error);
+      res.status(500).json({ message: error.message || "Error al obtener solicitudes" });
+    }
+  });
+
+  // Crear solicitud de rol (usuario)
+  app.post('/api/solicitudes-roles', isAuthenticated, async (req, res) => {
+    try {
+      const usuarioId = req.user!.id;
+      const { rol, categoriaRolId, subcategoriaRolId, comentarios } = req.body;
+      
+      if (!rol) {
+        return res.status(400).json({ message: "Debe especificar un rol" });
+      }
+      
+      const solicitud = await storage.createSolicitudRol({
+        usuarioId,
+        rol,
+        categoriaRolId: categoriaRolId || null,
+        subcategoriaRolId: subcategoriaRolId || null,
+        comentarios: comentarios || null,
+      });
+      
+      res.status(201).json(solicitud);
+    } catch (error: any) {
+      console.error("Error al crear solicitud:", error);
+      res.status(500).json({ message: error.message || "Error al crear solicitud" });
+    }
+  });
+
+  // Aprobar solicitud de rol (admin)
+  app.post('/api/solicitudes-roles/:id/aprobar', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const adminId = req.user!.id;
+      
+      // Obtener la solicitud
+      const solicitud = await storage.getSolicitudRol(id);
+      if (!solicitud) {
+        return res.status(404).json({ message: "Solicitud no encontrada" });
+      }
+      
+      if (solicitud.estado !== 'pendiente') {
+        return res.status(400).json({ message: "Esta solicitud ya fue procesada" });
+      }
+      
+      // Aprobar la solicitud
+      await storage.aprobarSolicitudRol(id, adminId);
+      
+      // Asignar el rol al usuario
+      await storage.asignarRolUsuario({
+        usuarioId: solicitud.usuarioId,
+        rol: solicitud.rol,
+        categoriaRolId: solicitud.categoriaRolId || null,
+        subcategoriaRolId: solicitud.subcategoriaRolId || null,
+        asignadoPor: adminId,
+        notas: `Aprobado desde solicitud: ${solicitud.comentarios || 'Sin comentarios'}`,
+      });
+      
+      res.json({ message: "Solicitud aprobada y rol asignado" });
+    } catch (error: any) {
+      console.error("Error al aprobar solicitud:", error);
+      res.status(500).json({ message: error.message || "Error al aprobar solicitud" });
+    }
+  });
+
+  // Rechazar solicitud de rol (admin)
+  app.post('/api/solicitudes-roles/:id/rechazar', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const adminId = req.user!.id;
+      const { motivoRechazo } = req.body;
+      
+      const solicitud = await storage.getSolicitudRol(id);
+      if (!solicitud) {
+        return res.status(404).json({ message: "Solicitud no encontrada" });
+      }
+      
+      if (solicitud.estado !== 'pendiente') {
+        return res.status(400).json({ message: "Esta solicitud ya fue procesada" });
+      }
+      
+      await storage.rechazarSolicitudRol(id, adminId, motivoRechazo || 'Sin motivo especificado');
+      
+      res.json({ message: "Solicitud rechazada" });
+    } catch (error: any) {
+      console.error("Error al rechazar solicitud:", error);
+      res.status(500).json({ message: error.message || "Error al rechazar solicitud" });
+    }
+  });
+
+  // Lista de roles disponibles para solicitar
+  app.get('/api/roles-disponibles', async (req, res) => {
+    try {
+      const { rolesDisponibles } = await import('@shared/schema');
+      res.json(rolesDisponibles);
+    } catch (error: any) {
+      console.error("Error al obtener roles disponibles:", error);
+      res.status(500).json({ message: error.message || "Error al obtener roles" });
     }
   });
 

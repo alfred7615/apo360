@@ -161,16 +161,99 @@ export type InsertLugarUsuario = z.infer<typeof insertLugarUsuarioSchema>;
 export type LugarUsuario = typeof lugaresUsuario.$inferSelect;
 
 // ============================================================
-// ROLES MÚLTIPLES POR USUARIO
+// SISTEMA DE ROLES JERÁRQUICO
 // ============================================================
+
+// Categorías de roles (ej: "Comisaría Alto Alianza", "Radio Taxi Sur", "Bomberos Norte")
+export const categoriasRoles = pgTable("categorias_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  rol: varchar("rol", { length: 50 }).notNull(), // 'policia', 'bombero', 'taxi', etc.
+  nombre: varchar("nombre", { length: 200 }).notNull(), // "Comisaría Alto Alianza"
+  descripcion: text("descripcion"),
+  icono: varchar("icono", { length: 50 }),
+  activo: boolean("activo").default(true),
+  orden: integer("orden").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCategoriaRolSchema = createInsertSchema(categoriasRoles).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCategoriaRol = z.infer<typeof insertCategoriaRolSchema>;
+export type CategoriaRol = typeof categoriasRoles.$inferSelect;
+
+// Subcategorías de roles (ej: "Jefatura", "Operaciones", "Personal")
+export const subcategoriasRoles = pgTable("subcategorias_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  categoriaRolId: varchar("categoria_rol_id").references(() => categoriasRoles.id).notNull(),
+  nombre: varchar("nombre", { length: 200 }).notNull(), // "Jefatura", "Operaciones", etc.
+  descripcion: text("descripcion"),
+  permisos: json("permisos").$type<string[]>(), // Lista de permisos especiales
+  activo: boolean("activo").default(true),
+  orden: integer("orden").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSubcategoriaRolSchema = createInsertSchema(subcategoriasRoles).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSubcategoriaRol = z.infer<typeof insertSubcategoriaRolSchema>;
+export type SubcategoriaRol = typeof subcategoriasRoles.$inferSelect;
+
+// Roles múltiples por usuario (un usuario puede tener varios roles)
 export const usuarioRoles = pgTable("usuario_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  usuarioId: varchar("usuario_id").references(() => usuarios.id),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id).notNull(),
   rol: varchar("rol", { length: 50 }).notNull(),
-  categoriaRolId: varchar("categoria_rol_id"),
-  subcategoriaRolId: varchar("subcategoria_rol_id"),
+  categoriaRolId: varchar("categoria_rol_id").references(() => categoriasRoles.id),
+  subcategoriaRolId: varchar("subcategoria_rol_id").references(() => subcategoriasRoles.id),
+  estado: varchar("estado", { length: 20 }).default("activo"), // 'activo', 'suspendido', 'inactivo'
+  asignadoPor: varchar("asignado_por").references(() => usuarios.id),
+  fechaAsignacion: timestamp("fecha_asignacion").defaultNow(),
+  fechaVencimiento: timestamp("fecha_vencimiento"),
+  notas: text("notas"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export const insertUsuarioRolSchema = createInsertSchema(usuarioRoles).omit({ id: true, createdAt: true, updatedAt: true, fechaAsignacion: true });
+export type InsertUsuarioRol = z.infer<typeof insertUsuarioRolSchema>;
+export type UsuarioRol = typeof usuarioRoles.$inferSelect;
+
+// Solicitudes de roles (para aprobación del super admin)
+export const solicitudesRoles = pgTable("solicitudes_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id).notNull(),
+  rol: varchar("rol", { length: 50 }).notNull(),
+  categoriaRolId: varchar("categoria_rol_id").references(() => categoriasRoles.id),
+  subcategoriaRolId: varchar("subcategoria_rol_id").references(() => subcategoriasRoles.id),
+  comentarios: text("comentarios"), // Nota del usuario explicando por qué solicita el rol
+  documentosAdjuntos: json("documentos_adjuntos").$type<string[]>(), // URLs de documentos de acreditación
+  estado: varchar("estado", { length: 20 }).default("pendiente").notNull(), // 'pendiente', 'aprobado', 'rechazado'
+  motivoRechazo: text("motivo_rechazo"),
+  revisadoPor: varchar("revisado_por").references(() => usuarios.id),
+  fechaRevision: timestamp("fecha_revision"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSolicitudRolSchema = createInsertSchema(solicitudesRoles).omit({ id: true, createdAt: true, updatedAt: true, estado: true, fechaRevision: true });
+export type InsertSolicitudRol = z.infer<typeof insertSolicitudRolSchema>;
+export type SolicitudRol = typeof solicitudesRoles.$inferSelect;
+
+// Lista de roles principales disponibles en el sistema
+export const rolesDisponibles = [
+  { valor: "usuario", nombre: "Usuario", descripcion: "Usuario básico del sistema", icono: "User" },
+  { valor: "cambista", nombre: "Cambista", descripcion: "Envía datos de cambio de moneda al día", icono: "Coins" },
+  { valor: "chat", nombre: "Chat Comunitario", descripcion: "Acceso a grupos de seguridad ciudadana", icono: "MessageSquare" },
+  { valor: "mi_tienda", nombre: "Mi Tienda", descripcion: "Vende productos de manera independiente", icono: "Store" },
+  { valor: "local", nombre: "Local Comercial", descripcion: "Propietario de negocio con RUC", icono: "Building" },
+  { valor: "policia", nombre: "Policía", descripcion: "Miembro de la PNP", icono: "Shield" },
+  { valor: "bombero", nombre: "Bombero", descripcion: "Miembro del cuerpo de bomberos", icono: "Flame" },
+  { valor: "samu", nombre: "SAMU", descripcion: "Personal de emergencias médicas", icono: "Ambulance" },
+  { valor: "serenazgo", nombre: "Serenazgo", descripcion: "Personal de seguridad municipal", icono: "Eye" },
+  { valor: "institucion", nombre: "Institución", descripcion: "Puede publicar eventos y encuestas", icono: "Landmark" },
+  { valor: "conductor", nombre: "Conductor", descripcion: "Taxista, delivery, buses, mudanzas", icono: "Car" },
+  { valor: "buses", nombre: "Buses", descripcion: "Operador de transporte público", icono: "Bus" },
+] as const;
 
 // ============================================================
 // DATOS DE NEGOCIO LOCAL (para usuarios con rol local_comercial)
@@ -822,11 +905,6 @@ export type RespuestaEncuesta = typeof respuestasEncuestas.$inferSelect;
 export const insertComentarioSchema = createInsertSchema(comentarios).omit({ id: true, createdAt: true });
 export type InsertComentario = z.infer<typeof insertComentarioSchema>;
 export type Comentario = typeof comentarios.$inferSelect;
-
-// Export insert schemas for usuario_roles and administradores (defined earlier)
-export const insertUsuarioRolSchema = createInsertSchema(usuarioRoles).omit({ id: true, createdAt: true });
-export type InsertUsuarioRol = z.infer<typeof insertUsuarioRolSchema>;
-export type UsuarioRol = typeof usuarioRoles.$inferSelect;
 
 export const insertAdministradorSchema = createInsertSchema(administradores).omit({ id: true, createdAt: true });
 export type InsertAdministrador = z.infer<typeof insertAdministradorSchema>;
@@ -1522,55 +1600,6 @@ export const configuracionCostos = pgTable("configuracion_costos", {
 export const insertConfiguracionCostoSchema = createInsertSchema(configuracionCostos).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertConfiguracionCosto = z.infer<typeof insertConfiguracionCostoSchema>;
 export type ConfiguracionCosto = typeof configuracionCostos.$inferSelect;
-
-// ============================================================
-// CATEGORÍAS DE ROLES (para roles con subcategorías editables)
-// Local comercial, Policía, SAMU, Taxi, Buses, Serenazgo, Bomberos
-// ============================================================
-export const categoriasRol = pgTable("categorias_rol", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  rolBase: varchar("rol_base", { length: 50 }).notNull(), // 'local', 'policia', 'samu', 'taxi', 'buses', 'serenazgo', 'bomberos'
-  nombre: varchar("nombre", { length: 100 }).notNull(),
-  descripcion: text("descripcion"),
-  icono: varchar("icono", { length: 50 }),
-  color: varchar("color", { length: 20 }),
-  orden: integer("orden").default(0),
-  activo: boolean("activo").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertCategoriaRolSchema = createInsertSchema(categoriasRol).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertCategoriaRol = z.infer<typeof insertCategoriaRolSchema>;
-export type CategoriaRol = typeof categoriasRol.$inferSelect;
-
-// ============================================================
-// SUBCATEGORÍAS DE ROLES (jerarquía dentro de categorías)
-// Ejemplo: Policía > Comisaría 1 > Jefe, Patrullero, Moto, Tránsito
-// ============================================================
-export const subcategoriasRol = pgTable("subcategorias_rol", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  categoriaId: varchar("categoria_id").notNull().references(() => categoriasRol.id, { onDelete: 'cascade' }),
-  nombre: varchar("nombre", { length: 100 }).notNull(),
-  descripcion: text("descripcion"),
-  icono: varchar("icono", { length: 50 }),
-  color: varchar("color", { length: 20 }),
-  orden: integer("orden").default(0),
-  activo: boolean("activo").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertSubcategoriaRolSchema = createInsertSchema(subcategoriasRol).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertSubcategoriaRol = z.infer<typeof insertSubcategoriaRolSchema>;
-export type SubcategoriaRol = typeof subcategoriasRol.$inferSelect;
-
-// Roles base que tienen categorías/subcategorías
-export const rolesConCategoria = [
-  'local', 'policia', 'samu', 'taxi', 'buses', 'serenazgo', 'bomberos'
-] as const;
-
-export type RolConCategoria = typeof rolesConCategoria[number];
 
 // ============================================================
 // TYPE ALIASES (para compatibilidad con código existente)

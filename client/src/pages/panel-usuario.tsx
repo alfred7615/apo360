@@ -18,7 +18,7 @@ import {
   Plus, Edit, Loader2, Crown, CheckCircle,
   User, Camera, AlertCircle, Wallet, DollarSign,
   Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn, Copy, Building, Phone,
-  History, TrendingUp, TrendingDown, Megaphone, UtensilsCrossed, Wrench, FileText, Coins, ThumbsUp
+  History, TrendingUp, TrendingDown, Megaphone, UtensilsCrossed, Wrench, FileText, Coins, ThumbsUp, Shield
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -94,6 +94,24 @@ interface ViajeTaxi {
   completadoAt: string | null;
 }
 
+interface RolDisponible {
+  valor: string;
+  nombre: string;
+  descripcion: string;
+  icono: string;
+}
+
+interface SolicitudRol {
+  id: string;
+  usuarioId: string;
+  rol: string;
+  categoriaRolId?: string;
+  subcategoriaRolId?: string;
+  comentarios?: string;
+  estado: string;
+  createdAt: string;
+}
+
 export default function PanelUsuarioPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const searchString = useSearch();
@@ -101,6 +119,9 @@ export default function PanelUsuarioPage() {
   const [showProductoModal, setShowProductoModal] = useState(false);
   const [showRecargaModal, setShowRecargaModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [showSolicitarRolModal, setShowSolicitarRolModal] = useState(false);
+  const [rolSeleccionado, setRolSeleccionado] = useState<RolDisponible | null>(null);
+  const [comentarioSolicitud, setComentarioSolicitud] = useState("");
 
   // Detectar si viene con parámetro de recarga para abrir el modal automáticamente
   useEffect(() => {
@@ -185,11 +206,41 @@ export default function PanelUsuarioPage() {
     enabled: isAuthenticated,
   });
 
+  const { data: rolesDisponibles = [] } = useQuery<RolDisponible[]>({
+    queryKey: ["/api/roles-disponibles"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: misSolicitudesRoles = [], isLoading: loadingSolicitudes } = useQuery<SolicitudRol[]>({
+    queryKey: ["/api/mis-solicitudes-roles"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: categoriasRoles = [] } = useQuery<any[]>({
+    queryKey: ["/api/categorias-rol"],
+    enabled: isAuthenticated,
+  });
+
   const tieneRolLocal = misRoles.some(r => 
     r.rol === "local" || r.rol === "local_comercial" || user?.rol === "local"
   );
 
   const tieneRolCambista = misRoles.some(r => r.rol === "cambista") || user?.rol === "cambista";
+
+  const solicitarRolMutation = useMutation({
+    mutationFn: (data: { rol: string; comentarios?: string }) => 
+      apiRequest("POST", "/api/solicitudes-roles", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-solicitudes-roles"] });
+      setShowSolicitarRolModal(false);
+      setRolSeleccionado(null);
+      setComentarioSolicitud("");
+      toast({ title: "Solicitud enviada", description: "Tu solicitud de rol ha sido enviada para revisión." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al solicitar rol", description: error.message, variant: "destructive" });
+    },
+  });
 
   const contratarMembresiaMutation = useMutation({
     mutationFn: (planId: string) => apiRequest("POST", "/api/membresias/contratar", { planId }),
@@ -346,12 +397,22 @@ export default function PanelUsuarioPage() {
             {tieneMembresia && <Badge className="bg-yellow-500"><Crown className="h-3 w-3 mr-1" /> Premium</Badge>}
           </div>
         </div>
-        <Link href="/perfil">
-          <Button variant="outline" data-testid="button-editar-perfil">
-            <Edit className="h-4 w-4 mr-2" />
-            Editar Perfil
+        <div className="flex gap-2">
+          <Link href="/perfil">
+            <Button variant="outline" data-testid="button-editar-perfil">
+              <Edit className="h-4 w-4 mr-2" />
+              Editar Perfil
+            </Button>
+          </Link>
+          <Button 
+            variant="default" 
+            onClick={() => setShowSolicitarRolModal(true)}
+            data-testid="button-solicitar-rol"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Solicitar Rol
           </Button>
-        </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
@@ -465,6 +526,22 @@ export default function PanelUsuarioPage() {
                 <span className="text-xs sm:text-sm">Cambista</span>
               </Button>
             )}
+            {/* Pestañas dinámicas para otros roles asignados */}
+            {misRoles
+              .filter(r => !['local', 'local_comercial', 'cambista', 'usuario', 'conductor'].includes(r.rol))
+              .map((rol) => (
+                <Button
+                  key={rol.id}
+                  variant={activeTab === `rol-${rol.rol}` ? "default" : "outline"}
+                  onClick={() => setActiveTab(`rol-${rol.rol}`)}
+                  className="flex items-center justify-center gap-2 h-auto py-3"
+                  data-testid={`tab-rol-${rol.rol}`}
+                >
+                  <Shield className="h-4 w-4" />
+                  <span className="text-xs sm:text-sm capitalize">{rol.rol.replace(/_/g, ' ')}</span>
+                </Button>
+              ))
+            }
           </div>
         </div>
 
@@ -1323,6 +1400,64 @@ export default function PanelUsuarioPage() {
             <CambistaPanelUsuario />
           </TabsContent>
         )}
+
+        {/* Contenido dinámico para otros roles asignados */}
+        {misRoles
+          .filter(r => !['local', 'local_comercial', 'cambista', 'usuario', 'conductor'].includes(r.rol))
+          .map((rol) => (
+            <TabsContent key={rol.id} value={`rol-${rol.rol}`} className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-primary" />
+                    Panel de {rol.rol.replace(/_/g, ' ').charAt(0).toUpperCase() + rol.rol.replace(/_/g, ' ').slice(1)}
+                  </CardTitle>
+                  <CardDescription>
+                    Funciones y herramientas disponibles para tu rol
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Información del rol */}
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <h4 className="font-medium mb-2">Información del Rol</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Rol asignado</p>
+                          <Badge className="mt-1 capitalize">{rol.rol.replace(/_/g, ' ')}</Badge>
+                        </div>
+                        {rol.categoria && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Categoría</p>
+                            <Badge variant="secondary" className="mt-1">{rol.categoria.nombre}</Badge>
+                          </div>
+                        )}
+                        {rol.subcategoria && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Subcategoría</p>
+                            <Badge variant="outline" className="mt-1">{rol.subcategoria.nombre}</Badge>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Panel específico según el tipo de rol */}
+                    <div className="border rounded-lg p-4">
+                      <div className="text-center py-8">
+                        <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="font-medium mb-2">Panel en Desarrollo</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Las funcionalidades específicas para el rol de {rol.rol.replace(/_/g, ' ')} 
+                          estarán disponibles próximamente.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))
+        }
       </Tabs>
 
       <Dialog open={showRecargaModal} onOpenChange={setShowRecargaModal}>
@@ -1769,6 +1904,138 @@ export default function PanelUsuarioPage() {
               setShowProductoModal(false);
             }} data-testid="button-guardar-producto">
               Publicar Producto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Solicitar Rol */}
+      <Dialog open={showSolicitarRolModal} onOpenChange={setShowSolicitarRolModal}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Solicitar Rol
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona el rol que deseas solicitar. Un administrador revisará tu solicitud.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Mis solicitudes pendientes */}
+          {misSolicitudesRoles.filter(s => s.estado === 'pendiente').length > 0 && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+              <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2 flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Solicitudes Pendientes
+              </h4>
+              <div className="space-y-2">
+                {misSolicitudesRoles.filter(s => s.estado === 'pendiente').map((sol) => (
+                  <div key={sol.id} className="flex items-center justify-between text-sm">
+                    <span className="capitalize">{sol.rol.replace(/_/g, ' ')}</span>
+                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                      Pendiente
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Mis roles actuales */}
+          {misRoles.length > 0 && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
+              <h4 className="font-medium text-green-800 dark:text-green-200 mb-2 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Mis Roles Actuales
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {misRoles.map((rol) => (
+                  <Badge key={rol.id} className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                    {rol.rol.replace(/_/g, ' ')}
+                    {rol.categoria && ` - ${rol.categoria.nombre}`}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Lista de roles disponibles */}
+          <div className="grid gap-3">
+            <Label>Selecciona un rol para solicitar:</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto">
+              {rolesDisponibles
+                .filter(r => r.valor !== 'usuario' && r.valor !== 'super_admin')
+                .filter(r => !misRoles.some(mr => mr.rol === r.valor))
+                .filter(r => !misSolicitudesRoles.some(s => s.rol === r.valor && s.estado === 'pendiente'))
+                .map((rol) => (
+                <Card 
+                  key={rol.valor}
+                  className={`cursor-pointer transition-all hover-elevate ${
+                    rolSeleccionado?.valor === rol.valor 
+                      ? 'ring-2 ring-primary bg-primary/5' 
+                      : ''
+                  }`}
+                  onClick={() => setRolSeleccionado(rol)}
+                  data-testid={`card-rol-${rol.valor}`}
+                >
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-lg">{rol.icono}</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium capitalize">{rol.nombre}</h4>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{rol.descripcion}</p>
+                    </div>
+                    {rolSeleccionado?.valor === rol.valor && (
+                      <CheckCircle className="h-5 w-5 text-primary" />
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {rolSeleccionado && (
+              <div className="space-y-3 mt-4">
+                <Label htmlFor="comentarios">Comentarios (opcional)</Label>
+                <Textarea
+                  id="comentarios"
+                  placeholder="Explica por qué solicitas este rol..."
+                  value={comentarioSolicitud}
+                  onChange={(e) => setComentarioSolicitud(e.target.value)}
+                  data-testid="input-comentarios-solicitud"
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowSolicitarRolModal(false);
+                setRolSeleccionado(null);
+                setComentarioSolicitud("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => {
+                if (rolSeleccionado) {
+                  solicitarRolMutation.mutate({
+                    rol: rolSeleccionado.valor,
+                    comentarios: comentarioSolicitud || undefined,
+                  });
+                }
+              }}
+              disabled={!rolSeleccionado || solicitarRolMutation.isPending}
+              data-testid="button-enviar-solicitud-rol"
+            >
+              {solicitarRolMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Enviar Solicitud
             </Button>
           </DialogFooter>
         </DialogContent>
