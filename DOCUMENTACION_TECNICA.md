@@ -1,6 +1,6 @@
 # APO-360 - Documentación Técnica Completa
 
-## Fecha de actualización: 11 de Diciembre 2025
+## Fecha de actualización: 12 de Diciembre 2025
 
 ---
 
@@ -16,7 +16,8 @@ APO-360 es una plataforma web de seguridad y servicios comunitarios para Tacna, 
 
 ### Credenciales Admin Producción
 - Email: aapomayta15@gmail.com
-- Password: Admin123
+- Password: Admin123!
+- Ver archivo `CREDENCIALES_SISTEMA.md` para credenciales completas
 
 ---
 
@@ -491,6 +492,85 @@ location /ws {
 
 | Fecha | Cambio | Archivos Afectados |
 |-------|--------|-------------------|
+| 2025-12-12 | Sistema de paneles dinámicos por rol | server/routes.ts, server/storage.ts, panel-usuario.tsx |
+| 2025-12-12 | Tablas datos_negocio y catalogo_negocio | shared/schema.ts |
+| 2025-12-12 | Componente LocalComercialPanel | client/src/components/LocalComercialPanel.tsx |
+| 2025-12-12 | Endpoints /api/mi-negocio, /api/mi-catalogo, /api/mis-roles | server/routes.ts |
+| 2025-12-12 | Documentación de credenciales | CREDENCIALES_SISTEMA.md |
 | 2025-12-10 | Configuración Nginx con map para assets | /etc/nginx/sites-available/apo360.net |
 | 2025-12-10 | Aumento límite uploads a 25MB | server/uploadConfig.ts, uploadConfigByEndpoint.ts |
 | 2025-12-10 | Agregados formatos GIF, BMP, TIFF, SVG | server/uploadConfig.ts, uploadConfigByEndpoint.ts |
+
+---
+
+## 14. FUNCIONALIDADES IMPLEMENTADAS (Actualizado 12/12/2025)
+
+### Sistema de Roles y Categorías
+- Categorías de roles configurables por super_admin
+- Subcategorías dentro de cada categoría
+- Asignación de rol con categoría/subcategoría a usuarios
+- Paneles dinámicos según rol asignado
+
+### Panel de Local Comercial
+- Formulario de datos del negocio (nombre, descripción, logo, contacto)
+- Catálogo de productos/servicios con precios
+- Configuración de horarios y días de atención
+- Integración con GPS y redes sociales
+
+### Sistema de Billetera
+- Solicitudes de recarga de saldo
+- Subida de comprobante de pago (imagen)
+- Aprobación/rechazo por administrador
+- Historial de transacciones
+
+### Sistema de Chat en Tiempo Real
+- Mensajes individuales y grupales
+- Envío de archivos multimedia
+- Notificaciones push
+- WebSocket con Socket.io
+
+### Sistema de Emergencias
+- Botón de pánico flotante
+- Notificación a contactos de emergencia
+- Registro de emergencias con GPS
+- Panel de monitoreo para administradores
+
+### Calculadora de Cambio de Monedas
+- 5 monedas soportadas (PEN, USD, CLP, ARS, BOB)
+- Tasas configurables por cambistas locales
+- Modal y página dedicada
+
+---
+
+## 15. SINCRONIZACIÓN DE SCHEMAS ENTRE AMBIENTES
+
+### IMPORTANTE: Bases de datos independientes
+Las bases de datos de Replit (Neon) y Hostinger (PostgreSQL local) son **completamente independientes**. 
+
+### Cuando agregas nuevas tablas en Drizzle:
+
+1. **En Replit**: Se crean automáticamente con `npm run db:push`
+
+2. **En Hostinger**: Debes crear las tablas manualmente con SQL
+
+### Ejemplo de sincronización:
+```bash
+# 1. Generar SQL desde el schema
+# En Replit, revisa shared/schema.ts para ver las nuevas tablas
+
+# 2. Conectar a PostgreSQL en Hostinger
+psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable"
+
+# 3. Ejecutar CREATE TABLE para las tablas faltantes
+CREATE TABLE IF NOT EXISTS nueva_tabla (
+  id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid(),
+  ...
+);
+
+# 4. Verificar
+\dt
+```
+
+### Tablas agregadas recientemente (12/12/2025):
+- `datos_negocio` - Datos de locales comerciales
+- `catalogo_negocio` - Catálogo de productos/servicios
