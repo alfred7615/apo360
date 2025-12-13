@@ -884,7 +884,7 @@ export function CalculadoraCambio({
   ];
 
   const calculadoraCientifica = (
-    <div className="space-y-3" data-testid="calculadora-cientifica">
+    <div className="flex flex-col h-full min-h-[calc(100vh-120px)] md:min-h-0 md:h-auto" data-testid="calculadora-cientifica">
       {!tieneMembresiaActiva ? (
         <div className="flex flex-col items-center justify-center py-8 space-y-4">
           <div className="p-4 rounded-full bg-yellow-500/20 border border-yellow-500/30">
@@ -904,7 +904,8 @@ export function CalculadoraCambio({
         </div>
       ) : (
         <>
-          <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
+          {/* Pantalla - 40% en móvil */}
+          <div className="flex-[4] md:flex-none bg-gray-800/60 rounded-xl p-3 border border-gray-700/50 flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <div className="flex gap-1">
                 <Button
@@ -937,6 +938,22 @@ export function CalculadoraCambio({
               </Button>
             </div>
             
+            <div className="flex-1 overflow-y-auto max-h-[8lh] min-h-[6lh]">
+              {historialCientifica.length > 0 && (
+                <div className="space-y-0.5 mb-2">
+                  {historialCientifica.slice(-10).map((item, idx) => (
+                    <div 
+                      key={idx} 
+                      className="text-xs text-gray-500 font-mono truncate leading-tight"
+                      data-testid={`historial-item-${idx}`}
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
             <Input
               type="text"
               value={expresionCientifica}
@@ -954,180 +971,172 @@ export function CalculadoraCambio({
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-1">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={limpiarTodo}
-              className="bg-rose-500/20 border-rose-500/30 text-rose-400 hover:bg-rose-500/30"
-              data-testid="button-limpiar-todo"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={limpiarEntrada}
-              className="bg-orange-500/20 border-orange-500/30 text-orange-400 hover:bg-orange-500/30"
-              data-testid="button-limpiar-entrada"
-            >
-              CE
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={borrarUltimo}
-              className="bg-yellow-500/20 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/30"
-              data-testid="button-borrar-ultimo"
-            >
-              <Delete className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="default"
-              onClick={evaluarExpresion}
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
-              data-testid="button-evaluar"
-            >
-              =
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-6 gap-1">
-            {botonesFunciones.map((btn) => (
+          {/* Teclado - 60% en móvil */}
+          <div className="flex-[6] md:flex-none flex flex-col gap-1 pt-2">
+            <div className="grid grid-cols-4 gap-1">
               <Button
-                key={btn.label}
                 size="sm"
                 variant="outline"
-                onClick={() => insertarEnExpresion(btn.value)}
-                className="text-xs bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                data-testid={`button-funcion-${btn.label}`}
+                onClick={limpiarTodo}
+                className="h-10 md:h-9 bg-rose-500/20 border-rose-500/30 text-rose-400 hover:bg-rose-500/30"
+                data-testid="button-limpiar-todo"
               >
-                {btn.label}
+                <RotateCcw className="h-4 w-4" />
               </Button>
-            ))}
-          </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={limpiarEntrada}
+                className="h-10 md:h-9 bg-orange-500/20 border-orange-500/30 text-orange-400 hover:bg-orange-500/30"
+                data-testid="button-limpiar-entrada"
+              >
+                CE
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={borrarUltimo}
+                className="h-10 md:h-9 bg-yellow-500/20 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/30"
+                data-testid="button-borrar-ultimo"
+              >
+                <Delete className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="default"
+                onClick={evaluarExpresion}
+                className="h-10 md:h-9 bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
+                data-testid="button-evaluar"
+              >
+                =
+              </Button>
+            </div>
 
-          {mostrarFuncionesAvanzadas && (
             <div className="grid grid-cols-6 gap-1">
-              {botonesFuncionesAvanzadas.map((btn) => (
+              {botonesFunciones.map((btn) => (
                 <Button
                   key={btn.label}
                   size="sm"
                   variant="outline"
                   onClick={() => insertarEnExpresion(btn.value)}
-                  className="text-xs bg-indigo-500/10 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20"
-                  data-testid={`button-funcion-avanzada-${btn.label}`}
+                  className="h-9 md:h-8 text-xs bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+                  data-testid={`button-funcion-${btn.label}`}
                 >
                   {btn.label}
                 </Button>
               ))}
             </div>
-          )}
 
-          <div className="grid grid-cols-4 gap-1">
-            <div className="col-span-3 grid grid-cols-3 gap-1">
-              {botonesNumericos.map((btn) => (
-                <Button
-                  key={btn.label}
-                  size="sm"
-                  variant="outline"
-                  onClick={() => insertarEnExpresion(btn.value)}
-                  className="text-lg font-semibold bg-gray-700/50 border-gray-600/50 text-gray-100 hover:bg-gray-600/50"
-                  data-testid={`button-numero-${btn.label}`}
-                >
-                  {btn.label}
-                </Button>
-              ))}
+            {mostrarFuncionesAvanzadas && (
+              <div className="grid grid-cols-6 gap-1">
+                {botonesFuncionesAvanzadas.map((btn) => (
+                  <Button
+                    key={btn.label}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => insertarEnExpresion(btn.value)}
+                    className="h-9 md:h-8 text-xs bg-indigo-500/10 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20"
+                    data-testid={`button-funcion-avanzada-${btn.label}`}
+                  >
+                    {btn.label}
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            <div className="grid grid-cols-4 gap-1 flex-1">
+              <div className="col-span-3 grid grid-cols-3 gap-1">
+                {botonesNumericos.map((btn) => (
+                  <Button
+                    key={btn.label}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => insertarEnExpresion(btn.value)}
+                    className="h-10 md:h-9 text-lg font-semibold bg-gray-700/50 border-gray-600/50 text-gray-100 hover:bg-gray-600/50"
+                    data-testid={`button-numero-${btn.label}`}
+                  >
+                    {btn.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-1">
+                {botonesOperadores.slice(0, 4).map((btn) => (
+                  <Button
+                    key={btn.label}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => insertarEnExpresion(btn.value)}
+                    className="h-10 md:h-9 text-lg font-semibold bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30"
+                    data-testid={`button-operador-${btn.label}`}
+                  >
+                    {btn.label}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-1 gap-1">
-              {botonesOperadores.slice(0, 4).map((btn) => (
+
+            <div className="grid grid-cols-4 gap-1">
+              {botonesOperadores.slice(4).map((btn) => (
                 <Button
                   key={btn.label}
                   size="sm"
                   variant="outline"
                   onClick={() => insertarEnExpresion(btn.value)}
-                  className="text-lg font-semibold bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30"
+                  className="h-10 md:h-9 text-sm bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
                   data-testid={`button-operador-${btn.label}`}
                 >
                   {btn.label}
                 </Button>
               ))}
             </div>
-          </div>
 
-          <div className="grid grid-cols-4 gap-1">
-            {botonesOperadores.slice(4).map((btn) => (
-              <Button
-                key={btn.label}
-                size="sm"
-                variant="outline"
-                onClick={() => insertarEnExpresion(btn.value)}
-                className="text-sm bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
-                data-testid={`button-operador-${btn.label}`}
-              >
-                {btn.label}
-              </Button>
-            ))}
-          </div>
-
-          {historialCientifica.length > 0 && (
-            <div className="bg-gray-800/40 rounded-lg p-2 border border-gray-700/30 max-h-24 overflow-y-auto">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-gray-500">Historial:</p>
+            {historialCientifica.length > 0 && (
+              <div className="flex justify-center pt-1">
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={limpiarHistorial}
-                  className="h-5 text-xs px-1 text-gray-500 hover:text-rose-400"
+                  className="h-6 text-xs px-2 text-gray-500 hover:text-rose-400"
                   data-testid="button-limpiar-historial"
                 >
-                  Limpiar
+                  <Clock className="h-3 w-3 mr-1" />
+                  Limpiar historial ({historialCientifica.length}/30)
                 </Button>
               </div>
-              {historialCientifica.slice().reverse().map((item, idx) => (
-                <div 
-                  key={idx} 
-                  className="text-xs text-gray-400 font-mono truncate"
-                  data-testid={`historial-item-${idx}`}
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-          )}
+            )}
 
-          <div className="flex justify-center gap-2 pt-3 border-t border-gray-700/30">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={descargarExcel}
-              className="flex items-center gap-2 bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-              data-testid="button-descargar-excel-cientifica"
-            >
-              <FileSpreadsheet className="h-4 w-4" />
-              Excel
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={descargarPNG}
-              className="flex items-center gap-2 bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20"
-              data-testid="button-descargar-png-cientifica"
-            >
-              <Image className="h-4 w-4" />
-              Imagen
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setMostrarModalCompartir(true)}
-              className="flex items-center gap-2 bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20"
-              data-testid="button-compartir-cientifica"
-            >
-              <Share2 className="h-4 w-4" />
-              Compartir
-            </Button>
+            <div className="flex justify-center gap-2 pt-2 border-t border-gray-700/30">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={descargarExcel}
+                className="flex items-center gap-1 bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                data-testid="button-descargar-excel-cientifica"
+              >
+                <FileSpreadsheet className="h-3 w-3" />
+                Excel
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={descargarPNG}
+                className="flex items-center gap-1 bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20"
+                data-testid="button-descargar-png-cientifica"
+              >
+                <Image className="h-3 w-3" />
+                PNG
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setMostrarModalCompartir(true)}
+                className="flex items-center gap-1 bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20"
+                data-testid="button-compartir-cientifica"
+              >
+                <Share2 className="h-3 w-3" />
+                Compartir
+              </Button>
+            </div>
           </div>
         </>
       )}
@@ -1135,8 +1144,24 @@ export function CalculadoraCambio({
   );
 
   const calculadoraNormal = (
-    <div className="space-y-3" data-testid="calculadora-normal">
-      <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
+    <div className="flex flex-col h-full min-h-[calc(100vh-120px)] md:min-h-0 md:h-auto" data-testid="calculadora-normal">
+      {/* Pantalla - 40% en móvil */}
+      <div className="flex-[4] md:flex-none bg-gray-800/60 rounded-xl p-3 border border-gray-700/50 flex flex-col">
+        <div className="flex-1 overflow-y-auto max-h-[8lh] min-h-[8lh]">
+          {historialNormal.length > 0 && (
+            <div className="space-y-0.5 mb-2">
+              {historialNormal.slice(-10).map((item, idx) => (
+                <div 
+                  key={idx} 
+                  className="text-xs text-gray-500 font-mono truncate leading-tight"
+                  data-testid={`historial-normal-item-${idx}`}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <Input
           type="text"
           value={expresionNormal}
@@ -1154,138 +1179,130 @@ export function CalculadoraCambio({
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-1">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={limpiarTodoNormal}
-          className="bg-rose-500/20 border-rose-500/30 text-rose-400 hover:bg-rose-500/30"
-          data-testid="button-limpiar-todo-normal"
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={limpiarEntradaNormal}
-          className="bg-orange-500/20 border-orange-500/30 text-orange-400 hover:bg-orange-500/30"
-          data-testid="button-limpiar-entrada-normal"
-        >
-          CE
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={borrarUltimoNormal}
-          className="bg-yellow-500/20 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/30"
-          data-testid="button-borrar-ultimo-normal"
-        >
-          <Delete className="h-4 w-4" />
-        </Button>
-        <Button
-          size="sm"
-          variant="default"
-          onClick={evaluarExpresionNormal}
-          className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
-          data-testid="button-evaluar-normal"
-        >
-          =
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-4 gap-1">
-        <div className="col-span-3 grid grid-cols-3 gap-1">
-          {botonesNumericos.map((btn) => (
-            <Button
-              key={btn.label}
-              size="sm"
-              variant="outline"
-              onClick={() => insertarEnExpresionNormal(btn.value)}
-              className="text-lg font-semibold bg-gray-700/50 border-gray-600/50 text-gray-100 hover:bg-gray-600/50"
-              data-testid={`button-numero-normal-${btn.label}`}
-            >
-              {btn.label}
-            </Button>
-          ))}
+      {/* Teclado - 60% en móvil */}
+      <div className="flex-[6] md:flex-none flex flex-col gap-1 pt-2">
+        <div className="grid grid-cols-4 gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={limpiarTodoNormal}
+            className="h-12 md:h-9 bg-rose-500/20 border-rose-500/30 text-rose-400 hover:bg-rose-500/30"
+            data-testid="button-limpiar-todo-normal"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={limpiarEntradaNormal}
+            className="h-12 md:h-9 bg-orange-500/20 border-orange-500/30 text-orange-400 hover:bg-orange-500/30"
+            data-testid="button-limpiar-entrada-normal"
+          >
+            CE
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={borrarUltimoNormal}
+            className="h-12 md:h-9 bg-yellow-500/20 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/30"
+            data-testid="button-borrar-ultimo-normal"
+          >
+            <Delete className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="default"
+            onClick={evaluarExpresionNormal}
+            className="h-12 md:h-9 bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
+            data-testid="button-evaluar-normal"
+          >
+            =
+          </Button>
         </div>
-        <div className="grid grid-cols-1 gap-1">
-          {botonesOperadores.slice(0, 4).map((btn) => (
+
+        <div className="grid grid-cols-4 gap-1 flex-1">
+          <div className="col-span-3 grid grid-cols-3 gap-1">
+            {botonesNumericos.map((btn) => (
+              <Button
+                key={btn.label}
+                size="sm"
+                variant="outline"
+                onClick={() => insertarEnExpresionNormal(btn.value)}
+                className="h-12 md:h-9 text-lg font-semibold bg-gray-700/50 border-gray-600/50 text-gray-100 hover:bg-gray-600/50"
+                data-testid={`button-numero-normal-${btn.label}`}
+              >
+                {btn.label}
+              </Button>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 gap-1">
+            {botonesOperadores.slice(0, 4).map((btn) => (
+              <Button
+                key={btn.label}
+                size="sm"
+                variant="outline"
+                onClick={() => insertarEnExpresionNormal(btn.value)}
+                className="h-12 md:h-9 text-lg font-semibold bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30"
+                data-testid={`button-operador-normal-${btn.label}`}
+              >
+                {btn.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 gap-1">
+          {botonesOperadores.slice(4).map((btn) => (
             <Button
               key={btn.label}
               size="sm"
               variant="outline"
               onClick={() => insertarEnExpresionNormal(btn.value)}
-              className="text-lg font-semibold bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30"
+              className="h-12 md:h-9 text-sm bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
               data-testid={`button-operador-normal-${btn.label}`}
             >
               {btn.label}
             </Button>
           ))}
         </div>
-      </div>
 
-      <div className="grid grid-cols-4 gap-1">
-        {botonesOperadores.slice(4).map((btn) => (
-          <Button
-            key={btn.label}
-            size="sm"
-            variant="outline"
-            onClick={() => insertarEnExpresionNormal(btn.value)}
-            className="text-sm bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
-            data-testid={`button-operador-normal-${btn.label}`}
-          >
-            {btn.label}
-          </Button>
-        ))}
-      </div>
-
-      {historialNormal.length > 0 && (
-        <div className="bg-gray-800/40 rounded-lg p-2 border border-gray-700/30 max-h-24 overflow-y-auto">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-xs text-gray-500">Historial:</p>
+        {historialNormal.length > 0 && (
+          <div className="flex justify-center pt-1">
             <Button
               size="sm"
               variant="ghost"
               onClick={limpiarHistorialNormal}
-              className="h-5 text-xs px-1 text-gray-500 hover:text-rose-400"
+              className="h-6 text-xs px-2 text-gray-500 hover:text-rose-400"
               data-testid="button-limpiar-historial-normal"
             >
-              Limpiar
+              <Clock className="h-3 w-3 mr-1" />
+              Limpiar historial ({historialNormal.length}/30)
             </Button>
           </div>
-          {historialNormal.slice().reverse().map((item, idx) => (
-            <div 
-              key={idx} 
-              className="text-xs text-gray-400 font-mono truncate"
-              data-testid={`historial-normal-item-${idx}`}
-            >
-              {item}
-            </div>
-          ))}
-        </div>
-      )}
+        )}
 
-      <div className="flex justify-center gap-2 pt-3 border-t border-gray-700/30">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={descargarExcel}
-          className="flex items-center gap-2 bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-          data-testid="button-descargar-excel-normal"
-        >
-          <FileSpreadsheet className="h-4 w-4" />
-          Excel
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={descargarPNG}
-          className="flex items-center gap-2 bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20"
-          data-testid="button-descargar-png-normal"
-        >
-          <Image className="h-4 w-4" />
-          Imagen
-        </Button>
+        <div className="flex justify-center gap-2 pt-3 border-t border-gray-700/30">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={descargarExcel}
+            className="flex items-center gap-1 bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+            data-testid="button-descargar-excel-normal"
+          >
+            <FileSpreadsheet className="h-3 w-3" />
+            Excel
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={descargarPNG}
+            className="flex items-center gap-1 bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20"
+            data-testid="button-descargar-png-normal"
+          >
+            <Image className="h-3 w-3" />
+            PNG
+          </Button>
+        </div>
       </div>
     </div>
   );
