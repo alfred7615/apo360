@@ -426,63 +426,75 @@ export function CalculadoraCambio({
   }, [modo]);
 
   const headerComponent = mostrarHeader && (
-    <div className="flex items-center justify-between p-3 border-b border-gray-700/50">
-      <div className="flex items-center gap-1">
-        {onCerrar && (
+    <div className="border-b border-gray-700/50">
+      <div className="flex items-center justify-between p-2 border-b border-gray-700/30">
+        <div className="flex items-center gap-1">
+          {onCerrar && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onCerrar}
+              className="h-8 w-8 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10"
+              data-testid="button-cerrar"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          )}
+          {modo !== "moneda" && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setModo("moneda")}
+              className="h-8 w-8 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10"
+              data-testid="button-regresar-moneda"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
           <Button
             size="icon"
             variant="ghost"
-            onClick={onCerrar}
-            className="h-8 w-8 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10"
-            data-testid="button-cerrar"
+            onClick={() => cambiarModo("moneda")}
+            className={`h-8 w-8 ${modo === "moneda" ? "bg-rose-500/20 text-rose-300" : "text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"}`}
+            data-testid="button-calculadora-moneda"
+            title="Cambio de Moneda"
           >
-            <X className="h-5 w-5" />
+            <DollarSign className="h-5 w-5" />
           </Button>
-        )}
-        {modo !== "moneda" && (
           <Button
             size="icon"
             variant="ghost"
-            onClick={() => setModo("moneda")}
-            className="h-8 w-8 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10"
-            data-testid="button-regresar-moneda"
+            onClick={() => cambiarModo("normal")}
+            className={`h-8 w-8 ${modo === "normal" ? "bg-blue-500/20 text-blue-300" : "text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"}`}
+            data-testid="button-calculadora-normal"
+            title="Calculadora Normal"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <Calculator className="h-5 w-5" />
           </Button>
-        )}
-        <div className="flex items-center gap-2 ml-1">
-          <div className="p-1.5 rounded-lg bg-gradient-to-br from-rose-500/20 to-pink-500/20">
-            {getIconoModo()}
-          </div>
-          <span className="text-sm font-medium text-gray-100">
-            {modo === "moneda" ? "Cambio de Moneda" : getTituloModo()}
-          </span>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => cambiarModo("cientifica")}
+            className={`h-8 w-8 relative ${modo === "cientifica" ? "bg-purple-500/20 text-purple-300" : "text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"}`}
+            data-testid="button-calculadora-cientifica"
+            title="Calculadora Científica"
+          >
+            <FlaskConical className="h-5 w-5" />
+            {!tieneMembresiaActiva && (
+              <Lock className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-yellow-500" />
+            )}
+          </Button>
         </div>
       </div>
-      <div className="flex items-center gap-1">
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => cambiarModo("normal")}
-          className={`h-8 w-8 ${modo === "normal" ? "bg-blue-500/20 text-blue-300" : "text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"}`}
-          data-testid="button-calculadora-normal"
-          title="Calculadora Normal"
-        >
-          <Calculator className="h-5 w-5" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => cambiarModo("cientifica")}
-          className={`h-8 w-8 relative ${modo === "cientifica" ? "bg-purple-500/20 text-purple-300" : "text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"}`}
-          data-testid="button-calculadora-cientifica"
-          title="Calculadora Científica"
-        >
-          <FlaskConical className="h-5 w-5" />
-          {!tieneMembresiaActiva && (
-            <Lock className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-yellow-500" />
-          )}
-        </Button>
+      <div className="flex items-center gap-2 p-2">
+        <div className="p-1.5 rounded-lg bg-gradient-to-br from-rose-500/20 to-pink-500/20">
+          {getIconoModo()}
+        </div>
+        <span className="text-sm font-medium text-gray-100">
+          {modo === "moneda" ? "Cambio de Moneda" : getTituloModo()}
+        </span>
       </div>
     </div>
   );
@@ -534,17 +546,14 @@ export function CalculadoraCambio({
         <div className="space-y-2">
           <label className="text-sm font-medium text-rose-300/80">Tengo</label>
           <div className="flex gap-2">
-            <div className="relative flex-1 max-w-[140px]">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-rose-400/70 text-sm font-medium">
-                {getMonedaInfo(monedaOrigen).simbolo}
-              </span>
+            <div className="flex-1">
               <Input
                 type="text"
                 value={montoDisplay}
                 onChange={handleMontoChange}
                 onBlur={handleMontoBlur}
                 onFocus={handleMontoFocus}
-                className="pl-9 text-base font-semibold bg-gray-700/60 border-gray-600/50 text-gray-100 placeholder:text-gray-500 focus:border-rose-500/50 focus:ring-rose-500/20"
+                className="text-right text-base font-semibold bg-gray-700/60 border-gray-600/50 text-gray-100 placeholder:text-gray-500 focus:border-rose-500/50 focus:ring-rose-500/20"
                 placeholder="0.00"
                 data-testid="input-monto-origen"
               />
@@ -587,15 +596,12 @@ export function CalculadoraCambio({
         <div className="space-y-2">
           <label className="text-sm font-medium text-emerald-300/80">Recibo</label>
           <div className="flex gap-2">
-            <div className="relative flex-1 max-w-[140px]">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400/70 text-sm font-medium">
-                {getMonedaInfo(monedaDestino).simbolo}
-              </span>
+            <div className="flex-1">
               <Input
                 type="text"
                 value={formatearNumeroConComas(calcularCambio.resultado, decimalesActuales)}
                 readOnly
-                className="pl-9 text-base font-semibold bg-gray-600/40 border-gray-600/50 text-emerald-300"
+                className="text-right text-base font-semibold bg-gray-600/40 border-gray-600/50 text-emerald-300"
                 data-testid="input-monto-resultado"
               />
             </div>
