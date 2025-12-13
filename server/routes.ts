@@ -696,6 +696,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // PUBLICIDAD DEL NEGOCIO (Mi Publicidad)
+  // ============================================================
+  
+  // Obtener publicidad del usuario actual
+  app.get('/api/mi-publicidad', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const publicidades = await storage.getPublicidadesByUsuario(usuarioId);
+      res.json(publicidades);
+    } catch (error: any) {
+      console.error("Error al obtener publicidad:", error);
+      res.status(500).json({ message: error.message || "Error al obtener publicidad" });
+    }
+  });
+
+  // Crear nueva publicidad
+  app.post('/api/mi-publicidad', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const negocio = await storage.getDatosNegocio(usuarioId);
+      
+      if (!negocio) {
+        return res.status(400).json({ message: "Debes configurar tu negocio primero" });
+      }
+
+      const publicidad = await storage.createPublicidad({
+        ...req.body,
+        usuarioId,
+      });
+      res.status(201).json(publicidad);
+    } catch (error: any) {
+      console.error("Error al crear publicidad:", error);
+      res.status(500).json({ message: error.message || "Error al crear publicidad" });
+    }
+  });
+
+  // Actualizar publicidad
+  app.patch('/api/mi-publicidad/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const usuarioId = req.user.claims.sub;
+      
+      // Verificar que la publicidad pertenece al usuario
+      const publicidades = await storage.getPublicidadesByUsuario(usuarioId);
+      const esPropia = publicidades.some((p: any) => p.id === id);
+      
+      if (!esPropia) {
+        return res.status(403).json({ message: "No tienes permiso para editar esta publicidad" });
+      }
+
+      const publicidad = await storage.updatePublicidad(id, req.body);
+      res.json(publicidad);
+    } catch (error: any) {
+      console.error("Error al actualizar publicidad:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar publicidad" });
+    }
+  });
+
+  // Eliminar publicidad
+  app.delete('/api/mi-publicidad/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const usuarioId = req.user.claims.sub;
+      
+      // Verificar que la publicidad pertenece al usuario
+      const publicidades = await storage.getPublicidadesByUsuario(usuarioId);
+      const esPropia = publicidades.some((p: any) => p.id === id);
+      
+      if (!esPropia) {
+        return res.status(403).json({ message: "No tienes permiso para eliminar esta publicidad" });
+      }
+
+      await storage.deletePublicidad(id);
+      res.json({ message: "Publicidad eliminada correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar publicidad:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar publicidad" });
+    }
+  });
+
+  // ============================================================
+  // PEDIDOS DEL NEGOCIO (LocalComercialPanel)
+  // ============================================================
+  
+  // Obtener estadísticas de pedidos del negocio
+  app.get('/api/mi-negocio/pedidos/estadisticas', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const estadisticas = await storage.getEstadisticasPedidosNegocio(usuarioId);
+      res.json(estadisticas);
+    } catch (error: any) {
+      console.error("Error al obtener estadísticas de pedidos:", error);
+      res.status(500).json({ message: error.message || "Error al obtener estadísticas" });
+    }
+  });
+
+  // Obtener pedidos del negocio
+  app.get('/api/mi-negocio/pedidos', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { estado } = req.query;
+      
+      let pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
+      
+      // Filtrar por estado si se especifica
+      if (estado && estado !== 'todos') {
+        pedidos = pedidos.filter(p => p.estado === estado);
+      }
+      
+      // Enriquecer con datos del cliente
+      const pedidosEnriquecidos = await Promise.all(pedidos.map(async (pedido) => {
+        const cliente = await storage.getUser(pedido.usuarioId);
+        return {
+          ...pedido,
+          cliente: cliente ? {
+            id: cliente.id,
+            nombre: cliente.firstName && cliente.lastName 
+              ? `${cliente.firstName} ${cliente.lastName}`.trim() 
+              : cliente.firstName || cliente.lastName || cliente.alias || 'Cliente',
+            telefono: cliente.telefono,
+            email: cliente.email,
+          } : null,
+        };
+      }));
+      
+      res.json(pedidosEnriquecidos);
+    } catch (error: any) {
+      console.error("Error al obtener pedidos del negocio:", error);
+      res.status(500).json({ message: error.message || "Error al obtener pedidos" });
+    }
+  });
+
+  // Actualizar estado de pedido del negocio
+  app.patch('/api/mi-negocio/pedidos/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const usuarioId = req.user.claims.sub;
+      
+      // Verificar que el pedido pertenece al negocio del usuario
+      const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
+      const esPropio = pedidos.some(p => p.id === id);
+      
+      if (!esPropio) {
+        return res.status(403).json({ message: "No tienes permiso para modificar este pedido" });
+      }
+      
+      const { estado } = req.body;
+      const updateData: any = { estado };
+      
+      // Si el estado es entregado/completado, establecer completedAt
+      if (estado === 'entregado' || estado === 'completado') {
+        updateData.completedAt = new Date();
+      }
+      
+      const pedido = await storage.updatePedidoDelivery(id, updateData);
+      res.json(pedido);
+    } catch (error: any) {
+      console.error("Error al actualizar pedido:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar pedido" });
+    }
+  });
+
+  // ============================================================
   // MÓDULOS DE USUARIO POR ROL
   // ============================================================
   

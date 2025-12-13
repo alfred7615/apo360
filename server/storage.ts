@@ -193,6 +193,7 @@ export interface IStorage {
   
   // Operaciones de publicidad
   getPublicidades(tipo?: string): Promise<Publicidad[]>;
+  getPublicidadesByUsuario(usuarioId: string): Promise<Publicidad[]>;
   createPublicidad(publicidad: PublicidadInsert): Promise<Publicidad>;
   updatePublicidad(id: string, data: Partial<PublicidadInsert>): Promise<Publicidad | undefined>;
   deletePublicidad(id: string): Promise<void>;
@@ -533,6 +534,12 @@ export class DatabaseStorage implements IStorage {
         .orderBy(publicidad.orden);
     }
     return await db.select().from(publicidad).orderBy(publicidad.orden);
+  }
+
+  async getPublicidadesByUsuario(usuarioId: string): Promise<Publicidad[]> {
+    return await db.select().from(publicidad)
+      .where(eq(publicidad.usuarioId, usuarioId))
+      .orderBy(desc(publicidad.createdAt));
   }
 
   async createPublicidad(publicidadData: InsertPublicidad): Promise<Publicidad> {
@@ -3808,6 +3815,53 @@ export class DatabaseStorage implements IStorage {
       .where(eq(usuarioRoles.id, id))
       .returning();
     return actualizado;
+  }
+
+  // ============================================================
+  // PEDIDOS DEL NEGOCIO (para LocalComercialPanel)
+  // ============================================================
+  async getPedidosPorNegocio(negocioId: string): Promise<PedidoDelivery[]> {
+    const negocio = await db.select().from(datosNegocio).where(eq(datosNegocio.id, negocioId));
+    if (!negocio.length) return [];
+    
+    const servicio = await db.select().from(servicios).where(eq(servicios.usuarioId, negocio[0].usuarioId));
+    if (!servicio.length) return [];
+    
+    return await db.select()
+      .from(pedidosDelivery)
+      .where(eq(pedidosDelivery.servicioId, servicio[0].id))
+      .orderBy(desc(pedidosDelivery.createdAt));
+  }
+
+  async getPedidosPorUsuarioNegocio(usuarioId: string): Promise<PedidoDelivery[]> {
+    const servicio = await db.select().from(servicios).where(eq(servicios.usuarioId, usuarioId));
+    if (!servicio.length) return [];
+    
+    return await db.select()
+      .from(pedidosDelivery)
+      .where(eq(pedidosDelivery.servicioId, servicio[0].id))
+      .orderBy(desc(pedidosDelivery.createdAt));
+  }
+
+  async getEstadisticasPedidosNegocio(usuarioId: string): Promise<{ recibidos: number; atendidos: number; entregados: number }> {
+    const servicio = await db.select().from(servicios).where(eq(servicios.usuarioId, usuarioId));
+    if (!servicio.length) return { recibidos: 0, atendidos: 0, entregados: 0 };
+    
+    const pedidos = await db.select()
+      .from(pedidosDelivery)
+      .where(eq(pedidosDelivery.servicioId, servicio[0].id));
+    
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    return {
+      recibidos: pedidos.filter(p => p.estado === 'pendiente').length,
+      atendidos: pedidos.filter(p => p.estado === 'en_preparacion' || p.estado === 'preparando').length,
+      entregados: pedidos.filter(p => 
+        (p.estado === 'entregado' || p.estado === 'completado') && 
+        p.completedAt && new Date(p.completedAt) >= hoy
+      ).length,
+    };
   }
 }
 

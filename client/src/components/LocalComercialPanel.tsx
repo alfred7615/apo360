@@ -93,6 +93,60 @@ interface PersonalNegocio {
   usuario?: UsuarioBasico;
 }
 
+interface PublicidadNegocio {
+  id: string;
+  titulo?: string;
+  descripcion?: string;
+  tipo?: string;
+  imagenUrl?: string;
+  enlaceUrl?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  fechaCaducidad?: string;
+  estado?: string;
+  usuarioId?: string;
+  orden?: number;
+  latitud?: number;
+  longitud?: number;
+  direccion?: string;
+  facebook?: string;
+  instagram?: string;
+  whatsapp?: string;
+  tiktok?: string;
+  twitter?: string;
+  youtube?: string;
+  linkedin?: string;
+  createdAt?: string;
+}
+
+interface PedidoNegocio {
+  id: string;
+  usuarioId: string;
+  servicioId: string;
+  productos: { productoId: string; cantidad: number }[];
+  total: string;
+  direccionEntrega: string;
+  latitud?: number;
+  longitud?: number;
+  estado?: string;
+  conductorId?: string;
+  notas?: string;
+  createdAt?: string;
+  completedAt?: string;
+  cliente?: {
+    id: string;
+    nombre: string;
+    telefono?: string;
+    email?: string;
+  };
+}
+
+interface EstadisticasPedidos {
+  recibidos: number;
+  atendidos: number;
+  entregados: number;
+}
+
 export default function LocalComercialPanel() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("negocio");
@@ -111,6 +165,21 @@ export default function LocalComercialPanel() {
     funcion: "",
     permisos: [] as string[],
     notas: "",
+  });
+
+  const [showPublicidadModal, setShowPublicidadModal] = useState(false);
+  const [editingPublicidad, setEditingPublicidad] = useState<PublicidadNegocio | null>(null);
+  const [publicidadForm, setPublicidadForm] = useState<Partial<PublicidadNegocio>>({
+    titulo: "",
+    descripcion: "",
+    tipo: "carrusel_principal",
+    imagenUrl: "",
+    enlaceUrl: "",
+    estado: "activo",
+    facebook: "",
+    instagram: "",
+    whatsapp: "",
+    tiktok: "",
   });
 
   const [negocioForm, setNegocioForm] = useState<Partial<DatosNegocio>>({
@@ -155,9 +224,34 @@ export default function LocalComercialPanel() {
     enabled: !!miNegocio,
   });
 
+  const { data: miPublicidad = [], isLoading: loadingPublicidad } = useQuery<PublicidadNegocio[]>({
+    queryKey: ["/api/mi-publicidad"],
+    enabled: !!miNegocio,
+  });
+
   const { data: usuariosBuscados = [], isLoading: buscandoUsuarios } = useQuery<UsuarioBasico[]>({
     queryKey: ["/api/buscar-usuarios", busquedaUsuario],
     enabled: busquedaUsuario.length >= 3,
+  });
+
+  const [filtroPedidos, setFiltroPedidos] = useState<string>("todos");
+
+  const { data: estadisticasPedidos = { recibidos: 0, atendidos: 0, entregados: 0 } } = useQuery<EstadisticasPedidos>({
+    queryKey: ["/api/mi-negocio/pedidos/estadisticas"],
+    enabled: !!miNegocio,
+  });
+
+  const { data: misPedidos = [], isLoading: loadingPedidos } = useQuery<PedidoNegocio[]>({
+    queryKey: ["/api/mi-negocio/pedidos", filtroPedidos],
+    queryFn: async () => {
+      const url = filtroPedidos === 'todos' 
+        ? '/api/mi-negocio/pedidos' 
+        : `/api/mi-negocio/pedidos?estado=${filtroPedidos}`;
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('Error al cargar pedidos');
+      return res.json();
+    },
+    enabled: !!miNegocio,
   });
 
   useEffect(() => {
@@ -255,6 +349,60 @@ export default function LocalComercialPanel() {
     },
   });
 
+  const guardarPublicidadMutation = useMutation({
+    mutationFn: (data: Partial<PublicidadNegocio>) => {
+      if (editingPublicidad) {
+        return apiRequest("PATCH", `/api/mi-publicidad/${editingPublicidad.id}`, data);
+      }
+      return apiRequest("POST", "/api/mi-publicidad", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-publicidad"] });
+      setShowPublicidadModal(false);
+      setEditingPublicidad(null);
+      setPublicidadForm({
+        titulo: "",
+        descripcion: "",
+        tipo: "carrusel_principal",
+        imagenUrl: "",
+        enlaceUrl: "",
+        estado: "activo",
+        facebook: "",
+        instagram: "",
+        whatsapp: "",
+        tiktok: "",
+      });
+      toast({ title: editingPublicidad ? "Publicidad actualizada" : "Publicidad creada" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const eliminarPublicidadMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/mi-publicidad/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-publicidad"] });
+      toast({ title: "Publicidad eliminada" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const actualizarPedidoMutation = useMutation({
+    mutationFn: ({ id, estado }: { id: string; estado: string }) => 
+      apiRequest("PATCH", `/api/mi-negocio/pedidos/${id}`, { estado }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-negocio/pedidos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-negocio/pedidos/estadisticas"] });
+      toast({ title: "Estado del pedido actualizado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al actualizar pedido", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleGuardarNegocio = () => {
     if (!negocioForm.nombreNegocio?.trim()) {
       toast({ title: "El nombre del negocio es requerido", variant: "destructive" });
@@ -339,6 +487,56 @@ export default function LocalComercialPanel() {
       notas: personalForm.notas,
     });
   };
+
+  const handleAgregarPublicidad = () => {
+    setEditingPublicidad(null);
+    setPublicidadForm({
+      titulo: "",
+      descripcion: "",
+      tipo: "carrusel_principal",
+      imagenUrl: "",
+      enlaceUrl: "",
+      estado: "activo",
+      facebook: "",
+      instagram: "",
+      whatsapp: "",
+      tiktok: "",
+    });
+    setShowPublicidadModal(true);
+  };
+
+  const handleEditarPublicidad = (pub: PublicidadNegocio) => {
+    setEditingPublicidad(pub);
+    setPublicidadForm({
+      titulo: pub.titulo || "",
+      descripcion: pub.descripcion || "",
+      tipo: pub.tipo || "carrusel_principal",
+      imagenUrl: pub.imagenUrl || "",
+      enlaceUrl: pub.enlaceUrl || "",
+      estado: pub.estado || "activo",
+      facebook: pub.facebook || "",
+      instagram: pub.instagram || "",
+      whatsapp: pub.whatsapp || "",
+      tiktok: pub.tiktok || "",
+    });
+    setShowPublicidadModal(true);
+  };
+
+  const handleGuardarPublicidad = () => {
+    if (!publicidadForm.titulo?.trim()) {
+      toast({ title: "El título es requerido", variant: "destructive" });
+      return;
+    }
+    guardarPublicidadMutation.mutate(publicidadForm);
+  };
+
+  const tiposPublicidad = [
+    { value: "carrusel_principal", label: "Carrusel Principal" },
+    { value: "logos_servicios", label: "Logos Servicios" },
+    { value: "carrusel_logos", label: "Carrusel Logos" },
+    { value: "popup_emergencia", label: "Popup Emergencia" },
+    { value: "encuestas_apoyo", label: "Encuestas Apoyo" },
+  ];
 
   const funcionesPersonal = [
     { value: "cajero", label: "Cajero" },
@@ -879,12 +1077,12 @@ export default function LocalComercialPanel() {
           {/* TAB: Publicidad */}
           <TabsContent value="publicidad" className="mt-4">
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h3 className="font-medium">Publicidad del Negocio</h3>
                   <p className="text-sm text-muted-foreground">Sube imágenes y productos para carruseles, eventos, fotos y videos</p>
                 </div>
-                <Button size="sm" data-testid="button-agregar-publicidad">
+                <Button size="sm" onClick={handleAgregarPublicidad} data-testid="button-agregar-publicidad">
                   <Plus className="h-4 w-4 mr-2" />
                   Nueva Publicación
                 </Button>
@@ -897,39 +1095,71 @@ export default function LocalComercialPanel() {
                     <p className="text-muted-foreground">Primero configura los datos de tu negocio</p>
                   </CardContent>
                 </Card>
+              ) : loadingPublicidad ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : miPublicidad.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-8 text-center">
+                    <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No tienes publicidad registrada</p>
+                    <p className="text-xs text-muted-foreground mt-2">Crea tu primera publicación para aparecer en los carruseles</p>
+                  </CardContent>
+                </Card>
               ) : (
-                <ScrollArea className="w-full">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card className="hover-elevate cursor-pointer" data-testid="card-carrusel-principal">
-                      <CardContent className="p-4 text-center">
-                        <ImageIcon className="h-8 w-8 text-primary mx-auto mb-2" />
-                        <p className="text-sm font-medium">Carrusel Principal</p>
-                        <p className="text-xs text-muted-foreground">0 imágenes</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {miPublicidad.map((pub) => (
+                    <Card key={pub.id} className="overflow-hidden" data-testid={`card-publicidad-${pub.id}`}>
+                      {pub.imagenUrl && (
+                        <div className="h-32 bg-muted overflow-hidden">
+                          <img 
+                            src={pub.imagenUrl} 
+                            alt={pub.titulo || "Publicidad"} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm truncate">{pub.titulo || "Sin título"}</h4>
+                            <Badge variant="outline" className="text-xs mt-1">
+                              {tiposPublicidad.find(t => t.value === pub.tipo)?.label || pub.tipo}
+                            </Badge>
+                          </div>
+                          <Badge variant={pub.estado === "activo" ? "default" : "secondary"} className="text-xs shrink-0">
+                            {pub.estado === "activo" ? "Activo" : pub.estado}
+                          </Badge>
+                        </div>
+                        {pub.descripcion && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{pub.descripcion}</p>
+                        )}
+                        <div className="flex items-center gap-2 pt-2 border-t">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => handleEditarPublicidad(pub)}
+                            data-testid={`button-editar-publicidad-${pub.id}`}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Editar
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => eliminarPublicidadMutation.mutate(pub.id)}
+                            data-testid={`button-eliminar-publicidad-${pub.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
-                    <Card className="hover-elevate cursor-pointer" data-testid="card-productos-publicidad">
-                      <CardContent className="p-4 text-center">
-                        <Package2 className="h-8 w-8 text-primary mx-auto mb-2" />
-                        <p className="text-sm font-medium">Productos</p>
-                        <p className="text-xs text-muted-foreground">0 productos</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="hover-elevate cursor-pointer" data-testid="card-eventos">
-                      <CardContent className="p-4 text-center">
-                        <Clock className="h-8 w-8 text-primary mx-auto mb-2" />
-                        <p className="text-sm font-medium">Eventos</p>
-                        <p className="text-xs text-muted-foreground">0 eventos</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="hover-elevate cursor-pointer" data-testid="card-promociones">
-                      <CardContent className="p-4 text-center">
-                        <Megaphone className="h-8 w-8 text-primary mx-auto mb-2" />
-                        <p className="text-sm font-medium">Promociones</p>
-                        <p className="text-xs text-muted-foreground">0 promos</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </ScrollArea>
+                  ))}
+                </div>
               )}
             </div>
           </TabsContent>
@@ -937,11 +1167,22 @@ export default function LocalComercialPanel() {
           {/* TAB: Pedidos */}
           <TabsContent value="pedidos" className="mt-4">
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h3 className="font-medium">Gestión de Pedidos</h3>
                   <p className="text-sm text-muted-foreground">Administra pedidos recibidos, atendidos y entregados</p>
                 </div>
+                <Select value={filtroPedidos} onValueChange={setFiltroPedidos}>
+                  <SelectTrigger className="w-[180px]" data-testid="select-filtro-pedidos">
+                    <SelectValue placeholder="Filtrar pedidos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los pedidos</SelectItem>
+                    <SelectItem value="pendiente">Recibidos</SelectItem>
+                    <SelectItem value="en_preparacion">En preparación</SelectItem>
+                    <SelectItem value="entregado">Entregados</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               {!miNegocio ? (
@@ -952,53 +1193,210 @@ export default function LocalComercialPanel() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card data-testid="card-pedidos-recibidos">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                        Recibidos
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-bold" data-testid="text-pedidos-recibidos-count">0</p>
-                      <p className="text-xs text-muted-foreground">Pedidos pendientes</p>
-                    </CardContent>
-                  </Card>
-                  <Card data-testid="card-pedidos-atendidos">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-500" />
-                        Atendidos
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-bold" data-testid="text-pedidos-atendidos-count">0</p>
-                      <p className="text-xs text-muted-foreground">En preparación</p>
-                    </CardContent>
-                  </Card>
-                  <Card data-testid="card-pedidos-entregados">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-green-500" />
-                        Entregados
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-bold" data-testid="text-pedidos-entregados-count">0</p>
-                      <p className="text-xs text-muted-foreground">Completados hoy</p>
-                    </CardContent>
-                  </Card>
-                </div>
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card 
+                      data-testid="card-pedidos-recibidos"
+                      className={`cursor-pointer transition-all ${filtroPedidos === 'pendiente' ? 'ring-2 ring-yellow-500' : ''}`}
+                      onClick={() => setFiltroPedidos('pendiente')}
+                    >
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                          Recibidos
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-2xl font-bold" data-testid="text-pedidos-recibidos-count">
+                          {estadisticasPedidos.recibidos}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Pedidos pendientes</p>
+                      </CardContent>
+                    </Card>
+                    <Card 
+                      data-testid="card-pedidos-atendidos"
+                      className={`cursor-pointer transition-all ${filtroPedidos === 'en_preparacion' ? 'ring-2 ring-blue-500' : ''}`}
+                      onClick={() => setFiltroPedidos('en_preparacion')}
+                    >
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-500" />
+                          Atendidos
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-2xl font-bold" data-testid="text-pedidos-atendidos-count">
+                          {estadisticasPedidos.atendidos}
+                        </p>
+                        <p className="text-xs text-muted-foreground">En preparación</p>
+                      </CardContent>
+                    </Card>
+                    <Card 
+                      data-testid="card-pedidos-entregados"
+                      className={`cursor-pointer transition-all ${filtroPedidos === 'entregado' ? 'ring-2 ring-green-500' : ''}`}
+                      onClick={() => setFiltroPedidos('entregado')}
+                    >
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500" />
+                          Entregados
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-2xl font-bold" data-testid="text-pedidos-entregados-count">
+                          {estadisticasPedidos.entregados}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Completados hoy</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {loadingPedidos ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : misPedidos.length === 0 ? (
+                    <Card className="border-dashed">
+                      <CardContent className="py-8 text-center">
+                        <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">
+                          {filtroPedidos === 'todos' 
+                            ? 'No hay pedidos activos' 
+                            : `No hay pedidos ${filtroPedidos === 'pendiente' ? 'recibidos' : filtroPedidos === 'en_preparacion' ? 'en preparación' : 'entregados'}`
+                          }
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">Los pedidos aparecerán aquí cuando los clientes realicen compras</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="space-y-3">
+                      {misPedidos.map((pedido) => (
+                        <Card key={pedido.id} data-testid={`card-pedido-${pedido.id}`}>
+                          <CardContent className="py-4">
+                            <div className="flex items-start justify-between flex-wrap gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge 
+                                    variant={
+                                      pedido.estado === 'pendiente' ? 'secondary' :
+                                      pedido.estado === 'en_preparacion' || pedido.estado === 'preparando' ? 'default' :
+                                      'outline'
+                                    }
+                                    className={
+                                      pedido.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                      pedido.estado === 'en_preparacion' || pedido.estado === 'preparando' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                      'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                    }
+                                  >
+                                    {pedido.estado === 'pendiente' ? 'Recibido' :
+                                     pedido.estado === 'en_preparacion' || pedido.estado === 'preparando' ? 'En Preparación' :
+                                     'Entregado'}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground">
+                                    #{pedido.id.slice(-6).toUpperCase()}
+                                  </span>
+                                </div>
+                                
+                                <div className="space-y-1">
+                                  <p className="font-medium flex items-center gap-2">
+                                    <Users className="h-4 w-4 text-muted-foreground" />
+                                    {pedido.cliente?.nombre || 'Cliente'}
+                                  </p>
+                                  {pedido.cliente?.telefono && (
+                                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                      <Phone className="h-3 w-3" />
+                                      {pedido.cliente.telefono}
+                                    </p>
+                                  )}
+                                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                    <MapPin className="h-3 w-3" />
+                                    {pedido.direccionEntrega}
+                                  </p>
+                                  {pedido.notas && (
+                                    <p className="text-sm text-muted-foreground italic">
+                                      Nota: {pedido.notas}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="mt-3 pt-3 border-t">
+                                  <p className="text-sm font-medium mb-1">Productos:</p>
+                                  <div className="text-sm text-muted-foreground">
+                                    {Array.isArray(pedido.productos) && pedido.productos.length > 0 
+                                      ? pedido.productos.map((prod, idx) => (
+                                          <span key={idx}>
+                                            {prod.cantidad}x Producto {prod.productoId.slice(-4)}
+                                            {idx < pedido.productos.length - 1 ? ', ' : ''}
+                                          </span>
+                                        ))
+                                      : 'Sin productos detallados'
+                                    }
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="text-right space-y-2">
+                                <p className="text-lg font-bold text-primary">
+                                  S/ {parseFloat(pedido.total || '0').toFixed(2)}
+                                </p>
+                                <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {pedido.createdAt ? new Date(pedido.createdAt).toLocaleString('es-PE', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  }) : 'Sin fecha'}
+                                </p>
+                                
+                                <div className="flex flex-col gap-1 mt-2">
+                                  {pedido.estado === 'pendiente' && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => actualizarPedidoMutation.mutate({ id: pedido.id, estado: 'en_preparacion' })}
+                                      disabled={actualizarPedidoMutation.isPending}
+                                      data-testid={`button-atender-pedido-${pedido.id}`}
+                                    >
+                                      {actualizarPedidoMutation.isPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                      ) : (
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                      )}
+                                      Atender
+                                    </Button>
+                                  )}
+                                  {(pedido.estado === 'en_preparacion' || pedido.estado === 'preparando') && (
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      onClick={() => actualizarPedidoMutation.mutate({ id: pedido.id, estado: 'entregado' })}
+                                      disabled={actualizarPedidoMutation.isPending}
+                                      data-testid={`button-entregar-pedido-${pedido.id}`}
+                                    >
+                                      {actualizarPedidoMutation.isPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                      ) : (
+                                        <Truck className="h-4 w-4 mr-1" />
+                                      )}
+                                      Marcar Entregado
+                                    </Button>
+                                  )}
+                                  {(pedido.estado === 'entregado' || pedido.estado === 'completado') && (
+                                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200">
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      Completado
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
-              
-              <Card className="border-dashed">
-                <CardContent className="py-8 text-center">
-                  <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No hay pedidos activos</p>
-                  <p className="text-xs text-muted-foreground mt-2">Los pedidos aparecerán aquí cuando los clientes realicen compras</p>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
 
@@ -1580,6 +1978,161 @@ export default function LocalComercialPanel() {
               <Button variant="outline" onClick={() => setShowPersonalModal(false)}>Cancelar</Button>
               <Button onClick={handleGuardarPersonal} disabled={guardarPersonalMutation.isPending} data-testid="button-guardar-personal">
                 {guardarPersonalMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Guardar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal: Crear/Editar Publicidad */}
+        <Dialog open={showPublicidadModal} onOpenChange={setShowPublicidadModal}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingPublicidad ? "Editar Publicidad" : "Nueva Publicidad"}</DialogTitle>
+              <DialogDescription>
+                {editingPublicidad ? "Modifica los datos de tu publicidad" : "Crea una nueva publicación para tu negocio"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="titulo-publicidad">Título *</Label>
+                <Input
+                  id="titulo-publicidad"
+                  value={publicidadForm.titulo || ""}
+                  onChange={(e) => setPublicidadForm({ ...publicidadForm, titulo: e.target.value })}
+                  placeholder="Título de la publicación"
+                  data-testid="input-titulo-publicidad"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tipo-publicidad">Tipo de Publicidad</Label>
+                <Select
+                  value={publicidadForm.tipo || "carrusel_principal"}
+                  onValueChange={(value) => setPublicidadForm({ ...publicidadForm, tipo: value })}
+                >
+                  <SelectTrigger data-testid="select-tipo-publicidad">
+                    <SelectValue placeholder="Selecciona tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tiposPublicidad.map((tipo) => (
+                      <SelectItem key={tipo.value} value={tipo.value}>{tipo.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="descripcion-publicidad">Descripción</Label>
+                <Textarea
+                  id="descripcion-publicidad"
+                  value={publicidadForm.descripcion || ""}
+                  onChange={(e) => setPublicidadForm({ ...publicidadForm, descripcion: e.target.value })}
+                  placeholder="Describe tu publicación..."
+                  className="min-h-[80px]"
+                  data-testid="textarea-descripcion-publicidad"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Imagen</Label>
+                <ImageUpload
+                  value={publicidadForm.imagenUrl}
+                  onChange={(url) => setPublicidadForm({ ...publicidadForm, imagenUrl: url || "" })}
+                  endpoint="publicidad"
+                  enableEditor={true}
+                  aspectRatio={16/9}
+                  maxSize={5}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="enlace-publicidad">Enlace URL</Label>
+                <Input
+                  id="enlace-publicidad"
+                  value={publicidadForm.enlaceUrl || ""}
+                  onChange={(e) => setPublicidadForm({ ...publicidadForm, enlaceUrl: e.target.value })}
+                  placeholder="https://..."
+                  data-testid="input-enlace-publicidad"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="estado-publicidad">Estado</Label>
+                <Select
+                  value={publicidadForm.estado || "activo"}
+                  onValueChange={(value) => setPublicidadForm({ ...publicidadForm, estado: value })}
+                >
+                  <SelectTrigger data-testid="select-estado-publicidad">
+                    <SelectValue placeholder="Selecciona estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="activo">Activo</SelectItem>
+                    <SelectItem value="pausado">Pausado</SelectItem>
+                    <SelectItem value="finalizado">Finalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <Label className="flex items-center gap-2 mb-3">
+                  <Globe className="h-4 w-4" />
+                  Redes Sociales (opcional)
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center gap-1">
+                      <Facebook className="h-3 w-3" /> Facebook
+                    </Label>
+                    <Input
+                      value={publicidadForm.facebook || ""}
+                      onChange={(e) => setPublicidadForm({ ...publicidadForm, facebook: e.target.value })}
+                      placeholder="URL o usuario"
+                      className="text-sm"
+                      data-testid="input-facebook-publicidad"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center gap-1">
+                      <Instagram className="h-3 w-3" /> Instagram
+                    </Label>
+                    <Input
+                      value={publicidadForm.instagram || ""}
+                      onChange={(e) => setPublicidadForm({ ...publicidadForm, instagram: e.target.value })}
+                      placeholder="@usuario"
+                      className="text-sm"
+                      data-testid="input-instagram-publicidad"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center gap-1">
+                      <Phone className="h-3 w-3" /> WhatsApp
+                    </Label>
+                    <Input
+                      value={publicidadForm.whatsapp || ""}
+                      onChange={(e) => setPublicidadForm({ ...publicidadForm, whatsapp: e.target.value })}
+                      placeholder="+51 999 999 999"
+                      className="text-sm"
+                      data-testid="input-whatsapp-publicidad"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">TikTok</Label>
+                    <Input
+                      value={publicidadForm.tiktok || ""}
+                      onChange={(e) => setPublicidadForm({ ...publicidadForm, tiktok: e.target.value })}
+                      placeholder="@usuario"
+                      className="text-sm"
+                      data-testid="input-tiktok-publicidad"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowPublicidadModal(false)}>Cancelar</Button>
+              <Button onClick={handleGuardarPublicidad} disabled={guardarPublicidadMutation.isPending} data-testid="button-guardar-publicidad">
+                {guardarPublicidadMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                 Guardar
               </Button>
             </DialogFooter>
