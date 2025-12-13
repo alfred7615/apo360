@@ -72,7 +72,7 @@ const formatearNumeroConComas = (valor: number, decimalesInput?: number): string
   const decimales = decimalesInput !== undefined ? decimalesInput : 2;
   return valor.toLocaleString("en-US", {
     minimumFractionDigits: decimales,
-    maximumFractionDigits: Math.max(decimales, 4),
+    maximumFractionDigits: decimales,
   });
 };
 
@@ -1420,7 +1420,7 @@ export function CalculadoraCambio({
   }
 
   return (
-    <Card className="w-full max-w-lg mx-auto bg-gradient-to-br from-gray-900 via-gray-850 to-gray-900 border-gray-700/50 shadow-xl shadow-black/20 overflow-hidden">
+    <Card className="w-full max-w-lg mx-auto bg-gradient-to-br from-gray-900 via-gray-850 to-gray-900 border-gray-700/50 shadow-xl shadow-black/20 overflow-hidden md:h-auto h-full md:rounded-lg rounded-none md:border border-0">
       {contenidoPrincipal}
     </Card>
   );
