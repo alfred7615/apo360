@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -14,12 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ImageUpload } from "@/components/ImageUpload";
 import { MapPicker } from "@/components/MapPicker";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { 
   Store, Package, Plus, Edit, Trash2, Save, MapPin, Phone, Globe, 
   Instagram, Facebook, Image as ImageIcon, Loader2, UtensilsCrossed,
   CheckCircle, XCircle, Users, Megaphone, ShoppingCart, Truck, Map,
   History, Navigation, Heart, Share2, ExternalLink, Clock, DollarSign,
-  Package2, ClipboardList, MapPinned, Wallet
+  Package2, ClipboardList, MapPinned, Wallet, RefreshCw
 } from "lucide-react";
 
 interface DatosNegocio {
@@ -147,6 +150,353 @@ interface EstadisticasPedidos {
   entregados: number;
 }
 
+interface EstadisticasDelivery {
+  atendido: number;
+  enCamino: number;
+  entregado: number;
+}
+
+interface EntregaActiva {
+  id: string;
+  usuarioId: string;
+  servicioId: string;
+  productos: { productoId: string; cantidad: number }[];
+  total: string;
+  direccionEntrega: string;
+  latitud?: number;
+  longitud?: number;
+  estado?: string;
+  conductorId?: string;
+  notas?: string;
+  createdAt?: string;
+}
+
+const negocioIcon = L.divIcon({
+  className: 'custom-marker',
+  html: `<div style="background: #8B5CF6; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    </svg>
+  </div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+});
+
+const deliveryEnCaminoIcon = L.divIcon({
+  className: 'custom-marker',
+  html: `<div style="background: #3B82F6; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
+      <rect x="1" y="3" width="15" height="13" rx="2"/>
+      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+      <circle cx="5.5" cy="18.5" r="2.5"/>
+      <circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+  </div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 28],
+  popupAnchor: [0, -28],
+});
+
+const deliveryPendienteIcon = L.divIcon({
+  className: 'custom-marker',
+  html: `<div style="background: #EAB308; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+    </svg>
+  </div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 28],
+  popupAnchor: [0, -28],
+});
+
+interface HistorialPedido {
+  id: string;
+  total: string;
+  estado?: string;
+  completedAt?: string;
+  createdAt?: string;
+  cliente?: {
+    id: string;
+    nombre: string;
+    telefono?: string;
+  };
+}
+
+interface TransaccionBilletera {
+  id: string;
+  usuarioId: string;
+  tipo: string;
+  monto: string;
+  descripcion?: string;
+  referencia?: string;
+  createdAt?: string;
+}
+
+interface SolicitudRecarga {
+  id: string;
+  tipo: string;
+  monto: string;
+  moneda?: string;
+  estado?: string;
+  notas?: string;
+  createdAt?: string;
+}
+
+function HistorialTab({ miNegocio }: { miNegocio: DatosNegocio | null }) {
+  const { data: historialPedidos = [], isLoading: loadingPedidos } = useQuery<HistorialPedido[]>({
+    queryKey: ["/api/mi-negocio/historial/pedidos"],
+    enabled: !!miNegocio,
+  });
+
+  const { data: historialBilletera = [], isLoading: loadingBilletera } = useQuery<TransaccionBilletera[]>({
+    queryKey: ["/api/mi-negocio/historial/billetera"],
+    enabled: !!miNegocio,
+  });
+
+  const { data: historialRecargas = [], isLoading: loadingRecargas } = useQuery<SolicitudRecarga[]>({
+    queryKey: ["/api/mi-negocio/historial/recargas"],
+    enabled: !!miNegocio,
+  });
+
+  const formatFecha = (fecha?: string) => {
+    if (!fecha) return "-";
+    const d = new Date(fecha);
+    return d.toLocaleDateString('es-PE', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatMonto = (monto?: string) => {
+    if (!monto) return "S/ 0.00";
+    const num = parseFloat(monto);
+    return `S/ ${num.toFixed(2)}`;
+  };
+
+  if (!miNegocio) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium">Historial</h3>
+            <p className="text-sm text-muted-foreground">Revisa el historial de pedidos, billetera y recargas</p>
+          </div>
+        </div>
+        <Card className="border-dashed">
+          <CardContent className="py-8 text-center">
+            <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Primero configura los datos de tu negocio</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-medium">Historial</h3>
+          <p className="text-sm text-muted-foreground">Revisa el historial de pedidos, billetera y recargas</p>
+        </div>
+      </div>
+      
+      <Tabs defaultValue="pedidos-hist" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="pedidos-hist" data-testid="tab-historial-pedidos">
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            Pedidos
+          </TabsTrigger>
+          <TabsTrigger value="billetera" data-testid="tab-historial-billetera">
+            <Wallet className="h-4 w-4 mr-2" />
+            Billetera
+          </TabsTrigger>
+          <TabsTrigger value="recargas" data-testid="tab-historial-recargas">
+            <DollarSign className="h-4 w-4 mr-2" />
+            Recargas
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pedidos-hist" className="mt-4">
+          {loadingPedidos ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : historialPedidos.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-8 text-center">
+                <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No hay historial de pedidos</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {historialPedidos.map((pedido) => (
+                <Card key={pedido.id} className="hover-elevate">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          pedido.estado === 'entregado' || pedido.estado === 'completado'
+                            ? 'bg-green-100 dark:bg-green-900/30'
+                            : 'bg-red-100 dark:bg-red-900/30'
+                        }`}>
+                          {pedido.estado === 'entregado' || pedido.estado === 'completado' ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">Pedido #{pedido.id.slice(-6)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {pedido.cliente?.nombre || 'Cliente'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-primary">{formatMonto(pedido.total)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFecha(pedido.completedAt || pedido.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="billetera" className="mt-4">
+          {loadingBilletera ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : historialBilletera.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-8 text-center">
+                <Wallet className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No hay movimientos en la billetera</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {historialBilletera.map((transaccion) => (
+                <Card key={transaccion.id} className="hover-elevate">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          transaccion.tipo === 'ingreso' || transaccion.tipo === 'recarga'
+                            ? 'bg-green-100 dark:bg-green-900/30'
+                            : 'bg-orange-100 dark:bg-orange-900/30'
+                        }`}>
+                          {transaccion.tipo === 'ingreso' || transaccion.tipo === 'recarga' ? (
+                            <DollarSign className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <RefreshCw className="h-5 w-5 text-orange-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium capitalize">{transaccion.tipo}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {transaccion.descripcion || transaccion.referencia || 'Movimiento'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-semibold ${
+                          transaccion.tipo === 'ingreso' || transaccion.tipo === 'recarga'
+                            ? 'text-green-600'
+                            : 'text-orange-600'
+                        }`}>
+                          {transaccion.tipo === 'ingreso' || transaccion.tipo === 'recarga' ? '+' : '-'}
+                          {formatMonto(transaccion.monto)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFecha(transaccion.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="recargas" className="mt-4">
+          {loadingRecargas ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : historialRecargas.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-8 text-center">
+                <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No hay historial de recargas</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {historialRecargas.map((recarga) => (
+                <Card key={recarga.id} className="hover-elevate">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          recarga.estado === 'aprobado' || recarga.estado === 'completado'
+                            ? 'bg-green-100 dark:bg-green-900/30'
+                            : 'bg-red-100 dark:bg-red-900/30'
+                        }`}>
+                          {recarga.estado === 'aprobado' || recarga.estado === 'completado' ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium capitalize">{recarga.tipo}</p>
+                          <Badge variant={
+                            recarga.estado === 'aprobado' || recarga.estado === 'completado'
+                              ? 'default'
+                              : 'destructive'
+                          } className="text-xs">
+                            {recarga.estado}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-primary">
+                          {formatMonto(recarga.monto)}
+                          {recarga.moneda && recarga.moneda !== 'PEN' && ` ${recarga.moneda}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFecha(recarga.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    {recarga.notas && (
+                      <p className="text-sm text-muted-foreground mt-2 pl-13">
+                        {recarga.notas}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
 export default function LocalComercialPanel() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("negocio");
@@ -253,6 +603,19 @@ export default function LocalComercialPanel() {
     },
     enabled: !!miNegocio,
   });
+
+  const { data: estadisticasDelivery = { atendido: 0, enCamino: 0, entregado: 0 } } = useQuery<EstadisticasDelivery>({
+    queryKey: ["/api/mi-negocio/delivery/estadisticas"],
+    enabled: !!miNegocio,
+  });
+
+  const { data: entregasActivas = [], isLoading: loadingEntregas } = useQuery<EntregaActiva[]>({
+    queryKey: ["/api/mi-negocio/delivery/activas"],
+    enabled: !!miNegocio,
+  });
+
+  const [showSolicitarDeliveryModal, setShowSolicitarDeliveryModal] = useState(false);
+  const [showMapaExpandido, setShowMapaExpandido] = useState(false);
 
   useEffect(() => {
     if (miNegocio && !formInitialized) {
@@ -396,12 +759,34 @@ export default function LocalComercialPanel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mi-negocio/pedidos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/mi-negocio/pedidos/estadisticas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-negocio/delivery/estadisticas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-negocio/delivery/activas"] });
       toast({ title: "Estado del pedido actualizado" });
     },
     onError: (error: any) => {
       toast({ title: "Error al actualizar pedido", description: error.message, variant: "destructive" });
     },
   });
+
+  const solicitarDeliveryMutation = useMutation({
+    mutationFn: (pedidoId: string) => 
+      apiRequest("POST", `/api/mi-negocio/delivery/solicitar/${pedidoId}`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-negocio/pedidos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-negocio/pedidos/estadisticas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-negocio/delivery/estadisticas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-negocio/delivery/activas"] });
+      setShowSolicitarDeliveryModal(false);
+      toast({ title: "Delivery solicitado", description: "Se está buscando un repartidor" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al solicitar delivery", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const pedidosListosParaEnvio = misPedidos.filter(p => 
+    p.estado === 'en_preparacion' || p.estado === 'preparando'
+  );
 
   const handleGuardarNegocio = () => {
     if (!negocioForm.nombreNegocio?.trim()) {
@@ -1403,14 +1788,22 @@ export default function LocalComercialPanel() {
           {/* TAB: Delivery */}
           <TabsContent value="delivery" className="mt-4">
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div>
                   <h3 className="font-medium">Gestión de Delivery</h3>
                   <p className="text-sm text-muted-foreground">Solicita delivery/unidad móvil y rastrea entregas</p>
                 </div>
-                <Button size="sm" data-testid="button-solicitar-delivery">
+                <Button 
+                  size="sm" 
+                  onClick={() => setShowSolicitarDeliveryModal(true)}
+                  disabled={pedidosListosParaEnvio.length === 0}
+                  data-testid="button-solicitar-delivery"
+                >
                   <Truck className="h-4 w-4 mr-2" />
                   Solicitar Delivery
+                  {pedidosListosParaEnvio.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">{pedidosListosParaEnvio.length}</Badge>
+                  )}
                 </Button>
               </div>
               
@@ -1422,68 +1815,155 @@ export default function LocalComercialPanel() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card data-testid="card-delivery-atendido">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                        Atendido
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-bold" data-testid="text-delivery-atendido-count">0</p>
-                      <p className="text-xs text-muted-foreground">Esperando repartidor</p>
-                    </CardContent>
-                  </Card>
-                  <Card data-testid="card-delivery-encamino">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-500" />
-                        En Camino
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-bold" data-testid="text-delivery-encamino-count">0</p>
-                      <p className="text-xs text-muted-foreground">En tránsito</p>
-                    </CardContent>
-                  </Card>
-                  <Card data-testid="card-delivery-entregado">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-green-500" />
-                        Entregado
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-bold" data-testid="text-delivery-entregado-count">0</p>
-                      <p className="text-xs text-muted-foreground">Completados hoy</p>
-                    </CardContent>
-                  </Card>
-                </div>
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card data-testid="card-delivery-atendido" className="hover-elevate cursor-pointer">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                          Listo para Envío
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-2xl font-bold" data-testid="text-delivery-atendido-count">
+                          {estadisticasDelivery.atendido}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Esperando repartidor</p>
+                      </CardContent>
+                    </Card>
+                    <Card data-testid="card-delivery-encamino" className="hover-elevate cursor-pointer">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-500" />
+                          En Camino
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-2xl font-bold" data-testid="text-delivery-encamino-count">
+                          {estadisticasDelivery.enCamino}
+                        </p>
+                        <p className="text-xs text-muted-foreground">En tránsito</p>
+                      </CardContent>
+                    </Card>
+                    <Card data-testid="card-delivery-entregado" className="hover-elevate cursor-pointer">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500" />
+                          Entregado
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-2xl font-bold" data-testid="text-delivery-entregado-count">
+                          {estadisticasDelivery.entregado}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Completados hoy</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {loadingEntregas ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : entregasActivas.length === 0 ? (
+                    <Card className="border-dashed">
+                      <CardContent className="py-8 text-center">
+                        <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No hay entregas activas</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {pedidosListosParaEnvio.length > 0 
+                            ? `Tienes ${pedidosListosParaEnvio.length} pedido(s) listo(s) para enviar`
+                            : 'Prepara un pedido para solicitar delivery'}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Entregas Activas ({entregasActivas.length})</h4>
+                      {entregasActivas.map((entrega) => (
+                        <Card key={entrega.id} data-testid={`card-entrega-${entrega.id}`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    variant={entrega.estado === 'en_camino' ? 'default' : 'secondary'}
+                                    className={
+                                      entrega.estado === 'en_camino' 
+                                        ? 'bg-blue-500 hover:bg-blue-600' 
+                                        : 'bg-yellow-500 hover:bg-yellow-600 text-black'
+                                    }
+                                  >
+                                    {entrega.estado === 'en_camino' ? 'En Camino' : 'Listo para Envío'}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground">
+                                    #{entrega.id.slice(-6).toUpperCase()}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <MapPin className="h-3 w-3" />
+                                  {entrega.direccionEntrega}
+                                </div>
+                                <div className="text-sm">
+                                  {Array.isArray(entrega.productos) && entrega.productos.length > 0 
+                                    ? `${entrega.productos.reduce((acc, p) => acc + p.cantidad, 0)} producto(s)`
+                                    : 'Sin productos detallados'
+                                  }
+                                </div>
+                              </div>
+                              <div className="text-right space-y-2">
+                                <p className="text-lg font-bold text-primary">
+                                  S/ {parseFloat(entrega.total || '0').toFixed(2)}
+                                </p>
+                                <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {entrega.createdAt ? new Date(entrega.createdAt).toLocaleTimeString('es-PE', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  }) : '--:--'}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
-              
-              <Card className="border-dashed">
-                <CardContent className="py-8 text-center">
-                  <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No hay entregas activas</p>
-                  <p className="text-xs text-muted-foreground mt-2">Solicita un delivery para tus pedidos</p>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
 
           {/* TAB: Mapa */}
           <TabsContent value="mapa" className="mt-4">
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h3 className="font-medium">Mapa en Tiempo Real</h3>
-                  <p className="text-sm text-muted-foreground">Visualiza el recorrido de unidades de delivery</p>
+                  <p className="text-sm text-muted-foreground">Visualiza tu negocio y entregas activas</p>
                 </div>
-                <Button variant="outline" size="sm" data-testid="button-expandir-mapa">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Expandir Mapa
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      queryClient.invalidateQueries({ queryKey: ["/api/mi-negocio/delivery/activas"] });
+                    }}
+                    data-testid="button-refrescar-mapa"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Actualizar
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowMapaExpandido(true)}
+                    data-testid="button-expandir-mapa"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Expandir
+                  </Button>
+                </div>
               </div>
               
               {!miNegocio ? (
@@ -1493,84 +1973,142 @@ export default function LocalComercialPanel() {
                     <p className="text-muted-foreground">Primero configura los datos de tu negocio</p>
                   </CardContent>
                 </Card>
-              ) : (
-                <Card>
-                  <CardContent className="p-0 h-[400px] relative overflow-hidden rounded-lg">
-                    <div className="absolute inset-0 bg-muted flex items-center justify-center">
-                      <div className="text-center">
-                        <MapPinned className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">Mapa de seguimiento</p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Las unidades de delivery aparecerán aquí en tiempo real
-                        </p>
-                      </div>
-                    </div>
+              ) : !miNegocio.latitud || !miNegocio.longitud ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-8 text-center">
+                    <MapPinned className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Configura la ubicación GPS de tu negocio</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Ve a la pestaña "Negocio" y selecciona la ubicación en el mapa
+                    </p>
                   </CardContent>
                 </Card>
+              ) : (
+                <>
+                  <Card>
+                    <CardContent className="p-0 h-[400px] relative overflow-hidden rounded-lg">
+                      <MapContainer
+                        center={[miNegocio.latitud, miNegocio.longitud]}
+                        zoom={15}
+                        style={{ height: "100%", width: "100%" }}
+                        scrollWheelZoom={true}
+                      >
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker 
+                          position={[miNegocio.latitud, miNegocio.longitud]}
+                          icon={negocioIcon}
+                        >
+                          <Popup>
+                            <div className="text-center p-1">
+                              <p className="font-semibold">{miNegocio.nombreNegocio}</p>
+                              <p className="text-xs text-muted-foreground">{miNegocio.direccion || 'Tu negocio'}</p>
+                            </div>
+                          </Popup>
+                        </Marker>
+                        {entregasActivas.map((entrega) => (
+                          entrega.latitud && entrega.longitud && (
+                            <Marker
+                              key={entrega.id}
+                              position={[entrega.latitud, entrega.longitud]}
+                              icon={entrega.estado === 'en_camino' ? deliveryEnCaminoIcon : deliveryPendienteIcon}
+                            >
+                              <Popup>
+                                <div className="p-1">
+                                  <p className="font-semibold text-sm">Entrega #{entrega.id.slice(-6)}</p>
+                                  <p className="text-xs">{entrega.direccionEntrega}</p>
+                                  <Badge 
+                                    variant={entrega.estado === 'en_camino' ? 'default' : 'secondary'}
+                                    className="mt-1 text-xs"
+                                  >
+                                    {entrega.estado === 'en_camino' ? 'En camino' : 
+                                     entrega.estado === 'listo_para_envio' ? 'Esperando repartidor' : 
+                                     entrega.estado}
+                                  </Badge>
+                                  <p className="text-xs font-medium mt-1">S/ {parseFloat(entrega.total || '0').toFixed(2)}</p>
+                                </div>
+                              </Popup>
+                            </Marker>
+                          )
+                        ))}
+                      </MapContainer>
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Card className="bg-primary/5 border-primary/20">
+                      <CardContent className="p-3 text-center">
+                        <Store className="h-5 w-5 text-primary mx-auto mb-1" />
+                        <p className="text-xs text-muted-foreground">Tu Negocio</p>
+                        <p className="font-medium text-sm truncate">{miNegocio.nombreNegocio}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-yellow-500/5 border-yellow-500/20">
+                      <CardContent className="p-3 text-center">
+                        <Package2 className="h-5 w-5 text-yellow-600 mx-auto mb-1" />
+                        <p className="text-xs text-muted-foreground">Esperando</p>
+                        <p className="font-medium text-lg">{entregasActivas.filter(e => e.estado === 'listo_para_envio').length}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-blue-500/5 border-blue-500/20">
+                      <CardContent className="p-3 text-center">
+                        <Truck className="h-5 w-5 text-blue-600 mx-auto mb-1" />
+                        <p className="text-xs text-muted-foreground">En Camino</p>
+                        <p className="font-medium text-lg">{entregasActivas.filter(e => e.estado === 'en_camino').length}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-green-500/5 border-green-500/20">
+                      <CardContent className="p-3 text-center">
+                        <CheckCircle className="h-5 w-5 text-green-600 mx-auto mb-1" />
+                        <p className="text-xs text-muted-foreground">Entregadas Hoy</p>
+                        <p className="font-medium text-lg">{estadisticasDelivery.entregado}</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {entregasActivas.length > 0 && (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <ClipboardList className="h-4 w-4" />
+                          Entregas en el Mapa
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {entregasActivas.map((entrega) => (
+                          <div 
+                            key={entrega.id}
+                            className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${
+                                entrega.estado === 'en_camino' ? 'bg-blue-500' : 'bg-yellow-500'
+                              }`} />
+                              <div>
+                                <p className="text-sm font-medium">#{entrega.id.slice(-6)}</p>
+                                <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                  {entrega.direccionEntrega}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge variant={entrega.estado === 'en_camino' ? 'default' : 'secondary'}>
+                              {entrega.estado === 'en_camino' ? 'En camino' : 'Esperando'}
+                            </Badge>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
               )}
             </div>
           </TabsContent>
 
           {/* TAB: Historial */}
           <TabsContent value="historial" className="mt-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Historial</h3>
-                  <p className="text-sm text-muted-foreground">Revisa el historial de pedidos, billetera y recargas</p>
-                </div>
-              </div>
-              
-              {!miNegocio ? (
-                <Card className="border-dashed">
-                  <CardContent className="py-8 text-center">
-                    <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Primero configura los datos de tu negocio</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Tabs defaultValue="pedidos-hist" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="pedidos-hist" data-testid="tab-historial-pedidos">
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Pedidos
-                    </TabsTrigger>
-                    <TabsTrigger value="billetera" data-testid="tab-historial-billetera">
-                      <Wallet className="h-4 w-4 mr-2" />
-                      Billetera
-                    </TabsTrigger>
-                    <TabsTrigger value="recargas" data-testid="tab-historial-recargas">
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      Recargas
-                    </TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="pedidos-hist" className="mt-4">
-                    <Card className="border-dashed">
-                      <CardContent className="py-8 text-center">
-                        <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No hay historial de pedidos</p>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  <TabsContent value="billetera" className="mt-4">
-                    <Card className="border-dashed">
-                      <CardContent className="py-8 text-center">
-                        <Wallet className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No hay movimientos en la billetera</p>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  <TabsContent value="recargas" className="mt-4">
-                    <Card className="border-dashed">
-                      <CardContent className="py-8 text-center">
-                        <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No hay historial de recargas</p>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </Tabs>
-              )}
-            </div>
+            <HistorialTab miNegocio={miNegocio} />
           </TabsContent>
         </Tabs>
 
@@ -2136,6 +2674,156 @@ export default function LocalComercialPanel() {
                 Guardar
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Solicitar Delivery */}
+        <Dialog open={showSolicitarDeliveryModal} onOpenChange={setShowSolicitarDeliveryModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-primary" />
+                Solicitar Delivery
+              </DialogTitle>
+              <DialogDescription>
+                Selecciona un pedido listo para solicitar un repartidor
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {pedidosListosParaEnvio.length === 0 ? (
+                <div className="text-center py-8">
+                  <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No hay pedidos listos para envío</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Primero atiende un pedido desde la pestaña de Pedidos
+                  </p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[300px] pr-4">
+                  <div className="space-y-3">
+                    {pedidosListosParaEnvio.map((pedido) => (
+                      <Card 
+                        key={pedido.id} 
+                        className="hover-elevate cursor-pointer"
+                        data-testid={`card-solicitar-delivery-${pedido.id}`}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-300">
+                                  En Preparación
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  #{pedido.id.slice(-6).toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <MapPin className="h-3 w-3" />
+                                {pedido.direccionEntrega}
+                              </div>
+                              {pedido.cliente && (
+                                <div className="text-sm">
+                                  Cliente: {pedido.cliente.nombre}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <p className="font-bold text-primary">
+                                S/ {parseFloat(pedido.total || '0').toFixed(2)}
+                              </p>
+                              <Button
+                                size="sm"
+                                onClick={() => solicitarDeliveryMutation.mutate(pedido.id)}
+                                disabled={solicitarDeliveryMutation.isPending}
+                                data-testid={`button-confirmar-delivery-${pedido.id}`}
+                              >
+                                {solicitarDeliveryMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Truck className="h-4 w-4 mr-1" />
+                                    Enviar
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowSolicitarDeliveryModal(false)}>
+                Cerrar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Mapa Expandido */}
+        <Dialog open={showMapaExpandido} onOpenChange={setShowMapaExpandido}>
+          <DialogContent className="max-w-4xl h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Map className="h-5 w-5 text-primary" />
+                Mapa en Tiempo Real - {miNegocio?.nombreNegocio}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 h-full min-h-[500px]">
+              {miNegocio?.latitud && miNegocio?.longitud && (
+                <MapContainer
+                  center={[miNegocio.latitud, miNegocio.longitud]}
+                  zoom={15}
+                  style={{ height: "100%", width: "100%", borderRadius: "8px" }}
+                  scrollWheelZoom={true}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker 
+                    position={[miNegocio.latitud, miNegocio.longitud]}
+                    icon={negocioIcon}
+                  >
+                    <Popup>
+                      <div className="text-center p-1">
+                        <p className="font-semibold">{miNegocio.nombreNegocio}</p>
+                        <p className="text-xs text-muted-foreground">{miNegocio.direccion || 'Tu negocio'}</p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                  {entregasActivas.map((entrega) => (
+                    entrega.latitud && entrega.longitud && (
+                      <Marker
+                        key={entrega.id}
+                        position={[entrega.latitud, entrega.longitud]}
+                        icon={entrega.estado === 'en_camino' ? deliveryEnCaminoIcon : deliveryPendienteIcon}
+                      >
+                        <Popup>
+                          <div className="p-1">
+                            <p className="font-semibold text-sm">Entrega #{entrega.id.slice(-6)}</p>
+                            <p className="text-xs">{entrega.direccionEntrega}</p>
+                            <Badge 
+                              variant={entrega.estado === 'en_camino' ? 'default' : 'secondary'}
+                              className="mt-1 text-xs"
+                            >
+                              {entrega.estado === 'en_camino' ? 'En camino' : 
+                               entrega.estado === 'listo_para_envio' ? 'Esperando repartidor' : 
+                               entrega.estado}
+                            </Badge>
+                            <p className="text-xs font-medium mt-1">S/ {parseFloat(entrega.total || '0').toFixed(2)}</p>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    )
+                  ))}
+                </MapContainer>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </CardContent>

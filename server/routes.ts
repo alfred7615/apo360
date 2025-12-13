@@ -858,6 +858,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Estadísticas de delivery del negocio
+  app.get('/api/mi-negocio/delivery/estadisticas', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      
+      // Obtener pedidos del negocio
+      const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
+      
+      const atendido = pedidos.filter(p => p.estado === 'en_preparacion' || p.estado === 'preparando' || p.estado === 'listo_para_envio').length;
+      const enCamino = pedidos.filter(p => p.estado === 'en_camino').length;
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const entregadoHoy = pedidos.filter(p => 
+        (p.estado === 'entregado' || p.estado === 'completado') && 
+        p.completedAt && new Date(p.completedAt) >= hoy
+      ).length;
+      
+      res.json({ atendido, enCamino, entregado: entregadoHoy });
+    } catch (error: any) {
+      console.error("Error al obtener estadísticas de delivery:", error);
+      res.status(500).json({ message: error.message || "Error al obtener estadísticas" });
+    }
+  });
+
+  // Obtener entregas activas del negocio
+  app.get('/api/mi-negocio/delivery/activas', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      
+      const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
+      
+      // Filtrar solo entregas activas (no completadas/canceladas)
+      const activas = pedidos.filter(p => 
+        ['en_preparacion', 'preparando', 'listo_para_envio', 'en_camino'].includes(p.estado || 'pendiente')
+      );
+      
+      res.json(activas);
+    } catch (error: any) {
+      console.error("Error al obtener entregas activas:", error);
+      res.status(500).json({ message: error.message || "Error al obtener entregas activas" });
+    }
+  });
+
+  // Solicitar delivery para un pedido
+  app.post('/api/mi-negocio/delivery/solicitar/:pedidoId', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { pedidoId } = req.params;
+      
+      // Verificar que el pedido pertenece al negocio del usuario
+      const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
+      const pedido = pedidos.find(p => p.id === pedidoId);
+      
+      if (!pedido) {
+        return res.status(404).json({ message: "Pedido no encontrado" });
+      }
+      
+      // Actualizar estado a listo_para_envio (esperando repartidor)
+      const actualizado = await storage.updatePedidoDelivery(pedidoId, {
+        estado: 'listo_para_envio'
+      });
+      
+      res.json(actualizado);
+    } catch (error: any) {
+      console.error("Error al solicitar delivery:", error);
+      res.status(500).json({ message: error.message || "Error al solicitar delivery" });
+    }
+  });
+
+  // ============================================================
+  // HISTORIAL DEL NEGOCIO (LocalComercialPanel)
+  // ============================================================
+
+  // Historial de pedidos completados
+  app.get('/api/mi-negocio/historial/pedidos', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      
+      const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
+      
+      // Filtrar solo pedidos completados/entregados
+      const completados = pedidos.filter(p => 
+        ['entregado', 'completado', 'cancelado'].includes(p.estado || '')
+      ).sort((a, b) => {
+        const fechaA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+        const fechaB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+        return fechaB - fechaA; // Más recientes primero
+      });
+      
+      // Enriquecer con datos del cliente
+      const pedidosEnriquecidos = await Promise.all(completados.map(async (pedido) => {
+        const cliente = await storage.getUser(pedido.usuarioId);
+        return {
+          ...pedido,
+          cliente: cliente ? {
+            id: cliente.id,
+            nombre: cliente.firstName && cliente.lastName 
+              ? `${cliente.firstName} ${cliente.lastName}`.trim() 
+              : cliente.firstName || cliente.lastName || cliente.alias || 'Cliente',
+            telefono: cliente.telefono,
+          } : null,
+        };
+      }));
+      
+      res.json(pedidosEnriquecidos);
+    } catch (error: any) {
+      console.error("Error al obtener historial de pedidos:", error);
+      res.status(500).json({ message: error.message || "Error al obtener historial" });
+    }
+  });
+
+  // Historial de movimientos de billetera
+  app.get('/api/mi-negocio/historial/billetera', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      
+      // Obtener transacciones del usuario
+      const transacciones = await storage.getTransaccionesSaldo(usuarioId);
+      
+      // Ordenar por fecha (más recientes primero)
+      const ordenadas = transacciones.sort((a, b) => {
+        const fechaA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const fechaB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return fechaB - fechaA;
+      });
+      
+      res.json(ordenadas);
+    } catch (error: any) {
+      console.error("Error al obtener historial de billetera:", error);
+      res.status(500).json({ message: error.message || "Error al obtener historial" });
+    }
+  });
+
+  // Historial de recargas (solicitudes de recarga/retiro aprobadas/rechazadas)
+  app.get('/api/mi-negocio/historial/recargas', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      
+      // Obtener solicitudes de saldo del usuario
+      const solicitudes = await storage.getSolicitudesSaldoPorUsuario(usuarioId);
+      
+      // Filtrar solo solicitudes procesadas
+      const procesadas = solicitudes.filter(s => 
+        ['aprobado', 'rechazado', 'completado'].includes(s.estado || '')
+      ).sort((a, b) => {
+        const fechaA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const fechaB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return fechaB - fechaA;
+      });
+      
+      res.json(procesadas);
+    } catch (error: any) {
+      console.error("Error al obtener historial de recargas:", error);
+      res.status(500).json({ message: error.message || "Error al obtener historial" });
+    }
+  });
+
   // ============================================================
   // MÓDULOS DE USUARIO POR ROL
   // ============================================================
