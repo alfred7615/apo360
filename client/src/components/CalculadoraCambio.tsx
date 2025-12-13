@@ -1,20 +1,30 @@
 import { useState, useMemo, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { 
   ArrowRightLeft, RefreshCw, TrendingUp, TrendingDown, DollarSign, 
   Banknote, Calculator, Clock, ChevronDown, ChevronUp, X, ArrowLeft, 
   FlaskConical, Lock, Delete, RotateCcw, Percent, Divide, Pi,
-  Download, FileSpreadsheet, Image, Share2
+  Download, FileSpreadsheet, Image, Share2, Users, Send, Check
 } from "lucide-react";
 import * as math from "mathjs";
 import * as XLSX from "xlsx";
 import html2canvas from "html2canvas";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { ConfiguracionMoneda, TasaCambioLocal, Usuario } from "@shared/schema";
 
 interface TasaPromedioLocal {
@@ -38,7 +48,7 @@ const monedasDefault: MonedaInfo[] = [
   { codigo: "BOB", nombre: "Boliviano", simbolo: "Bs", bandera: "🇧🇴", tasaUSD: 6.91 },
 ];
 
-type ModoCalculadora = "moneda" | "cientifica";
+type ModoCalculadora = "moneda" | "normal" | "cientifica";
 
 interface CalculadoraCambioProps {
   sinCard?: boolean;
@@ -48,6 +58,14 @@ interface CalculadoraCambioProps {
   mostrarHeader?: boolean;
   usuario?: Usuario | null;
   tieneMembresiaActiva?: boolean;
+}
+
+interface EjercicioCompartido {
+  expresion: string;
+  resultado: string;
+  modoAngulo: string;
+  historial: string[];
+  fecha: string;
 }
 
 const formatearNumeroConComas = (valor: number): string => {
@@ -71,6 +89,7 @@ export function CalculadoraCambio({
   usuario,
   tieneMembresiaActiva = false
 }: CalculadoraCambioProps) {
+  const { toast } = useToast();
   const [modo, setModo] = useState<ModoCalculadora>(modoInicial);
   const [monto, setMonto] = useState<string>("100.00");
   const [montoDisplay, setMontoDisplay] = useState<string>("100.00");
@@ -83,6 +102,19 @@ export function CalculadoraCambio({
   const [historialCientifica, setHistorialCientifica] = useState<string[]>([]);
   const [modoAngulo, setModoAngulo] = useState<"deg" | "rad">("deg");
   const [mostrarFuncionesAvanzadas, setMostrarFuncionesAvanzadas] = useState(false);
+  
+  const [expresionNormal, setExpresionNormal] = useState<string>("");
+  const [resultadoNormal, setResultadoNormal] = useState<string>("0");
+  const [historialNormal, setHistorialNormal] = useState<string[]>([]);
+  
+  const [mostrarModalCompartir, setMostrarModalCompartir] = useState(false);
+  const [usuariosParaCompartir, setUsuariosParaCompartir] = useState<string[]>([]);
+  const [busquedaUsuario, setBusquedaUsuario] = useState("");
+
+  const { data: usuariosDisponibles } = useQuery<Usuario[]>({
+    queryKey: ["/api/usuarios/lista"],
+    enabled: mostrarModalCompartir,
+  });
 
   const { data: configuracionMonedas, isLoading: cargandoMonedas } = useQuery<ConfiguracionMoneda[]>({
     queryKey: ["/api/monedas/configuracion"],
@@ -180,16 +212,135 @@ export function CalculadoraCambio({
     }
   };
 
-  const cambiarModo = () => {
-    if (modo === "moneda") {
-      if (!tieneMembresiaActiva) {
-        return;
-      }
-      setModo("cientifica");
-    } else {
-      setModo("moneda");
+  const cambiarModo = (nuevoModo: ModoCalculadora) => {
+    if (nuevoModo === "cientifica" && !tieneMembresiaActiva) {
+      toast({
+        title: "Membresía Requerida",
+        description: "La calculadora científica requiere membresía activa.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setModo(nuevoModo);
+  };
+
+  const getTituloModo = () => {
+    switch (modo) {
+      case "moneda": return "Calculadora de Cambio";
+      case "normal": return "Calculadora Normal";
+      case "cientifica": return "Calculadora Científica";
     }
   };
+
+  const getIconoModo = () => {
+    switch (modo) {
+      case "moneda": return <DollarSign className="h-4 w-4 text-rose-400" />;
+      case "normal": return <Calculator className="h-4 w-4 text-blue-400" />;
+      case "cientifica": return <FlaskConical className="h-4 w-4 text-purple-400" />;
+    }
+  };
+
+  const evaluarExpresionNormal = useCallback(() => {
+    try {
+      if (!expresionNormal.trim()) {
+        setResultadoNormal("0");
+        return;
+      }
+      const resultado = math.evaluate(expresionNormal);
+      const resultadoStr = math.format(resultado, { precision: 10 });
+      setResultadoNormal(resultadoStr);
+      setHistorialNormal(prev => [...prev.slice(-9), `${expresionNormal} = ${resultadoStr}`]);
+    } catch (error) {
+      setResultadoNormal("Error");
+    }
+  }, [expresionNormal]);
+
+  const insertarEnExpresionNormal = useCallback((texto: string) => {
+    setExpresionNormal(prev => prev + texto);
+  }, []);
+
+  const limpiarTodoNormal = useCallback(() => {
+    setExpresionNormal("");
+    setResultadoNormal("0");
+  }, []);
+
+  const borrarUltimoNormal = useCallback(() => {
+    setExpresionNormal(prev => prev.slice(0, -1));
+  }, []);
+
+  const limpiarEntradaNormal = useCallback(() => {
+    setExpresionNormal("");
+  }, []);
+
+  const limpiarHistorialNormal = useCallback(() => {
+    setHistorialNormal([]);
+  }, []);
+
+  const compartirEjercicioCientifico = useCallback(async () => {
+    if (usuariosParaCompartir.length === 0) {
+      toast({
+        title: "Selecciona usuarios",
+        description: "Debes seleccionar al menos un usuario para compartir.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const ejercicio: EjercicioCompartido = {
+      expresion: expresionCientifica,
+      resultado: resultadoCientifica,
+      modoAngulo,
+      historial: historialCientifica,
+      fecha: new Date().toISOString(),
+    };
+
+    try {
+      await apiRequest("POST", "/api/calculadora/compartir", {
+        ejercicio,
+        destinatarios: usuariosParaCompartir,
+      });
+      
+      toast({
+        title: "Ejercicio compartido",
+        description: `Se compartió el ejercicio con ${usuariosParaCompartir.length} usuario(s).`,
+      });
+      
+      setMostrarModalCompartir(false);
+      setUsuariosParaCompartir([]);
+    } catch (error) {
+      toast({
+        title: "Error al compartir",
+        description: "No se pudo compartir el ejercicio. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  }, [expresionCientifica, resultadoCientifica, modoAngulo, historialCientifica, usuariosParaCompartir, toast]);
+
+  const toggleUsuarioCompartir = (userId: string) => {
+    setUsuariosParaCompartir(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const getNombreCompleto = (u: Usuario) => {
+    if (u.firstName && u.lastName) return `${u.firstName} ${u.lastName}`;
+    if (u.firstName) return u.firstName;
+    if (u.lastName) return u.lastName;
+    return u.email || "Usuario";
+  };
+
+  const usuariosFiltrados = useMemo(() => {
+    if (!usuariosDisponibles) return [];
+    if (!busquedaUsuario.trim()) return usuariosDisponibles.filter(u => u.id !== usuario?.id);
+    const busqueda = busquedaUsuario.toLowerCase();
+    return usuariosDisponibles.filter(u => 
+      u.id !== usuario?.id &&
+      (getNombreCompleto(u).toLowerCase().includes(busqueda) || 
+       u.email?.toLowerCase().includes(busqueda))
+    );
+  }, [usuariosDisponibles, busquedaUsuario, usuario?.id]);
 
   const isLoading = cargandoMonedas || cargandoTasasLocales || cargandoPromedio;
 
@@ -219,42 +370,50 @@ export function CalculadoraCambio({
         ) : null}
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-gradient-to-br from-rose-500/20 to-pink-500/20">
-            {modo === "moneda" ? (
-              <Calculator className="h-4 w-4 text-rose-400" />
-            ) : (
-              <FlaskConical className="h-4 w-4 text-purple-400" />
-            )}
+            {getIconoModo()}
           </div>
           <span className="text-sm font-medium text-gray-100">
-            {modo === "moneda" ? "Calculadora de Cambio" : "Calculadora Científica"}
+            {getTituloModo()}
           </span>
         </div>
       </div>
-      <Button
-        size="icon"
-        variant="ghost"
-        onClick={cambiarModo}
-        className={`h-8 w-8 ${
-          modo === "moneda" 
-            ? "text-purple-400 hover:text-purple-300 hover:bg-purple-500/10" 
-            : "text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-        }`}
-        data-testid="button-cambiar-modo"
-        title={modo === "moneda" ? "Cambiar a Científica" : "Cambiar a Monedas"}
-      >
-        {modo === "moneda" ? (
-          tieneMembresiaActiva ? (
-            <FlaskConical className="h-5 w-5" />
-          ) : (
-            <div className="relative">
-              <FlaskConical className="h-5 w-5 opacity-50" />
-              <Lock className="h-3 w-3 absolute -bottom-1 -right-1 text-yellow-500" />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+            data-testid="button-menu-calculadoras"
+            title="Calculadoras"
+          >
+            <Calculator className="h-5 w-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+          <DropdownMenuItem 
+            onClick={() => cambiarModo("normal")}
+            className={`cursor-pointer ${modo === "normal" ? "bg-blue-500/20 text-blue-300" : "text-gray-100"}`}
+            data-testid="menu-calculadora-normal"
+          >
+            <Calculator className="h-4 w-4 mr-2 text-blue-400" />
+            Calculadora Normal
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-gray-700" />
+          <DropdownMenuItem 
+            onClick={() => cambiarModo("cientifica")}
+            className={`cursor-pointer ${modo === "cientifica" ? "bg-purple-500/20 text-purple-300" : "text-gray-100"}`}
+            data-testid="menu-calculadora-cientifica"
+          >
+            <div className="flex items-center w-full">
+              <FlaskConical className="h-4 w-4 mr-2 text-purple-400" />
+              <span>Calculadora Científica</span>
+              {!tieneMembresiaActiva && (
+                <Lock className="h-3 w-3 ml-2 text-yellow-500" />
+              )}
             </div>
-          )
-        ) : (
-          <Calculator className="h-5 w-5" />
-        )}
-      </Button>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 
@@ -977,18 +1136,271 @@ export function CalculadoraCambio({
               <Image className="h-4 w-4" />
               Imagen
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setMostrarModalCompartir(true)}
+              className="flex items-center gap-2 bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20"
+              data-testid="button-compartir-cientifica"
+            >
+              <Share2 className="h-4 w-4" />
+              Compartir
+            </Button>
           </div>
         </>
       )}
     </div>
   );
 
+  const calculadoraNormal = (
+    <div className="space-y-3" data-testid="calculadora-normal">
+      <div className="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50">
+        <Input
+          type="text"
+          value={expresionNormal}
+          onChange={(e) => setExpresionNormal(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && evaluarExpresionNormal()}
+          className="text-lg font-mono bg-gray-900/50 border-gray-600/50 text-gray-100 text-right mb-2"
+          placeholder="0"
+          data-testid="input-expresion-normal"
+        />
+        <div 
+          className="text-right text-2xl font-bold text-emerald-400 min-h-[2rem] break-all" 
+          data-testid="resultado-normal"
+        >
+          {resultadoNormal}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-1">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={limpiarTodoNormal}
+          className="bg-rose-500/20 border-rose-500/30 text-rose-400 hover:bg-rose-500/30"
+          data-testid="button-limpiar-todo-normal"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={limpiarEntradaNormal}
+          className="bg-orange-500/20 border-orange-500/30 text-orange-400 hover:bg-orange-500/30"
+          data-testid="button-limpiar-entrada-normal"
+        >
+          CE
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={borrarUltimoNormal}
+          className="bg-yellow-500/20 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/30"
+          data-testid="button-borrar-ultimo-normal"
+        >
+          <Delete className="h-4 w-4" />
+        </Button>
+        <Button
+          size="sm"
+          variant="default"
+          onClick={evaluarExpresionNormal}
+          className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
+          data-testid="button-evaluar-normal"
+        >
+          =
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-4 gap-1">
+        <div className="col-span-3 grid grid-cols-3 gap-1">
+          {botonesNumericos.map((btn) => (
+            <Button
+              key={btn.label}
+              size="sm"
+              variant="outline"
+              onClick={() => insertarEnExpresionNormal(btn.value)}
+              className="text-lg font-semibold bg-gray-700/50 border-gray-600/50 text-gray-100 hover:bg-gray-600/50"
+              data-testid={`button-numero-normal-${btn.label}`}
+            >
+              {btn.label}
+            </Button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-1">
+          {botonesOperadores.slice(0, 4).map((btn) => (
+            <Button
+              key={btn.label}
+              size="sm"
+              variant="outline"
+              onClick={() => insertarEnExpresionNormal(btn.value)}
+              className="text-lg font-semibold bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30"
+              data-testid={`button-operador-normal-${btn.label}`}
+            >
+              {btn.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-1">
+        {botonesOperadores.slice(4).map((btn) => (
+          <Button
+            key={btn.label}
+            size="sm"
+            variant="outline"
+            onClick={() => insertarEnExpresionNormal(btn.value)}
+            className="text-sm bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
+            data-testid={`button-operador-normal-${btn.label}`}
+          >
+            {btn.label}
+          </Button>
+        ))}
+      </div>
+
+      {historialNormal.length > 0 && (
+        <div className="bg-gray-800/40 rounded-lg p-2 border border-gray-700/30 max-h-24 overflow-y-auto">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-gray-500">Historial:</p>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={limpiarHistorialNormal}
+              className="h-5 text-xs px-1 text-gray-500 hover:text-rose-400"
+              data-testid="button-limpiar-historial-normal"
+            >
+              Limpiar
+            </Button>
+          </div>
+          {historialNormal.slice().reverse().map((item, idx) => (
+            <div 
+              key={idx} 
+              className="text-xs text-gray-400 font-mono truncate"
+              data-testid={`historial-normal-item-${idx}`}
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const getCalculadoraActual = () => {
+    switch (modo) {
+      case "moneda": return calculadoraMoneda;
+      case "normal": return calculadoraNormal;
+      case "cientifica": return calculadoraCientifica;
+    }
+  };
+
+  const modalCompartir = (
+    <Dialog open={mostrarModalCompartir} onOpenChange={setMostrarModalCompartir}>
+      <DialogContent className="bg-gray-900 border-gray-700 text-gray-100 max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-purple-300">
+            <Share2 className="h-5 w-5" />
+            Compartir Ejercicio
+          </DialogTitle>
+          <DialogDescription className="text-gray-400">
+            Selecciona los usuarios con quienes deseas compartir tu ejercicio de calculadora científica.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700/50">
+            <p className="text-xs text-gray-500 mb-1">Ejercicio a compartir:</p>
+            <p className="text-sm font-mono text-purple-300">{expresionCientifica || "(vacío)"}</p>
+            <p className="text-lg font-bold text-emerald-400">= {resultadoCientifica}</p>
+          </div>
+
+          <div>
+            <Input
+              type="text"
+              placeholder="Buscar usuario..."
+              value={busquedaUsuario}
+              onChange={(e) => setBusquedaUsuario(e.target.value)}
+              className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500"
+              data-testid="input-buscar-usuario"
+            />
+          </div>
+
+          <div className="max-h-48 overflow-y-auto space-y-1">
+            {usuariosFiltrados.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">
+                No hay usuarios disponibles
+              </p>
+            ) : (
+              usuariosFiltrados.map((u) => (
+                <div
+                  key={u.id}
+                  onClick={() => toggleUsuarioCompartir(u.id)}
+                  className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
+                    usuariosParaCompartir.includes(u.id)
+                      ? "bg-purple-500/20 border border-purple-500/50"
+                      : "bg-gray-800/40 border border-transparent hover:bg-gray-700/50"
+                  }`}
+                  data-testid={`usuario-compartir-${u.id}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-200">
+                        {getNombreCompleto(u)}
+                      </p>
+                      {u.email && (
+                        <p className="text-xs text-gray-500">{u.email}</p>
+                      )}
+                    </div>
+                  </div>
+                  {usuariosParaCompartir.includes(u.id) && (
+                    <Check className="h-4 w-4 text-purple-400" />
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {usuariosParaCompartir.length > 0 && (
+            <p className="text-xs text-purple-400">
+              {usuariosParaCompartir.length} usuario(s) seleccionado(s)
+            </p>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setMostrarModalCompartir(false);
+                setUsuariosParaCompartir([]);
+                setBusquedaUsuario("");
+              }}
+              className="text-gray-400"
+              data-testid="button-cancelar-compartir"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={compartirEjercicioCientifico}
+              disabled={usuariosParaCompartir.length === 0}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+              data-testid="button-enviar-compartir"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Enviar
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   const contenidoPrincipal = (
     <div className="flex flex-col h-full">
       {headerComponent}
       <div className="flex-1 overflow-auto p-4">
-        {modo === "moneda" ? calculadoraMoneda : calculadoraCientifica}
+        {getCalculadoraActual()}
       </div>
+      {modalCompartir}
     </div>
   );
 
