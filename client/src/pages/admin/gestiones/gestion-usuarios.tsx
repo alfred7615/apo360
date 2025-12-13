@@ -7,14 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { 
   Users, UserCog, Search, Plus, Edit, Trash2, Shield, User, 
   Star, MoreVertical, Ban, AlertTriangle, Eye, Check, 
-  Car, Store, Filter, RefreshCw
+  Car, Store, Filter, RefreshCw, Gift
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { UsuarioEditModal } from "@/components/admin/usuario-edit-modal";
 import { UsuarioDetailDrawer } from "@/components/admin/usuario-detail-drawer";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Usuario } from "@shared/schema";
 
 interface RolJerarquico {
@@ -96,10 +101,58 @@ export default function GestionUsuariosScreen() {
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<UsuarioConRoles | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  const [mostrarModalCortesia, setMostrarModalCortesia] = useState(false);
+  const [usuarioParaCortesia, setUsuarioParaCortesia] = useState<UsuarioConRoles | null>(null);
+  const [duracionCortesia, setDuracionCortesia] = useState("1");
+  const [motivoCortesia, setMotivoCortesia] = useState("");
+  
+  const { toast } = useToast();
 
   const { data: usuarios = [], isLoading, refetch } = useQuery<UsuarioConRoles[]>({
     queryKey: ["/api/usuarios"],
   });
+
+  const asignarCortesiaMutation = useMutation({
+    mutationFn: async (datos: { usuarioId: string; duracionMeses: number; motivo: string }) => {
+      const res = await apiRequest("POST", "/api/membresias/cortesia", datos);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Plan de cortesía asignado",
+        description: `Se asignó el plan Pro por ${duracionCortesia} mes(es) al usuario.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/usuarios"] });
+      setMostrarModalCortesia(false);
+      setUsuarioParaCortesia(null);
+      setDuracionCortesia("1");
+      setMotivoCortesia("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al asignar cortesía",
+        description: error.message || "No se pudo asignar el plan de cortesía",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAsignarCortesia = () => {
+    if (!usuarioParaCortesia || !motivoCortesia.trim()) {
+      toast({
+        title: "Datos incompletos",
+        description: "Por favor ingresa el motivo de la cortesía",
+        variant: "destructive",
+      });
+      return;
+    }
+    asignarCortesiaMutation.mutate({
+      usuarioId: usuarioParaCortesia.id,
+      duracionMeses: parseInt(duracionCortesia),
+      motivo: motivoCortesia.trim(),
+    });
+  };
 
   const filteredUsuarios = (usuarios as UsuarioConRoles[]).filter((u) => {
     const matchSearch = 
@@ -248,6 +301,17 @@ export default function GestionUsuariosScreen() {
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Ver Detalle
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setUsuarioParaCortesia(user);
+                  setMostrarModalCortesia(true);
+                }}
+                data-testid={`menu-cortesia-${user.id}`}
+                className="text-purple-600"
+              >
+                <Gift className="h-4 w-4 mr-2" />
+                Asignar Plan Cortesía
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {user.estado !== "suspendido" && (
@@ -481,6 +545,97 @@ export default function GestionUsuariosScreen() {
           setUsuarioSeleccionado(null);
         }}
       />
+
+      <Dialog open={mostrarModalCortesia} onOpenChange={(open) => {
+        setMostrarModalCortesia(open);
+        if (!open) {
+          setUsuarioParaCortesia(null);
+          setMotivoCortesia("");
+          setDuracionCortesia("1");
+        }
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="h-5 w-5 text-purple-600" />
+              Asignar Plan de Cortesía
+            </DialogTitle>
+            <DialogDescription>
+              Asigna una membresía Pro gratuita al usuario seleccionado.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {usuarioParaCortesia && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={usuarioParaCortesia.profileImageUrl || undefined} />
+                  <AvatarFallback>
+                    {[usuarioParaCortesia.firstName, usuarioParaCortesia.lastName]
+                      .filter(Boolean).map(n => n?.[0]).join("").toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">
+                    {[usuarioParaCortesia.firstName, usuarioParaCortesia.lastName].filter(Boolean).join(" ") || "Sin nombre"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{usuarioParaCortesia.email}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="duracion">Duración del plan</Label>
+                <Select value={duracionCortesia} onValueChange={setDuracionCortesia}>
+                  <SelectTrigger id="duracion" data-testid="select-duracion-cortesia">
+                    <SelectValue placeholder="Seleccionar duración" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 mes</SelectItem>
+                    <SelectItem value="3">3 meses</SelectItem>
+                    <SelectItem value="6">6 meses</SelectItem>
+                    <SelectItem value="12">12 meses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="motivo">Motivo de la cortesía *</Label>
+                <Textarea
+                  id="motivo"
+                  placeholder="Ej: Colaborador del proyecto, influencer, soporte técnico..."
+                  value={motivoCortesia}
+                  onChange={(e) => setMotivoCortesia(e.target.value)}
+                  className="min-h-[80px]"
+                  data-testid="textarea-motivo-cortesia"
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setMostrarModalCortesia(false);
+                setUsuarioParaCortesia(null);
+                setMotivoCortesia("");
+                setDuracionCortesia("1");
+              }}
+              data-testid="button-cancelar-cortesia"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleAsignarCortesia}
+              disabled={asignarCortesiaMutation.isPending || !motivoCortesia.trim()}
+              className="bg-purple-600 hover:bg-purple-700"
+              data-testid="button-confirmar-cortesia"
+            >
+              {asignarCortesiaMutation.isPending ? "Asignando..." : "Asignar Cortesía"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
