@@ -259,7 +259,7 @@ export function CalculadoraCambio({
       const resultado = math.evaluate(expresionNormal);
       const resultadoStr = math.format(resultado, { precision: 10 });
       setResultadoNormal(resultadoStr);
-      setHistorialNormal(prev => [...prev.slice(-9), `${expresionNormal} = ${resultadoStr}`]);
+      setHistorialNormal(prev => [...prev.slice(-29), `${expresionNormal} = ${resultadoStr}`]);
     } catch (error) {
       setResultadoNormal("Error");
     }
@@ -474,18 +474,16 @@ export function CalculadoraCambio({
           </Button>
         </div>
       </div>
-      <div className="px-3 pb-2">
-        <h2 className="text-base font-semibold text-gray-100">
-          {modo === "moneda" ? "Cambio de Moneda" : getTituloModo()}
-        </h2>
-        <p className="text-xs text-gray-400">
-          {modo === "moneda" 
-            ? "Calcula el tipo de cambio entre monedas" 
-            : modo === "normal" 
-              ? "Operaciones matemáticas básicas"
-              : "Funciones matemáticas avanzadas"}
-        </p>
-      </div>
+      {modo === "moneda" && (
+        <div className="px-3 pb-2">
+          <h2 className="text-base font-semibold text-gray-100">
+            Cambio de Moneda
+          </h2>
+          <p className="text-xs text-gray-400">
+            Calcula el tipo de cambio entre monedas
+          </p>
+        </div>
+      )}
     </div>
   );
 
@@ -796,7 +794,7 @@ export function CalculadoraCambio({
         : String(resultado);
       
       setResultadoCientifica(resultadoStr);
-      setHistorialCientifica(prev => [...prev.slice(-9), `${expresionCientifica} = ${resultadoStr}`]);
+      setHistorialCientifica(prev => [...prev.slice(-29), `${expresionCientifica} = ${resultadoStr}`]);
     } catch (error) {
       setResultadoCientifica("Error");
     }
