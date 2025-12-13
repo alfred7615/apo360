@@ -1,0 +1,51 @@
+en el sistema solo debe haber una sola calculadora de cambio de monedas eliminar una la antigua que permanezca y esa antigua debe estar en las dos partes una en la gestion de moneda que hay que cambias  y la otra que esta en los botones de acceso esa calculadora debe estar disponible para cualquier trabajo debe haber solo un diseño y estructura de calculadora..... donde se encuentra la palabra TENGO RECIBO ahi debe notarse los numeros completos formato 123,345.00 con dos decimales si se escribe cuatro decimales el resultado RECIBO entregara tambien con 4 decimales eliminar el simbolo de la moneda donde esta los numeros  y en el tipo de moneda que solo salga las opciones PEN USD CLP ARS BOB para ganar mas espacio Y EN MODO CELULAR SOLO QUE APAREZCA LAS BANDERAS DE CADA MONEDA  Y LA PARTE ABAJO TAMBIEN QUE SALGA SOLO BANDERAS DE LAS MONEDAS PAEA QUE ESTE EN UNA SOLO FILA LAS BANDERAS....... EN LA parte superior izquierda un icono de salir  o cerrar el cambio de moneda y en la PARTE SUPERIOR DERECHA UN ICONO DE calculadora (qye abrira ogtra ventana  para mostrar una calculadora basica de operaciones matematicas  y otra opcion de calculadora cientifica con 356 funciones  ambas calculadora ocupara toda la pantalla en el celular y tablet en vertical y en pc y tablet horizontal sera una ventana emergnete en horizontal.... ambas calculadora tendran para guardar historial hasta 30  historiat o desarrollo de calcula  y al llenar se eliminara el antiguo  quedando el reciente   la pantala de operaciones estara ocupando 40% y el 60% de las teclas y pestañas de las funcionalidades  como referencia https://web2.0calc.es/ de calculadora cientifica mostrando que se puede desplazar la pantala a la izquierda para limpiar la pantallita o cambiar el modo de pantalla  de nuemros o pantalla grafica  ondas etc etc  
+
+números complejos
+(2+2i)*(3+3i)}
+cálculo diferencial
+int(x^2)
+cálculo diferencial
+diff(x^2)
+Ecuaciones
+x^2+2x-1=9
+Gráficas de funciones
+plot(sin(x),x=0..360)
+Algebra lineal
+(1, 2, 3)#(4, 5, 6)
+ 
+Teoría de números
+sum(x,x=1..10)
+pourcentages
+100+5%
+Fonctions estándar 
+sqrt(9)
+Probabilidad
+ncr(49, 6)
+Trigonometría
+sin(90)
+Conversión de unidades
+200m in cm
+
+Matemáticas
+álgebra
+Reglas de cálculo
+Potencias
+Logaritmos
+Raíces √
+Geometría
+Círculo
+Cube ❒
+Cilindro
+Hexágono
+Rectángulo ▭
+Bola ❍
+Pente ⁄
+Square
+Octágono
+Finanzas
+Interés compuesto
+Porcentajes
+
+cuando esta en modo de calculadora en la parte superior derecha cambiar el icono de calculadora normal a calculadora cientifica en la parte suprior izquierda estara el icono de cerrar (cierra todo la calculadora  normal y de monedas) o retroceder ( que regresa al anterior) ambos iconos
+
+ahora mostrarme el plan de trabajo que tipo de actividades o trabajos  o de implementacion se va a realizar y en que consiste  para recien autorizarte en el desarrollo del codigo y hacer los cambios
