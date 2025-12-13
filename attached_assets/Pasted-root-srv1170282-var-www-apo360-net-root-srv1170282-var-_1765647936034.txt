@@ -1,0 +1,30 @@
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# psql "$DATABASE_URL" -c "
+> INSERT INTO tasas_cambio_locales (id, cambista_id, moneda_origen_codigo, moneda_destino_codigo, tasa_compra, tasa_venta, ubicacion, activo, verificado, created_at, updated_at) VALUES
+> ('319971ff-8913-4d6a-af76-88cf745fbda0', 'cambista-001', 'USD', 'PEN', 3.750000, 3.800000, 'tacna', true, false, '2025-12-12 05:26:34.031334', '2025-12-12 05:26:34.031334'),
+> ('0d72f383-4d3f-4e70-8077-302a5160db1f', 'cambista-001', 'USD', 'PEN', 3.358000, 3.381000, NULL, true, false, '2025-12-12 05:28:18.271268', '2025-12-12 05:28:18.271268'),
+> ('f0020a40-21ac-471a-92ee-1a8c07080ae4', 'cambista-001', 'CLP', 'PEN', 0.003700, 0.003700, NULL, true, false, '2025-12-12 05:30:40.266426', '2025-12-12 05:30:40.266426'),
+> ('39f5e1e1-0c30-4521-a2e0-e92e736291ef', 'cambista-001', 'BOB', 'PEN', 0.489000, 0.489000, 'tacna', true, false, '2025-12-12 05:32:47.101232', '2025-12-12 05:32:47.101232')
+> ON CONFLICT (id) DO NOTHING;
+> "psql "$DATABASE_URL" -c "
+> INSERT INTO planes_membresia (id, nombre, descripcion, duracion_meses, precio_normal, precio_descuento, porcentaje_descuento, beneficios, productos_incluidos, destacado, orden, activo, created_at, updated_at) VALUES
+> ('9ca9aa1e-e600-4ae1-a55a-f5125158f696', 'Plan Mensual', 'Plan básico de 1 mes para comercios y vendedores', 1, 29.90, NULL, NULL, '[\"Publicar hasta 10 productos\", \"Visibilidad en el marketplace\", \"Estadísticas básicas\"]', 10, false, 1, true, '2025-12-06 14:37:47.123091', '2025-12-06 14:37:47.123091'),
+> ('9ebe5149-93b2-4fce-9ea9-5c866c5430fa', 'Plan Trimestral', 'Plan de 3 meses con descuento del 10%', 3, 89.70, 80.73, 10, '[\"Publicar hasta 30 productos\", \"Visibilidad destacada\", \"Estadísticas avanzadas\", \"Soporte prioritario\"]', 30, false, 2, true, '2025-12-06 14:37:47.123091', '2025-12-06 14:37:47.123091'),
+> ('56491fa8-8c5a-45cc-9929-ad6aac5e7ee4', 'Plan Semestral', 'Plan de 6 meses con descuento del 15%', 6, 179.40, 152.49, 15, '[\"Publicar hasta 60 productos\", \"Máxima visibilidad\", \"Estadísticas completas\", \"Soporte prioritario\", \"Promociones destacadas\"]', 60, true, 3, true, '2025-12-06 14:37:47.123091', '2025-12-06 14:37:47.123091'),
+> ('ee510877-09e7-4e8b-b1c5-2ca16a758daf', 'Plan Anual', 'Plan de 12 meses con el mejor precio', 12, 358.80, 287.04, 20, '[\"Productos ilimitados\", \"Máxima visibilidad\", \"Estadísticas premium\", \"Soporte VIP 24/7\", \"Promociones destacadas\", \"Badge Premium\"]', 9999, false, 4, true, '2025-12-06 14:37:47.123091', '2025-12-06 14:37:47.123091'),
+> ('252aa9cf-7231-448f-b35b-53b9d1458231', 'Cortesía 3 meses', 'Plan de cortesía asignado por administrador - 3 meses', 3, 0.00, 0.00, NULL, '[\"Acceso completo\", \"Calculadora Científica\", \"Sin restricciones\"]', 100, false, 0, true, '2025-12-13 14:44:09.665302', '2025-12-13 14:44:09.665302')
+> ON CONFLICT (id) DO NOTHING;
+> "psql "$DATABASE_URL" -c "
+> INSERT INTO membresias_usuarios (id, usuario_id, plan_id, fecha_inicio, fecha_fin, estado, productos_creados, monto_total, metodo_pago, renovacion_automatica, created_at, updated_at, es_cortesia, asignado_por, motivo_cortesia) VALUES
+> ('467e288f-606f-46fd-8f26-6b81b5dedf58', 'local-003', '9ca9aa1e-e600-4ae1-a55a-f5125158f696', '2025-12-13 02:59:53.148', '2026-01-13 02:59:53.148', 'pendiente', 0, 29.90, 'pendiente', false, '2025-12-13 02:59:53.188302', '2025-12-13 02:59:53.188302', false, NULL, NULL),
+> ('5c1dd721-e45e-464f-be00-6d8e14cba7b4', '50138117', '252aa9cf-7231-448f-b35b-53b9d1458231', '2025-12-13 14:47:54.455', '2026-03-13 14:47:54.455', 'activa', 0, 0.00, 'cortesia', false, '2025-12-13 14:47:54.488743', '2025-12-13 14:47:54.488743', true, NULL, 'Asignado por administrador'),
+> ('f3fa524d-8359-4e4c-b5e1-8f8cd8e44aa6', '50138117', '252aa9cf-7231-448f-b35b-53b9d1458231', '2025-12-13 15:23:37.589', '2026-03-13 15:23:37.589', 'activa', 0, 0.00, 'cortesia', false, '2025-12-13 15:23:37.623685', '2025-12-13 15:23:37.623685', true, '50138117', 'af')
+> ON CONFLICT (id) DO NOTHING;
+> "
+psql: warning: extra command-line argument "" ignored
+Password for user root:
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: fe_sendauth: no password supplied
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
