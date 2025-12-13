@@ -599,9 +599,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rolesEnriquecidos = await Promise.all(roles.map(async (rol) => {
         let categoria = null;
         let subcategoria = null;
+        let subcategoriasDisponibles: any[] = [];
         
         if (rol.categoriaRolId) {
           categoria = await storage.getCategoriaRol(rol.categoriaRolId);
+          // Obtener subcategorías disponibles para esta categoría
+          subcategoriasDisponibles = await storage.getSubcategoriasRol(rol.categoriaRolId);
         }
         if (rol.subcategoriaRolId) {
           subcategoria = await storage.getSubcategoriaRol(rol.subcategoriaRolId);
@@ -611,6 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...rol,
           categoria,
           subcategoria,
+          subcategoriasDisponibles,
         };
       }));
       
@@ -618,6 +622,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error al obtener roles:", error);
       res.status(500).json({ message: error.message || "Error al obtener roles" });
+    }
+  });
+
+  // Actualizar subcategoría del rol del usuario (el usuario elige su subcategoría)
+  app.patch('/api/mis-roles/:id/subcategoria', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      const { subcategoriaRolId } = req.body;
+      
+      // Verificar que el rol pertenece al usuario
+      const roles = await storage.getRolesUsuario(usuarioId);
+      const rolUsuario = roles.find(r => r.id === id);
+      
+      if (!rolUsuario) {
+        return res.status(404).json({ message: "Rol no encontrado o no te pertenece" });
+      }
+      
+      // Verificar que la subcategoría pertenece a la categoría del rol
+      if (subcategoriaRolId && rolUsuario.categoriaRolId) {
+        const subcategoria = await storage.getSubcategoriaRol(subcategoriaRolId);
+        if (!subcategoria || subcategoria.categoriaRolId !== rolUsuario.categoriaRolId) {
+          return res.status(400).json({ message: "La subcategoría no es válida para esta categoría" });
+        }
+      }
+      
+      // Actualizar subcategoría del rol
+      const rolActualizado = await storage.actualizarRolUsuario(id, { subcategoriaRolId });
+      
+      if (!rolActualizado) {
+        return res.status(500).json({ message: "Error al actualizar subcategoría" });
+      }
+      
+      // Obtener información enriquecida
+      let categoria = null;
+      let subcategoria = null;
+      if (rolActualizado.categoriaRolId) {
+        categoria = await storage.getCategoriaRol(rolActualizado.categoriaRolId);
+      }
+      if (rolActualizado.subcategoriaRolId) {
+        subcategoria = await storage.getSubcategoriaRol(rolActualizado.subcategoriaRolId);
+      }
+      
+      res.json({ ...rolActualizado, categoria, subcategoria });
+    } catch (error: any) {
+      console.error("Error al actualizar subcategoría del rol:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar subcategoría" });
     }
   });
 

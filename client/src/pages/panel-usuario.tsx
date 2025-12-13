@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +28,12 @@ import BloqueoServicio, { useVerificarPerfil } from "@/components/BloqueoServici
 import LocalComercialPanel from "@/components/LocalComercialPanel";
 import CambistaPanelUsuario from "@/components/CambistaPanelUsuario";
 
+interface SubcategoriaRol {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+}
+
 interface RolUsuario {
   id: string;
   usuarioId: string;
@@ -35,6 +42,7 @@ interface RolUsuario {
   subcategoriaRolId?: string;
   categoria?: any;
   subcategoria?: any;
+  subcategoriasDisponibles?: SubcategoriaRol[];
 }
 
 interface PlanMembresia {
@@ -240,6 +248,18 @@ export default function PanelUsuarioPage() {
     },
     onError: (error: any) => {
       toast({ title: "Error al solicitar rol", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const actualizarSubcategoriaMutation = useMutation({
+    mutationFn: (data: { rolId: string; subcategoriaRolId: string }) => 
+      apiRequest("PATCH", `/api/mis-roles/${data.rolId}/subcategoria`, { subcategoriaRolId: data.subcategoriaRolId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-roles"] });
+      toast({ title: "Subcategoría actualizada", description: "Tu subcategoría ha sido configurada correctamente." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al actualizar subcategoría", description: error.message, variant: "destructive" });
     },
   });
 
@@ -495,6 +515,49 @@ export default function PanelUsuarioPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Alertas para roles que necesitan seleccionar subcategoría */}
+      {misRoles.filter(rol => rol.categoriaRolId && !rol.subcategoriaRolId && (rol.subcategoriasDisponibles?.length || 0) > 0).map((rol) => (
+        <Card key={rol.id} className="mb-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20" data-testid={`alert-subcategoria-${rol.id}`}>
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <AlertCircle className="h-5 w-5 text-yellow-600" />
+                <div>
+                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">
+                    Configura tu subcategoría para {rol.categoria?.nombre || rol.rol}
+                  </h4>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    Selecciona tu especialidad o tipo de servicio para completar tu perfil
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  onValueChange={(value) => {
+                    actualizarSubcategoriaMutation.mutate({ rolId: rol.id, subcategoriaRolId: value });
+                  }}
+                  disabled={actualizarSubcategoriaMutation.isPending}
+                >
+                  <SelectTrigger className="w-[200px]" data-testid={`select-subcategoria-${rol.id}`}>
+                    <SelectValue placeholder="Seleccionar subcategoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rol.subcategoriasDisponibles?.map((sub) => (
+                      <SelectItem key={sub.id} value={sub.id}>
+                        {sub.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {actualizarSubcategoriaMutation.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* Botones de navegación responsivos y centrados */}

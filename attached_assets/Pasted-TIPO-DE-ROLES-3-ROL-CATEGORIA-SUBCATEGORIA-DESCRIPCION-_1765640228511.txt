@@ -1,0 +1,244 @@
+TIPO DE ROLES
+############################3
+
+ROL		CATEGORIA	SUBCATEGORIA	DESCRIPCION
+¦		¦		¦		¦
+=== USUARIO	¦		¦		¦= ussuario logeado 
+=== CAMBISTA	¦		¦		¦= envia datos de cambio de moneda al dia
+		¦		¦		¦
+=== CHAT	¦		¦		¦= sincronizado con el boton de panico de alerta temprana
+      +		¦		¦		¦
+      +---------NOMBRE DE GRUPO 1		¦= nombre de una asociacion o grupo de personas seg ciudadana	
+      +			+-------JEFATURA	¦= jefe de grupo agregara editara integrantes y vigilara las notificaciones
+      +			+-------OPERACIONES	¦= apoyo del jefe de grupo revisando notificaciones dar indicaciones
+      +			+-------INTEGRANTE	¦= personas integrantes del grupo
+      +---------NOMBRE DE GRUPO 2		¦
+      +			+-------JEFATURA	¦
+      +			+-------OPERACIONES	¦
+      +			+-------INTEGRANTE	¦
+      +---------NOMBRE DE GRUPO 3		¦
+      +			+-------JEFATURA	¦
+      +			+-------OPERACIONES	¦
+      +			+-------INTEGRANTE	¦
+      +						¦
+      +---------(BOTON AGREGAR +)		¦
+						¦
+=== MI TIENDA					¦= cada usuario podra vender producto de manera independiente con requisitos perfil
+      +---------TECNOLOGIA			¦
+      +			+---------CELULARES	¦
+      +			+---------TABLET	¦
+      +			+---------OTROS		¦
+      +			+---------(BOTON AGREGAR +)
+      +---------AUDIO VIDEO
+      +			+---------TELEVISORES
+      +			+---------EQUIPO DE SONIDO
+      +			+---------PARLANTES
+      +			+---------OTROS
+      +			+---------(BOTON AGREGAR +)
+      +---------MUEBLES
+      +			+---------DORMITORIO
+      +			+---------SALA
+      +			+---------COCINA
+      +			+---------OTROS
+      +			+---------(BOTON AGREGAR +)
+      +---------OTROS				¦
+      +						¦
+      +---------(BOTON AGREGAR +)		¦
+						¦
+						¦
+=== LOCAL COMERCIAL				¦= usuarios que tenga local comercial, ruc y cumplir el perfil 
+      +---------RESTAURANT
+      +			+---------PIZZERIA
+      +			+---------CEVICHERIA
+      +			+---------POLLERIA
+      +			+---------CHICHARRONERIA
+      +			+---------CALDOS
+      +			+---------JUGOS
+      +			+---------RESTAURANT
+      +			+---------OTROS
+      +			+---------(BOTON AGREGAR +)
+      +					
+      +---------BEBIDAS
+      +			+---------LICORERIA
+      +			+---------AGUA HIELO
+      +			+---------GESEOSAS
+      +			+---------OTROS
+      +			+---------(BOTON AGREGAR +)
+      +
+      +---------TECNOLOGIA
+      +			+---------COMPUTADORAS
+      +			+---------CELULARES
+      +			+---------ACCESORIOS
+      +			+---------ELECTRODOMESTICOS
+      +			+---------OTROS
+      +			+---------(BOTON AGREGAR +)
+      +
+      +---------ROPA
+      +			+---------DAMAS
+      +			+---------CABALLEROS
+      +			+---------NIÑOS
+      +			+---------FRAZADAS
+      +			+---------VERANO
+      +			+---------DISFRACES
+      +			+---------OTROS
+      +			+---------(BOTON AGREGAR +)
+      +
+      +---------ABARROTES
+      +			+---------TIENDAS
+      +			+---------MERCADO
+      +			+---------OTROS
+      +			+---------(BOTON AGREGAR +)
+      +	
+      +	
+      +---------(BOTON AGREGAR +)
+		
+=== POLICIA
+      +	
+      +---------COMISARIA 1
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +---------COMISARIA 2
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +---------COMISARIA 3
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +
+      +---------(BOTON AGREGAR +)
+
+=== BOMBERO
+      +	
+      +---------BOMBERO 1
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +---------BOMBERO 2
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +
+      +---------(BOTON AGREGAR +)
+
+=== SAMU
+      +	
+      +---------SAMU 1
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +---------SAMU 2
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +
+      +---------(BOTON AGREGAR +)
+
+=== SERENAZGO
+      +	
+      +---------SERENAZGO 1
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +---------SERENAZGO 2
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +
+      +---------(BOTON AGREGAR +)
+
+=== INSTITUCION	(podra agregar publicidad, encuestas, eventos, etc etc y el super administrador aprobara para su ´publicacion)
+      +	
+      +---------INSTITUCION 1
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------PERSONAL
+      +---------INSTITUCION 2
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------PERSONAL
+      +
+      +---------(BOTON AGREGAR +)
+
+=== TAXI
+      +	
+      +---------RADIO TAXI 1
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +---------RADIO TAXI 2
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +
+      +---------(BOTON AGREGAR +)
+      +	
+      +---------GRUPO DE TAXI 1
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +---------GRUPO DE TAXI 2
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +
+      +---------(BOTON AGREGAR +)
+
+=== BUSES
+      +	
+      +---------BUSES 1
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +---------BUSES 2
+      +			+---------JEFATURA
+      +			+---------OPERACIONES
+      +			+---------VEHICULO
+      +			+---------PERSONAL
+      +
+      +---------(BOTON AGREGAR +)
+
+
+#########################################33
+
+habra un boton en el panel de usuario de agregar rol
+y saldra en una ventana emergente esponsive para todo tipo de dispositivos pc tablet celular y podra esocger el rol puede ser una a mas rol dependiendo de la capacidad y documentacion que acredite el usuario para solicitar el rol este yipo de advenrtencia estara descrita en esa ventana, y luego el super administrador o personal del super administrador  como super supervisor super admin super cartera y otros que se le asigne funciones para aprobar las solicitudes de los roles
+
+Selecciona el rol principal del usuario
+
+Usuario
+Usuario básico del sistema
+
+Local Comercial
+Propietario de negocio, puedes ofrecer tus productos en esta plataforma
+
+Serenazgo
+Personal de seguridad municipal
+
+Policía
+Miembro de la PNP
+Conductor
+
+Bombero
+Miembro del cuerpo de bomberos
+
+SAMU
+Personal de emergencias médicas
+
+Conductor
+si eres taxistas, delivery, buses, mudanzas y ofrecer tus servicios
