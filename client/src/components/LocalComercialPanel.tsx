@@ -70,6 +70,29 @@ interface LogoServicio {
   descripcion?: string;
 }
 
+interface UsuarioBasico {
+  id: string;
+  email?: string;
+  telefono?: string;
+  firstName?: string;
+  lastName?: string;
+  alias?: string;
+  profileImageUrl?: string;
+}
+
+interface PersonalNegocio {
+  id: string;
+  negocioId: string;
+  usuarioId: string;
+  propietarioId: string;
+  funcion: string;
+  permisos?: string[];
+  estado?: string;
+  fechaIngreso?: string;
+  notas?: string;
+  usuario?: UsuarioBasico;
+}
+
 export default function LocalComercialPanel() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("negocio");
@@ -79,6 +102,16 @@ export default function LocalComercialPanel() {
   const [showLogoSelector, setShowLogoSelector] = useState(false);
   const [showNegocioPopup, setShowNegocioPopup] = useState(false);
   const [formInitialized, setFormInitialized] = useState(false);
+  
+  const [showPersonalModal, setShowPersonalModal] = useState(false);
+  const [editingPersonal, setEditingPersonal] = useState<PersonalNegocio | null>(null);
+  const [busquedaUsuario, setBusquedaUsuario] = useState("");
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<UsuarioBasico | null>(null);
+  const [personalForm, setPersonalForm] = useState({
+    funcion: "",
+    permisos: [] as string[],
+    notas: "",
+  });
 
   const [negocioForm, setNegocioForm] = useState<Partial<DatosNegocio>>({
     nombreNegocio: "",
@@ -115,6 +148,16 @@ export default function LocalComercialPanel() {
 
   const { data: logosServicios = [] } = useQuery<LogoServicio[]>({
     queryKey: ["/api/logos-servicios"],
+  });
+
+  const { data: miPersonal = [], isLoading: loadingPersonal } = useQuery<PersonalNegocio[]>({
+    queryKey: ["/api/mi-personal"],
+    enabled: !!miNegocio,
+  });
+
+  const { data: usuariosBuscados = [], isLoading: buscandoUsuarios } = useQuery<UsuarioBasico[]>({
+    queryKey: ["/api/buscar-usuarios", busquedaUsuario],
+    enabled: busquedaUsuario.length >= 3,
   });
 
   useEffect(() => {
@@ -180,6 +223,38 @@ export default function LocalComercialPanel() {
     },
   });
 
+  const guardarPersonalMutation = useMutation({
+    mutationFn: (data: { usuarioId: string; funcion: string; permisos?: string[]; notas?: string }) => {
+      if (editingPersonal) {
+        return apiRequest("PATCH", `/api/mi-personal/${editingPersonal.id}`, data);
+      }
+      return apiRequest("POST", "/api/mi-personal", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-personal"] });
+      setShowPersonalModal(false);
+      setEditingPersonal(null);
+      setUsuarioSeleccionado(null);
+      setBusquedaUsuario("");
+      setPersonalForm({ funcion: "", permisos: [], notas: "" });
+      toast({ title: editingPersonal ? "Personal actualizado" : "Personal agregado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const eliminarPersonalMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/mi-personal/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-personal"] });
+      toast({ title: "Personal eliminado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleGuardarNegocio = () => {
     if (!negocioForm.nombreNegocio?.trim()) {
       toast({ title: "El nombre del negocio es requerido", variant: "destructive" });
@@ -228,6 +303,63 @@ export default function LocalComercialPanel() {
       toast({ title: "Logo seleccionado" });
     }
   };
+
+  const handleAgregarPersonal = () => {
+    setEditingPersonal(null);
+    setUsuarioSeleccionado(null);
+    setBusquedaUsuario("");
+    setPersonalForm({ funcion: "", permisos: [], notas: "" });
+    setShowPersonalModal(true);
+  };
+
+  const handleEditarPersonal = (personal: PersonalNegocio) => {
+    setEditingPersonal(personal);
+    setUsuarioSeleccionado(personal.usuario || null);
+    setPersonalForm({
+      funcion: personal.funcion || "",
+      permisos: personal.permisos || [],
+      notas: personal.notas || "",
+    });
+    setShowPersonalModal(true);
+  };
+
+  const handleGuardarPersonal = () => {
+    if (!editingPersonal && !usuarioSeleccionado) {
+      toast({ title: "Debes seleccionar un usuario", variant: "destructive" });
+      return;
+    }
+    if (!personalForm.funcion) {
+      toast({ title: "La función es requerida", variant: "destructive" });
+      return;
+    }
+    guardarPersonalMutation.mutate({
+      usuarioId: editingPersonal ? editingPersonal.usuarioId : usuarioSeleccionado!.id,
+      funcion: personalForm.funcion,
+      permisos: personalForm.permisos,
+      notas: personalForm.notas,
+    });
+  };
+
+  const funcionesPersonal = [
+    { value: "cajero", label: "Cajero" },
+    { value: "vendedor", label: "Vendedor" },
+    { value: "repartidor", label: "Repartidor" },
+    { value: "gerente", label: "Gerente" },
+    { value: "cocinero", label: "Cocinero" },
+    { value: "mesero", label: "Mesero" },
+    { value: "limpieza", label: "Limpieza" },
+    { value: "seguridad", label: "Seguridad" },
+    { value: "almacen", label: "Almacén" },
+  ];
+
+  const permisosDisponibles = [
+    { value: "ver_pedidos", label: "Ver Pedidos" },
+    { value: "gestionar_pedidos", label: "Gestionar Pedidos" },
+    { value: "ver_inventario", label: "Ver Inventario" },
+    { value: "gestionar_inventario", label: "Gestionar Inventario" },
+    { value: "ver_reportes", label: "Ver Reportes" },
+    { value: "gestionar_caja", label: "Gestionar Caja" },
+  ];
 
   if (loadingNegocio) {
     return (
@@ -641,7 +773,7 @@ export default function LocalComercialPanel() {
                   <h3 className="font-medium">Personal del Negocio</h3>
                   <p className="text-sm text-muted-foreground">Asigna usuarios registrados con funciones y permisos</p>
                 </div>
-                <Button size="sm" data-testid="button-agregar-personal">
+                <Button size="sm" onClick={handleAgregarPersonal} data-testid="button-agregar-personal">
                   <Plus className="h-4 w-4 mr-2" />
                   Agregar Personal
                 </Button>
@@ -654,14 +786,92 @@ export default function LocalComercialPanel() {
                     <p className="text-muted-foreground">Primero configura los datos de tu negocio</p>
                   </CardContent>
                 </Card>
-              ) : (
+              ) : loadingPersonal ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : miPersonal.length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="py-8 text-center">
                     <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">Aún no tienes personal asignado</p>
-                    <p className="text-xs text-muted-foreground mt-2">Próximamente: Buscar y asignar usuarios con funciones</p>
+                    <p className="text-xs text-muted-foreground mt-2">Busca usuarios por email, teléfono o nombre</p>
                   </CardContent>
                 </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {miPersonal.map((personal) => (
+                    <Card key={personal.id} data-testid={`card-personal-${personal.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            {personal.usuario?.profileImageUrl ? (
+                              <img 
+                                src={personal.usuario.profileImageUrl} 
+                                alt="" 
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <Users className="h-5 w-5 text-primary" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">
+                              {personal.usuario?.firstName || personal.usuario?.alias || "Usuario"}
+                              {personal.usuario?.lastName ? ` ${personal.usuario.lastName}` : ""}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {personal.usuario?.email || personal.usuario?.telefono || "Sin contacto"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          <Badge variant="secondary" className="capitalize">
+                            {funcionesPersonal.find(f => f.value === personal.funcion)?.label || personal.funcion}
+                          </Badge>
+                          {personal.permisos && personal.permisos.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {personal.permisos.slice(0, 2).map((p) => (
+                                <Badge key={p} variant="outline" className="text-xs">
+                                  {permisosDisponibles.find(pd => pd.value === p)?.label || p}
+                                </Badge>
+                              ))}
+                              {personal.permisos.length > 2 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{personal.permisos.length - 2}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                          {personal.notas && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">{personal.notas}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => handleEditarPersonal(personal)}
+                            data-testid={`button-editar-personal-${personal.id}`}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Editar
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => eliminarPersonalMutation.mutate(personal.id)}
+                            data-testid={`button-eliminar-personal-${personal.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
             </div>
           </TabsContent>
@@ -1207,6 +1417,174 @@ export default function LocalComercialPanel() {
           initialLat={negocioForm.latitud || -18.0146}
           initialLng={negocioForm.longitud || -70.2536}
         />
+
+        {/* Modal agregar/editar personal */}
+        <Dialog open={showPersonalModal} onOpenChange={(open) => {
+          setShowPersonalModal(open);
+          if (!open) {
+            setBusquedaUsuario("");
+            setUsuarioSeleccionado(null);
+            setEditingPersonal(null);
+            setPersonalForm({ funcion: "", permisos: [], notas: "" });
+          }
+        }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{editingPersonal ? "Editar Personal" : "Agregar Personal"}</DialogTitle>
+              <DialogDescription>
+                {editingPersonal ? "Modifica los datos del personal" : "Busca un usuario y asígnale una función"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {!editingPersonal && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    Buscar Usuario <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    value={busquedaUsuario}
+                    onChange={(e) => setBusquedaUsuario(e.target.value)}
+                    placeholder="Email, teléfono o nombre (mín. 3 caracteres)"
+                    data-testid="input-buscar-usuario"
+                  />
+                  {buscandoUsuarios && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Buscando...
+                    </div>
+                  )}
+                  {busquedaUsuario.length >= 3 && usuariosBuscados.length > 0 && !usuarioSeleccionado && (
+                    <ScrollArea className="h-[150px] border rounded-md p-2">
+                      {usuariosBuscados.map((u) => (
+                        <div
+                          key={u.id}
+                          className="flex items-center gap-3 p-2 rounded hover:bg-muted cursor-pointer"
+                          onClick={() => setUsuarioSeleccionado(u)}
+                          data-testid={`usuario-resultado-${u.id}`}
+                        >
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            {u.profileImageUrl ? (
+                              <img src={u.profileImageUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                            ) : (
+                              <Users className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {u.firstName || u.alias || "Usuario"} {u.lastName || ""}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {u.email || u.telefono || "Sin contacto"}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </ScrollArea>
+                  )}
+                  {usuarioSeleccionado && (
+                    <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/50">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        {usuarioSeleccionado.profileImageUrl ? (
+                          <img src={usuarioSeleccionado.profileImageUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                        ) : (
+                          <Users className="h-5 w-5 text-primary" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {usuarioSeleccionado.firstName || usuarioSeleccionado.alias || "Usuario"} {usuarioSeleccionado.lastName || ""}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {usuarioSeleccionado.email || usuarioSeleccionado.telefono}
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => setUsuarioSeleccionado(null)}>
+                        <XCircle className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {editingPersonal && editingPersonal.usuario && (
+                <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/50">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    {editingPersonal.usuario.profileImageUrl ? (
+                      <img src={editingPersonal.usuario.profileImageUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <Users className="h-5 w-5 text-primary" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">
+                      {editingPersonal.usuario.firstName || editingPersonal.usuario.alias || "Usuario"} {editingPersonal.usuario.lastName || ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {editingPersonal.usuario.email || editingPersonal.usuario.telefono}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1">
+                  Función <span className="text-destructive">*</span>
+                </Label>
+                <Select value={personalForm.funcion} onValueChange={(v) => setPersonalForm({ ...personalForm, funcion: v })}>
+                  <SelectTrigger data-testid="select-funcion-personal">
+                    <SelectValue placeholder="Selecciona función" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {funcionesPersonal.map((f) => (
+                      <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Permisos</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {permisosDisponibles.map((p) => (
+                    <label key={p.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={personalForm.permisos.includes(p.value)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setPersonalForm({ ...personalForm, permisos: [...personalForm.permisos, p.value] });
+                          } else {
+                            setPersonalForm({ ...personalForm, permisos: personalForm.permisos.filter(x => x !== p.value) });
+                          }
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      {p.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Notas</Label>
+                <Textarea
+                  value={personalForm.notas}
+                  onChange={(e) => setPersonalForm({ ...personalForm, notas: e.target.value })}
+                  placeholder="Notas adicionales..."
+                  className="min-h-[80px]"
+                  data-testid="textarea-notas-personal"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowPersonalModal(false)}>Cancelar</Button>
+              <Button onClick={handleGuardarPersonal} disabled={guardarPersonalMutation.isPending} data-testid="button-guardar-personal">
+                {guardarPersonalMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Guardar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

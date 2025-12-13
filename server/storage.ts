@@ -48,6 +48,7 @@ import {
   configuracionMonedas,
   datosNegocio,
   catalogoNegocio,
+  personalNegocio,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -173,6 +174,8 @@ import {
   type InsertDatosNegocio,
   type CatalogoNegocio,
   type InsertCatalogoNegocio,
+  type PersonalNegocio,
+  type InsertPersonalNegocio,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -3724,6 +3727,57 @@ export class DatabaseStorage implements IStorage {
 
   async deleteItemCatalogo(id: string): Promise<void> {
     await db.delete(catalogoNegocio).where(eq(catalogoNegocio.id, id));
+  }
+
+  // ============================================================
+  // PERSONAL DEL NEGOCIO
+  // ============================================================
+  async getPersonalNegocio(negocioId: string): Promise<PersonalNegocio[]> {
+    return await db.select().from(personalNegocio)
+      .where(eq(personalNegocio.negocioId, negocioId));
+  }
+
+  async getPersonalNegocioPorPropietario(propietarioId: string): Promise<PersonalNegocio[]> {
+    return await db.select().from(personalNegocio)
+      .where(eq(personalNegocio.propietarioId, propietarioId));
+  }
+
+  async createPersonalNegocio(data: InsertPersonalNegocio): Promise<PersonalNegocio> {
+    const [personal] = await db.insert(personalNegocio).values(data).returning();
+    return personal;
+  }
+
+  async updatePersonalNegocio(id: string, data: Partial<InsertPersonalNegocio>): Promise<PersonalNegocio | undefined> {
+    const [actualizado] = await db.update(personalNegocio)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(personalNegocio.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deletePersonalNegocio(id: string): Promise<void> {
+    await db.delete(personalNegocio).where(eq(personalNegocio.id, id));
+  }
+
+  async buscarUsuariosParaPersonal(termino: string): Promise<any[]> {
+    const resultados = await db.select({
+      id: usuarios.id,
+      email: usuarios.email,
+      telefono: usuarios.telefono,
+      firstName: usuarios.firstName,
+      lastName: usuarios.lastName,
+      alias: usuarios.alias,
+      profileImageUrl: usuarios.profileImageUrl,
+    }).from(usuarios);
+    
+    const terminoLower = termino.toLowerCase();
+    return resultados.filter(u => 
+      (u.email && u.email.toLowerCase().includes(terminoLower)) ||
+      (u.telefono && u.telefono.includes(termino)) ||
+      (u.firstName && u.firstName.toLowerCase().includes(terminoLower)) ||
+      (u.lastName && u.lastName.toLowerCase().includes(terminoLower)) ||
+      (u.alias && u.alias.toLowerCase().includes(terminoLower))
+    ).slice(0, 10);
   }
 
   // ============================================================

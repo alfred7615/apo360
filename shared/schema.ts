@@ -323,6 +323,27 @@ export type InsertCatalogoNegocio = z.infer<typeof insertCatalogoNegocioSchema>;
 export type CatalogoNegocio = typeof catalogoNegocio.$inferSelect;
 
 // ============================================================
+// PERSONAL DEL NEGOCIO
+// ============================================================
+export const personalNegocio = pgTable("personal_negocio", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  negocioId: varchar("negocio_id").references(() => datosNegocio.id).notNull(),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id).notNull(),
+  propietarioId: varchar("propietario_id").references(() => usuarios.id).notNull(),
+  funcion: varchar("funcion", { length: 100 }).notNull(), // 'cajero', 'vendedor', 'repartidor', 'gerente', 'cocinero', etc.
+  permisos: varchar("permisos").array(), // ['ver_pedidos', 'editar_catalogo', 'ver_historial', etc.]
+  estado: varchar("estado", { length: 20 }).default("activo"), // 'activo', 'inactivo', 'pendiente'
+  fechaIngreso: timestamp("fecha_ingreso").defaultNow(),
+  notas: text("notas"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPersonalNegocioSchema = createInsertSchema(personalNegocio).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPersonalNegocio = z.infer<typeof insertPersonalNegocioSchema>;
+export type PersonalNegocio = typeof personalNegocio.$inferSelect;
+
+// ============================================================
 // ADMINISTRADORES DE SEGUNDO NIVEL
 // ============================================================
 export const administradores = pgTable("administradores", {

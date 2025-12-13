@@ -586,6 +586,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // PERSONAL DEL NEGOCIO
+  // ============================================================
+  
+  // Obtener personal del negocio del usuario actual
+  app.get('/api/mi-personal', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const personal = await storage.getPersonalNegocioPorPropietario(usuarioId);
+      
+      // Enriquecer con datos del usuario
+      const personalConDatos = await Promise.all(personal.map(async (p: any) => {
+        const usuario = await storage.getUser(p.usuarioId);
+        return {
+          ...p,
+          usuario: usuario ? {
+            id: usuario.id,
+            firstName: usuario.firstName,
+            lastName: usuario.lastName,
+            email: usuario.email,
+            telefono: usuario.telefono,
+            alias: usuario.alias,
+            profileImageUrl: usuario.profileImageUrl,
+          } : null,
+        };
+      }));
+      
+      res.json(personalConDatos);
+    } catch (error: any) {
+      console.error("Error al obtener personal:", error);
+      res.status(500).json({ message: error.message || "Error al obtener personal" });
+    }
+  });
+
+  // Buscar usuarios para agregar como personal
+  app.get('/api/buscar-usuarios', isAuthenticated, async (req: any, res) => {
+    try {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string' || q.length < 2) {
+        return res.json([]);
+      }
+      const usuarios = await storage.buscarUsuariosParaPersonal(q);
+      res.json(usuarios);
+    } catch (error: any) {
+      console.error("Error al buscar usuarios:", error);
+      res.status(500).json({ message: error.message || "Error al buscar usuarios" });
+    }
+  });
+
+  // Agregar personal al negocio
+  app.post('/api/mi-personal', isAuthenticated, async (req: any, res) => {
+    try {
+      const propietarioId = req.user.claims.sub;
+      const negocio = await storage.getDatosNegocio(propietarioId);
+      
+      if (!negocio) {
+        return res.status(400).json({ message: "Debes configurar tu negocio primero" });
+      }
+
+      const personal = await storage.createPersonalNegocio({
+        ...req.body,
+        negocioId: negocio.id,
+        propietarioId,
+      });
+      
+      // Obtener datos del usuario agregado
+      const usuario = await storage.getUser(personal.usuarioId);
+      
+      res.status(201).json({
+        ...personal,
+        usuario: usuario ? {
+          id: usuario.id,
+          firstName: usuario.firstName,
+          lastName: usuario.lastName,
+          email: usuario.email,
+          telefono: usuario.telefono,
+          alias: usuario.alias,
+          profileImageUrl: usuario.profileImageUrl,
+        } : null,
+      });
+    } catch (error: any) {
+      console.error("Error al agregar personal:", error);
+      res.status(500).json({ message: error.message || "Error al agregar personal" });
+    }
+  });
+
+  // Actualizar personal del negocio
+  app.patch('/api/mi-personal/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const personal = await storage.updatePersonalNegocio(id, req.body);
+      res.json(personal);
+    } catch (error: any) {
+      console.error("Error al actualizar personal:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar personal" });
+    }
+  });
+
+  // Eliminar personal del negocio
+  app.delete('/api/mi-personal/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePersonalNegocio(id);
+      res.json({ message: "Personal eliminado correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar personal:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar personal" });
+    }
+  });
+
+  // ============================================================
   // MÓDULOS DE USUARIO POR ROL
   // ============================================================
   
