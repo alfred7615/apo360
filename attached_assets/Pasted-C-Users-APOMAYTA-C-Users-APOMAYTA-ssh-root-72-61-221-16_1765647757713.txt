@@ -1,0 +1,201 @@
+C:\Users\APOMAYTA>
+C:\Users\APOMAYTA>ssh root@72.61.221.16
+root@72.61.221.16's password:
+Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.8.0-88-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Sat Dec 13 17:37:12 UTC 2025
+
+  System load:  0.16               Processes:             139
+  Usage of /:   18.7% of 47.39GB   Users logged in:       1
+  Memory usage: 21%                IPv4 address for eth0: 72.61.221.16
+  Swap usage:   0%                 IPv6 address for eth0: 2a02:4780:66:9796::1
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+31 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+1 updates could not be installed automatically. For more details,
+see /var/log/unattended-upgrades/unattended-upgrades.log
+
+Last login: Fri Dec 12 16:28:44 2025 from 190.43.92.87
+root@srv1170282:~#  cd /var/www/apo360.net
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# git pull origin main
+remote: Enumerating objects: 211, done.
+remote: Counting objects: 100% (211/211), done.
+remote: Compressing objects: 100% (22/22), done.
+remote: Total 188 (delta 168), reused 186 (delta 166), pack-reused 0 (from 0)
+Receiving objects: 100% (188/188), 100.69 KiB | 5.03 MiB/s, done.
+Resolving deltas: 100% (168/168), completed with 20 local objects.
+From https://github.com/alfred7615/apo360
+ * branch            main       -> FETCH_HEAD
+   01d6051..274b731  main       -> origin/main
+Merge made by the 'ort' strategy.
+ ...IPO-DE-ROLES-3-ROL-CATEGORIA-SUBCATEGORIA-DESCRIPCION-_1765640228511.txt |  244 ++++
+ ...n-el-sistema-solo-debe-haber-una-sola-calculadora-de-c_1765598917152.txt |   51 +
+ ...ot-srv1170282-var-www-apo360-net-root-srv1170282-var-w_1765557850650.txt |   45 +
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765557674360.txt |  207 ++++
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765557972644.txt |  259 ++++
+ client/src/components/CalculadoraCambio.tsx                                 | 1217 ++++++++++++++++--
+ client/src/components/LocalComercialPanel.tsx                               | 2318 ++++++++++++++++++++++++++++++++++-
+ client/src/index.css                                                        |   37 +
+ client/src/pages/admin/gestiones/gestion-usuarios.tsx                       |  159 ++-
+ client/src/pages/panel-usuario.tsx                                          |   67 +-
+ package-lock.json                                                           |  243 ++++
+ package.json                                                                |    3 +
+ .../assets/comprobantes/firma-alfredo-apomayta-1765594650148-633100720.png  |  Bin 0 -> 41913 bytes
+ public/assets/servicios/blob-1765643135801-948032548                        |  Bin 0 -> 26676 bytes
+ server/routes.ts                                                            |  641 +++++++++-
+ server/storage.ts                                                           |  130 +-
+ shared/schema.ts                                                            |   24 +
+ 17 files changed, 5474 insertions(+), 171 deletions(-)
+ create mode 100644 attached_assets/Pasted-TIPO-DE-ROLES-3-ROL-CATEGORIA-SUBCATEGORIA-DESCRIPCION-_1765640228511.txt
+ create mode 100644 attached_assets/Pasted-en-el-sistema-solo-debe-haber-una-sola-calculadora-de-c_1765598917152.txt
+ create mode 100644 attached_assets/Pasted-oot-srv1170282-var-www-apo360-net-root-srv1170282-var-w_1765557850650.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765557674360.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765557972644.txt
+ create mode 100644 public/assets/comprobantes/firma-alfredo-apomayta-1765594650148-633100720.png
+ create mode 100644 public/assets/servicios/blob-1765643135801-948032548
+ ...IPO-DE-ROLES-3-ROL-CATEGORIA-SUBCATEGORIA-DESCRIPCION-_1765640228511.txt |  244 ++++
+ ...n-el-sistema-solo-debe-haber-una-sola-calculadora-de-c_1765598917152.txt |   51 +
+ ...ot-srv1170282-var-www-apo360-net-root-srv1170282-var-w_1765557850650.txt |   45 +
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765557674360.txt |  207 ++++
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765557972644.txt |  259 ++++
+ client/src/components/CalculadoraCambio.tsx                                 | 1217 ++++++++++++++++--
+ client/src/components/LocalComercialPanel.tsx                               | 2318 ++++++++++++++++++++++++++++++++++-
+ client/src/index.css                                                        |   37 +
+ client/src/pages/admin/gestiones/gestion-usuarios.tsx                       |  159 ++-
+ client/src/pages/panel-usuario.tsx                                          |   67 +-
+ package-lock.json                                                           |  243 ++++
+ package.json                                                                |    3 +
+ .../assets/comprobantes/firma-alfredo-apomayta-1765594650148-633100720.png  |  Bin 0 -> 41913 bytes
+ public/assets/servicios/blob-1765643135801-948032548                        |  Bin 0 -> 26676 bytes
+ server/routes.ts                                                            |  641 +++++++++-
+ server/storage.ts                                                           |  130 +-
+ shared/schema.ts                                                            |   24 +
+ 17 files changed, 5474 insertions(+), 171 deletions(-)
+ create mode 100644 attached_assets/Pasted-TIPO-DE-ROLES-3-ROL-CATEGORIA-SUBCATEGORIA-DESCRIPCION-_1765640228511.txt
+ create mode 100644 attached_assets/Pasted-en-el-sistema-solo-debe-haber-una-sola-calculadora-de-c_1765598917152.txt
+ create mode 100644 attached_assets/Pasted-oot-srv1170282-var-www-apo360-net-root-srv1170282-var-w_1765557850650.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765557674360.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765557972644.txt
+ create mode 100644 public/assets/comprobantes/firma-alfredo-apomayta-1765594650148-633100720.png
+ create mode 100644 public/assets/servicios/blob-1765643135801-948032548
+root@srv1170282:/var/www/apo360.net# npm install
+
+added 23 packages, and audited 546 packages in 10s
+
+71 packages are looking for funding
+  run `npm fund` for details
+
+10 vulnerabilities (3 low, 5 moderate, 2 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+root@srv1170282:/var/www/apo360.net# npm run db:push
+
+> rest-express@1.0.0 db:push
+> drizzle-kit push
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/var/www/apo360.net/drizzle.config.ts'
+Using 'pg' driver for database querying
+[✓] Pulling schema from database...
++ historial_tasas_cambio table will be created
++ personal_negocio table will be created
+--- all table conflicts resolved ---
+
+ Warning  Found data-loss statements:
+· You're about to delete sessions table with 10 items
+
+THIS ACTION WILL CAUSE DATA LOSS AND CANNOT BE REVERTED
+
+Do you still want to push changes?
+[x] All changes were aborted
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# npm run db:push
+
+> rest-express@1.0.0 db:push
+> drizzle-kit push
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/var/www/apo360.net/drizzle.config.ts'
+Using 'pg' driver for database querying
+[✓] Pulling schema from database...
++ historial_tasas_cambio table will be created
++ personal_negocio table will be created
+--- all table conflicts resolved ---
+
+ Warning  Found data-loss statements:
+· You're about to delete sessions table with 10 items
+
+THIS ACTION WILL CAUSE DATA LOSS AND CANNOT BE REVERTED
+
+Do you still want to push changes?
+[✓] Changes applied
+root@srv1170282:/var/www/apo360.net# psql "$DATABASE_URL" << 'EOF'
+> INSERT INTO tasas_cambio_locales (id, cambista_id, moneda_origen_codigo, moneda_destino_codigo, tasa_compra, tasa_venta, ubicacion, activo, verificado, created_at, updated_at) VALUES
+> ('319971ff-8913-4d6a-af76-88cf745fbda0', 'cambista-001', 'USD', 'PEN', 3.750000, 3.800000, 'tacna', true, false, '2025-12-12 05:26:34.031334', '2025-12-12 05:26:34.031334'),
+> ('0d72f383-4d3f-4e70-8077-302a5160db1f', 'cambista-001', 'USD', 'PEN', 3.358000, 3.381000, NULL, true, false, '2025-12-12 05:28:18.271268', '2025-12-12 05:28:18.271268'),
+> ('f0020a40-21ac-471a-92ee-1a8c07080ae4', 'cambista-001', 'CLP', 'PEN', 0.003700, 0.003700, NULL, true, false, '2025-12-12 05:30:40.266426', '2025-12-12 05:30:40.266426'),
+> ('39f5e1e1-0c30-4521-a2e0-e92e736291ef', 'cambista-001', 'BOB', 'PEN', 0.489000, 0.489000, 'tacna', true, false, '2025-12-12 05:32:47.101232', '2025-12-12 05:32:47.101232')
+> ON CONFLICT (id) DO NOTHING;
+> INSERT INTO planes_membresia (id, nombre, descripcion, duracion_meses, precio_normal, precio_descuento, porcentaje_descuento, beneficios, productos_incluidos, destacado, orden, activo, created_at, updated_at) VALUES
+> ('9ca9aa1e-e600-4ae1-a55a-f5125158f696', 'Plan Mensual', 'Plan básico de 1 mes para comercios y vendedores', 1, 29.90, NULL, NULL, '["Publicar hasta 10 productos", "Visibilidad en el marketplace", "Estadísticas básicas"]', 10, false, 1, true, '2025-12-06 14:37:47.123091', '2025-12-06 14:37:47.123091'),
+> ('9ebe5149-93b2-4fce-9ea9-5c866c5430fa', 'Plan Trimestral', 'Plan de 3 meses con descuento del 10%', 3, 89.70, 80.73, 10, '["Publicar hasta 30 productos", "Visibilidad destacada", "Estadísticas avanzadas", "Soporte prioritario"]', 30, false, 2, true, '2025-12-06 14:37:47.123091', '2025-12-06 14:37:47.123091'),
+> ('56491fa8-8c5a-45cc-9929-ad6aac5e7ee4', 'Plan Semestral', 'Plan de 6 meses con descuento del 15%', 6, 179.40, 152.49, 15, '["Publicar hasta 60 productos", "Máxima visibilidad", "Estadísticas completas", "Soporte prioritario", "Promociones destacadas"]', 60, true, 3, true, '2025-12-06 14:37:47.123091', '2025-12-06 14:37:47.123091'),
+> ('ee510877-09e7-4e8b-b1c5-2ca16a758daf', 'Plan Anual', 'Plan de 12 meses con el mejor precio', 12, 358.80, 287.04, 20, '["Productos ilimitados", "Máxima visibilidad", "Estadísticas premium", "Soporte VIP 24/7", "Promociones destacadas", "Badge Premium"]', 9999, false, 4, true, '2025-12-06 14:37:47.123091', '2025-12-06 14:37:47.123091'),
+> ('252aa9cf-7231-448f-b35b-53b9d1458231', 'Cortesía 3 meses', 'Plan de cortesía asignado por administrador - 3 meses', 3, 0.00, 0.00, NULL, '["Acceso completo", "Calculadora Científica", "Sin restricciones"]', 100, false, 0, true, '2025-12-13 14:44:09.665302', '2025-12-13 14:44:09.665302')
+> ON CONFLICT (id) DO NOTHING;
+> INSERT INTO membresias_usuarios (id, usuario_id, plan_id, fecha_inicio, fecha_fin, estado, productos_creados, monto_total, metodo_pago, renovacion_automatica, created_at, updated_at, es_cortesia, asignado_por, motivo_cortesia) VALUES
+> ('467e288f-606f-46fd-8f26-6b81b5dedf58', 'local-003', '9ca9aa1e-e600-4ae1-a55a-f5125158f696', '2025-12-13 02:59:53.148', '2026-01-13 02:59:53.148', 'pendiente', 0, 29.90, 'pendiente', false, '2025-12-13 02:59:53.188302', '2025-12-13 02:59:53.188302', false, NULL, NULL),
+> ('5c1dd721-e45e-464f-be00-6d8e14cba7b4', '50138117', '252aa9cf-7231-448f-b35b-53b9d1458231', '2025-12-13 14:47:54.455', '2026-03-13 14:47:54.455', 'activa', 0, 0.00, 'cortesia', false, '2025-12-13 14:47:54.488743', '2025-12-13 14:47:54.488743', true, NULL, 'Asignado por administrador'),
+> ('f3fa524d-8359-4e4c-b5e1-8f8cd8e44aa6', '50138117', '252aa9cf-7231-448f-b35b-53b9d1458231', '2025-12-13 15:23:37.589', '2026-03-13 15:23:37.589', 'activa', 0, 0.00, 'cortesia', false, '2025-12-13 15:23:37.623685', '2025-12-13 15:23:37.623685', true, '50138117', 'af')
+> ON CONFLICT (id) DO NOTHING;
+> EO
+>
+>
+>
+>
+>
+>
+>
+> ^C
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 18   │ online    │ 0%       │ 41.3mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net#
