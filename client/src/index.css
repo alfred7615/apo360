@@ -180,6 +180,13 @@
 @layer base {
   * {
     @apply border-border;
+    /* Ocultar scrollbars globalmente pero mantener funcionalidad de scroll */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
   }
 
   body {
