@@ -9,9 +9,12 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowRightLeft, RefreshCw, TrendingUp, TrendingDown, DollarSign, 
   Banknote, Calculator, Clock, ChevronDown, ChevronUp, X, ArrowLeft, 
-  FlaskConical, Lock, Delete, RotateCcw, Percent, Divide, Pi
+  FlaskConical, Lock, Delete, RotateCcw, Percent, Divide, Pi,
+  Download, FileSpreadsheet, Image, Share2
 } from "lucide-react";
 import * as math from "mathjs";
+import * as XLSX from "xlsx";
+import html2canvas from "html2canvas";
 import type { ConfiguracionMoneda, TasaCambioLocal, Usuario } from "@shared/schema";
 
 interface TasaPromedioLocal {
@@ -541,6 +544,29 @@ export function CalculadoraCambio({
           </Button>
         ))}
       </div>
+
+      <div className="flex justify-center gap-2 pt-3 border-t border-gray-700/30">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={descargarExcel}
+          className="flex items-center gap-2 bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+          data-testid="button-descargar-excel"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          Excel
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={descargarPNG}
+          className="flex items-center gap-2 bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20"
+          data-testid="button-descargar-png"
+        >
+          <Image className="h-4 w-4" />
+          Imagen
+        </Button>
+      </div>
     </div>
   );
 
@@ -598,6 +624,61 @@ export function CalculadoraCambio({
   const limpiarEntrada = useCallback(() => {
     setExpresionCientifica("");
   }, []);
+
+  const limpiarHistorial = useCallback(() => {
+    setHistorialCientifica([]);
+  }, []);
+
+  const descargarExcel = useCallback(() => {
+    const datos = modo === "moneda" 
+      ? [
+          ["Calculadora de Cambio - APO-360"],
+          [""],
+          ["Tipo de Operación", tipoTasa === "compra" ? "Compra" : "Venta"],
+          ["Moneda Origen", monedaOrigen],
+          ["Moneda Destino", monedaDestino],
+          ["Monto Original", parsearNumeroConComas(monto)],
+          ["Tipo de Cambio", calcularCambio.tasaUsada],
+          ["Monto Resultante", calcularCambio.resultado],
+          ["Fuente de Tasa", calcularCambio.fuente === "local" ? "Cambistas Locales" : "Internet"],
+          ["Fecha", new Date().toLocaleString("es-PE")],
+        ]
+      : [
+          ["Calculadora Científica - APO-360"],
+          [""],
+          ["Expresión", expresionCientifica],
+          ["Resultado", resultadoCientifica],
+          ["Modo Ángulo", modoAngulo.toUpperCase()],
+          [""],
+          ["Historial:"],
+          ...historialCientifica.map((h, i) => [`${i + 1}. ${h}`]),
+          [""],
+          ["Fecha", new Date().toLocaleString("es-PE")],
+        ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(datos);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, modo === "moneda" ? "Cambio" : "Científica");
+    XLSX.writeFile(wb, `calculadora_${modo}_${Date.now()}.xlsx`);
+  }, [modo, tipoTasa, monedaOrigen, monedaDestino, monto, calcularCambio, expresionCientifica, resultadoCientifica, modoAngulo, historialCientifica]);
+
+  const descargarPNG = useCallback(async () => {
+    const elemento = document.querySelector('[data-testid="card-calculadora-cambio"], [data-testid="calculadora-cientifica"]');
+    if (!elemento) return;
+    
+    try {
+      const canvas = await html2canvas(elemento as HTMLElement, {
+        backgroundColor: "#1f2937",
+        scale: 2,
+      });
+      const link = document.createElement("a");
+      link.download = `calculadora_${modo}_${Date.now()}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (error) {
+      console.error("Error al generar imagen:", error);
+    }
+  }, [modo]);
 
   const botonesNumericos = [
     { label: "7", value: "7" },
@@ -851,7 +932,18 @@ export function CalculadoraCambio({
 
           {historialCientifica.length > 0 && (
             <div className="bg-gray-800/40 rounded-lg p-2 border border-gray-700/30 max-h-24 overflow-y-auto">
-              <p className="text-xs text-gray-500 mb-1">Historial:</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-gray-500">Historial:</p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={limpiarHistorial}
+                  className="h-5 text-xs px-1 text-gray-500 hover:text-rose-400"
+                  data-testid="button-limpiar-historial"
+                >
+                  Limpiar
+                </Button>
+              </div>
               {historialCientifica.slice().reverse().map((item, idx) => (
                 <div 
                   key={idx} 
@@ -863,6 +955,29 @@ export function CalculadoraCambio({
               ))}
             </div>
           )}
+
+          <div className="flex justify-center gap-2 pt-3 border-t border-gray-700/30">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={descargarExcel}
+              className="flex items-center gap-2 bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+              data-testid="button-descargar-excel-cientifica"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Excel
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={descargarPNG}
+              className="flex items-center gap-2 bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20"
+              data-testid="button-descargar-png-cientifica"
+            >
+              <Image className="h-4 w-4" />
+              Imagen
+            </Button>
+          </div>
         </>
       )}
     </div>
