@@ -42,6 +42,8 @@
   --warning-foreground: 0 0% 100%;
   --input: 0 0% 70.98%;
   --ring: 0 0% 41.96%;
+  --form-placeholder: 330 65% 45%;
+  --form-value: 0 0% 0%;
   --chart-1: 204.07deg 75.97% 54.31%;
   --chart-2: 159.7826 100% 36.0784%;
   --chart-3: 42.0290 92.8251% 56.2745%;
@@ -130,6 +132,8 @@
   --warning-foreground: 0 0% 100%;
   --input: 20 14% 18%;
   --ring: 9 75% 61%;
+  --form-placeholder: 330 50% 55%;
+  --form-value: 0 0% 95%;
   --chart-1: 203.8863 88.2845% 53.1373%;
   --chart-2: 159.7826 100% 36.0784%;
   --chart-3: 42.0290 92.8251% 56.2745%;
@@ -180,6 +184,32 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* Estilos globales para campos de formulario APO-360 */
+  /* Placeholders: Color rosado oscuro */
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--form-placeholder)) !important;
+    font-weight: 400;
+  }
+
+  /* Valores ingresados: Negro y negrita (light mode) / Blanco y negrita (dark mode) */
+  input:not(:placeholder-shown),
+  textarea:not(:placeholder-shown) {
+    color: hsl(var(--form-value)) !important;
+    font-weight: 600;
+  }
+
+  /* Select placeholder styling */
+  [data-placeholder] {
+    color: hsl(var(--form-placeholder)) !important;
+  }
+
+  /* Select con valor seleccionado */
+  [data-radix-select-trigger]:not([data-placeholder]) > span {
+    color: hsl(var(--form-value)) !important;
+    font-weight: 600;
   }
 }
 
