@@ -25,6 +25,7 @@ import * as XLSX from "xlsx";
 import html2canvas from "html2canvas";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import type { ConfiguracionMoneda, TasaCambioLocal, Usuario } from "@shared/schema";
 
 interface TasaPromedioLocal {
@@ -87,10 +88,22 @@ export function CalculadoraCambio({
   onCerrar,
   onRetroceder,
   mostrarHeader = true,
-  usuario,
-  tieneMembresiaActiva = false
+  usuario: usuarioProp,
+  tieneMembresiaActiva: tieneMembresiaActivaProp
 }: CalculadoraCambioProps) {
   const { toast } = useToast();
+  const { user: usuarioAuth, isAuthenticated } = useAuth();
+  
+  const { data: membresiaData } = useQuery<{ activa: boolean; plan: any } | null>({
+    queryKey: ["/api/mi-membresia"],
+    enabled: isAuthenticated && tieneMembresiaActivaProp === undefined,
+  });
+  
+  const usuario = usuarioProp || usuarioAuth;
+  const tieneMembresiaActiva = tieneMembresiaActivaProp !== undefined 
+    ? tieneMembresiaActivaProp 
+    : !!membresiaData?.activa;
+  
   const [modo, setModo] = useState<ModoCalculadora>(modoInicial);
   const [monto, setMonto] = useState<string>("100.00");
   const [montoDisplay, setMontoDisplay] = useState<string>("100.00");
