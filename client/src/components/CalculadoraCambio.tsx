@@ -68,10 +68,11 @@ interface EjercicioCompartido {
   fecha: string;
 }
 
-const formatearNumeroConComas = (valor: number): string => {
+const formatearNumeroConComas = (valor: number, decimalesInput?: number): string => {
+  const decimales = decimalesInput !== undefined ? decimalesInput : 2;
   return valor.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: Math.max(decimales, 4),
   });
 };
 
@@ -93,6 +94,7 @@ export function CalculadoraCambio({
   const [modo, setModo] = useState<ModoCalculadora>(modoInicial);
   const [monto, setMonto] = useState<string>("100.00");
   const [montoDisplay, setMontoDisplay] = useState<string>("100.00");
+  const [decimalesActuales, setDecimalesActuales] = useState<number>(2);
   const [monedaOrigen, setMonedaOrigen] = useState<string>("PEN");
   const [monedaDestino, setMonedaDestino] = useState<string>("USD");
   const [mostrarDetalles, setMostrarDetalles] = useState<boolean>(false);
@@ -195,12 +197,20 @@ export function CalculadoraCambio({
     const limpio = valor.replace(/[^0-9.]/g, "");
     setMonto(limpio);
     setMontoDisplay(limpio);
+    
+    const partes = limpio.split(".");
+    if (partes.length > 1) {
+      const decimales = partes[1].length;
+      setDecimalesActuales(Math.max(2, Math.min(decimales, 4)));
+    } else {
+      setDecimalesActuales(2);
+    }
   };
 
   const handleMontoBlur = () => {
     const numero = parsearNumeroConComas(monto);
     if (!isNaN(numero)) {
-      setMontoDisplay(formatearNumeroConComas(numero));
+      setMontoDisplay(formatearNumeroConComas(numero, decimalesActuales));
       setMonto(numero.toString());
     }
   };
@@ -345,40 +355,60 @@ export function CalculadoraCambio({
   const isLoading = cargandoMonedas || cargandoTasasLocales || cargandoPromedio;
 
   const descargarExcel = useCallback(() => {
-    const datos = modo === "moneda" 
-      ? [
-          ["Calculadora de Cambio - APO-360"],
-          [""],
-          ["Tipo de Operación", tipoTasa === "compra" ? "Compra" : "Venta"],
-          ["Moneda Origen", monedaOrigen],
-          ["Moneda Destino", monedaDestino],
-          ["Monto Original", parsearNumeroConComas(monto)],
-          ["Tipo de Cambio", calcularCambio.tasaUsada],
-          ["Monto Resultante", calcularCambio.resultado],
-          ["Fuente de Tasa", calcularCambio.fuente === "local" ? "Cambistas Locales" : "Internet"],
-          ["Fecha", new Date().toLocaleString("es-PE")],
-        ]
-      : [
-          ["Calculadora Científica - APO-360"],
-          [""],
-          ["Expresión", expresionCientifica],
-          ["Resultado", resultadoCientifica],
-          ["Modo Ángulo", modoAngulo.toUpperCase()],
-          [""],
-          ["Historial:"],
-          ...historialCientifica.map((h, i) => [`${i + 1}. ${h}`]),
-          [""],
-          ["Fecha", new Date().toLocaleString("es-PE")],
-        ];
+    let datos: (string | number)[][];
+    let nombreHoja: string;
+    
+    if (modo === "moneda") {
+      datos = [
+        ["Calculadora de Cambio - APO-360"],
+        [""],
+        ["Tipo de Operación", tipoTasa === "compra" ? "Compra" : "Venta"],
+        ["Moneda Origen", monedaOrigen],
+        ["Moneda Destino", monedaDestino],
+        ["Monto Original", parsearNumeroConComas(monto)],
+        ["Tipo de Cambio", calcularCambio.tasaUsada],
+        ["Monto Resultante", calcularCambio.resultado],
+        ["Fuente de Tasa", calcularCambio.fuente === "local" ? "Cambistas Locales" : "Internet"],
+        ["Fecha", new Date().toLocaleString("es-PE")],
+      ];
+      nombreHoja = "Cambio";
+    } else if (modo === "normal") {
+      datos = [
+        ["Calculadora Normal - APO-360"],
+        [""],
+        ["Expresión", expresionNormal],
+        ["Resultado", resultadoNormal],
+        [""],
+        ["Historial:"],
+        ...historialNormal.map((h, i) => [`${i + 1}. ${h}`]),
+        [""],
+        ["Fecha", new Date().toLocaleString("es-PE")],
+      ];
+      nombreHoja = "Normal";
+    } else {
+      datos = [
+        ["Calculadora Científica - APO-360"],
+        [""],
+        ["Expresión", expresionCientifica],
+        ["Resultado", resultadoCientifica],
+        ["Modo Ángulo", modoAngulo.toUpperCase()],
+        [""],
+        ["Historial:"],
+        ...historialCientifica.map((h, i) => [`${i + 1}. ${h}`]),
+        [""],
+        ["Fecha", new Date().toLocaleString("es-PE")],
+      ];
+      nombreHoja = "Científica";
+    }
     
     const ws = XLSX.utils.aoa_to_sheet(datos);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, modo === "moneda" ? "Cambio" : "Científica");
+    XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
     XLSX.writeFile(wb, `calculadora_${modo}_${Date.now()}.xlsx`);
-  }, [modo, tipoTasa, monedaOrigen, monedaDestino, monto, calcularCambio, expresionCientifica, resultadoCientifica, modoAngulo, historialCientifica]);
+  }, [modo, tipoTasa, monedaOrigen, monedaDestino, monto, calcularCambio, expresionCientifica, resultadoCientifica, modoAngulo, historialCientifica, expresionNormal, resultadoNormal, historialNormal]);
 
   const descargarPNG = useCallback(async () => {
-    const elemento = document.querySelector('[data-testid="card-calculadora-cambio"], [data-testid="calculadora-cientifica"]');
+    const elemento = document.querySelector('[data-testid="card-calculadora-cambio"], [data-testid="calculadora-cientifica"], [data-testid="calculadora-normal"]');
     if (!elemento) return;
     
     try {
@@ -397,18 +427,8 @@ export function CalculadoraCambio({
 
   const headerComponent = mostrarHeader && (
     <div className="flex items-center justify-between p-3 border-b border-gray-700/50">
-      <div className="flex items-center gap-2">
-        {onRetroceder ? (
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onRetroceder}
-            className="h-8 w-8 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10"
-            data-testid="button-retroceder"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        ) : onCerrar ? (
+      <div className="flex items-center gap-1">
+        {onCerrar && (
           <Button
             size="icon"
             variant="ghost"
@@ -418,53 +438,52 @@ export function CalculadoraCambio({
           >
             <X className="h-5 w-5" />
           </Button>
-        ) : null}
-        <div className="flex items-center gap-2">
+        )}
+        {modo !== "moneda" && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setModo("moneda")}
+            className="h-8 w-8 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10"
+            data-testid="button-regresar-moneda"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        )}
+        <div className="flex items-center gap-2 ml-1">
           <div className="p-1.5 rounded-lg bg-gradient-to-br from-rose-500/20 to-pink-500/20">
             {getIconoModo()}
           </div>
           <span className="text-sm font-medium text-gray-100">
-            {getTituloModo()}
+            {modo === "moneda" ? "Cambio de Moneda" : getTituloModo()}
           </span>
         </div>
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
-            data-testid="button-menu-calculadoras"
-            title="Calculadoras"
-          >
-            <Calculator className="h-5 w-5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
-          <DropdownMenuItem 
-            onClick={() => cambiarModo("normal")}
-            className={`cursor-pointer ${modo === "normal" ? "bg-blue-500/20 text-blue-300" : "text-gray-100"}`}
-            data-testid="menu-calculadora-normal"
-          >
-            <Calculator className="h-4 w-4 mr-2 text-blue-400" />
-            Calculadora Normal
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-gray-700" />
-          <DropdownMenuItem 
-            onClick={() => cambiarModo("cientifica")}
-            className={`cursor-pointer ${modo === "cientifica" ? "bg-purple-500/20 text-purple-300" : "text-gray-100"}`}
-            data-testid="menu-calculadora-cientifica"
-          >
-            <div className="flex items-center w-full">
-              <FlaskConical className="h-4 w-4 mr-2 text-purple-400" />
-              <span>Calculadora Científica</span>
-              {!tieneMembresiaActiva && (
-                <Lock className="h-3 w-3 ml-2 text-yellow-500" />
-              )}
-            </div>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-1">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => cambiarModo("normal")}
+          className={`h-8 w-8 ${modo === "normal" ? "bg-blue-500/20 text-blue-300" : "text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"}`}
+          data-testid="button-calculadora-normal"
+          title="Calculadora Normal"
+        >
+          <Calculator className="h-5 w-5" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => cambiarModo("cientifica")}
+          className={`h-8 w-8 relative ${modo === "cientifica" ? "bg-purple-500/20 text-purple-300" : "text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"}`}
+          data-testid="button-calculadora-cientifica"
+          title="Calculadora Científica"
+        >
+          <FlaskConical className="h-5 w-5" />
+          {!tieneMembresiaActiva && (
+            <Lock className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-yellow-500" />
+          )}
+        </Button>
+      </div>
     </div>
   );
 
@@ -532,7 +551,7 @@ export function CalculadoraCambio({
             </div>
             <Select value={monedaOrigen} onValueChange={setMonedaOrigen}>
               <SelectTrigger 
-                className="w-24 bg-gray-700/60 border-gray-600/50 text-gray-100 focus:border-rose-500/50" 
+                className="w-20 bg-gray-700/60 border-gray-600/50 text-gray-100 focus:border-rose-500/50" 
                 data-testid="select-moneda-origen"
               >
                 <SelectValue />
@@ -545,16 +564,12 @@ export function CalculadoraCambio({
                     data-testid={`option-origen-${m.codigo}`}
                     className="text-gray-100 focus:bg-rose-500/20 focus:text-gray-100"
                   >
-                    <span className="flex items-center gap-2">
-                      <span>{m.bandera}</span>
-                      <span className="font-medium">{m.codigo}</span>
-                    </span>
+                    <span className="font-medium">{m.codigo}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <p className="text-xs text-gray-400">{getMonedaInfo(monedaOrigen).nombre}</p>
         </div>
 
         <div className="flex justify-center py-2 md:py-0">
@@ -578,7 +593,7 @@ export function CalculadoraCambio({
               </span>
               <Input
                 type="text"
-                value={formatearNumeroConComas(calcularCambio.resultado)}
+                value={formatearNumeroConComas(calcularCambio.resultado, decimalesActuales)}
                 readOnly
                 className="pl-9 text-base font-semibold bg-gray-600/40 border-gray-600/50 text-emerald-300"
                 data-testid="input-monto-resultado"
@@ -586,7 +601,7 @@ export function CalculadoraCambio({
             </div>
             <Select value={monedaDestino} onValueChange={setMonedaDestino}>
               <SelectTrigger 
-                className="w-24 bg-gray-700/60 border-gray-600/50 text-gray-100 focus:border-rose-500/50" 
+                className="w-20 bg-gray-700/60 border-gray-600/50 text-gray-100 focus:border-rose-500/50" 
                 data-testid="select-moneda-destino"
               >
                 <SelectValue />
@@ -599,16 +614,12 @@ export function CalculadoraCambio({
                     data-testid={`option-destino-${m.codigo}`}
                     className="text-gray-100 focus:bg-rose-500/20 focus:text-gray-100"
                   >
-                    <span className="flex items-center gap-2">
-                      <span>{m.bandera}</span>
-                      <span className="font-medium">{m.codigo}</span>
-                    </span>
+                    <span className="font-medium">{m.codigo}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <p className="text-xs text-gray-400">{getMonedaInfo(monedaDestino).nombre}</p>
         </div>
       </div>
 
@@ -735,47 +746,24 @@ export function CalculadoraCambio({
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      <div className="flex justify-center gap-2">
         {monedas.map((m) => (
           <Button
             key={m.codigo}
-            size="sm"
+            size="icon"
             variant="outline"
             onClick={() => setMonedaOrigen(m.codigo)}
-            className={`text-xs transition-all ${
+            className={`h-10 w-10 text-xl transition-all ${
               monedaOrigen === m.codigo 
-                ? "bg-gradient-to-r from-rose-500 to-pink-500 border-rose-500 text-white hover:from-rose-600 hover:to-pink-600" 
-                : "bg-gray-700/50 border-gray-600/50 text-gray-300 hover:bg-gray-600/50 hover:border-rose-500/30 hover:text-rose-300"
+                ? "bg-gradient-to-r from-rose-500 to-pink-500 border-rose-500 hover:from-rose-600 hover:to-pink-600" 
+                : "bg-gray-700/50 border-gray-600/50 hover:bg-gray-600/50 hover:border-rose-500/30"
             }`}
             data-testid={`button-moneda-rapida-${m.codigo}`}
+            title={m.nombre}
           >
-            <span className="mr-1">{m.bandera}</span>
-            {m.codigo}
+            {m.bandera}
           </Button>
         ))}
-      </div>
-
-      <div className="flex justify-center gap-2 pt-3 border-t border-gray-700/30">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={descargarExcel}
-          className="flex items-center gap-2 bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-          data-testid="button-descargar-excel"
-        >
-          <FileSpreadsheet className="h-4 w-4" />
-          Excel
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={descargarPNG}
-          className="flex items-center gap-2 bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20"
-          data-testid="button-descargar-png"
-        >
-          <Image className="h-4 w-4" />
-          Imagen
-        </Button>
       </div>
     </div>
   );
@@ -1282,6 +1270,29 @@ export function CalculadoraCambio({
           ))}
         </div>
       )}
+
+      <div className="flex justify-center gap-2 pt-3 border-t border-gray-700/30">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={descargarExcel}
+          className="flex items-center gap-2 bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+          data-testid="button-descargar-excel-normal"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          Excel
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={descargarPNG}
+          className="flex items-center gap-2 bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20"
+          data-testid="button-descargar-png-normal"
+        >
+          <Image className="h-4 w-4" />
+          Imagen
+        </Button>
+      </div>
     </div>
   );
 
