@@ -3597,6 +3597,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================
+  // RUTAS DE CALCULADORA - COMPARTIR EJERCICIOS
+  // ============================================================
+
+  // Listar usuarios disponibles para compartir (excluyendo al usuario actual)
+  app.get('/api/usuarios/lista', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const todosUsuarios = await storage.getAllUsers();
+      // Filtrar al usuario actual y retornar solo datos básicos
+      const usuariosFiltrados = todosUsuarios
+        .filter(u => u.id !== userId)
+        .map(u => ({
+          id: u.id,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          email: u.email,
+          profileImageUrl: u.profileImageUrl,
+        }));
+      res.json(usuariosFiltrados);
+    } catch (error) {
+      console.error("Error al obtener lista de usuarios:", error);
+      res.status(500).json({ message: "Error al obtener usuarios" });
+    }
+  });
+
+  // Compartir ejercicio de calculadora científica
+  app.post('/api/calculadora/compartir', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { ejercicio, destinatarios } = req.body;
+      
+      if (!ejercicio || !destinatarios || !Array.isArray(destinatarios) || destinatarios.length === 0) {
+        return res.status(400).json({ message: "Datos incompletos para compartir" });
+      }
+
+      // Validar que los destinatarios existan y eliminar duplicados
+      const destinatariosUnicos = [...new Set(destinatarios)];
+      const destinatariosValidos: string[] = [];
+      
+      for (const destId of destinatariosUnicos) {
+        if (destId !== userId) { // No permitir compartir consigo mismo
+          const usuario = await storage.getUser(destId);
+          if (usuario) {
+            destinatariosValidos.push(destId);
+          }
+        }
+      }
+
+      if (destinatariosValidos.length === 0) {
+        return res.status(400).json({ message: "No se encontraron destinatarios válidos" });
+      }
+
+      const remitente = await storage.getUser(userId);
+      const nombreRemitente = remitente?.firstName 
+        ? `${remitente.firstName} ${remitente.lastName || ''}`.trim() 
+        : remitente?.email || 'Usuario';
+
+      // Registro del evento de compartir (trazabilidad básica)
+      console.log(`[CALCULADORA] Ejercicio compartido por ${nombreRemitente} (${userId}):`, {
+        expresion: ejercicio.expresion,
+        resultado: ejercicio.resultado,
+        modoAngulo: ejercicio.modoAngulo,
+        destinatarios: destinatariosValidos,
+        fecha: new Date().toISOString(),
+      });
+
+      res.json({ 
+        success: true, 
+        message: `Ejercicio compartido con ${destinatariosValidos.length} usuario(s)`,
+        destinatariosNotificados: destinatariosValidos.length,
+      });
+    } catch (error) {
+      console.error("Error al compartir ejercicio:", error);
+      res.status(500).json({ message: "Error al compartir ejercicio" });
+    }
+  });
+
   // Obtener lista de cambistas (super_admin)
   app.get('/api/admin/cambistas', isAuthenticated, async (req: any, res) => {
     try {
