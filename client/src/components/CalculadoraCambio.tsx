@@ -222,8 +222,12 @@ export function CalculadoraCambio({
     }
   };
 
+  const ROLES_ADMIN = ["super_admin", "admin_cartera", "admin_operaciones", "admin_publicidad", "admin_radio", "supervisor"];
+  const esRolAdmin = usuario?.rol && ROLES_ADMIN.includes(usuario.rol);
+  const tieneAccesoCientifica = tieneMembresiaActiva || esRolAdmin;
+  
   const cambiarModo = (nuevoModo: ModoCalculadora) => {
-    if (nuevoModo === "cientifica" && !tieneMembresiaActiva) {
+    if (nuevoModo === "cientifica" && !tieneAccesoCientifica) {
       toast({
         title: "Membresía Requerida",
         description: "La calculadora científica requiere membresía activa.",
@@ -468,7 +472,7 @@ export function CalculadoraCambio({
             title="Calculadora Científica"
           >
             <FlaskConical className="h-5 w-5" />
-            {!tieneMembresiaActiva && (
+            {!tieneAccesoCientifica && (
               <Lock className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-yellow-500" />
             )}
           </Button>

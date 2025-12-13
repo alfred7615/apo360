@@ -416,6 +416,7 @@ export interface IStorage {
   // ============================================================
   getPlanesMembresia(soloActivos?: boolean): Promise<PlanMembresia[]>;
   getPlanMembresia(id: string): Promise<PlanMembresia | undefined>;
+  getPlanMembresiaPorNombre(nombre: string): Promise<PlanMembresia | undefined>;
   createPlanMembresia(data: InsertPlanMembresia): Promise<PlanMembresia>;
   updatePlanMembresia(id: string, data: Partial<InsertPlanMembresia>): Promise<PlanMembresia | undefined>;
   deletePlanMembresia(id: string): Promise<void>;
@@ -3214,6 +3215,12 @@ export class DatabaseStorage implements IStorage {
   async getPlanMembresia(id: string): Promise<PlanMembresia | undefined> {
     const [plan] = await db.select().from(planesMembresia)
       .where(eq(planesMembresia.id, id));
+    return plan;
+  }
+
+  async getPlanMembresiaPorNombre(nombre: string): Promise<PlanMembresia | undefined> {
+    const [plan] = await db.select().from(planesMembresia)
+      .where(eq(planesMembresia.nombre, nombre));
     return plan;
   }
 

@@ -5584,6 +5584,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Asignar membresía de cortesía (solo super admin)
+  app.post('/api/membresias/cortesia', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { usuarioId, duracionMeses, motivoCortesia } = req.body;
+      const adminId = req.user?.id;
+      
+      if (!usuarioId || !duracionMeses) {
+        return res.status(400).json({ message: "Faltan datos requeridos" });
+      }
+      
+      if (![1, 3, 6, 12].includes(duracionMeses)) {
+        return res.status(400).json({ message: "Duración inválida. Use 1, 3, 6 o 12 meses" });
+      }
+      
+      // Buscar o crear plan de cortesía temporal
+      const nombrePlan = `Cortesía ${duracionMeses} ${duracionMeses === 1 ? 'mes' : 'meses'}`;
+      let plan = await storage.getPlanMembresiaPorNombre(nombrePlan);
+      
+      if (!plan) {
+        // Crear plan de cortesía si no existe
+        plan = await storage.createPlanMembresia({
+          nombre: nombrePlan,
+          descripcion: `Plan de cortesía asignado por administrador - ${duracionMeses} ${duracionMeses === 1 ? 'mes' : 'meses'}`,
+          duracionMeses,
+          precioNormal: "0.00",
+          precioDescuento: "0.00",
+          beneficios: ["Acceso completo", "Calculadora Científica", "Sin restricciones"],
+          productosIncluidos: 100,
+          destacado: false,
+          activo: true
+        });
+      }
+      
+      // Calcular fechas
+      const fechaInicio = new Date();
+      const fechaFin = new Date();
+      fechaFin.setMonth(fechaFin.getMonth() + duracionMeses);
+      
+      // Crear membresía de cortesía
+      const membresia = await storage.createMembresiaUsuario({
+        usuarioId,
+        planId: plan.id,
+        fechaInicio,
+        fechaFin,
+        estado: 'activa',
+        montoTotal: "0.00",
+        metodoPago: 'cortesia',
+        esCortesia: true,
+        asignadoPor: adminId,
+        motivoCortesia: motivoCortesia || 'Asignado por administrador'
+      });
+      
+      res.json(membresia);
+    } catch (error: any) {
+      console.error("Error al asignar membresía de cortesía:", error);
+      res.status(400).json({ message: error.message || "Error al asignar membresía de cortesía" });
+    }
+  });
+
   // ============================================================
   // CATEGORÍAS DE PRODUCTOS DE USUARIO
   // ============================================================

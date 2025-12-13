@@ -1518,6 +1518,9 @@ export const membresiasUsuarios = pgTable("membresias_usuarios", {
   metodoPago: varchar("metodo_pago", { length: 50 }),
   transaccionId: varchar("transaccion_id"),
   renovacionAutomatica: boolean("renovacion_automatica").default(false),
+  esCortesia: boolean("es_cortesia").default(false),
+  asignadoPor: varchar("asignado_por").references(() => usuarios.id),
+  motivoCortesia: text("motivo_cortesia"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
