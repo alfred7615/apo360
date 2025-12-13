@@ -344,6 +344,57 @@ export function CalculadoraCambio({
 
   const isLoading = cargandoMonedas || cargandoTasasLocales || cargandoPromedio;
 
+  const descargarExcel = useCallback(() => {
+    const datos = modo === "moneda" 
+      ? [
+          ["Calculadora de Cambio - APO-360"],
+          [""],
+          ["Tipo de Operación", tipoTasa === "compra" ? "Compra" : "Venta"],
+          ["Moneda Origen", monedaOrigen],
+          ["Moneda Destino", monedaDestino],
+          ["Monto Original", parsearNumeroConComas(monto)],
+          ["Tipo de Cambio", calcularCambio.tasaUsada],
+          ["Monto Resultante", calcularCambio.resultado],
+          ["Fuente de Tasa", calcularCambio.fuente === "local" ? "Cambistas Locales" : "Internet"],
+          ["Fecha", new Date().toLocaleString("es-PE")],
+        ]
+      : [
+          ["Calculadora Científica - APO-360"],
+          [""],
+          ["Expresión", expresionCientifica],
+          ["Resultado", resultadoCientifica],
+          ["Modo Ángulo", modoAngulo.toUpperCase()],
+          [""],
+          ["Historial:"],
+          ...historialCientifica.map((h, i) => [`${i + 1}. ${h}`]),
+          [""],
+          ["Fecha", new Date().toLocaleString("es-PE")],
+        ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(datos);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, modo === "moneda" ? "Cambio" : "Científica");
+    XLSX.writeFile(wb, `calculadora_${modo}_${Date.now()}.xlsx`);
+  }, [modo, tipoTasa, monedaOrigen, monedaDestino, monto, calcularCambio, expresionCientifica, resultadoCientifica, modoAngulo, historialCientifica]);
+
+  const descargarPNG = useCallback(async () => {
+    const elemento = document.querySelector('[data-testid="card-calculadora-cambio"], [data-testid="calculadora-cientifica"]');
+    if (!elemento) return;
+    
+    try {
+      const canvas = await html2canvas(elemento as HTMLElement, {
+        backgroundColor: "#1f2937",
+        scale: 2,
+      });
+      const link = document.createElement("a");
+      link.download = `calculadora_${modo}_${Date.now()}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (error) {
+      console.error("Error al generar imagen:", error);
+    }
+  }, [modo]);
+
   const headerComponent = mostrarHeader && (
     <div className="flex items-center justify-between p-3 border-b border-gray-700/50">
       <div className="flex items-center gap-2">
@@ -787,57 +838,6 @@ export function CalculadoraCambio({
   const limpiarHistorial = useCallback(() => {
     setHistorialCientifica([]);
   }, []);
-
-  const descargarExcel = useCallback(() => {
-    const datos = modo === "moneda" 
-      ? [
-          ["Calculadora de Cambio - APO-360"],
-          [""],
-          ["Tipo de Operación", tipoTasa === "compra" ? "Compra" : "Venta"],
-          ["Moneda Origen", monedaOrigen],
-          ["Moneda Destino", monedaDestino],
-          ["Monto Original", parsearNumeroConComas(monto)],
-          ["Tipo de Cambio", calcularCambio.tasaUsada],
-          ["Monto Resultante", calcularCambio.resultado],
-          ["Fuente de Tasa", calcularCambio.fuente === "local" ? "Cambistas Locales" : "Internet"],
-          ["Fecha", new Date().toLocaleString("es-PE")],
-        ]
-      : [
-          ["Calculadora Científica - APO-360"],
-          [""],
-          ["Expresión", expresionCientifica],
-          ["Resultado", resultadoCientifica],
-          ["Modo Ángulo", modoAngulo.toUpperCase()],
-          [""],
-          ["Historial:"],
-          ...historialCientifica.map((h, i) => [`${i + 1}. ${h}`]),
-          [""],
-          ["Fecha", new Date().toLocaleString("es-PE")],
-        ];
-    
-    const ws = XLSX.utils.aoa_to_sheet(datos);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, modo === "moneda" ? "Cambio" : "Científica");
-    XLSX.writeFile(wb, `calculadora_${modo}_${Date.now()}.xlsx`);
-  }, [modo, tipoTasa, monedaOrigen, monedaDestino, monto, calcularCambio, expresionCientifica, resultadoCientifica, modoAngulo, historialCientifica]);
-
-  const descargarPNG = useCallback(async () => {
-    const elemento = document.querySelector('[data-testid="card-calculadora-cambio"], [data-testid="calculadora-cientifica"]');
-    if (!elemento) return;
-    
-    try {
-      const canvas = await html2canvas(elemento as HTMLElement, {
-        backgroundColor: "#1f2937",
-        scale: 2,
-      });
-      const link = document.createElement("a");
-      link.download = `calculadora_${modo}_${Date.now()}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    } catch (error) {
-      console.error("Error al generar imagen:", error);
-    }
-  }, [modo]);
 
   const botonesNumericos = [
     { label: "7", value: "7" },
