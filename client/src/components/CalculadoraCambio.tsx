@@ -427,19 +427,17 @@ export function CalculadoraCambio({
 
   const headerComponent = mostrarHeader && (
     <div className="border-b border-gray-700/50">
-      <div className="flex items-center justify-between p-2 border-b border-gray-700/30">
+      <div className="flex items-center justify-between p-2">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={onCerrar}
+          className="h-8 w-8 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10"
+          data-testid="button-cerrar"
+        >
+          <X className="h-5 w-5" />
+        </Button>
         <div className="flex items-center gap-1">
-          {onCerrar && (
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={onCerrar}
-              className="h-8 w-8 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10"
-              data-testid="button-cerrar"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          )}
           {modo !== "moneda" && (
             <Button
               size="icon"
@@ -451,18 +449,6 @@ export function CalculadoraCambio({
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => cambiarModo("moneda")}
-            className={`h-8 w-8 ${modo === "moneda" ? "bg-rose-500/20 text-rose-300" : "text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"}`}
-            data-testid="button-calculadora-moneda"
-            title="Cambio de Moneda"
-          >
-            <DollarSign className="h-5 w-5" />
-          </Button>
           <Button
             size="icon"
             variant="ghost"
@@ -488,13 +474,17 @@ export function CalculadoraCambio({
           </Button>
         </div>
       </div>
-      <div className="flex items-center gap-2 p-2">
-        <div className="p-1.5 rounded-lg bg-gradient-to-br from-rose-500/20 to-pink-500/20">
-          {getIconoModo()}
-        </div>
-        <span className="text-sm font-medium text-gray-100">
+      <div className="px-3 pb-2">
+        <h2 className="text-base font-semibold text-gray-100">
           {modo === "moneda" ? "Cambio de Moneda" : getTituloModo()}
-        </span>
+        </h2>
+        <p className="text-xs text-gray-400">
+          {modo === "moneda" 
+            ? "Calcula el tipo de cambio entre monedas" 
+            : modo === "normal" 
+              ? "Operaciones matemáticas básicas"
+              : "Funciones matemáticas avanzadas"}
+        </p>
       </div>
     </div>
   );
