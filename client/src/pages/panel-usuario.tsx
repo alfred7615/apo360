@@ -1133,9 +1133,9 @@ export default function PanelUsuarioPage() {
                     <div className="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                       <Crown className="h-8 w-8 text-yellow-500" />
                       <div>
-                        <h3 className="font-medium">Membresía {membresia.tipo}</h3>
+                        <h3 className="font-medium">Membresía {membresia?.plan?.nombre || 'Premium'}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Válida hasta: {new Date(membresia.fechaExpiracion).toLocaleDateString()}
+                          Válida hasta: {membresia?.fechaFin ? format(new Date(membresia.fechaFin), "dd 'de' MMMM 'de' yyyy", { locale: es }) : 'N/A'}
                         </p>
                       </div>
                     </div>

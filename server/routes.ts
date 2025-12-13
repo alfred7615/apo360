@@ -56,13 +56,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const usuarios = await storage.getAllUsers();
       
-      // Enriquecer usuarios con sus roles jerárquicos
+      // Enriquecer usuarios con sus roles jerárquicos activos
       const usuariosConRoles = await Promise.all(usuarios.map(async (usuario) => {
         try {
           const rolesJerarquicos = await storage.getRolesUsuario(usuario.id);
+          // Filtrar solo roles activos
+          const rolesActivos = (rolesJerarquicos || []).filter((r: any) => r.estado === 'activo');
           return {
             ...usuario,
-            rolesJerarquicos: rolesJerarquicos || [],
+            rolesJerarquicos: rolesActivos,
           };
         } catch (e) {
           return {
@@ -5492,7 +5494,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const membresia = await storage.getMembresiaActiva(userId);
-      res.json(membresia || null);
+      
+      if (!membresia) {
+        return res.json(null);
+      }
+      
+      // Obtener datos del plan asociado
+      const plan = await storage.getPlanMembresia(membresia.planId);
+      
+      // Serializar fechas a ISO string para evitar problemas de parsing en el frontend
+      res.json({
+        ...membresia,
+        fechaInicio: membresia.fechaInicio instanceof Date ? membresia.fechaInicio.toISOString() : membresia.fechaInicio,
+        fechaFin: membresia.fechaFin instanceof Date ? membresia.fechaFin.toISOString() : membresia.fechaFin,
+        activa: true,
+        plan: plan || null,
+      });
     } catch (error) {
       console.error("Error al obtener membresía del usuario:", error);
       res.status(500).json({ message: "Error al obtener membresía" });
@@ -5587,8 +5604,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Asignar membresía de cortesía (solo super admin)
   app.post('/api/membresias/cortesia', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
-      const { usuarioId, duracionMeses, motivoCortesia } = req.body;
-      const adminId = req.user?.id;
+      const { usuarioId, duracionMeses, motivo } = req.body;
+      const adminId = req.user?.claims?.sub;
       
       if (!usuarioId || !duracionMeses) {
         return res.status(400).json({ message: "Faltan datos requeridos" });
@@ -5633,7 +5650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metodoPago: 'cortesia',
         esCortesia: true,
         asignadoPor: adminId,
-        motivoCortesia: motivoCortesia || 'Asignado por administrador'
+        motivoCortesia: motivo || 'Asignado por administrador'
       });
       
       res.json(membresia);

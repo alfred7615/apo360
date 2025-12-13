@@ -3604,13 +3604,19 @@ export class DatabaseStorage implements IStorage {
   // ============================================================
   async getRolesUsuario(usuarioId: string): Promise<UsuarioRol[]> {
     return await db.select().from(usuarioRoles)
-      .where(eq(usuarioRoles.usuarioId, usuarioId))
+      .where(and(
+        eq(usuarioRoles.usuarioId, usuarioId),
+        eq(usuarioRoles.estado, 'activo')
+      ))
       .orderBy(desc(usuarioRoles.createdAt));
   }
 
   async getRolesUsuarioConDetalles(usuarioId: string): Promise<any[]> {
     const roles = await db.select().from(usuarioRoles)
-      .where(eq(usuarioRoles.usuarioId, usuarioId));
+      .where(and(
+        eq(usuarioRoles.usuarioId, usuarioId),
+        eq(usuarioRoles.estado, 'activo')
+      ));
     
     const rolesConDetalles = await Promise.all(roles.map(async (rol) => {
       let categoria = null;
@@ -3725,7 +3731,10 @@ export class DatabaseStorage implements IStorage {
   // ============================================================
   async getRolesUsuario(usuarioId: string): Promise<any[]> {
     const roles = await db.select().from(usuarioRoles)
-      .where(eq(usuarioRoles.usuarioId, usuarioId));
+      .where(and(
+        eq(usuarioRoles.usuarioId, usuarioId),
+        eq(usuarioRoles.estado, 'activo')
+      ));
     return roles;
   }
 
