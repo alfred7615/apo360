@@ -568,7 +568,7 @@ export default function LocalComercialPanel() {
   });
 
   const { data: logosServicios = [] } = useQuery<LogoServicio[]>({
-    queryKey: ["/api/logos-servicios"],
+    queryKey: ["/api/logos-servicio"],
   });
 
   const { data: miPersonal = [], isLoading: loadingPersonal } = useQuery<PersonalNegocio[]>({
