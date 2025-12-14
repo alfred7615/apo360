@@ -722,7 +722,7 @@ export const contactosFamiliares = pgTable("contactos_familiares", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertContactoFamiliarSchema = createInsertSchema(contactosFamiliares).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertContactoFamiliarSchema = createInsertSchema(contactosFamiliares).omit({ id: true, createdAt: true, updatedAt: true, usuarioId: true });
 export type InsertContactoFamiliar = z.infer<typeof insertContactoFamiliarSchema>;
 export type ContactoFamiliar = typeof contactosFamiliares.$inferSelect;
 

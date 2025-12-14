@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, Plus, Trash2, Save, Loader2, Phone, Mail, User, 
-  GripVertical, AlertTriangle, Check, Download
+  GripVertical, AlertTriangle, Check, Download, Search
 } from "lucide-react";
 import { SiGoogle } from "react-icons/si";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -55,6 +55,16 @@ interface FormContacto {
   notificarEmergencias: boolean;
 }
 
+interface UsuarioBuscado {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  telefono?: string | null;
+  alias?: string | null;
+  profileImageUrl?: string | null;
+}
+
 const RELACIONES = [
   { value: "padre", label: "Padre" },
   { value: "madre", label: "Madre" },
@@ -85,10 +95,54 @@ export default function GestionContactosFamiliares() {
   const [editando, setEditando] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormContacto>(formVacio);
   const [contactoEliminar, setContactoEliminar] = useState<string | null>(null);
+  const [busquedaTexto, setBusquedaTexto] = useState("");
+  const [mostrarResultados, setMostrarResultados] = useState(false);
+  const [buscandoUsuarios, setBuscandoUsuarios] = useState(false);
+  const [resultadosBusqueda, setResultadosBusqueda] = useState<UsuarioBuscado[]>([]);
 
   const { data: contactos = [], isLoading } = useQuery<ContactoFamiliar[]>({
     queryKey: ["/api/contactos-familiares"],
   });
+
+  useEffect(() => {
+    const buscar = async () => {
+      if (busquedaTexto.length < 2) {
+        setResultadosBusqueda([]);
+        setMostrarResultados(false);
+        return;
+      }
+      
+      setBuscandoUsuarios(true);
+      try {
+        const response = await fetch(`/api/buscar-usuarios?q=${encodeURIComponent(busquedaTexto)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setResultadosBusqueda(data);
+          setMostrarResultados(true);
+        }
+      } catch (error) {
+        console.error("Error al buscar usuarios:", error);
+      } finally {
+        setBuscandoUsuarios(false);
+      }
+    };
+
+    const timer = setTimeout(buscar, 300);
+    return () => clearTimeout(timer);
+  }, [busquedaTexto]);
+
+  const seleccionarUsuario = (usuario: UsuarioBuscado) => {
+    const nombreCompleto = [usuario.firstName, usuario.lastName].filter(Boolean).join(" ") || usuario.alias || "";
+    setFormData({
+      ...formData,
+      nombre: nombreCompleto,
+      telefono: usuario.telefono || "",
+      email: usuario.email || "",
+    });
+    setBusquedaTexto("");
+    setMostrarResultados(false);
+    setResultadosBusqueda([]);
+  };
 
   const crearMutation = useMutation({
     mutationFn: async (datos: FormContacto) => {
@@ -190,6 +244,9 @@ export default function GestionContactosFamiliares() {
   const abrirModalNuevo = () => {
     setFormData(formVacio);
     setEditando(null);
+    setBusquedaTexto("");
+    setResultadosBusqueda([]);
+    setMostrarResultados(false);
     setModalAbierto(true);
   };
 
@@ -203,6 +260,9 @@ export default function GestionContactosFamiliares() {
       notificarEmergencias: contacto.notificarEmergencias,
     });
     setEditando(contacto.id);
+    setBusquedaTexto("");
+    setResultadosBusqueda([]);
+    setMostrarResultados(false);
     setModalAbierto(true);
   };
 
@@ -210,6 +270,9 @@ export default function GestionContactosFamiliares() {
     setModalAbierto(false);
     setEditando(null);
     setFormData(formVacio);
+    setBusquedaTexto("");
+    setResultadosBusqueda([]);
+    setMostrarResultados(false);
   };
 
   const guardarContacto = () => {
@@ -386,12 +449,82 @@ export default function GestionContactosFamiliares() {
             <DialogDescription>
               {editando 
                 ? "Modifica los datos del contacto familiar"
-                : "Agrega un nuevo contacto para notificaciones de emergencia"
+                : "Busca un usuario registrado o ingresa los datos manualmente"
               }
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            {!editando && (
+              <div className="space-y-2">
+                <Label className="text-sm flex items-center gap-1">
+                  <Search className="h-3.5 w-3.5" />
+                  Buscar usuario registrado
+                </Label>
+                <div className="relative">
+                  <Input
+                    value={busquedaTexto}
+                    onChange={(e) => setBusquedaTexto(e.target.value)}
+                    placeholder="Buscar por nombre, teléfono o email..."
+                    data-testid="input-buscar-usuario"
+                  />
+                  {buscandoUsuarios && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+                {mostrarResultados && resultadosBusqueda.length > 0 && (
+                  <div className="border rounded-lg max-h-40 overflow-y-auto bg-background shadow-lg">
+                    {resultadosBusqueda.map((usuario) => {
+                      const nombre = [usuario.firstName, usuario.lastName].filter(Boolean).join(" ") || usuario.alias || "Sin nombre";
+                      return (
+                        <div
+                          key={usuario.id}
+                          className="flex items-center gap-3 p-2 hover:bg-muted cursor-pointer transition-colors"
+                          onClick={() => seleccionarUsuario(usuario)}
+                          data-testid={`usuario-resultado-${usuario.id}`}
+                        >
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            {usuario.profileImageUrl ? (
+                              <img src={usuario.profileImageUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+                            ) : (
+                              <User className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{nombre}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              {usuario.telefono && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {usuario.telefono}
+                                </span>
+                              )}
+                              {usuario.email && (
+                                <span className="flex items-center gap-1 truncate">
+                                  <Mail className="h-3 w-3" />
+                                  {usuario.email}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {mostrarResultados && resultadosBusqueda.length === 0 && busquedaTexto.length >= 2 && !buscandoUsuarios && (
+                  <p className="text-xs text-muted-foreground text-center py-2">
+                    No se encontraron usuarios. Ingresa los datos manualmente.
+                  </p>
+                )}
+                <div className="relative flex items-center py-2">
+                  <div className="flex-1 border-t"></div>
+                  <span className="px-2 text-xs text-muted-foreground">o ingresa manualmente</span>
+                  <div className="flex-1 border-t"></div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="nombre" className="text-sm">Nombre completo *</Label>
               <Input

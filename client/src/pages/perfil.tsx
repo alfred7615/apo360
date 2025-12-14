@@ -190,6 +190,8 @@ function DocumentoUpload({
   testIdPrefix
 }: DocumentoUploadProps) {
   const [uploading, setUploading] = useState<'frente' | 'posterior' | null>(null);
+  const [showCameraFrente, setShowCameraFrente] = useState(false);
+  const [showCameraPosterior, setShowCameraPosterior] = useState(false);
   const { toast } = useToast();
   
   const handleFileChange = async (type: 'frente' | 'posterior', file: File) => {
@@ -213,6 +215,28 @@ function DocumentoUpload({
     }
   };
 
+  const handleCameraCapture = async (type: 'frente' | 'posterior', imageDataUrl: string) => {
+    setUploading(type);
+    try {
+      const file = await dataUrlToFile(imageDataUrl, `${testIdPrefix}-${type}-${Date.now()}.jpg`);
+      const url = await uploadImageToServer(file);
+      if (url) {
+        if (type === 'frente') {
+          onFrenteChange(url);
+        } else {
+          onPosteriorChange(url);
+        }
+        toast({ title: "Foto capturada", description: "La imagen se guardó correctamente" });
+      } else {
+        toast({ title: "Error", description: "No se pudo subir la imagen", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Error al procesar la imagen", variant: "destructive" });
+    } finally {
+      setUploading(null);
+    }
+  };
+
   return (
     <Card className="mb-4">
       <CardHeader className="pb-3">
@@ -223,75 +247,149 @@ function DocumentoUpload({
           <div>
             <Label className="text-xs text-muted-foreground mb-1 block">Foto Frontal</Label>
             <div className="relative">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                id={`${testIdPrefix}-frente`}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileChange('frente', file);
-                }}
-              />
-              <label 
-                htmlFor={`${testIdPrefix}-frente`}
-                className={`block border-2 border-dashed rounded-lg p-2 text-center cursor-pointer hover:bg-muted/50 transition-colors ${uploading === 'frente' ? 'opacity-50 pointer-events-none' : ''}`}
-              >
-                {uploading === 'frente' ? (
-                  <div className="flex flex-col items-center py-4">
-                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                    <span className="text-xs text-muted-foreground mt-1">Subiendo...</span>
-                  </div>
-                ) : imagenFrente ? (
+              {uploading === 'frente' ? (
+                <div className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center h-24">
+                  <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                  <span className="text-xs text-muted-foreground mt-1">Subiendo...</span>
+                </div>
+              ) : imagenFrente ? (
+                <div className="space-y-2">
                   <img 
                     src={imagenFrente} 
                     alt={`${titulo} frente`} 
-                    className="h-20 w-full object-cover rounded"
+                    className="h-20 w-full object-cover rounded-lg border"
                   />
-                ) : (
-                  <div className="flex flex-col items-center py-2">
-                    <Camera className="h-6 w-6 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground mt-1">Frente</span>
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowCameraFrente(true)}
+                      data-testid={`button-camera-${testIdPrefix}-frente`}
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      id={`${testIdPrefix}-frente`}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileChange('frente', file);
+                      }}
+                    />
+                    <label htmlFor={`${testIdPrefix}-frente`}>
+                      <Button size="sm" variant="outline" asChild>
+                        <span><Upload className="h-4 w-4" /></span>
+                      </Button>
+                    </label>
                   </div>
-                )}
-              </label>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed rounded-lg p-2 flex flex-col items-center justify-center h-24 gap-2">
+                  <span className="text-xs text-muted-foreground">Frente</span>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowCameraFrente(true)}
+                      data-testid={`button-camera-${testIdPrefix}-frente`}
+                    >
+                      <Camera className="h-4 w-4 mr-1" />
+                      Foto
+                    </Button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      id={`${testIdPrefix}-frente`}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileChange('frente', file);
+                      }}
+                    />
+                    <label htmlFor={`${testIdPrefix}-frente`}>
+                      <Button size="sm" variant="outline" asChild>
+                        <span><Upload className="h-4 w-4" /></span>
+                      </Button>
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div>
             <Label className="text-xs text-muted-foreground mb-1 block">Foto Posterior</Label>
             <div className="relative">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                id={`${testIdPrefix}-posterior`}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileChange('posterior', file);
-                }}
-              />
-              <label 
-                htmlFor={`${testIdPrefix}-posterior`}
-                className={`block border-2 border-dashed rounded-lg p-2 text-center cursor-pointer hover:bg-muted/50 transition-colors ${uploading === 'posterior' ? 'opacity-50 pointer-events-none' : ''}`}
-              >
-                {uploading === 'posterior' ? (
-                  <div className="flex flex-col items-center py-4">
-                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                    <span className="text-xs text-muted-foreground mt-1">Subiendo...</span>
-                  </div>
-                ) : imagenPosterior ? (
+              {uploading === 'posterior' ? (
+                <div className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center h-24">
+                  <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                  <span className="text-xs text-muted-foreground mt-1">Subiendo...</span>
+                </div>
+              ) : imagenPosterior ? (
+                <div className="space-y-2">
                   <img 
                     src={imagenPosterior} 
                     alt={`${titulo} posterior`} 
-                    className="h-20 w-full object-cover rounded"
+                    className="h-20 w-full object-cover rounded-lg border"
                   />
-                ) : (
-                  <div className="flex flex-col items-center py-2">
-                    <Camera className="h-6 w-6 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground mt-1">Posterior</span>
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowCameraPosterior(true)}
+                      data-testid={`button-camera-${testIdPrefix}-posterior`}
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      id={`${testIdPrefix}-posterior`}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileChange('posterior', file);
+                      }}
+                    />
+                    <label htmlFor={`${testIdPrefix}-posterior`}>
+                      <Button size="sm" variant="outline" asChild>
+                        <span><Upload className="h-4 w-4" /></span>
+                      </Button>
+                    </label>
                   </div>
-                )}
-              </label>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed rounded-lg p-2 flex flex-col items-center justify-center h-24 gap-2">
+                  <span className="text-xs text-muted-foreground">Posterior</span>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowCameraPosterior(true)}
+                      data-testid={`button-camera-${testIdPrefix}-posterior`}
+                    >
+                      <Camera className="h-4 w-4 mr-1" />
+                      Foto
+                    </Button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      id={`${testIdPrefix}-posterior`}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileChange('posterior', file);
+                      }}
+                    />
+                    <label htmlFor={`${testIdPrefix}-posterior`}>
+                      <Button size="sm" variant="outline" asChild>
+                        <span><Upload className="h-4 w-4" /></span>
+                      </Button>
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -320,6 +418,30 @@ function DocumentoUpload({
           </div>
         </div>
       </CardContent>
+
+      <CameraCapture
+        open={showCameraFrente}
+        onClose={() => setShowCameraFrente(false)}
+        onCapture={(imageDataUrl) => {
+          handleCameraCapture('frente', imageDataUrl);
+          setShowCameraFrente(false);
+        }}
+        aspectRatio={4/3}
+        title={`Foto Frontal - ${titulo}`}
+        description="Captura o sube la foto del frente del documento"
+      />
+
+      <CameraCapture
+        open={showCameraPosterior}
+        onClose={() => setShowCameraPosterior(false)}
+        onCapture={(imageDataUrl) => {
+          handleCameraCapture('posterior', imageDataUrl);
+          setShowCameraPosterior(false);
+        }}
+        aspectRatio={4/3}
+        title={`Foto Posterior - ${titulo}`}
+        description="Captura o sube la foto del reverso del documento"
+      />
     </Card>
   );
 }
@@ -332,41 +454,126 @@ interface VehiculoFotoProps {
 }
 
 function VehiculoFoto({ titulo, imagen, onImageChange, testId }: VehiculoFotoProps) {
-  const handleFileChange = (file: File) => {
-    const url = URL.createObjectURL(file);
-    onImageChange(url);
+  const [showCamera, setShowCamera] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
+
+  const handleFileChange = async (file: File) => {
+    setUploading(true);
+    try {
+      const url = await uploadImageToServer(file);
+      if (url) {
+        onImageChange(url);
+        toast({ title: "Imagen subida", description: "La foto se guardó correctamente" });
+      } else {
+        toast({ title: "Error", description: "No se pudo subir la imagen", variant: "destructive" });
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCameraCapture = async (imageDataUrl: string) => {
+    setUploading(true);
+    try {
+      const file = await dataUrlToFile(imageDataUrl, `${testId}-${Date.now()}.jpg`);
+      const url = await uploadImageToServer(file);
+      if (url) {
+        onImageChange(url);
+        toast({ title: "Foto capturada", description: "La imagen se guardó correctamente" });
+      } else {
+        toast({ title: "Error", description: "No se pudo subir la imagen", variant: "destructive" });
+      }
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
     <div className="flex flex-col items-center">
       <Label className="text-xs text-muted-foreground mb-1">{titulo}</Label>
-      <input
-        type="file"
-        accept="image/*"
-        className="hidden"
-        id={testId}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFileChange(file);
-        }}
-      />
-      <label 
-        htmlFor={testId}
-        className="block w-full border-2 border-dashed rounded-lg p-2 text-center cursor-pointer hover:bg-muted/50 transition-colors aspect-video"
-      >
-        {imagen ? (
-          <img 
-            src={imagen} 
-            alt={titulo} 
-            className="h-full w-full object-cover rounded"
-          />
+      <div className="w-full aspect-video relative">
+        {uploading ? (
+          <div className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center h-full">
+            <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            <span className="text-xs text-muted-foreground mt-1">Subiendo...</span>
+          </div>
+        ) : imagen ? (
+          <div className="flex flex-col h-full">
+            <img 
+              src={imagen} 
+              alt={titulo} 
+              className="flex-1 w-full object-cover rounded-lg border"
+            />
+            <div className="flex gap-2 justify-center mt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowCamera(true)}
+                data-testid={`button-camera-${testId}`}
+              >
+                <Camera className="h-4 w-4" />
+              </Button>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                id={testId}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileChange(file);
+                }}
+              />
+              <label htmlFor={testId}>
+                <Button size="sm" variant="outline" asChild>
+                  <span><Upload className="h-4 w-4" /></span>
+                </Button>
+              </label>
+            </div>
+          </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Car className="h-6 w-6 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground mt-1">{titulo}</span>
+          <div className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center h-full gap-2">
+            <Car className="h-5 w-5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">{titulo}</span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowCamera(true)}
+                data-testid={`button-camera-${testId}`}
+              >
+                <Camera className="h-4 w-4" />
+              </Button>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                id={testId}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileChange(file);
+                }}
+              />
+              <label htmlFor={testId}>
+                <Button size="sm" variant="outline" asChild>
+                  <span><Upload className="h-4 w-4" /></span>
+                </Button>
+              </label>
+            </div>
           </div>
         )}
-      </label>
+      </div>
+      <CameraCapture
+        open={showCamera}
+        onClose={() => setShowCamera(false)}
+        onCapture={(imageDataUrl) => {
+          handleCameraCapture(imageDataUrl);
+          setShowCamera(false);
+        }}
+        aspectRatio={16/9}
+        title={`Foto - ${titulo}`}
+        description="Captura o sube la foto del vehículo"
+      />
     </div>
   );
 }
@@ -680,36 +887,78 @@ export default function PerfilPage() {
               </CardHeader>
               <CardContent>
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-6 h-auto">
-                    <TabsTrigger value="basico" className="text-xs py-1.5 px-1" data-testid="tab-perfil-basico">
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    <Button
+                      variant={activeTab === "basico" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveTab("basico")}
+                      className="text-xs h-8"
+                      data-testid="tab-perfil-basico"
+                    >
                       <User className="h-3 w-3 mr-1" />
                       Básico
-                    </TabsTrigger>
-                    <TabsTrigger value="ubicacion" className="text-xs py-1.5 px-1" data-testid="tab-perfil-ubicacion">
+                    </Button>
+                    <Button
+                      variant={activeTab === "ubicacion" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveTab("ubicacion")}
+                      className="text-xs h-8"
+                      data-testid="tab-perfil-ubicacion"
+                    >
                       <MapPin className="h-3 w-3 mr-1" />
                       Ubicación
-                    </TabsTrigger>
-                    <TabsTrigger value="documentos" className="text-xs py-1.5 px-1" data-testid="tab-perfil-documentos">
+                    </Button>
+                    <Button
+                      variant={activeTab === "documentos" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveTab("documentos")}
+                      className="text-xs h-8"
+                      data-testid="tab-perfil-documentos"
+                    >
                       <FileText className="h-3 w-3 mr-1" />
                       Docs
-                    </TabsTrigger>
-                    <TabsTrigger value="familia" className="text-xs py-1.5 px-1" data-testid="tab-perfil-familia">
+                    </Button>
+                    <Button
+                      variant={activeTab === "familia" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveTab("familia")}
+                      className="text-xs h-8"
+                      data-testid="tab-perfil-familia"
+                    >
                       <Users className="h-3 w-3 mr-1" />
                       Familia
-                    </TabsTrigger>
-                    <TabsTrigger value="conductor" className="text-xs py-1.5 px-1" data-testid="tab-perfil-conductor">
-                  <Car className="h-3 w-3 mr-1" />
-                  Conductor
-                </TabsTrigger>
-                <TabsTrigger value="negocio" className="text-xs py-1.5 px-1" data-testid="tab-perfil-negocio">
-                  <Briefcase className="h-3 w-3 mr-1" />
-                  Negocio
-                </TabsTrigger>
-                <TabsTrigger value="lugares" className="text-xs py-1.5 px-1" data-testid="tab-perfil-lugares">
-                  <MapPin className="h-3 w-3 mr-1" />
-                  Lugares
-                </TabsTrigger>
-              </TabsList>
+                    </Button>
+                    <Button
+                      variant={activeTab === "conductor" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveTab("conductor")}
+                      className="text-xs h-8"
+                      data-testid="tab-perfil-conductor"
+                    >
+                      <Car className="h-3 w-3 mr-1" />
+                      Conductor
+                    </Button>
+                    <Button
+                      variant={activeTab === "negocio" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveTab("negocio")}
+                      className="text-xs h-8"
+                      data-testid="tab-perfil-negocio"
+                    >
+                      <Briefcase className="h-3 w-3 mr-1" />
+                      Negocio
+                    </Button>
+                    <Button
+                      variant={activeTab === "lugares" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveTab("lugares")}
+                      className="text-xs h-8"
+                      data-testid="tab-perfil-lugares"
+                    >
+                      <MapPin className="h-3 w-3 mr-1" />
+                      Lugares
+                    </Button>
+                  </div>
 
               <TabsContent value="basico" className="mt-4 space-y-4">
                 <Card>
@@ -1315,6 +1564,70 @@ export default function PerfilPage() {
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <ImageIcon className="h-4 w-4" />
+                      Logo del Negocio
+                    </CardTitle>
+                    <CardDescription className="text-xs">Sube el logo de tu negocio</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4">
+                      <div className="w-24 h-24 relative">
+                        {formData.localLogo ? (
+                          <div className="relative group w-full h-full">
+                            <img 
+                              src={formData.localLogo} 
+                              alt="Logo del negocio" 
+                              className="w-full h-full object-cover rounded-lg border"
+                            />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-1">
+                              <Button
+                                size="icon"
+                                variant="destructive"
+                                className="h-6 w-6"
+                                onClick={() => handleInputChange("localLogo", null)}
+                                data-testid="button-eliminar-logo"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <CameraCaptureButton
+                            onCapture={async (imageDataUrl) => {
+                              try {
+                                const file = await dataUrlToFile(imageDataUrl, `logo-${Date.now()}.jpg`);
+                                const url = await uploadImageToServer(file);
+                                if (url) {
+                                  handleInputChange("localLogo", url);
+                                  toast({ title: "Logo subido", description: "El logo se guardó correctamente" });
+                                }
+                              } catch (error) {
+                                toast({ title: "Error", description: "No se pudo subir el logo", variant: "destructive" });
+                              }
+                            }}
+                            aspectRatio={1}
+                            title="Logo del Negocio"
+                            className="w-full h-full border-2 border-dashed rounded-lg flex items-center justify-center"
+                            data-testid="button-subir-logo"
+                          >
+                            <div className="flex flex-col items-center">
+                              <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">Logo</span>
+                            </div>
+                          </CameraCaptureButton>
+                        )}
+                      </div>
+                      <div className="flex-1 text-sm text-muted-foreground">
+                        <p>Sube una imagen cuadrada para el logo de tu negocio.</p>
+                        <p className="text-xs mt-1">Recomendado: 200x200px o mayor</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4" />
                       Fotos del Local
                     </CardTitle>
                     <CardDescription className="text-xs">Sube hasta 4 fotos de tu negocio</CardDescription>
@@ -1345,24 +1658,18 @@ export default function PerfilPage() {
                                 <CameraCaptureButton
                                   onCapture={async (imageDataUrl) => {
                                     try {
-                                      const response = await fetch(imageDataUrl);
-                                      const blob = await response.blob();
-                                      const formDataUpload = new FormData();
-                                      formDataUpload.append('imagen', blob, `local_foto_${num}.jpg`);
-                                      const uploadRes = await fetch('/api/upload/perfil-imagenes', {
-                                        method: 'POST',
-                                        body: formDataUpload,
-                                        credentials: 'include'
-                                      });
-                                      if (uploadRes.ok) {
-                                        const result = await uploadRes.json();
-                                        handleInputChange(fotoKey as string, result.url);
+                                      const file = await dataUrlToFile(imageDataUrl, `local_foto_${num}_${Date.now()}.jpg`);
+                                      const url = await uploadImageToServer(file);
+                                      if (url) {
+                                        handleInputChange(fotoKey as string, url);
                                         toast({ title: "Foto subida", description: `Foto ${num} guardada exitosamente` });
                                       }
                                     } catch (error) {
                                       toast({ title: "Error", description: "No se pudo subir la foto", variant: "destructive" });
                                     }
                                   }}
+                                  aspectRatio={1}
+                                  title={`Foto ${num} del Local`}
                                   className="w-full h-full flex items-center justify-center"
                                   data-testid={`button-subir-foto-local-${num}`}
                                 >
