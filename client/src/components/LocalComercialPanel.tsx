@@ -22,7 +22,7 @@ import {
   Instagram, Facebook, Image as ImageIcon, Loader2, UtensilsCrossed,
   CheckCircle, XCircle, Users, Megaphone, ShoppingCart, Truck, Map,
   History, Navigation, Heart, Share2, ExternalLink, Clock, DollarSign,
-  Package2, ClipboardList, MapPinned, Wallet, RefreshCw
+  Package2, ClipboardList, MapPinned, Wallet, RefreshCw, Eye, Bookmark, Star
 } from "lucide-react";
 
 interface DatosNegocio {
@@ -1634,13 +1634,22 @@ export default function LocalComercialPanel() {
                                           )}
                                         </div>
                                       )}
-                                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                                        <span className="flex items-center gap-1">
-                                          <Heart className="h-3 w-3" /> {item.likes || 0}
+                                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
+                                        <span className="flex items-center gap-1" title="Likes">
+                                          <Heart className="h-3 w-3 text-pink-500" /> {item.likes || 0}
                                         </span>
-                                        <span className="flex items-center gap-1">
-                                          <Share2 className="h-3 w-3" /> {item.compartidos || 0}
+                                        <span className="flex items-center gap-1" title="Favoritos">
+                                          <Bookmark className="h-3 w-3 text-yellow-500" /> {item.favoritos || 0}
                                         </span>
+                                        <span className="flex items-center gap-1" title="Compartidos">
+                                          <Share2 className="h-3 w-3 text-blue-500" /> {item.compartidos || 0}
+                                        </span>
+                                        <span className="flex items-center gap-1" title="Vistas">
+                                          <Eye className="h-3 w-3 text-gray-400" /> {item.vistas || 0}
+                                        </span>
+                                        {item.destacado && (
+                                          <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" title="Destacado" />
+                                        )}
                                       </div>
                                       <div className="flex items-center gap-1 mt-2 pt-2 border-t">
                                         <Button 
@@ -1713,13 +1722,22 @@ export default function LocalComercialPanel() {
                                           )}
                                         </div>
                                       )}
-                                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                                        <span className="flex items-center gap-1">
-                                          <Heart className="h-3 w-3" /> {item.likes || 0}
+                                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
+                                        <span className="flex items-center gap-1" title="Likes">
+                                          <Heart className="h-3 w-3 text-pink-500" /> {item.likes || 0}
                                         </span>
-                                        <span className="flex items-center gap-1">
-                                          <Share2 className="h-3 w-3" /> {item.compartidos || 0}
+                                        <span className="flex items-center gap-1" title="Favoritos">
+                                          <Bookmark className="h-3 w-3 text-yellow-500" /> {item.favoritos || 0}
                                         </span>
+                                        <span className="flex items-center gap-1" title="Compartidos">
+                                          <Share2 className="h-3 w-3 text-blue-500" /> {item.compartidos || 0}
+                                        </span>
+                                        <span className="flex items-center gap-1" title="Vistas">
+                                          <Eye className="h-3 w-3 text-gray-400" /> {item.vistas || 0}
+                                        </span>
+                                        {item.destacado && (
+                                          <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" title="Destacado" />
+                                        )}
                                       </div>
                                       <div className="flex items-center gap-1 mt-2 pt-2 border-t">
                                         <Button 
