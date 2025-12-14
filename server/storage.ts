@@ -49,6 +49,11 @@ import {
   datosNegocio,
   catalogoNegocio,
   personalNegocio,
+  catalogosLocales,
+  categoriasCatalogo,
+  itemsCatalogo,
+  favoritosProductos,
+  interaccionesProductos,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -176,6 +181,16 @@ import {
   type InsertCatalogoNegocio,
   type PersonalNegocio,
   type InsertPersonalNegocio,
+  type CatalogoLocal,
+  type InsertCatalogoLocal,
+  type CategoriaCatalogo,
+  type InsertCategoriaCatalogo,
+  type ItemCatalogo,
+  type InsertItemCatalogo,
+  type FavoritoProducto,
+  type InsertFavoritoProducto,
+  type InteraccionProducto,
+  type InsertInteraccionProducto,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -3862,6 +3877,200 @@ export class DatabaseStorage implements IStorage {
         p.completedAt && new Date(p.completedAt) >= hoy
       ).length,
     };
+  }
+
+  // ============================================================
+  // CATÁLOGOS DE LOCALES COMERCIALES (Sistema nuevo)
+  // ============================================================
+  
+  async getCatalogosLocales(soloActivos = true): Promise<CatalogoLocal[]> {
+    if (soloActivos) {
+      return await db.select().from(catalogosLocales)
+        .where(eq(catalogosLocales.activo, true))
+        .orderBy(catalogosLocales.orden);
+    }
+    return await db.select().from(catalogosLocales).orderBy(catalogosLocales.orden);
+  }
+
+  async getCatalogoLocal(id: string): Promise<CatalogoLocal | undefined> {
+    const [catalogo] = await db.select().from(catalogosLocales)
+      .where(eq(catalogosLocales.id, id));
+    return catalogo;
+  }
+
+  async getCatalogoLocalPorUsuario(usuarioId: string): Promise<CatalogoLocal | undefined> {
+    const [catalogo] = await db.select().from(catalogosLocales)
+      .where(eq(catalogosLocales.usuarioId, usuarioId));
+    return catalogo;
+  }
+
+  async createCatalogoLocal(data: InsertCatalogoLocal): Promise<CatalogoLocal> {
+    const [catalogo] = await db.insert(catalogosLocales).values(data).returning();
+    return catalogo;
+  }
+
+  async updateCatalogoLocal(id: string, data: Partial<InsertCatalogoLocal>): Promise<CatalogoLocal | undefined> {
+    const [actualizado] = await db.update(catalogosLocales)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(catalogosLocales.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteCatalogoLocal(id: string): Promise<void> {
+    await db.delete(itemsCatalogo).where(eq(itemsCatalogo.catalogoId, id));
+    await db.delete(categoriasCatalogo).where(eq(categoriasCatalogo.catalogoId, id));
+    await db.delete(catalogosLocales).where(eq(catalogosLocales.id, id));
+  }
+
+  // ============================================================
+  // CATEGORÍAS DE CATÁLOGOS
+  // ============================================================
+  
+  async getCategoriasCatalogo(catalogoId: string): Promise<CategoriaCatalogo[]> {
+    return await db.select().from(categoriasCatalogo)
+      .where(and(eq(categoriasCatalogo.catalogoId, catalogoId), eq(categoriasCatalogo.activo, true)))
+      .orderBy(categoriasCatalogo.orden);
+  }
+
+  async getCategoriaCatalogo(id: string): Promise<CategoriaCatalogo | undefined> {
+    const [categoria] = await db.select().from(categoriasCatalogo)
+      .where(eq(categoriasCatalogo.id, id));
+    return categoria;
+  }
+
+  async createCategoriaCatalogo(data: InsertCategoriaCatalogo): Promise<CategoriaCatalogo> {
+    const [categoria] = await db.insert(categoriasCatalogo).values(data).returning();
+    return categoria;
+  }
+
+  async updateCategoriaCatalogo(id: string, data: Partial<InsertCategoriaCatalogo>): Promise<CategoriaCatalogo | undefined> {
+    const [actualizada] = await db.update(categoriasCatalogo)
+      .set(data)
+      .where(eq(categoriasCatalogo.id, id))
+      .returning();
+    return actualizada;
+  }
+
+  async deleteCategoriaCatalogo(id: string): Promise<void> {
+    await db.update(itemsCatalogo)
+      .set({ categoriaId: null })
+      .where(eq(itemsCatalogo.categoriaId, id));
+    await db.delete(categoriasCatalogo).where(eq(categoriasCatalogo.id, id));
+  }
+
+  // ============================================================
+  // ITEMS DE CATÁLOGO (Productos del catálogo)
+  // ============================================================
+  
+  async getItemsCatalogo(catalogoId: string, categoriaId?: string): Promise<ItemCatalogo[]> {
+    if (categoriaId) {
+      return await db.select().from(itemsCatalogo)
+        .where(and(eq(itemsCatalogo.catalogoId, catalogoId), eq(itemsCatalogo.categoriaId, categoriaId)))
+        .orderBy(itemsCatalogo.orden);
+    }
+    return await db.select().from(itemsCatalogo)
+      .where(eq(itemsCatalogo.catalogoId, catalogoId))
+      .orderBy(itemsCatalogo.orden);
+  }
+
+  async getItemCatalogoLocal(id: string): Promise<ItemCatalogo | undefined> {
+    const [item] = await db.select().from(itemsCatalogo)
+      .where(eq(itemsCatalogo.id, id));
+    return item;
+  }
+
+  async getItemsDestacados(limite = 10): Promise<ItemCatalogo[]> {
+    return await db.select().from(itemsCatalogo)
+      .where(and(eq(itemsCatalogo.destacado, true), eq(itemsCatalogo.disponible, true)))
+      .orderBy(desc(itemsCatalogo.likes))
+      .limit(limite);
+  }
+
+  async createItemCatalogoLocal(data: InsertItemCatalogo): Promise<ItemCatalogo> {
+    const [item] = await db.insert(itemsCatalogo).values(data).returning();
+    return item;
+  }
+
+  async updateItemCatalogoLocal(id: string, data: Partial<InsertItemCatalogo>): Promise<ItemCatalogo | undefined> {
+    const [actualizado] = await db.update(itemsCatalogo)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(itemsCatalogo.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteItemCatalogoLocal(id: string): Promise<void> {
+    await db.delete(favoritosProductos).where(eq(favoritosProductos.itemCatalogoId, id));
+    await db.delete(interaccionesProductos).where(eq(interaccionesProductos.itemCatalogoId, id));
+    await db.delete(itemsCatalogo).where(eq(itemsCatalogo.id, id));
+  }
+
+  // ============================================================
+  // INTERACCIONES DE PRODUCTOS (likes, favoritos, compartidos)
+  // ============================================================
+  
+  async toggleInteraccionProducto(usuarioId: string, itemId: string, tipo: string): Promise<{ activo: boolean; total: number }> {
+    const existente = await db.select().from(interaccionesProductos)
+      .where(and(
+        eq(interaccionesProductos.usuarioId, usuarioId),
+        eq(interaccionesProductos.itemCatalogoId, itemId),
+        eq(interaccionesProductos.tipoInteraccion, tipo)
+      ));
+    
+    if (existente.length > 0) {
+      await db.delete(interaccionesProductos).where(eq(interaccionesProductos.id, existente[0].id));
+      const campo = tipo === 'like' ? 'likes' : tipo === 'favorito' ? 'favoritos' : 'compartidos';
+      await db.execute(sql`UPDATE items_catalogo SET ${sql.identifier(campo)} = ${sql.identifier(campo)} - 1 WHERE id = ${itemId}`);
+      const [item] = await db.select().from(itemsCatalogo).where(eq(itemsCatalogo.id, itemId));
+      return { activo: false, total: (item as any)?.[campo] || 0 };
+    } else {
+      await db.insert(interaccionesProductos).values({
+        usuarioId,
+        itemCatalogoId: itemId,
+        tipoInteraccion: tipo,
+      });
+      const campo = tipo === 'like' ? 'likes' : tipo === 'favorito' ? 'favoritos' : 'compartidos';
+      await db.execute(sql`UPDATE items_catalogo SET ${sql.identifier(campo)} = ${sql.identifier(campo)} + 1 WHERE id = ${itemId}`);
+      const [item] = await db.select().from(itemsCatalogo).where(eq(itemsCatalogo.id, itemId));
+      return { activo: true, total: (item as any)?.[campo] || 0 };
+    }
+  }
+
+  async getInteraccionesUsuarioProducto(usuarioId: string, itemId: string): Promise<{ hasLike: boolean; hasFavorito: boolean }> {
+    const interacciones = await db.select().from(interaccionesProductos)
+      .where(and(
+        eq(interaccionesProductos.usuarioId, usuarioId),
+        eq(interaccionesProductos.itemCatalogoId, itemId)
+      ));
+    
+    const tipos = interacciones.map(i => i.tipoInteraccion);
+    return {
+      hasLike: tipos.includes('like'),
+      hasFavorito: tipos.includes('favorito'),
+    };
+  }
+
+  async getFavoritosProductosUsuario(usuarioId: string): Promise<ItemCatalogo[]> {
+    const favoritos = await db.select().from(interaccionesProductos)
+      .where(and(
+        eq(interaccionesProductos.usuarioId, usuarioId),
+        eq(interaccionesProductos.tipoInteraccion, 'favorito')
+      ));
+    
+    const ids = favoritos.map(f => f.itemCatalogoId).filter(Boolean) as string[];
+    if (ids.length === 0) return [];
+    
+    const items: ItemCatalogo[] = [];
+    for (const id of ids) {
+      const [item] = await db.select().from(itemsCatalogo).where(eq(itemsCatalogo.id, id));
+      if (item) items.push(item);
+    }
+    return items;
+  }
+
+  async incrementarVistasItem(itemId: string): Promise<void> {
+    await db.execute(sql`UPDATE items_catalogo SET vistas = vistas + 1 WHERE id = ${itemId}`);
   }
 }
 

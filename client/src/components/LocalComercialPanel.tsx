@@ -66,6 +66,49 @@ interface ItemCatalogo {
   tiempoPreparacion?: string;
 }
 
+interface CatalogoLocal {
+  id: string;
+  usuarioId: string;
+  nombre: string;
+  descripcion?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  activo?: boolean;
+  orden?: number;
+  categorias?: CategoriaCatalogoLocal[];
+  items?: ItemCatalogoLocal[];
+}
+
+interface CategoriaCatalogoLocal {
+  id: string;
+  catalogoId: string;
+  nombre: string;
+  descripcion?: string;
+  icono?: string;
+  orden?: number;
+  activo?: boolean;
+  categoriaPadreId?: string | null;
+  subcategorias?: CategoriaCatalogoLocal[];
+}
+
+interface ItemCatalogoLocal {
+  id: string;
+  catalogoId: string;
+  categoriaId?: string | null;
+  nombre: string;
+  descripcion?: string;
+  precio?: string;
+  precioOferta?: string;
+  imagenes?: string[];
+  disponible?: boolean;
+  destacado?: boolean;
+  likes?: number;
+  favoritos?: number;
+  compartidos?: number;
+  vistas?: number;
+  orden?: number;
+}
+
 interface LogoServicio {
   id: string;
   nombre: string;
@@ -619,6 +662,34 @@ export default function LocalComercialPanel() {
   const [showSolicitarDeliveryModal, setShowSolicitarDeliveryModal] = useState(false);
   const [showMapaExpandido, setShowMapaExpandido] = useState(false);
 
+  // Estados para Catálogo Local Jerárquico
+  const [showCatalogoLocalModal, setShowCatalogoLocalModal] = useState(false);
+  const [showCategoriaModal, setShowCategoriaModal] = useState(false);
+  const [showItemLocalModal, setShowItemLocalModal] = useState(false);
+  const [editingCategoria, setEditingCategoria] = useState<CategoriaCatalogoLocal | null>(null);
+  const [editingItemLocal, setEditingItemLocal] = useState<ItemCatalogoLocal | null>(null);
+  const [categoriaForm, setCategoriaForm] = useState<Partial<CategoriaCatalogoLocal>>({
+    nombre: "",
+    descripcion: "",
+    icono: "",
+    categoriaPadreId: null,
+  });
+  const [itemLocalForm, setItemLocalForm] = useState<Partial<ItemCatalogoLocal>>({
+    nombre: "",
+    descripcion: "",
+    precio: "",
+    precioOferta: "",
+    categoriaId: null,
+    imagenes: [],
+    disponible: true,
+    destacado: false,
+  });
+
+  // Query para Catálogo Local
+  const { data: miCatalogoLocal, isLoading: loadingCatalogoLocal } = useQuery<CatalogoLocal | null>({
+    queryKey: ["/api/mi-catalogo-local"],
+  });
+
   useEffect(() => {
     if (miNegocio && !formInitialized) {
       setNegocioForm({
@@ -783,6 +854,82 @@ export default function LocalComercialPanel() {
     },
     onError: (error: any) => {
       toast({ title: "Error al actualizar pedido", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Mutations para Catálogo Local
+  const crearCatalogoLocalMutation = useMutation({
+    mutationFn: (data: { nombre: string; descripcion?: string }) => 
+      apiRequest("POST", "/api/mi-catalogo-local", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-catalogo-local"] });
+      setShowCatalogoLocalModal(false);
+      toast({ title: "Catálogo creado exitosamente" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al crear catálogo", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const guardarCategoriaLocalMutation = useMutation({
+    mutationFn: (data: Partial<CategoriaCatalogoLocal>) => {
+      if (editingCategoria) {
+        const { nombre, descripcion, icono, categoriaPadreId } = data;
+        return apiRequest("PUT", `/api/mi-catalogo-local/categorias/${editingCategoria.id}`, { nombre, descripcion, icono, categoriaPadreId });
+      }
+      return apiRequest("POST", "/api/mi-catalogo-local/categorias", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-catalogo-local"] });
+      setShowCategoriaModal(false);
+      setEditingCategoria(null);
+      setCategoriaForm({ nombre: "", descripcion: "", icono: "", categoriaPadreId: null });
+      toast({ title: editingCategoria ? "Categoría actualizada" : "Categoría creada" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const eliminarCategoriaLocalMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/mi-catalogo-local/categorias/${id}`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-catalogo-local"] });
+      toast({ title: "Categoría eliminada" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const guardarItemLocalMutation = useMutation({
+    mutationFn: (data: Partial<ItemCatalogoLocal>) => {
+      if (editingItemLocal) {
+        const { nombre, descripcion, precio, precioOferta, categoriaId, imagenes, disponible, destacado } = data;
+        return apiRequest("PUT", `/api/mi-catalogo-local/items/${editingItemLocal.id}`, { nombre, descripcion, precio, precioOferta, categoriaId, imagenes, disponible, destacado });
+      }
+      return apiRequest("POST", "/api/mi-catalogo-local/items", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-catalogo-local"] });
+      setShowItemLocalModal(false);
+      setEditingItemLocal(null);
+      setItemLocalForm({ nombre: "", descripcion: "", precio: "", precioOferta: "", categoriaId: null, imagenes: [], disponible: true, destacado: false });
+      toast({ title: editingItemLocal ? "Producto actualizado" : "Producto creado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const eliminarItemLocalMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/mi-catalogo-local/items/${id}`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-catalogo-local"] });
+      toast({ title: "Producto eliminado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -1264,106 +1411,465 @@ export default function LocalComercialPanel() {
 
           {/* TAB: Catálogo */}
           <TabsContent value="catalogo" className="mt-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium">
-                {negocioForm.tipoNegocio === "restaurante" ? "Menú" : "Catálogo de Productos"}
-              </h3>
-              <Button onClick={handleAgregarItem} size="sm" data-testid="button-agregar-item">
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar {negocioForm.tipoNegocio === "restaurante" ? "Plato" : "Producto"}
-              </Button>
-            </div>
-
-            {!miNegocio ? (
-              <Card className="border-dashed">
-                <CardContent className="py-8 text-center">
-                  <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    Primero debes configurar los datos de tu negocio
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => setActiveTab("negocio")}
-                  >
-                    Ir a Datos del Negocio
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : loadingCatalogo ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : miCatalogo.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="py-8 text-center">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    Aún no tienes productos en tu catálogo
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {miCatalogo.map((item) => (
-                  <Card key={item.id} className="hover-elevate" data-testid={`card-item-${item.id}`}>
-                    <CardContent className="p-4">
-                      {item.imagenUrl && (
-                        <img 
-                          src={item.imagenUrl} 
-                          alt={item.nombre}
-                          className="w-full h-32 object-cover rounded mb-3"
-                        />
-                      )}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium truncate">{item.nombre}</h4>
-                          {item.descripcion && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {item.descripcion}
-                            </p>
-                          )}
-                        </div>
-                        <Badge variant={item.disponible ? "default" : "secondary"}>
-                          {item.disponible ? "Disponible" : "Agotado"}
-                        </Badge>
-                      </div>
-                      {item.precio && (
-                        <p className="text-lg font-bold text-primary mt-2">
-                          S/ {item.precio}
-                        </p>
-                      )}
-                      {item.categoria && (
-                        <Badge variant="outline" className="mt-2">
-                          {item.categoria}
-                        </Badge>
-                      )}
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+            <div className="space-y-6">
+              {/* Sección Catálogo Local Jerárquico */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium flex items-center gap-2">
+                      <ClipboardList className="h-5 w-5 text-primary" />
+                      Mi Catálogo Local
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Organiza tus productos en categorías jerárquicas
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    {!miCatalogoLocal ? (
+                      <Button 
+                        size="sm" 
+                        onClick={() => setShowCatalogoLocalModal(true)}
+                        data-testid="button-crear-catalogo"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Crear Catálogo
+                      </Button>
+                    ) : (
+                      <>
                         <Button 
-                          variant="ghost" 
+                          variant="outline" 
                           size="sm" 
-                          className="flex-1"
-                          onClick={() => handleEditarItem(item)}
-                          data-testid={`button-editar-item-${item.id}`}
+                          onClick={() => setShowCategoriaModal(true)}
+                          data-testid="button-crear-categoria"
                         >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Editar
+                          <Plus className="h-4 w-4 mr-2" />
+                          Nueva Categoría
                         </Button>
                         <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => eliminarItemMutation.mutate(item.id)}
-                          data-testid={`button-eliminar-item-${item.id}`}
+                          size="sm" 
+                          onClick={() => setShowItemLocalModal(true)}
+                          data-testid="button-crear-producto-local"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Plus className="h-4 w-4 mr-2" />
+                          Nuevo Producto
                         </Button>
-                      </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {loadingCatalogoLocal ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : !miCatalogoLocal ? (
+                  <Card className="border-dashed">
+                    <CardContent className="py-8 text-center">
+                      <Package2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        Crea tu catálogo para organizar productos en categorías
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Podrás crear categorías, subcategorías y agregar productos con precios e imágenes
+                      </p>
                     </CardContent>
                   </Card>
-                ))}
+                ) : (
+                  <div className="space-y-4">
+                    {/* Info del catálogo */}
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            {miCatalogoLocal.logoUrl ? (
+                              <img 
+                                src={miCatalogoLocal.logoUrl} 
+                                alt={miCatalogoLocal.nombre}
+                                className="w-12 h-12 object-cover rounded-lg"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                                <Store className="h-6 w-6 text-primary" />
+                              </div>
+                            )}
+                            <div>
+                              <h4 className="font-medium">{miCatalogoLocal.nombre}</h4>
+                              {miCatalogoLocal.descripcion && (
+                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                  {miCatalogoLocal.descripcion}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={miCatalogoLocal.activo ? "default" : "secondary"}>
+                              {miCatalogoLocal.activo ? "Activo" : "Inactivo"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Categorías y productos */}
+                    {(!miCatalogoLocal.categorias || miCatalogoLocal.categorias.length === 0) && 
+                     (!miCatalogoLocal.items || miCatalogoLocal.items.length === 0) ? (
+                      <Card className="border-dashed">
+                        <CardContent className="py-8 text-center">
+                          <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-muted-foreground">
+                            Tu catálogo está vacío
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Agrega categorías y productos para comenzar
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Mostrar categorías */}
+                        {miCatalogoLocal.categorias && miCatalogoLocal.categorias.filter(c => !c.categoriaPadreId).map((categoria) => (
+                          <Card key={categoria.id} data-testid={`card-categoria-${categoria.id}`}>
+                            <CardHeader className="pb-2">
+                              <div className="flex items-center justify-between gap-4">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                  {categoria.icono && <span>{categoria.icono}</span>}
+                                  {categoria.nombre}
+                                </CardTitle>
+                                <div className="flex items-center gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => {
+                                      setEditingCategoria(categoria);
+                                      setCategoriaForm({
+                                        nombre: categoria.nombre,
+                                        descripcion: categoria.descripcion || "",
+                                        icono: categoria.icono || "",
+                                        categoriaPadreId: categoria.categoriaPadreId,
+                                      });
+                                      setShowCategoriaModal(true);
+                                    }}
+                                    data-testid={`button-editar-categoria-${categoria.id}`}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => eliminarCategoriaLocalMutation.mutate(categoria.id)}
+                                    data-testid={`button-eliminar-categoria-${categoria.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                              {categoria.descripcion && (
+                                <CardDescription>{categoria.descripcion}</CardDescription>
+                              )}
+                            </CardHeader>
+                            <CardContent>
+                              {/* Subcategorías */}
+                              {(miCatalogoLocal.categorias?.filter(sub => sub.categoriaPadreId === categoria.id)?.length ?? 0) > 0 && (
+                                <div className="mb-4 pl-4 border-l-2 border-muted">
+                                  {miCatalogoLocal.categorias?.filter(sub => sub.categoriaPadreId === categoria.id).map((sub) => (
+                                    <div key={sub.id} className="flex items-center justify-between py-2">
+                                      <span className="text-sm font-medium flex items-center gap-2">
+                                        {sub.icono && <span>{sub.icono}</span>}
+                                        {sub.nombre}
+                                      </span>
+                                      <div className="flex items-center gap-1">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon"
+                                          onClick={() => {
+                                            setEditingCategoria(sub);
+                                            setCategoriaForm({
+                                              nombre: sub.nombre,
+                                              descripcion: sub.descripcion || "",
+                                              icono: sub.icono || "",
+                                              categoriaPadreId: sub.categoriaPadreId,
+                                            });
+                                            setShowCategoriaModal(true);
+                                          }}
+                                        >
+                                          <Edit className="h-3 w-3" />
+                                        </Button>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon"
+                                          className="text-destructive hover:text-destructive"
+                                          onClick={() => eliminarCategoriaLocalMutation.mutate(sub.id)}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Productos de esta categoría */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {miCatalogoLocal.items?.filter(item => item.categoriaId === categoria.id).map((item) => (
+                                  <Card key={item.id} className="hover-elevate" data-testid={`card-item-local-${item.id}`}>
+                                    <CardContent className="p-3">
+                                      {item.imagenes && item.imagenes[0] && (
+                                        <img 
+                                          src={item.imagenes[0]} 
+                                          alt={item.nombre}
+                                          className="w-full h-24 object-cover rounded mb-2"
+                                        />
+                                      )}
+                                      <h5 className="font-medium text-sm truncate">{item.nombre}</h5>
+                                      {item.precio && (
+                                        <div className="flex items-center gap-2 mt-1">
+                                          {item.precioOferta ? (
+                                            <>
+                                              <span className="text-sm line-through text-muted-foreground">S/ {item.precio}</span>
+                                              <span className="text-sm font-bold text-green-600">S/ {item.precioOferta}</span>
+                                            </>
+                                          ) : (
+                                            <span className="text-sm font-bold text-primary">S/ {item.precio}</span>
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                        <span className="flex items-center gap-1">
+                                          <Heart className="h-3 w-3" /> {item.likes || 0}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <Share2 className="h-3 w-3" /> {item.compartidos || 0}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-1 mt-2 pt-2 border-t">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm" 
+                                          className="flex-1 h-7 text-xs"
+                                          onClick={() => {
+                                            setEditingItemLocal(item);
+                                            setItemLocalForm({
+                                              nombre: item.nombre,
+                                              descripcion: item.descripcion || "",
+                                              precio: item.precio || "",
+                                              precioOferta: item.precioOferta || "",
+                                              categoriaId: item.categoriaId,
+                                              imagenes: item.imagenes || [],
+                                              disponible: item.disponible ?? true,
+                                              destacado: item.destacado ?? false,
+                                            });
+                                            setShowItemLocalModal(true);
+                                          }}
+                                        >
+                                          <Edit className="h-3 w-3 mr-1" />
+                                          Editar
+                                        </Button>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          className="h-7 text-destructive hover:text-destructive"
+                                          onClick={() => eliminarItemLocalMutation.mutate(item.id)}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+
+                        {/* Productos sin categoría */}
+                        {miCatalogoLocal.items && miCatalogoLocal.items.filter(item => !item.categoriaId).length > 0 && (
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-base">Sin categoría</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {miCatalogoLocal.items.filter(item => !item.categoriaId).map((item) => (
+                                  <Card key={item.id} className="hover-elevate" data-testid={`card-item-local-${item.id}`}>
+                                    <CardContent className="p-3">
+                                      {item.imagenes && item.imagenes[0] && (
+                                        <img 
+                                          src={item.imagenes[0]} 
+                                          alt={item.nombre}
+                                          className="w-full h-24 object-cover rounded mb-2"
+                                        />
+                                      )}
+                                      <h5 className="font-medium text-sm truncate">{item.nombre}</h5>
+                                      {item.precio && (
+                                        <div className="flex items-center gap-2 mt-1">
+                                          {item.precioOferta ? (
+                                            <>
+                                              <span className="text-sm line-through text-muted-foreground">S/ {item.precio}</span>
+                                              <span className="text-sm font-bold text-green-600">S/ {item.precioOferta}</span>
+                                            </>
+                                          ) : (
+                                            <span className="text-sm font-bold text-primary">S/ {item.precio}</span>
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                        <span className="flex items-center gap-1">
+                                          <Heart className="h-3 w-3" /> {item.likes || 0}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                          <Share2 className="h-3 w-3" /> {item.compartidos || 0}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-1 mt-2 pt-2 border-t">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm" 
+                                          className="flex-1 h-7 text-xs"
+                                          onClick={() => {
+                                            setEditingItemLocal(item);
+                                            setItemLocalForm({
+                                              nombre: item.nombre,
+                                              descripcion: item.descripcion || "",
+                                              precio: item.precio || "",
+                                              precioOferta: item.precioOferta || "",
+                                              categoriaId: item.categoriaId,
+                                              imagenes: item.imagenes || [],
+                                              disponible: item.disponible ?? true,
+                                              destacado: item.destacado ?? false,
+                                            });
+                                            setShowItemLocalModal(true);
+                                          }}
+                                        >
+                                          <Edit className="h-3 w-3 mr-1" />
+                                          Editar
+                                        </Button>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          className="h-7 text-destructive hover:text-destructive"
+                                          onClick={() => eliminarItemLocalMutation.mutate(item.id)}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* Separador */}
+              <div className="border-t pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium">
+                    {negocioForm.tipoNegocio === "restaurante" ? "Menú Rápido" : "Catálogo Simple"}
+                  </h3>
+                  <Button onClick={handleAgregarItem} size="sm" variant="outline" data-testid="button-agregar-item">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Agregar {negocioForm.tipoNegocio === "restaurante" ? "Plato" : "Producto"}
+                  </Button>
+                </div>
+
+                {!miNegocio ? (
+                  <Card className="border-dashed">
+                    <CardContent className="py-8 text-center">
+                      <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        Primero debes configurar los datos de tu negocio
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        className="mt-4"
+                        onClick={() => setActiveTab("negocio")}
+                      >
+                        Ir a Datos del Negocio
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : loadingCatalogo ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : miCatalogo.length === 0 ? (
+                  <Card className="border-dashed">
+                    <CardContent className="py-8 text-center">
+                      <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        Aún no tienes productos en tu catálogo simple
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {miCatalogo.map((item) => (
+                      <Card key={item.id} className="hover-elevate" data-testid={`card-item-${item.id}`}>
+                        <CardContent className="p-4">
+                          {item.imagenUrl && (
+                            <img 
+                              src={item.imagenUrl} 
+                              alt={item.nombre}
+                              className="w-full h-32 object-cover rounded mb-3"
+                            />
+                          )}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium truncate">{item.nombre}</h4>
+                              {item.descripcion && (
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {item.descripcion}
+                                </p>
+                              )}
+                            </div>
+                            <Badge variant={item.disponible ? "default" : "secondary"}>
+                              {item.disponible ? "Disponible" : "Agotado"}
+                            </Badge>
+                          </div>
+                          {item.precio && (
+                            <p className="text-lg font-bold text-primary mt-2">
+                              S/ {item.precio}
+                            </p>
+                          )}
+                          {item.categoria && (
+                            <Badge variant="outline" className="mt-2">
+                              {item.categoria}
+                            </Badge>
+                          )}
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => handleEditarItem(item)}
+                              data-testid={`button-editar-item-${item.id}`}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Editar
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => eliminarItemMutation.mutate(item.id)}
+                              data-testid={`button-eliminar-item-${item.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </TabsContent>
 
           {/* TAB: Personal */}
@@ -2126,7 +2632,7 @@ export default function LocalComercialPanel() {
 
           {/* TAB: Historial */}
           <TabsContent value="historial" className="mt-4">
-            <HistorialTab miNegocio={miNegocio} />
+            <HistorialTab miNegocio={miNegocio ?? null} />
           </TabsContent>
         </Tabs>
 
@@ -2930,6 +3436,305 @@ export default function LocalComercialPanel() {
                 </MapContainer>
               )}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal para crear catálogo local */}
+        <Dialog open={showCatalogoLocalModal} onOpenChange={setShowCatalogoLocalModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Crear Mi Catálogo Local</DialogTitle>
+              <DialogDescription>
+                Crea tu catálogo para organizar productos en categorías
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="nombreCatalogo">Nombre del Catálogo *</Label>
+                <Input
+                  id="nombreCatalogo"
+                  placeholder="Mi Tienda Online"
+                  data-testid="input-nombre-catalogo"
+                  onChange={(e) => {}}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="descripcionCatalogo">Descripción</Label>
+                <Textarea
+                  id="descripcionCatalogo"
+                  placeholder="Describe tu catálogo..."
+                  data-testid="input-descripcion-catalogo"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowCatalogoLocalModal(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => {
+                  const nombreInput = document.getElementById('nombreCatalogo') as HTMLInputElement;
+                  const descInput = document.getElementById('descripcionCatalogo') as HTMLTextAreaElement;
+                  if (nombreInput?.value) {
+                    crearCatalogoLocalMutation.mutate({
+                      nombre: nombreInput.value,
+                      descripcion: descInput?.value || undefined,
+                    });
+                  }
+                }}
+                disabled={crearCatalogoLocalMutation.isPending}
+                data-testid="button-guardar-catalogo"
+              >
+                {crearCatalogoLocalMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Crear Catálogo
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal para crear/editar categoría */}
+        <Dialog open={showCategoriaModal} onOpenChange={(open) => {
+          setShowCategoriaModal(open);
+          if (!open) {
+            setEditingCategoria(null);
+            setCategoriaForm({ nombre: "", descripcion: "", icono: "", categoriaPadreId: null });
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingCategoria ? "Editar" : "Nueva"} Categoría</DialogTitle>
+              <DialogDescription>
+                {editingCategoria ? "Modifica los datos de la categoría" : "Crea una nueva categoría para tu catálogo"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="nombreCategoria">Nombre *</Label>
+                <Input
+                  id="nombreCategoria"
+                  value={categoriaForm.nombre || ""}
+                  onChange={(e) => setCategoriaForm({ ...categoriaForm, nombre: e.target.value })}
+                  placeholder="Ej: Electrónica, Ropa, Bebidas"
+                  data-testid="input-nombre-categoria"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="descripcionCategoria">Descripción</Label>
+                <Textarea
+                  id="descripcionCategoria"
+                  value={categoriaForm.descripcion || ""}
+                  onChange={(e) => setCategoriaForm({ ...categoriaForm, descripcion: e.target.value })}
+                  placeholder="Descripción de la categoría..."
+                  data-testid="input-descripcion-categoria"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="iconoCategoria">Icono (emoji)</Label>
+                  <Input
+                    id="iconoCategoria"
+                    value={categoriaForm.icono || ""}
+                    onChange={(e) => setCategoriaForm({ ...categoriaForm, icono: e.target.value })}
+                    placeholder="📦"
+                    data-testid="input-icono-categoria"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Categoría Padre</Label>
+                  <Select
+                    value={categoriaForm.categoriaPadreId || "none"}
+                    onValueChange={(value) => setCategoriaForm({ 
+                      ...categoriaForm, 
+                      categoriaPadreId: value === "none" ? null : value 
+                    })}
+                  >
+                    <SelectTrigger data-testid="select-categoria-padre">
+                      <SelectValue placeholder="Sin categoría padre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin categoría padre</SelectItem>
+                      {miCatalogoLocal?.categorias?.filter(c => !c.categoriaPadreId && c.id !== editingCategoria?.id).map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.icono} {cat.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowCategoriaModal(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (categoriaForm.nombre) {
+                    guardarCategoriaLocalMutation.mutate(categoriaForm);
+                  }
+                }}
+                disabled={guardarCategoriaLocalMutation.isPending || !categoriaForm.nombre}
+                data-testid="button-guardar-categoria"
+              >
+                {guardarCategoriaLocalMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {editingCategoria ? "Actualizar" : "Crear"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal para crear/editar producto local */}
+        <Dialog open={showItemLocalModal} onOpenChange={(open) => {
+          setShowItemLocalModal(open);
+          if (!open) {
+            setEditingItemLocal(null);
+            setItemLocalForm({ nombre: "", descripcion: "", precio: "", precioOferta: "", categoriaId: null, imagenes: [], disponible: true, destacado: false });
+          }
+        }}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>{editingItemLocal ? "Editar" : "Nuevo"} Producto</DialogTitle>
+              <DialogDescription>
+                {editingItemLocal ? "Modifica los datos del producto" : "Agrega un nuevo producto a tu catálogo"}
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="max-h-[60vh]">
+              <div className="space-y-4 py-4 px-1">
+                <div className="space-y-2">
+                  <Label htmlFor="nombreItemLocal">Nombre *</Label>
+                  <Input
+                    id="nombreItemLocal"
+                    value={itemLocalForm.nombre || ""}
+                    onChange={(e) => setItemLocalForm({ ...itemLocalForm, nombre: e.target.value })}
+                    placeholder="Nombre del producto"
+                    data-testid="input-nombre-item-local"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="descripcionItemLocal">Descripción</Label>
+                  <Textarea
+                    id="descripcionItemLocal"
+                    value={itemLocalForm.descripcion || ""}
+                    onChange={(e) => setItemLocalForm({ ...itemLocalForm, descripcion: e.target.value })}
+                    placeholder="Descripción del producto..."
+                    data-testid="input-descripcion-item-local"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="precioItemLocal">Precio (S/)</Label>
+                    <Input
+                      id="precioItemLocal"
+                      type="number"
+                      step="0.01"
+                      value={itemLocalForm.precio || ""}
+                      onChange={(e) => setItemLocalForm({ ...itemLocalForm, precio: e.target.value })}
+                      placeholder="0.00"
+                      data-testid="input-precio-item-local"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="precioOfertaItemLocal">Precio Oferta (S/)</Label>
+                    <Input
+                      id="precioOfertaItemLocal"
+                      type="number"
+                      step="0.01"
+                      value={itemLocalForm.precioOferta || ""}
+                      onChange={(e) => setItemLocalForm({ ...itemLocalForm, precioOferta: e.target.value })}
+                      placeholder="0.00"
+                      data-testid="input-precio-oferta-item-local"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Categoría</Label>
+                  <Select
+                    value={itemLocalForm.categoriaId || "none"}
+                    onValueChange={(value) => setItemLocalForm({ 
+                      ...itemLocalForm, 
+                      categoriaId: value === "none" ? null : value 
+                    })}
+                  >
+                    <SelectTrigger data-testid="select-categoria-item">
+                      <SelectValue placeholder="Sin categoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin categoría</SelectItem>
+                      {miCatalogoLocal?.categorias?.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.icono} {cat.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Imagen del Producto</Label>
+                  <ImageUpload
+                    value={itemLocalForm.imagenes?.[0]}
+                    onChange={(url) => setItemLocalForm({ 
+                      ...itemLocalForm, 
+                      imagenes: url ? [url] : [] 
+                    })}
+                    endpoint="servicios"
+                    enableEditor={true}
+                    aspectRatio={1}
+                    maxSize={5}
+                  />
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="disponibleItemLocal"
+                      checked={itemLocalForm.disponible ?? true}
+                      onChange={(e) => setItemLocalForm({ ...itemLocalForm, disponible: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="disponibleItemLocal" className="cursor-pointer">Disponible</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="destacadoItemLocal"
+                      checked={itemLocalForm.destacado ?? false}
+                      onChange={(e) => setItemLocalForm({ ...itemLocalForm, destacado: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="destacadoItemLocal" className="cursor-pointer">Destacado</Label>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowItemLocalModal(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (itemLocalForm.nombre) {
+                    guardarItemLocalMutation.mutate(itemLocalForm);
+                  }
+                }}
+                disabled={guardarItemLocalMutation.isPending || !itemLocalForm.nombre}
+                data-testid="button-guardar-item-local"
+              >
+                {guardarItemLocalMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {editingItemLocal ? "Actualizar" : "Crear"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </CardContent>

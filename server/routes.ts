@@ -6450,6 +6450,345 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // CATÁLOGOS DE LOCALES COMERCIALES (Sistema nuevo)
+  // ============================================================
+
+  // Obtener todos los catálogos activos (público)
+  app.get('/api/catalogos-locales', async (req, res) => {
+    try {
+      const catalogos = await storage.getCatalogosLocales(true);
+      res.json(catalogos);
+    } catch (error: any) {
+      console.error("Error al obtener catálogos locales:", error);
+      res.status(500).json({ message: error.message || "Error al obtener catálogos" });
+    }
+  });
+
+  // Obtener detalle de un catálogo con categorías e items (público)
+  app.get('/api/catalogos-locales/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const catalogo = await storage.getCatalogoLocal(id);
+      
+      if (!catalogo) {
+        return res.status(404).json({ message: "Catálogo no encontrado" });
+      }
+      
+      const categorias = await storage.getCategoriasCatalogo(id);
+      const items = await storage.getItemsCatalogo(id);
+      
+      res.json({
+        ...catalogo,
+        categorias,
+        items,
+      });
+    } catch (error: any) {
+      console.error("Error al obtener catálogo:", error);
+      res.status(500).json({ message: error.message || "Error al obtener catálogo" });
+    }
+  });
+
+  // Obtener mi catálogo (autenticado)
+  app.get('/api/mi-catalogo-local', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const catalogo = await storage.getCatalogoLocalPorUsuario(usuarioId);
+      
+      if (!catalogo) {
+        return res.json(null);
+      }
+      
+      const categorias = await storage.getCategoriasCatalogo(catalogo.id);
+      const items = await storage.getItemsCatalogo(catalogo.id);
+      
+      res.json({
+        ...catalogo,
+        categorias,
+        items,
+      });
+    } catch (error: any) {
+      console.error("Error al obtener mi catálogo local:", error);
+      res.status(500).json({ message: error.message || "Error al obtener catálogo" });
+    }
+  });
+
+  // Crear catálogo (autenticado)
+  app.post('/api/mi-catalogo-local', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      
+      // Verificar si ya tiene catálogo
+      const existente = await storage.getCatalogoLocalPorUsuario(usuarioId);
+      if (existente) {
+        return res.status(400).json({ message: "Ya tienes un catálogo creado. Usa PUT para actualizarlo." });
+      }
+      
+      const catalogo = await storage.createCatalogoLocal({
+        ...req.body,
+        usuarioId,
+      });
+      
+      res.status(201).json(catalogo);
+    } catch (error: any) {
+      console.error("Error al crear catálogo local:", error);
+      res.status(500).json({ message: error.message || "Error al crear catálogo" });
+    }
+  });
+
+  // Actualizar catálogo (autenticado - propietario)
+  app.put('/api/mi-catalogo-local', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const catalogo = await storage.getCatalogoLocalPorUsuario(usuarioId);
+      
+      if (!catalogo) {
+        return res.status(404).json({ message: "No tienes un catálogo. Crea uno primero." });
+      }
+      
+      const actualizado = await storage.updateCatalogoLocal(catalogo.id, req.body);
+      res.json(actualizado);
+    } catch (error: any) {
+      console.error("Error al actualizar catálogo local:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar catálogo" });
+    }
+  });
+
+  // Eliminar catálogo (autenticado - propietario)
+  app.delete('/api/mi-catalogo-local', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const catalogo = await storage.getCatalogoLocalPorUsuario(usuarioId);
+      
+      if (!catalogo) {
+        return res.status(404).json({ message: "No tienes un catálogo para eliminar" });
+      }
+      
+      await storage.deleteCatalogoLocal(catalogo.id);
+      res.json({ message: "Catálogo eliminado correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar catálogo local:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar catálogo" });
+    }
+  });
+
+  // ============================================================
+  // CATEGORÍAS DEL CATÁLOGO
+  // ============================================================
+
+  // Crear categoría
+  app.post('/api/mi-catalogo-local/categorias', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const catalogo = await storage.getCatalogoLocalPorUsuario(usuarioId);
+      
+      if (!catalogo) {
+        return res.status(400).json({ message: "Debes crear un catálogo primero" });
+      }
+      
+      const categoria = await storage.createCategoriaCatalogo({
+        ...req.body,
+        catalogoId: catalogo.id,
+      });
+      
+      res.status(201).json(categoria);
+    } catch (error: any) {
+      console.error("Error al crear categoría:", error);
+      res.status(500).json({ message: error.message || "Error al crear categoría" });
+    }
+  });
+
+  // Actualizar categoría
+  app.put('/api/mi-catalogo-local/categorias/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const catalogo = await storage.getCatalogoLocalPorUsuario(usuarioId);
+      
+      if (!catalogo) {
+        return res.status(400).json({ message: "No tienes un catálogo" });
+      }
+      
+      const categoria = await storage.getCategoriaCatalogo(req.params.id);
+      if (!categoria || categoria.catalogoId !== catalogo.id) {
+        return res.status(403).json({ message: "No tienes permiso para modificar esta categoría" });
+      }
+      
+      const actualizada = await storage.updateCategoriaCatalogo(req.params.id, req.body);
+      res.json(actualizada);
+    } catch (error: any) {
+      console.error("Error al actualizar categoría:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar categoría" });
+    }
+  });
+
+  // Eliminar categoría
+  app.delete('/api/mi-catalogo-local/categorias/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const catalogo = await storage.getCatalogoLocalPorUsuario(usuarioId);
+      
+      if (!catalogo) {
+        return res.status(400).json({ message: "No tienes un catálogo" });
+      }
+      
+      const categoria = await storage.getCategoriaCatalogo(req.params.id);
+      if (!categoria || categoria.catalogoId !== catalogo.id) {
+        return res.status(403).json({ message: "No tienes permiso para eliminar esta categoría" });
+      }
+      
+      await storage.deleteCategoriaCatalogo(req.params.id);
+      res.json({ message: "Categoría eliminada correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar categoría:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar categoría" });
+    }
+  });
+
+  // ============================================================
+  // ITEMS DEL CATÁLOGO (Productos)
+  // ============================================================
+
+  // Crear item
+  app.post('/api/mi-catalogo-local/items', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const catalogo = await storage.getCatalogoLocalPorUsuario(usuarioId);
+      
+      if (!catalogo) {
+        return res.status(400).json({ message: "Debes crear un catálogo primero" });
+      }
+      
+      const item = await storage.createItemCatalogoLocal({
+        ...req.body,
+        catalogoId: catalogo.id,
+      });
+      
+      res.status(201).json(item);
+    } catch (error: any) {
+      console.error("Error al crear item:", error);
+      res.status(500).json({ message: error.message || "Error al crear item" });
+    }
+  });
+
+  // Actualizar item
+  app.put('/api/mi-catalogo-local/items/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const catalogo = await storage.getCatalogoLocalPorUsuario(usuarioId);
+      
+      if (!catalogo) {
+        return res.status(400).json({ message: "No tienes un catálogo" });
+      }
+      
+      const item = await storage.getItemCatalogoLocal(req.params.id);
+      if (!item || item.catalogoId !== catalogo.id) {
+        return res.status(403).json({ message: "No tienes permiso para modificar este producto" });
+      }
+      
+      const actualizado = await storage.updateItemCatalogoLocal(req.params.id, req.body);
+      res.json(actualizado);
+    } catch (error: any) {
+      console.error("Error al actualizar item:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar item" });
+    }
+  });
+
+  // Eliminar item
+  app.delete('/api/mi-catalogo-local/items/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const catalogo = await storage.getCatalogoLocalPorUsuario(usuarioId);
+      
+      if (!catalogo) {
+        return res.status(400).json({ message: "No tienes un catálogo" });
+      }
+      
+      const item = await storage.getItemCatalogoLocal(req.params.id);
+      if (!item || item.catalogoId !== catalogo.id) {
+        return res.status(403).json({ message: "No tienes permiso para eliminar este producto" });
+      }
+      
+      await storage.deleteItemCatalogoLocal(req.params.id);
+      res.json({ message: "Producto eliminado correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar item:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar item" });
+    }
+  });
+
+  // ============================================================
+  // INTERACCIONES DE PRODUCTOS (likes, favoritos, compartir)
+  // ============================================================
+
+  // Toggle interacción (like, favorito, compartido)
+  app.post('/api/items-catalogo/:id/interaccion', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      const { tipo } = req.body;
+      
+      if (!['like', 'favorito', 'compartido'].includes(tipo)) {
+        return res.status(400).json({ message: "Tipo de interacción inválido" });
+      }
+      
+      const resultado = await storage.toggleInteraccionProducto(usuarioId, id, tipo);
+      res.json(resultado);
+    } catch (error: any) {
+      console.error("Error al registrar interacción:", error);
+      res.status(500).json({ message: error.message || "Error al registrar interacción" });
+    }
+  });
+
+  // Obtener interacciones del usuario en un producto
+  app.get('/api/items-catalogo/:id/interacciones', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const interacciones = await storage.getInteraccionesUsuarioProducto(usuarioId, id);
+      res.json(interacciones);
+    } catch (error: any) {
+      console.error("Error al obtener interacciones:", error);
+      res.status(500).json({ message: error.message || "Error al obtener interacciones" });
+    }
+  });
+
+  // Mis productos favoritos
+  app.get('/api/mis-favoritos-productos', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const favoritos = await storage.getFavoritosProductosUsuario(usuarioId);
+      res.json(favoritos);
+    } catch (error: any) {
+      console.error("Error al obtener favoritos:", error);
+      res.status(500).json({ message: error.message || "Error al obtener favoritos" });
+    }
+  });
+
+  // Items destacados para carrusel (público)
+  app.get('/api/items-destacados', async (req, res) => {
+    try {
+      const limite = parseInt(req.query.limite as string) || 10;
+      const items = await storage.getItemsDestacados(limite);
+      res.json(items);
+    } catch (error: any) {
+      console.error("Error al obtener items destacados:", error);
+      res.status(500).json({ message: error.message || "Error al obtener items destacados" });
+    }
+  });
+
+  // Incrementar vistas de un item (público)
+  app.post('/api/items-catalogo/:id/vista', async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.incrementarVistasItem(id);
+      res.json({ message: "Vista registrada" });
+    } catch (error: any) {
+      console.error("Error al registrar vista:", error);
+      res.status(500).json({ message: error.message || "Error al registrar vista" });
+    }
+  });
+
+  // ============================================================
   // CONFIGURACIÓN DE WEBSOCKET
   // ============================================================
 
