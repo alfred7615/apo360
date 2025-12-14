@@ -2254,29 +2254,27 @@ export default function LocalComercialPanel() {
                   <p className="text-muted-foreground">No hay logos disponibles en el carrusel</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-5 gap-3">
                   {logosServicios.map((logo) => (
-                    <Card 
+                    <div 
                       key={logo.id} 
-                      className="hover-elevate cursor-pointer"
+                      className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => handleSelectLogoFromCarrusel(logo)}
                       data-testid={`logo-servicio-${logo.id}`}
                     >
-                      <CardContent className="p-3 text-center">
-                        {logo.logoUrl ? (
-                          <img 
-                            src={logo.logoUrl} 
-                            alt={logo.nombre}
-                            className="w-16 h-16 object-contain mx-auto rounded-full bg-transparent"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-                            <Store className="h-8 w-8 text-muted-foreground" />
-                          </div>
-                        )}
-                        <p className="text-xs mt-2 truncate">{logo.nombre}</p>
-                      </CardContent>
-                    </Card>
+                      {logo.logoUrl ? (
+                        <img 
+                          src={logo.logoUrl} 
+                          alt={logo.nombre}
+                          className="w-14 h-14 object-contain rounded-full bg-transparent"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center">
+                          <Store className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <p className="text-xs mt-1 truncate w-full text-center">{logo.nombre}</p>
+                    </div>
                   ))}
                 </div>
               )}
