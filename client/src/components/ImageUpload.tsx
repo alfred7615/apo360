@@ -9,7 +9,7 @@ interface ImageUploadProps {
   onChange: (url: string | null) => void;
   disabled?: boolean;
   className?: string;
-  endpoint?: 'publicidad' | 'galeria' | 'servicios' | 'documentos';
+  endpoint?: 'publicidad' | 'galeria' | 'servicios' | 'documentos' | 'productos';
   fileField?: string;
   maxSize?: number;
   acceptedFormats?: string[];

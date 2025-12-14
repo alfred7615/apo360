@@ -27,6 +27,7 @@ import { es } from "date-fns/locale";
 import { Link, useSearch } from "wouter";
 import BloqueoServicio, { useVerificarPerfil } from "@/components/BloqueoServicio";
 import LocalComercialPanel from "@/components/LocalComercialPanel";
+import { CameraCapture } from "@/components/CameraCapture";
 import CambistaPanelUsuario from "@/components/CambistaPanelUsuario";
 
 interface SubcategoriaRol {
@@ -171,6 +172,7 @@ export default function PanelUsuarioPage() {
     categoria: "",
   });
   const [subiendoImagenProducto, setSubiendoImagenProducto] = useState(false);
+  const [showCameraModal, setShowCameraModal] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [viewerImages, setViewerImages] = useState<string[]>([]);
   const [viewerCurrentIndex, setViewerCurrentIndex] = useState(0);
@@ -2165,23 +2167,43 @@ export default function PanelUsuarioPage() {
                   </div>
                 ))}
                 {productoForm.imagenes.length < 5 && (
-                  <label className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover-elevate">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleSubirImagenProducto(file);
-                      }}
-                      data-testid="input-producto-imagen"
-                    />
-                    {subiendoImagenProducto ? (
-                      <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                    ) : (
-                      <Plus className="h-6 w-6 text-muted-foreground" />
-                    )}
-                  </label>
+                  <>
+                    <label
+                      className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover-elevate"
+                      data-testid="label-subir-imagen-producto"
+                    >
+                      {subiendoImagenProducto ? (
+                        <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                      ) : (
+                        <>
+                          <Upload className="h-5 w-5 text-muted-foreground mb-1" />
+                          <span className="text-xs text-muted-foreground text-center">Subir</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={subiendoImagenProducto}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleSubirImagenProducto(file);
+                          e.target.value = '';
+                        }}
+                        data-testid="input-imagen-producto"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCameraModal(true)}
+                      disabled={subiendoImagenProducto}
+                      className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover-elevate disabled:opacity-50"
+                      data-testid="button-camara-imagen-producto"
+                    >
+                      <Camera className="h-5 w-5 text-muted-foreground mb-1" />
+                      <span className="text-xs text-muted-foreground text-center">Cámara</span>
+                    </button>
+                  </>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -2235,6 +2257,42 @@ export default function PanelUsuarioPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Cámara para productos */}
+      <CameraCapture
+        open={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={async (dataUrl) => {
+          setShowCameraModal(false);
+          setSubiendoImagenProducto(true);
+          try {
+            // Convertir dataURL a blob
+            const response = await fetch(dataUrl);
+            const blob = await response.blob();
+            const formData = new FormData();
+            formData.append("imagen", blob, "foto.jpg");
+            
+            const uploadResponse = await fetch("/api/upload/productos", {
+              method: "POST",
+              body: formData,
+              credentials: "include",
+            });
+            
+            if (!uploadResponse.ok) throw new Error("Error al subir imagen");
+            
+            const data = await uploadResponse.json();
+            setProductoForm(prev => ({ ...prev, imagenes: [...prev.imagenes, data.url] }));
+            toast({ title: "Imagen agregada" });
+          } catch (error) {
+            toast({ title: "Error", description: "No se pudo subir la imagen", variant: "destructive" });
+          } finally {
+            setSubiendoImagenProducto(false);
+          }
+        }}
+        aspectRatio={1}
+        title="Agregar Imagen de Producto"
+        description="Captura una foto o sube una imagen para tu producto"
+      />
 
       {/* Modal Solicitar Rol */}
       <Dialog open={showSolicitarRolModal} onOpenChange={setShowSolicitarRolModal}>
