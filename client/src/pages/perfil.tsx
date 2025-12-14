@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   User, MapPin, FileText, Briefcase, Star, 
   Save, Loader2, Check, Camera, Car, Upload,
-  Image as ImageIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, Users, ArrowLeft, Map
+  Image as ImageIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, Users, ArrowLeft, Map, Store
 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -162,6 +163,13 @@ async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
   const res = await fetch(dataUrl);
   const blob = await res.blob();
   return new File([blob], filename, { type: blob.type || 'image/jpeg' });
+}
+
+interface LogoServicio {
+  id: string;
+  nombre: string;
+  logoUrl?: string;
+  descripcion?: string;
 }
 
 interface DocumentoUploadProps {
@@ -593,6 +601,7 @@ export default function PerfilPage() {
   const [lugares, setLugares] = useState<Array<{ id?: string; nombre: string; latitud: number | null; longitud: number | null; direccion?: string; editando?: boolean }>>([]);
   const [showMapPickerLugar, setShowMapPickerLugar] = useState(false);
   const [lugarEditandoIndex, setLugarEditandoIndex] = useState<number | null>(null);
+  const [showLogoSelector, setShowLogoSelector] = useState(false);
 
   const { data: perfil, isLoading } = useQuery<Usuario>({
     queryKey: ["/api/usuarios/me"],
@@ -602,6 +611,10 @@ export default function PerfilPage() {
   const { data: lugaresData = [], refetch: refetchLugares } = useQuery<LugarUsuario[]>({
     queryKey: ["/api/lugares-usuario"],
     enabled: !!user,
+  });
+
+  const { data: logosServicios = [] } = useQuery<LogoServicio[]>({
+    queryKey: ["/api/logos-servicio"],
   });
 
   useEffect(() => {
@@ -1616,9 +1629,21 @@ export default function PerfilPage() {
                           </CameraCaptureButton>
                         )}
                       </div>
-                      <div className="flex-1 text-sm text-muted-foreground">
-                        <p>Sube una imagen cuadrada para el logo de tu negocio.</p>
-                        <p className="text-xs mt-1">Recomendado: 200x200px o mayor</p>
+                      <div className="flex-1 space-y-2">
+                        <div className="text-sm text-muted-foreground">
+                          <p>Sube una imagen cuadrada para el logo de tu negocio.</p>
+                          <p className="text-xs mt-1">Recomendado: 200x200px o mayor</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowLogoSelector(true)}
+                          className="w-full"
+                          data-testid="button-seleccionar-logo-servicios"
+                        >
+                          <Store className="h-4 w-4 mr-2" />
+                          Seleccionar de Servicios
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -2007,6 +2032,55 @@ export default function PerfilPage() {
         title="Foto de Domicilio"
         aspectRatio={4 / 3}
       />
+
+      <Dialog open={showLogoSelector} onOpenChange={setShowLogoSelector}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Store className="h-5 w-5" />
+              Seleccionar Logo del Carrusel
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
+            {logosServicios.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Store className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No hay logos disponibles en el carrusel de servicios</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                {logosServicios.map((logo) => (
+                  <div
+                    key={logo.id}
+                    className="cursor-pointer border rounded-lg p-2 hover-elevate transition-all"
+                    onClick={() => {
+                      if (logo.logoUrl) {
+                        handleInputChange("localLogo", logo.logoUrl);
+                        toast({ title: "Logo seleccionado", description: `Se seleccionó el logo de ${logo.nombre}` });
+                        setShowLogoSelector(false);
+                      }
+                    }}
+                    data-testid={`logo-servicio-${logo.id}`}
+                  >
+                    {logo.logoUrl ? (
+                      <img
+                        src={logo.logoUrl}
+                        alt={logo.nombre}
+                        className="w-full aspect-square object-contain rounded-md"
+                      />
+                    ) : (
+                      <div className="w-full aspect-square bg-muted rounded-md flex items-center justify-center">
+                        <Store className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <p className="text-xs text-center mt-2 truncate">{logo.nombre}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
