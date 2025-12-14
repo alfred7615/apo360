@@ -1626,6 +1626,116 @@ export type InsertConfiguracionCosto = z.infer<typeof insertConfiguracionCostoSc
 export type ConfiguracionCosto = typeof configuracionCostos.$inferSelect;
 
 // ============================================================
+// CATÁLOGOS DE LOCALES COMERCIALES (cartas, menús completos)
+// ============================================================
+export const catalogosLocales = pgTable("catalogos_locales", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  nombre: varchar("nombre", { length: 200 }).notNull(),
+  descripcion: text("descripcion"),
+  logoUrl: varchar("logo_url"),
+  direccion: text("direccion"),
+  gpsLatitud: real("gps_latitud"),
+  gpsLongitud: real("gps_longitud"),
+  telefono: varchar("telefono", { length: 20 }),
+  whatsapp: varchar("whatsapp", { length: 20 }),
+  horario: varchar("horario", { length: 200 }),
+  activo: boolean("activo").default(true),
+  destacado: boolean("destacado").default(false),
+  totalFavoritos: integer("total_favoritos").default(0),
+  totalVistas: integer("total_vistas").default(0),
+  orden: integer("orden").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCatalogoLocalSchema = createInsertSchema(catalogosLocales).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCatalogoLocal = z.infer<typeof insertCatalogoLocalSchema>;
+export type CatalogoLocal = typeof catalogosLocales.$inferSelect;
+
+// ============================================================
+// CATEGORÍAS DE CATÁLOGOS (ej: Pizzas Clásicas, Pizzas Gourmet)
+// ============================================================
+export const categoriasCatalogo = pgTable("categorias_catalogo", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  catalogoId: varchar("catalogo_id").notNull().references(() => catalogosLocales.id),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  descripcion: text("descripcion"),
+  imagenUrl: varchar("imagen_url"),
+  orden: integer("orden").default(0),
+  activo: boolean("activo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCategoriaCatalogoSchema = createInsertSchema(categoriasCatalogo).omit({ id: true, createdAt: true });
+export type InsertCategoriaCatalogo = z.infer<typeof insertCategoriaCatalogoSchema>;
+export type CategoriaCatalogo = typeof categoriasCatalogo.$inferSelect;
+
+// ============================================================
+// ITEMS DE CATÁLOGO (productos dentro del catálogo con categoría)
+// ============================================================
+export const itemsCatalogo = pgTable("items_catalogo", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  catalogoId: varchar("catalogo_id").notNull().references(() => catalogosLocales.id),
+  categoriaId: varchar("categoria_id").references(() => categoriasCatalogo.id),
+  nombre: varchar("nombre", { length: 200 }).notNull(),
+  descripcion: text("descripcion"),
+  precio: decimal("precio", { precision: 10, scale: 2 }).notNull(),
+  precioOferta: decimal("precio_oferta", { precision: 10, scale: 2 }),
+  imagenUrl: varchar("imagen_url"),
+  ingredientes: text("ingredientes"),
+  tiempoPreparacion: varchar("tiempo_preparacion", { length: 50 }),
+  disponible: boolean("disponible").default(true),
+  destacado: boolean("destacado").default(false),
+  likes: integer("likes").default(0),
+  favoritos: integer("favoritos").default(0),
+  compartidos: integer("compartidos").default(0),
+  vistas: integer("vistas").default(0),
+  orden: integer("orden").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertItemCatalogoSchema = createInsertSchema(itemsCatalogo).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertItemCatalogo = z.infer<typeof insertItemCatalogoSchema>;
+export type ItemCatalogo = typeof itemsCatalogo.$inferSelect;
+
+// ============================================================
+// FAVORITOS DE PRODUCTOS (extensión para productos, no solo publicidad)
+// ============================================================
+export const favoritosProductos = pgTable("favoritos_productos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  productoUsuarioId: varchar("producto_usuario_id").references(() => productosUsuario.id),
+  itemCatalogoId: varchar("item_catalogo_id").references(() => itemsCatalogo.id),
+  tipoProducto: varchar("tipo_producto", { length: 50 }).notNull(), // 'producto_usuario', 'item_catalogo'
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueFavoritoProducto: unique().on(table.usuarioId, table.productoUsuarioId),
+  uniqueFavoritoItem: unique().on(table.usuarioId, table.itemCatalogoId),
+}));
+
+export const insertFavoritoProductoSchema = createInsertSchema(favoritosProductos).omit({ id: true, createdAt: true });
+export type InsertFavoritoProducto = z.infer<typeof insertFavoritoProductoSchema>;
+export type FavoritoProducto = typeof favoritosProductos.$inferSelect;
+
+// ============================================================
+// INTERACCIONES DE PRODUCTOS (likes, favoritos, compartidos)
+// ============================================================
+export const interaccionesProductos = pgTable("interacciones_productos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  productoUsuarioId: varchar("producto_usuario_id").references(() => productosUsuario.id),
+  itemCatalogoId: varchar("item_catalogo_id").references(() => itemsCatalogo.id),
+  tipoInteraccion: varchar("tipo_interaccion", { length: 50 }).notNull(), // 'like', 'favorito', 'compartido', 'vista'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertInteraccionProductoSchema = createInsertSchema(interaccionesProductos).omit({ id: true, createdAt: true });
+export type InsertInteraccionProducto = z.infer<typeof insertInteraccionProductoSchema>;
+export type InteraccionProducto = typeof interaccionesProductos.$inferSelect;
+
+// ============================================================
 // TYPE ALIASES (para compatibilidad con código existente)
 // ============================================================
 export type InsertPublicidad = PublicidadInsert;
