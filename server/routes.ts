@@ -5219,6 +5219,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sugerir logo propio para aprobación por super admin
+  app.post('/api/logos-servicios/sugerir', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { nombre, descripcion, logoUrl } = req.body;
+      
+      if (!nombre || !logoUrl) {
+        return res.status(400).json({ message: "El nombre y la imagen del logo son requeridos" });
+      }
+      
+      const logo = await storage.createLogoServicio({
+        nombre,
+        descripcion: descripcion || "",
+        logoUrl,
+        usuarioId: userId,
+        estado: "pendiente",
+      });
+      
+      // Notificar a super admins
+      try {
+        await notificarSuperAdmins({
+          tipo: 'nuevo_usuario',
+          titulo: 'Nuevo Logo Sugerido',
+          mensaje: `Nuevo logo "${nombre}" pendiente de aprobación`,
+          usuarioId: userId,
+        });
+      } catch (notifError) {
+        console.error("Error al notificar super admins:", notifError);
+      }
+      
+      res.status(201).json({ 
+        message: "Logo enviado para aprobación", 
+        logo 
+      });
+    } catch (error: any) {
+      console.error("Error al sugerir logo:", error);
+      res.status(400).json({ message: error.message || "Error al sugerir logo" });
+    }
+  });
+
   // ============================================================
   // PRODUCTOS DE SERVICIOS LOCALES
   // ============================================================

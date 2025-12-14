@@ -505,6 +505,8 @@ export default function LocalComercialPanel() {
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [showLogoSelector, setShowLogoSelector] = useState(false);
   const [showNegocioPopup, setShowNegocioPopup] = useState(false);
+  const [showSugerirLogoModal, setShowSugerirLogoModal] = useState(false);
+  const [logoSugerido, setLogoSugerido] = useState({ nombre: "", logoUrl: "", descripcion: "" });
   const [formInitialized, setFormInitialized] = useState(false);
   
   const [showPersonalModal, setShowPersonalModal] = useState(false);
@@ -750,6 +752,22 @@ export default function LocalComercialPanel() {
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const sugerirLogoMutation = useMutation({
+    mutationFn: (data: { nombre: string; logoUrl: string; descripcion?: string }) => 
+      apiRequest("POST", "/api/logos-servicios/sugerir", data),
+    onSuccess: () => {
+      setShowSugerirLogoModal(false);
+      setLogoSugerido({ nombre: "", logoUrl: "", descripcion: "" });
+      toast({ 
+        title: "Logo enviado para aprobación", 
+        description: "El administrador revisará tu logo y lo aprobará pronto." 
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al enviar logo", description: error.message, variant: "destructive" });
     },
   });
 
@@ -2263,9 +2281,99 @@ export default function LocalComercialPanel() {
                 </div>
               )}
             </ScrollArea>
+            <div className="border-t pt-4 mt-4">
+              <p className="text-sm text-muted-foreground mb-3">
+                ¿No encuentras el logo que buscas?
+              </p>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  setShowLogoSelector(false);
+                  setShowSugerirLogoModal(true);
+                }}
+                data-testid="button-sugerir-logo"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Sugerir un nuevo logo para aprobación
+              </Button>
+            </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowLogoSelector(false)}>
                 Cancelar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal sugerir logo propio */}
+        <Dialog open={showSugerirLogoModal} onOpenChange={setShowSugerirLogoModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Sugerir Nuevo Logo</DialogTitle>
+              <DialogDescription>
+                Sube un logo de tu servicio. El administrador lo revisará y aprobará para que aparezca en el carrusel de servicios.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="nombre-logo">Nombre del Servicio *</Label>
+                <Input
+                  id="nombre-logo"
+                  value={logoSugerido.nombre}
+                  onChange={(e) => setLogoSugerido({ ...logoSugerido, nombre: e.target.value })}
+                  placeholder="Ej: Mi Restaurante"
+                  data-testid="input-nombre-logo-sugerido"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="descripcion-logo">Descripción (opcional)</Label>
+                <Textarea
+                  id="descripcion-logo"
+                  value={logoSugerido.descripcion}
+                  onChange={(e) => setLogoSugerido({ ...logoSugerido, descripcion: e.target.value })}
+                  placeholder="Breve descripción del servicio..."
+                  className="min-h-[80px]"
+                  data-testid="input-descripcion-logo-sugerido"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Logo del Servicio *</Label>
+                <ImageUpload
+                  value={logoSugerido.logoUrl}
+                  onChange={(url) => setLogoSugerido({ ...logoSugerido, logoUrl: url || "" })}
+                  endpoint="servicios"
+                  enableEditor={true}
+                  aspectRatio={1}
+                  maxSize={5}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowSugerirLogoModal(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (!logoSugerido.nombre?.trim()) {
+                    toast({ title: "El nombre es requerido", variant: "destructive" });
+                    return;
+                  }
+                  if (!logoSugerido.logoUrl) {
+                    toast({ title: "Debes subir una imagen del logo", variant: "destructive" });
+                    return;
+                  }
+                  sugerirLogoMutation.mutate(logoSugerido);
+                }}
+                disabled={sugerirLogoMutation.isPending}
+                data-testid="button-enviar-logo-sugerido"
+              >
+                {sugerirLogoMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Enviar para Aprobación
               </Button>
             </DialogFooter>
           </DialogContent>

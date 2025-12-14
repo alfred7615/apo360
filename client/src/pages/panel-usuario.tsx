@@ -711,11 +711,13 @@ export default function PanelUsuarioPage() {
                           {fav.tipoContenido === 'producto_servicio' && fav.detalle && (
                             <div>
                               {fav.detalle.imagenUrl && (
-                                <img 
-                                  src={fav.detalle.imagenUrl} 
-                                  alt={fav.detalle.nombre} 
-                                  className="w-full h-24 object-cover rounded mb-3" 
-                                />
+                                <div className="aspect-square w-full mb-3 overflow-hidden rounded">
+                                  <img 
+                                    src={fav.detalle.imagenUrl} 
+                                    alt={fav.detalle.nombre} 
+                                    className="w-full h-full object-cover" 
+                                  />
+                                </div>
                               )}
                               <h3 className="font-medium truncate">{fav.detalle.nombre}</h3>
                               <div className="flex items-center justify-between mt-2">
@@ -732,11 +734,13 @@ export default function PanelUsuarioPage() {
                           {(fav.tipoContenido === 'popup' || fav.tipoContenido === 'publicidad') && fav.detalle && (
                             <div>
                               {fav.detalle.imagenUrl && (
-                                <img 
-                                  src={fav.detalle.imagenUrl} 
-                                  alt={fav.detalle.titulo} 
-                                  className="w-full h-32 object-cover rounded mb-3" 
-                                />
+                                <div className="aspect-video w-full mb-3 overflow-hidden rounded">
+                                  <img 
+                                    src={fav.detalle.imagenUrl} 
+                                    alt={fav.detalle.titulo} 
+                                    className="w-full h-full object-cover" 
+                                  />
+                                </div>
                               )}
                               <h3 className="font-medium truncate">{fav.detalle.titulo}</h3>
                               <div className="flex items-center justify-between mt-2">
@@ -796,7 +800,7 @@ export default function PanelUsuarioPage() {
                               <Megaphone className="h-5 w-5 text-purple-500" />
                               <h3 className="font-semibold">Publicidad ({favPublicidad.length})</h3>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                               {favPublicidad.map(renderFavoritoCard)}
                             </div>
                           </div>
@@ -808,7 +812,7 @@ export default function PanelUsuarioPage() {
                               <ShoppingBag className="h-5 w-5 text-green-500" />
                               <h3 className="font-semibold">Productos y Servicios ({favProductos.length})</h3>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                               {favProductos.map(renderFavoritoCard)}
                             </div>
                           </div>
@@ -820,7 +824,7 @@ export default function PanelUsuarioPage() {
                               <Store className="h-5 w-5 text-blue-500" />
                               <h3 className="font-semibold">Negocios Locales ({favNegocios.length})</h3>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                               {favNegocios.map(renderFavoritoCard)}
                             </div>
                           </div>
@@ -832,7 +836,7 @@ export default function PanelUsuarioPage() {
                               <Star className="h-5 w-5 text-yellow-500" />
                               <h3 className="font-semibold">Otros Favoritos ({favOtros.length})</h3>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                               {favOtros.map(renderFavoritoCard)}
                             </div>
                           </div>
@@ -991,32 +995,89 @@ export default function PanelUsuarioPage() {
                   </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                   {misProductos.map((producto: any) => (
-                    <Card key={producto.id} className="hover-elevate" data-testid={`card-producto-${producto.id}`}>
-                      <CardContent className="p-4">
-                        {producto.imagenUrl && (
-                          <img 
-                            src={producto.imagenUrl} 
-                            alt={producto.nombre} 
-                            className="w-full h-32 object-cover rounded mb-3" 
-                          />
-                        )}
-                        <h3 className="font-medium truncate">{producto.nombre}</h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                          {producto.descripcion}
-                        </p>
-                        <div className="flex items-center justify-between mt-3">
-                          <span className="font-bold text-primary">S/. {producto.precio}</span>
-                          <Badge variant={producto.activo ? "default" : "secondary"}>
-                            {producto.activo ? "Activo" : "Inactivo"}
-                          </Badge>
+                    <Card key={producto.id} className="hover-elevate overflow-hidden" data-testid={`card-producto-${producto.id}`}>
+                      <CardContent className="p-0">
+                        <div className="aspect-square w-full overflow-hidden">
+                          {producto.imagenUrl ? (
+                            <img 
+                              src={producto.imagenUrl} 
+                              alt={producto.nombre} 
+                              className="w-full h-full object-cover transition-transform hover:scale-105" 
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center">
+                              <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                          <Button variant="ghost" size="sm" className="flex-1" data-testid={`button-editar-producto-${producto.id}`}>
-                            <Edit className="h-4 w-4 mr-1" />
-                            Editar
-                          </Button>
+                        <div className="p-3">
+                          <h3 className="font-medium text-sm truncate" data-testid={`text-producto-nombre-${producto.id}`}>
+                            {producto.nombre}
+                          </h3>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {producto.categoria || "Sin categoría"}
+                          </p>
+                          <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+                            {producto.descripcion || "Sin descripción"}
+                          </p>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="font-bold text-primary text-sm">S/. {producto.precio}</span>
+                            <Badge 
+                              variant={producto.activo ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {producto.activo ? "Activo" : "Inactivo"}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between mt-3 pt-2 border-t">
+                            <div className="flex items-center gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7"
+                                data-testid={`button-like-producto-${producto.id}`}
+                              >
+                                <ThumbsUp className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7"
+                                data-testid={`button-favorito-producto-${producto.id}`}
+                              >
+                                <Heart className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7"
+                                onClick={() => {
+                                  const url = `${window.location.origin}/producto/${producto.id}`;
+                                  if (navigator.share) {
+                                    navigator.share({ title: producto.nombre, url });
+                                  } else {
+                                    navigator.clipboard.writeText(url);
+                                    toast({ title: "Enlace copiado" });
+                                  }
+                                }}
+                                data-testid={`button-compartir-producto-${producto.id}`}
+                              >
+                                <Share2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7"
+                                data-testid={`button-editar-producto-${producto.id}`}
+                              >
+                                <Edit className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
