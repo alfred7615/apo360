@@ -18,6 +18,7 @@ import CarruselPublicidad from "@/components/CarruselPublicidad";
 import GaleriaServiciosLocales from "@/components/GaleriaServiciosLocales";
 import ModuloAudio from "@/components/ModuloAudio";
 import CartillasBeneficios from "@/components/CartillasBeneficios";
+import SeccionLocalesComerciales from "@/components/SeccionLocalesComerciales";
 import { CalculadoraCambio } from "@/components/CalculadoraCambio";
 import { useQuery } from "@tanstack/react-query";
 import type { Emergencia, ContactoFamiliar } from "@shared/schema";
@@ -358,6 +359,9 @@ export default function Home() {
 
       {/* Galería de servicios locales - Categorías, Subcategorías y Logos */}
       <GaleriaServiciosLocales />
+
+      {/* Sección de Tiendas/Locales Comerciales con Productos */}
+      <SeccionLocalesComerciales />
 
       {/* Módulo de audio */}
       <section className="container mx-auto px-4 py-8">

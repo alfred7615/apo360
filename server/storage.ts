@@ -4072,6 +4072,29 @@ export class DatabaseStorage implements IStorage {
   async incrementarVistasItem(itemId: string): Promise<void> {
     await db.execute(sql`UPDATE items_catalogo SET vistas = vistas + 1 WHERE id = ${itemId}`);
   }
+
+  async getItemsRecientes(limite = 12): Promise<ItemCatalogo[]> {
+    return await db.select().from(itemsCatalogo)
+      .where(eq(itemsCatalogo.disponible, true))
+      .orderBy(desc(itemsCatalogo.createdAt))
+      .limit(limite);
+  }
+
+  async getCatalogosLocalesConItems(): Promise<Array<CatalogoLocal & { items: ItemCatalogo[] }>> {
+    const catalogos = await db.select().from(catalogosLocales)
+      .where(eq(catalogosLocales.activo, true))
+      .orderBy(desc(catalogosLocales.createdAt));
+    
+    const result: Array<CatalogoLocal & { items: ItemCatalogo[] }> = [];
+    for (const catalogo of catalogos) {
+      const items = await db.select().from(itemsCatalogo)
+        .where(and(eq(itemsCatalogo.catalogoId, catalogo.id), eq(itemsCatalogo.disponible, true)))
+        .orderBy(desc(itemsCatalogo.createdAt))
+        .limit(6);
+      result.push({ ...catalogo, items });
+    }
+    return result;
+  }
 }
 
 export const storage = new DatabaseStorage();

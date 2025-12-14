@@ -6788,6 +6788,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Items recientes para parrilla (público)
+  app.get('/api/items-recientes', async (req, res) => {
+    try {
+      const limite = parseInt(req.query.limite as string) || 12;
+      const items = await storage.getItemsRecientes(limite);
+      res.json(items);
+    } catch (error: any) {
+      console.error("Error al obtener items recientes:", error);
+      res.status(500).json({ message: error.message || "Error al obtener items recientes" });
+    }
+  });
+
+  // Catálogos con items para vista pública (público)
+  app.get('/api/catalogos-con-items', async (req, res) => {
+    try {
+      const catalogos = await storage.getCatalogosLocalesConItems();
+      res.json(catalogos);
+    } catch (error: any) {
+      console.error("Error al obtener catálogos con items:", error);
+      res.status(500).json({ message: error.message || "Error al obtener catálogos" });
+    }
+  });
+
   // ============================================================
   // CONFIGURACIÓN DE WEBSOCKET
   // ============================================================
