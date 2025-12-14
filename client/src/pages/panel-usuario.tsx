@@ -19,7 +19,8 @@ import {
   Plus, Edit, Loader2, Crown, CheckCircle,
   User, Camera, AlertCircle, Wallet, DollarSign,
   Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn, Copy, Building, Phone,
-  History, TrendingUp, TrendingDown, Megaphone, UtensilsCrossed, Wrench, FileText, Coins, ThumbsUp, Shield
+  History, TrendingUp, TrendingDown, Megaphone, UtensilsCrossed, Wrench, FileText, Coins, ThumbsUp, Shield,
+  ChevronLeft, ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -125,6 +126,7 @@ export default function PanelUsuarioPage() {
   const searchString = useSearch();
   const [activeTab, setActiveTab] = useState("favoritos");
   const [showProductoModal, setShowProductoModal] = useState(false);
+  const [editingProducto, setEditingProducto] = useState<any>(null);
   const [showRecargaModal, setShowRecargaModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [showSolicitarRolModal, setShowSolicitarRolModal] = useState(false);
@@ -164,10 +166,14 @@ export default function PanelUsuarioPage() {
     nombre: "",
     descripcion: "",
     precio: "",
-    imagenUrl: "",
+    imagenes: [] as string[],
+    imagenPortadaIndex: 0,
     categoria: "",
   });
   const [subiendoImagenProducto, setSubiendoImagenProducto] = useState(false);
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [viewerImages, setViewerImages] = useState<string[]>([]);
+  const [viewerCurrentIndex, setViewerCurrentIndex] = useState(0);
 
   const { data: favoritos = [], isLoading: loadingFavoritos } = useQuery<any[]>({
     queryKey: ["/api/favoritos"],
@@ -344,12 +350,13 @@ export default function PanelUsuarioPage() {
   });
 
   const crearProductoMutation = useMutation({
-    mutationFn: (data: { nombre: string; descripcion: string; precio: string; imagenUrl: string; categoria: string }) => 
+    mutationFn: (data: { nombre: string; descripcion: string; precio: string; imagenes: string[]; imagenPortadaIndex: number; categoria: string }) => 
       apiRequest("POST", "/api/productos-usuario", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mis-productos"] });
       setShowProductoModal(false);
-      setProductoForm({ nombre: "", descripcion: "", precio: "", imagenUrl: "", categoria: "" });
+      setEditingProducto(null);
+      setProductoForm({ nombre: "", descripcion: "", precio: "", imagenes: [], imagenPortadaIndex: 0, categoria: "" });
       toast({ title: "Producto publicado exitosamente" });
     },
     onError: (error: any) => {
@@ -357,7 +364,26 @@ export default function PanelUsuarioPage() {
     },
   });
 
+  const actualizarProductoMutation = useMutation({
+    mutationFn: (data: { id: string; nombre: string; descripcion: string; precio: string; imagenes: string[]; imagenPortadaIndex: number; categoria: string }) => 
+      apiRequest("PUT", `/api/productos-usuario/${data.id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-productos"] });
+      setShowProductoModal(false);
+      setEditingProducto(null);
+      setProductoForm({ nombre: "", descripcion: "", precio: "", imagenes: [], imagenPortadaIndex: 0, categoria: "" });
+      toast({ title: "Producto actualizado exitosamente" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al actualizar producto", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleSubirImagenProducto = async (file: File) => {
+    if (productoForm.imagenes.length >= 5) {
+      toast({ title: "Límite alcanzado", description: "Máximo 5 imágenes por producto", variant: "destructive" });
+      return;
+    }
     setSubiendoImagenProducto(true);
     try {
       const formData = new FormData();
@@ -374,13 +400,37 @@ export default function PanelUsuarioPage() {
       }
       
       const data = await response.json();
-      setProductoForm(prev => ({ ...prev, imagenUrl: data.url }));
+      setProductoForm(prev => ({ ...prev, imagenes: [...prev.imagenes, data.url] }));
       toast({ title: "Imagen subida correctamente" });
     } catch (error: any) {
       toast({ title: "Error al subir imagen", description: error.message, variant: "destructive" });
     } finally {
       setSubiendoImagenProducto(false);
     }
+  };
+
+  const handleRemoveImagenProducto = (index: number) => {
+    setProductoForm(prev => {
+      const newImagenes = prev.imagenes.filter((_, i) => i !== index);
+      let newPortadaIndex = prev.imagenPortadaIndex;
+      if (index === prev.imagenPortadaIndex) {
+        newPortadaIndex = 0;
+      } else if (index < prev.imagenPortadaIndex) {
+        newPortadaIndex = prev.imagenPortadaIndex - 1;
+      }
+      return { ...prev, imagenes: newImagenes, imagenPortadaIndex: Math.min(newPortadaIndex, newImagenes.length - 1) };
+    });
+  };
+
+  const handleSetPortada = (index: number) => {
+    setProductoForm(prev => ({ ...prev, imagenPortadaIndex: index }));
+    toast({ title: "Imagen de portada actualizada" });
+  };
+
+  const openImageViewer = (images: string[], startIndex: number = 0) => {
+    setViewerImages(images);
+    setViewerCurrentIndex(startIndex);
+    setShowImageViewer(true);
   };
 
   if (authLoading) {
@@ -1000,11 +1050,15 @@ export default function PanelUsuarioPage() {
                     <Card key={producto.id} className="hover-elevate overflow-hidden" data-testid={`card-producto-${producto.id}`}>
                       <CardContent className="p-0">
                         <div className="aspect-square w-full overflow-hidden">
-                          {producto.imagenUrl ? (
+                          {(producto.imagenes?.length > 0 || producto.imagenUrl) ? (
                             <img 
-                              src={producto.imagenUrl} 
+                              src={producto.imagenes?.[producto.imagenPortadaIndex || 0] || producto.imagenUrl} 
                               alt={producto.nombre} 
-                              className="w-full h-full object-cover transition-transform hover:scale-105" 
+                              className="w-full h-full object-cover transition-transform hover:scale-105 cursor-pointer" 
+                              onClick={() => {
+                                const imgs = producto.imagenes?.length > 0 ? producto.imagenes : (producto.imagenUrl ? [producto.imagenUrl] : []);
+                                if (imgs.length > 0) openImageViewer(imgs, producto.imagenPortadaIndex || 0);
+                              }}
                             />
                           ) : (
                             <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -1072,6 +1126,19 @@ export default function PanelUsuarioPage() {
                                 variant="ghost" 
                                 size="icon" 
                                 className="h-7 w-7"
+                                onClick={() => {
+                                  setEditingProducto(producto);
+                                  const imagenes = producto.imagenes || (producto.imagenUrl ? [producto.imagenUrl] : []);
+                                  setProductoForm({
+                                    nombre: producto.nombre || "",
+                                    descripcion: producto.descripcion || "",
+                                    precio: producto.precio || "",
+                                    imagenes: imagenes,
+                                    imagenPortadaIndex: producto.imagenPortadaIndex || 0,
+                                    categoria: producto.categoria || "",
+                                  });
+                                  setShowProductoModal(true);
+                                }}
                                 data-testid={`button-editar-producto-${producto.id}`}
                               >
                                 <Edit className="h-3.5 w-3.5" />
@@ -1998,12 +2065,18 @@ export default function PanelUsuarioPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showProductoModal} onOpenChange={setShowProductoModal}>
+      <Dialog open={showProductoModal} onOpenChange={(open) => {
+        setShowProductoModal(open);
+        if (!open) {
+          setEditingProducto(null);
+          setProductoForm({ nombre: "", descripcion: "", precio: "", imagenes: [], imagenPortadaIndex: 0, categoria: "" });
+        }
+      }}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Nuevo Producto</DialogTitle>
+            <DialogTitle>{editingProducto ? "Editar Producto" : "Nuevo Producto"}</DialogTitle>
             <DialogDescription>
-              Publica un producto o servicio para vender
+              {editingProducto ? "Modifica los datos de tu producto" : "Publica un producto o servicio para vender"}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -2051,46 +2124,69 @@ export default function PanelUsuarioPage() {
               </div>
             </div>
             <div className="grid gap-2">
-              <Label>Imagen del producto</Label>
-              {productoForm.imagenUrl ? (
-                <div className="relative">
-                  <img 
-                    src={productoForm.imagenUrl} 
-                    alt="Preview" 
-                    className="w-full h-32 object-cover rounded-lg"
-                  />
-                  <Button 
-                    type="button"
-                    variant="destructive" 
-                    size="sm" 
-                    className="absolute top-2 right-2"
-                    onClick={() => setProductoForm({ ...productoForm, imagenUrl: "" })}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <label className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover-elevate">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleSubirImagenProducto(file);
-                    }}
-                    data-testid="input-producto-imagen"
-                  />
-                  {subiendoImagenProducto ? (
-                    <Loader2 className="h-8 w-8 text-primary mx-auto mb-2 animate-spin" />
-                  ) : (
-                    <Camera className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    {subiendoImagenProducto ? "Subiendo imagen..." : "Haz clic para subir una imagen"}
-                  </p>
-                </label>
-              )}
+              <Label>Imágenes del producto (máx. 5)</Label>
+              <div className="grid grid-cols-5 gap-2">
+                {productoForm.imagenes.map((img, index) => (
+                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden border-2 border-border">
+                    <img 
+                      src={img} 
+                      alt={`Imagen ${index + 1}`} 
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => openImageViewer(productoForm.imagenes, index)}
+                    />
+                    {index === productoForm.imagenPortadaIndex && (
+                      <div className="absolute top-1 left-1 bg-yellow-500 rounded-full p-0.5">
+                        <Star className="h-3 w-3 text-white fill-white" />
+                      </div>
+                    )}
+                    <div className="absolute top-1 right-1 flex gap-1">
+                      {index !== productoForm.imagenPortadaIndex && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="icon"
+                          className="h-5 w-5"
+                          onClick={() => handleSetPortada(index)}
+                          title="Establecer como portada"
+                        >
+                          <Star className="h-3 w-3" />
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="h-5 w-5"
+                        onClick={() => handleRemoveImagenProducto(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {productoForm.imagenes.length < 5 && (
+                  <label className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover-elevate">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleSubirImagenProducto(file);
+                      }}
+                      data-testid="input-producto-imagen"
+                    />
+                    {subiendoImagenProducto ? (
+                      <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                    ) : (
+                      <Plus className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </label>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                La estrella indica la imagen de portada. Haz clic en una imagen para verla en grande.
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -2107,21 +2203,34 @@ export default function PanelUsuarioPage() {
                   toast({ title: "Error", description: "El precio es requerido", variant: "destructive" });
                   return;
                 }
-                crearProductoMutation.mutate({
-                  nombre: productoForm.nombre,
-                  descripcion: productoForm.descripcion,
-                  precio: productoForm.precio,
-                  imagenUrl: productoForm.imagenUrl,
-                  categoria: productoForm.categoria,
-                });
+                if (editingProducto) {
+                  actualizarProductoMutation.mutate({
+                    id: editingProducto.id,
+                    nombre: productoForm.nombre,
+                    descripcion: productoForm.descripcion,
+                    precio: productoForm.precio,
+                    imagenes: productoForm.imagenes,
+                    imagenPortadaIndex: productoForm.imagenPortadaIndex,
+                    categoria: productoForm.categoria,
+                  });
+                } else {
+                  crearProductoMutation.mutate({
+                    nombre: productoForm.nombre,
+                    descripcion: productoForm.descripcion,
+                    precio: productoForm.precio,
+                    imagenes: productoForm.imagenes,
+                    imagenPortadaIndex: productoForm.imagenPortadaIndex,
+                    categoria: productoForm.categoria,
+                  });
+                }
               }} 
-              disabled={crearProductoMutation.isPending}
+              disabled={crearProductoMutation.isPending || actualizarProductoMutation.isPending}
               data-testid="button-guardar-producto"
             >
-              {crearProductoMutation.isPending ? (
+              {(crearProductoMutation.isPending || actualizarProductoMutation.isPending) ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : null}
-              Publicar Producto
+              {editingProducto ? "Guardar Cambios" : "Publicar Producto"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2256,6 +2365,64 @@ export default function PanelUsuarioPage() {
               Enviar Solicitud
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Visor de imágenes pantalla completa */}
+      <Dialog open={showImageViewer} onOpenChange={setShowImageViewer}>
+        <DialogContent className="max-w-4xl h-[90vh] p-0">
+          <div className="relative h-full flex flex-col">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute top-2 right-2 z-10 bg-black/50 text-white hover:bg-black/70" 
+              onClick={() => setShowImageViewer(false)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            <div className="flex-1 flex items-center justify-center bg-black/90 relative">
+              {viewerImages.length > 0 && (
+                <img 
+                  src={viewerImages[viewerCurrentIndex]} 
+                  alt="Vista completa" 
+                  className="max-h-full max-w-full object-contain" 
+                />
+              )}
+              {viewerImages.length > 1 && (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70" 
+                    onClick={() => setViewerCurrentIndex(prev => prev === 0 ? viewerImages.length - 1 : prev - 1)}
+                  >
+                    <ChevronLeft className="h-8 w-8" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70" 
+                    onClick={() => setViewerCurrentIndex(prev => prev === viewerImages.length - 1 ? 0 : prev + 1)}
+                  >
+                    <ChevronRight className="h-8 w-8" />
+                  </Button>
+                </>
+              )}
+            </div>
+            {viewerImages.length > 1 && (
+              <div className="flex justify-center gap-2 p-4 bg-black/80">
+                {viewerImages.map((img, i) => (
+                  <button 
+                    key={i} 
+                    onClick={() => setViewerCurrentIndex(i)} 
+                    className={`w-16 h-16 rounded overflow-hidden border-2 ${i === viewerCurrentIndex ? 'border-primary' : 'border-transparent'}`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

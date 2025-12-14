@@ -2254,7 +2254,7 @@ export default function LocalComercialPanel() {
                   <p className="text-muted-foreground">No hay logos disponibles en el carrusel</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {logosServicios.map((logo) => (
                     <Card 
                       key={logo.id} 
@@ -2267,10 +2267,10 @@ export default function LocalComercialPanel() {
                           <img 
                             src={logo.logoUrl} 
                             alt={logo.nombre}
-                            className="w-16 h-16 object-contain mx-auto rounded"
+                            className="w-16 h-16 object-contain mx-auto rounded-full bg-transparent"
                           />
                         ) : (
-                          <div className="w-16 h-16 bg-muted rounded flex items-center justify-center mx-auto">
+                          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
                             <Store className="h-8 w-8 text-muted-foreground" />
                           </div>
                         )}
