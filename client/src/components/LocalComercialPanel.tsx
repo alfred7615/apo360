@@ -82,24 +82,38 @@ interface CatalogoLocal {
 interface CategoriaCatalogoLocal {
   id: string;
   catalogoId: string;
+  codigo?: string;
   nombre: string;
   descripcion?: string;
   icono?: string;
+  imagenUrl?: string;
   orden?: number;
   activo?: boolean;
   categoriaPadreId?: string | null;
   subcategorias?: CategoriaCatalogoLocal[];
+  etiquetaPrecio1?: string;
+  etiquetaPrecio2?: string;
+  etiquetaPrecio3?: string;
+  etiquetaPrecio4?: string;
 }
 
 interface ItemCatalogoLocal {
   id: string;
   catalogoId: string;
   categoriaId?: string | null;
+  codigo?: string;
   nombre: string;
   descripcion?: string;
+  precio1?: string;
+  precio2?: string;
+  precio3?: string;
+  precio4?: string;
   precio?: string;
   precioOferta?: string;
+  imagenUrl?: string;
   imagenes?: string[];
+  ingredientes?: string;
+  tiempoPreparacion?: string;
   disponible?: boolean;
   destacado?: boolean;
   likes?: number;
@@ -669,18 +683,28 @@ export default function LocalComercialPanel() {
   const [editingCategoria, setEditingCategoria] = useState<CategoriaCatalogoLocal | null>(null);
   const [editingItemLocal, setEditingItemLocal] = useState<ItemCatalogoLocal | null>(null);
   const [categoriaForm, setCategoriaForm] = useState<Partial<CategoriaCatalogoLocal>>({
+    codigo: "",
     nombre: "",
     descripcion: "",
     icono: "",
     categoriaPadreId: null,
+    etiquetaPrecio1: "Personal",
+    etiquetaPrecio2: "Mediana",
+    etiquetaPrecio3: "Familiar",
+    etiquetaPrecio4: "Extra",
   });
   const [itemLocalForm, setItemLocalForm] = useState<Partial<ItemCatalogoLocal>>({
     nombre: "",
     descripcion: "",
-    precio: "",
-    precioOferta: "",
+    codigo: "",
+    precio1: "",
+    precio2: "",
+    precio3: "",
+    precio4: "",
     categoriaId: null,
-    imagenes: [],
+    imagenUrl: "",
+    ingredientes: "",
+    tiempoPreparacion: "",
     disponible: true,
     destacado: false,
   });
@@ -1532,6 +1556,9 @@ export default function LocalComercialPanel() {
                             <CardHeader className="pb-2">
                               <div className="flex items-center justify-between gap-4">
                                 <CardTitle className="text-base flex items-center gap-2">
+                                  {categoria.codigo && (
+                                    <Badge variant="secondary" className="text-xs">{categoria.codigo}</Badge>
+                                  )}
                                   {categoria.icono && <span>{categoria.icono}</span>}
                                   {categoria.nombre}
                                 </CardTitle>
@@ -1542,10 +1569,15 @@ export default function LocalComercialPanel() {
                                     onClick={() => {
                                       setEditingCategoria(categoria);
                                       setCategoriaForm({
+                                        codigo: categoria.codigo || "",
                                         nombre: categoria.nombre,
                                         descripcion: categoria.descripcion || "",
                                         icono: categoria.icono || "",
                                         categoriaPadreId: categoria.categoriaPadreId,
+                                        etiquetaPrecio1: categoria.etiquetaPrecio1 || "Personal",
+                                        etiquetaPrecio2: categoria.etiquetaPrecio2 || "Mediana",
+                                        etiquetaPrecio3: categoria.etiquetaPrecio3 || "Familiar",
+                                        etiquetaPrecio4: categoria.etiquetaPrecio4 || "Extra",
                                       });
                                       setShowCategoriaModal(true);
                                     }}
@@ -1585,10 +1617,15 @@ export default function LocalComercialPanel() {
                                           onClick={() => {
                                             setEditingCategoria(sub);
                                             setCategoriaForm({
+                                              codigo: sub.codigo || "",
                                               nombre: sub.nombre,
                                               descripcion: sub.descripcion || "",
                                               icono: sub.icono || "",
                                               categoriaPadreId: sub.categoriaPadreId,
+                                              etiquetaPrecio1: sub.etiquetaPrecio1 || "Personal",
+                                              etiquetaPrecio2: sub.etiquetaPrecio2 || "Mediana",
+                                              etiquetaPrecio3: sub.etiquetaPrecio3 || "Familiar",
+                                              etiquetaPrecio4: sub.etiquetaPrecio4 || "Extra",
                                             });
                                             setShowCategoriaModal(true);
                                           }}
@@ -1614,23 +1651,45 @@ export default function LocalComercialPanel() {
                                 {miCatalogoLocal.items?.filter(item => item.categoriaId === categoria.id).map((item) => (
                                   <Card key={item.id} className="hover-elevate" data-testid={`card-item-local-${item.id}`}>
                                     <CardContent className="p-3">
-                                      {item.imagenes && item.imagenes[0] && (
+                                      {(item.imagenUrl || (item.imagenes && item.imagenes[0])) && (
                                         <img 
-                                          src={item.imagenes[0]} 
+                                          src={item.imagenUrl || item.imagenes?.[0]} 
                                           alt={item.nombre}
                                           className="w-full h-24 object-cover rounded mb-2"
                                         />
                                       )}
-                                      <h5 className="font-medium text-sm truncate">{item.nombre}</h5>
-                                      {item.precio && (
-                                        <div className="flex items-center gap-2 mt-1">
-                                          {item.precioOferta ? (
-                                            <>
-                                              <span className="text-sm line-through text-muted-foreground">S/ {item.precio}</span>
-                                              <span className="text-sm font-bold text-green-600">S/ {item.precioOferta}</span>
-                                            </>
-                                          ) : (
-                                            <span className="text-sm font-bold text-primary">S/ {item.precio}</span>
+                                      <div className="flex items-center gap-2">
+                                        {item.codigo && (
+                                          <Badge variant="outline" className="text-xs shrink-0">{item.codigo}</Badge>
+                                        )}
+                                        <h5 className="font-medium text-sm truncate">{item.nombre}</h5>
+                                      </div>
+                                      {/* Sistema de 4 precios flexible */}
+                                      {(item.precio1 || item.precio2 || item.precio3 || item.precio4) && (
+                                        <div className="grid grid-cols-2 gap-1 mt-2 text-xs">
+                                          {item.precio1 && (
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-muted-foreground">{categoria.etiquetaPrecio1 || "Personal"}:</span>
+                                              <span className="font-bold text-primary">S/ {item.precio1}</span>
+                                            </div>
+                                          )}
+                                          {item.precio2 && (
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-muted-foreground">{categoria.etiquetaPrecio2 || "Mediana"}:</span>
+                                              <span className="font-bold text-primary">S/ {item.precio2}</span>
+                                            </div>
+                                          )}
+                                          {item.precio3 && (
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-muted-foreground">{categoria.etiquetaPrecio3 || "Familiar"}:</span>
+                                              <span className="font-bold text-primary">S/ {item.precio3}</span>
+                                            </div>
+                                          )}
+                                          {item.precio4 && (
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-muted-foreground">{categoria.etiquetaPrecio4 || "Extra"}:</span>
+                                              <span className="font-bold text-primary">S/ {item.precio4}</span>
+                                            </div>
                                           )}
                                         </div>
                                       )}
@@ -1648,7 +1707,9 @@ export default function LocalComercialPanel() {
                                           <Eye className="h-3 w-3 text-gray-400" /> {item.vistas || 0}
                                         </span>
                                         {item.destacado && (
-                                          <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" title="Destacado" />
+                                          <span title="Destacado">
+                                            <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                                          </span>
                                         )}
                                       </div>
                                       <div className="flex items-center gap-1 mt-2 pt-2 border-t">
@@ -1659,12 +1720,17 @@ export default function LocalComercialPanel() {
                                           onClick={() => {
                                             setEditingItemLocal(item);
                                             setItemLocalForm({
+                                              codigo: item.codigo || "",
                                               nombre: item.nombre,
                                               descripcion: item.descripcion || "",
-                                              precio: item.precio || "",
-                                              precioOferta: item.precioOferta || "",
+                                              precio1: item.precio1 || "",
+                                              precio2: item.precio2 || "",
+                                              precio3: item.precio3 || "",
+                                              precio4: item.precio4 || "",
                                               categoriaId: item.categoriaId,
-                                              imagenes: item.imagenes || [],
+                                              imagenUrl: item.imagenUrl || "",
+                                              ingredientes: item.ingredientes || "",
+                                              tiempoPreparacion: item.tiempoPreparacion || "",
                                               disponible: item.disponible ?? true,
                                               destacado: item.destacado ?? false,
                                             });
@@ -1702,23 +1768,45 @@ export default function LocalComercialPanel() {
                                 {miCatalogoLocal.items.filter(item => !item.categoriaId).map((item) => (
                                   <Card key={item.id} className="hover-elevate" data-testid={`card-item-local-${item.id}`}>
                                     <CardContent className="p-3">
-                                      {item.imagenes && item.imagenes[0] && (
+                                      {(item.imagenUrl || (item.imagenes && item.imagenes[0])) && (
                                         <img 
-                                          src={item.imagenes[0]} 
+                                          src={item.imagenUrl || item.imagenes?.[0]} 
                                           alt={item.nombre}
                                           className="w-full h-24 object-cover rounded mb-2"
                                         />
                                       )}
-                                      <h5 className="font-medium text-sm truncate">{item.nombre}</h5>
-                                      {item.precio && (
-                                        <div className="flex items-center gap-2 mt-1">
-                                          {item.precioOferta ? (
-                                            <>
-                                              <span className="text-sm line-through text-muted-foreground">S/ {item.precio}</span>
-                                              <span className="text-sm font-bold text-green-600">S/ {item.precioOferta}</span>
-                                            </>
-                                          ) : (
-                                            <span className="text-sm font-bold text-primary">S/ {item.precio}</span>
+                                      <div className="flex items-center gap-2">
+                                        {item.codigo && (
+                                          <Badge variant="outline" className="text-xs shrink-0">{item.codigo}</Badge>
+                                        )}
+                                        <h5 className="font-medium text-sm truncate">{item.nombre}</h5>
+                                      </div>
+                                      {/* Sistema de 4 precios flexible */}
+                                      {(item.precio1 || item.precio2 || item.precio3 || item.precio4) && (
+                                        <div className="grid grid-cols-2 gap-1 mt-2 text-xs">
+                                          {item.precio1 && (
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-muted-foreground">Personal:</span>
+                                              <span className="font-bold text-primary">S/ {item.precio1}</span>
+                                            </div>
+                                          )}
+                                          {item.precio2 && (
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-muted-foreground">Mediana:</span>
+                                              <span className="font-bold text-primary">S/ {item.precio2}</span>
+                                            </div>
+                                          )}
+                                          {item.precio3 && (
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-muted-foreground">Familiar:</span>
+                                              <span className="font-bold text-primary">S/ {item.precio3}</span>
+                                            </div>
+                                          )}
+                                          {item.precio4 && (
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-muted-foreground">Extra:</span>
+                                              <span className="font-bold text-primary">S/ {item.precio4}</span>
+                                            </div>
                                           )}
                                         </div>
                                       )}
@@ -1736,7 +1824,9 @@ export default function LocalComercialPanel() {
                                           <Eye className="h-3 w-3 text-gray-400" /> {item.vistas || 0}
                                         </span>
                                         {item.destacado && (
-                                          <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" title="Destacado" />
+                                          <span title="Destacado">
+                                            <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                                          </span>
                                         )}
                                       </div>
                                       <div className="flex items-center gap-1 mt-2 pt-2 border-t">
@@ -1747,12 +1837,17 @@ export default function LocalComercialPanel() {
                                           onClick={() => {
                                             setEditingItemLocal(item);
                                             setItemLocalForm({
+                                              codigo: item.codigo || "",
                                               nombre: item.nombre,
                                               descripcion: item.descripcion || "",
-                                              precio: item.precio || "",
-                                              precioOferta: item.precioOferta || "",
+                                              precio1: item.precio1 || "",
+                                              precio2: item.precio2 || "",
+                                              precio3: item.precio3 || "",
+                                              precio4: item.precio4 || "",
                                               categoriaId: item.categoriaId,
-                                              imagenes: item.imagenes || [],
+                                              imagenUrl: item.imagenUrl || "",
+                                              ingredientes: item.ingredientes || "",
+                                              tiempoPreparacion: item.tiempoPreparacion || "",
                                               disponible: item.disponible ?? true,
                                               destacado: item.destacado ?? false,
                                             });
@@ -3519,72 +3614,140 @@ export default function LocalComercialPanel() {
           setShowCategoriaModal(open);
           if (!open) {
             setEditingCategoria(null);
-            setCategoriaForm({ nombre: "", descripcion: "", icono: "", categoriaPadreId: null });
+            setCategoriaForm({ codigo: "", nombre: "", descripcion: "", icono: "", categoriaPadreId: null, etiquetaPrecio1: "Personal", etiquetaPrecio2: "Mediana", etiquetaPrecio3: "Familiar", etiquetaPrecio4: "Extra" });
           }
         }}>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>{editingCategoria ? "Editar" : "Nueva"} Categoría</DialogTitle>
               <DialogDescription>
                 {editingCategoria ? "Modifica los datos de la categoría" : "Crea una nueva categoría para tu catálogo"}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="nombreCategoria">Nombre *</Label>
-                <Input
-                  id="nombreCategoria"
-                  value={categoriaForm.nombre || ""}
-                  onChange={(e) => setCategoriaForm({ ...categoriaForm, nombre: e.target.value })}
-                  placeholder="Ej: Electrónica, Ropa, Bebidas"
-                  data-testid="input-nombre-categoria"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="descripcionCategoria">Descripción</Label>
-                <Textarea
-                  id="descripcionCategoria"
-                  value={categoriaForm.descripcion || ""}
-                  onChange={(e) => setCategoriaForm({ ...categoriaForm, descripcion: e.target.value })}
-                  placeholder="Descripción de la categoría..."
-                  data-testid="input-descripcion-categoria"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+            <ScrollArea className="max-h-[60vh]">
+              <div className="space-y-4 py-4 px-1">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="codigoCategoria">Código</Label>
+                    <Input
+                      id="codigoCategoria"
+                      value={categoriaForm.codigo || ""}
+                      onChange={(e) => setCategoriaForm({ ...categoriaForm, codigo: e.target.value })}
+                      placeholder="1.00"
+                      data-testid="input-codigo-categoria"
+                    />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="nombreCategoria">Nombre *</Label>
+                    <Input
+                      id="nombreCategoria"
+                      value={categoriaForm.nombre || ""}
+                      onChange={(e) => setCategoriaForm({ ...categoriaForm, nombre: e.target.value })}
+                      placeholder="Ej: PIZZAS CLASICAS"
+                      data-testid="input-nombre-categoria"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="iconoCategoria">Icono (emoji)</Label>
-                  <Input
-                    id="iconoCategoria"
-                    value={categoriaForm.icono || ""}
-                    onChange={(e) => setCategoriaForm({ ...categoriaForm, icono: e.target.value })}
-                    placeholder="📦"
-                    data-testid="input-icono-categoria"
+                  <Label htmlFor="descripcionCategoria">Descripción</Label>
+                  <Textarea
+                    id="descripcionCategoria"
+                    value={categoriaForm.descripcion || ""}
+                    onChange={(e) => setCategoriaForm({ ...categoriaForm, descripcion: e.target.value })}
+                    placeholder="Descripción de la categoría..."
+                    data-testid="input-descripcion-categoria"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Categoría Padre</Label>
-                  <Select
-                    value={categoriaForm.categoriaPadreId || "none"}
-                    onValueChange={(value) => setCategoriaForm({ 
-                      ...categoriaForm, 
-                      categoriaPadreId: value === "none" ? null : value 
-                    })}
-                  >
-                    <SelectTrigger data-testid="select-categoria-padre">
-                      <SelectValue placeholder="Sin categoría padre" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sin categoría padre</SelectItem>
-                      {miCatalogoLocal?.categorias?.filter(c => !c.categoriaPadreId && c.id !== editingCategoria?.id).map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.icono} {cat.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="iconoCategoria">Icono (emoji)</Label>
+                    <Input
+                      id="iconoCategoria"
+                      value={categoriaForm.icono || ""}
+                      onChange={(e) => setCategoriaForm({ ...categoriaForm, icono: e.target.value })}
+                      placeholder="🍕"
+                      data-testid="input-icono-categoria"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Categoría Padre</Label>
+                    <Select
+                      value={categoriaForm.categoriaPadreId || "none"}
+                      onValueChange={(value) => setCategoriaForm({ 
+                        ...categoriaForm, 
+                        categoriaPadreId: value === "none" ? null : value 
+                      })}
+                    >
+                      <SelectTrigger data-testid="select-categoria-padre">
+                        <SelectValue placeholder="Sin categoría padre" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sin categoría padre</SelectItem>
+                        {miCatalogoLocal?.categorias?.filter(c => !c.categoriaPadreId && c.id !== editingCategoria?.id).map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.codigo && <span className="text-muted-foreground mr-1">{cat.codigo}</span>}
+                            {cat.icono} {cat.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                {/* Etiquetas de precios personalizables */}
+                <div className="space-y-3 pt-2 border-t">
+                  <Label className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Etiquetas de Tamaños/Precios
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Personaliza los nombres de cada columna de precio (ej: Personal, Mediana, Familiar, Extra)
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="etiquetaPrecio1" className="text-xs text-muted-foreground">Precio 1</Label>
+                      <Input
+                        id="etiquetaPrecio1"
+                        value={categoriaForm.etiquetaPrecio1 || "Personal"}
+                        onChange={(e) => setCategoriaForm({ ...categoriaForm, etiquetaPrecio1: e.target.value })}
+                        placeholder="Personal"
+                        data-testid="input-etiqueta-precio-1"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="etiquetaPrecio2" className="text-xs text-muted-foreground">Precio 2</Label>
+                      <Input
+                        id="etiquetaPrecio2"
+                        value={categoriaForm.etiquetaPrecio2 || "Mediana"}
+                        onChange={(e) => setCategoriaForm({ ...categoriaForm, etiquetaPrecio2: e.target.value })}
+                        placeholder="Mediana"
+                        data-testid="input-etiqueta-precio-2"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="etiquetaPrecio3" className="text-xs text-muted-foreground">Precio 3</Label>
+                      <Input
+                        id="etiquetaPrecio3"
+                        value={categoriaForm.etiquetaPrecio3 || "Familiar"}
+                        onChange={(e) => setCategoriaForm({ ...categoriaForm, etiquetaPrecio3: e.target.value })}
+                        placeholder="Familiar"
+                        data-testid="input-etiqueta-precio-3"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="etiquetaPrecio4" className="text-xs text-muted-foreground">Precio 4</Label>
+                      <Input
+                        id="etiquetaPrecio4"
+                        value={categoriaForm.etiquetaPrecio4 || "Extra"}
+                        onChange={(e) => setCategoriaForm({ ...categoriaForm, etiquetaPrecio4: e.target.value })}
+                        placeholder="Extra"
+                        data-testid="input-etiqueta-precio-4"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </ScrollArea>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowCategoriaModal(false)}>
                 Cancelar
@@ -3614,7 +3777,7 @@ export default function LocalComercialPanel() {
           setShowItemLocalModal(open);
           if (!open) {
             setEditingItemLocal(null);
-            setItemLocalForm({ nombre: "", descripcion: "", precio: "", precioOferta: "", categoriaId: null, imagenes: [], disponible: true, destacado: false });
+            setItemLocalForm({ nombre: "", descripcion: "", codigo: "", precio1: "", precio2: "", precio3: "", precio4: "", categoriaId: null, imagenUrl: "", ingredientes: "", tiempoPreparacion: "", disponible: true, destacado: false });
           }
         }}>
           <DialogContent className="max-w-xl">
@@ -3626,15 +3789,27 @@ export default function LocalComercialPanel() {
             </DialogHeader>
             <ScrollArea className="max-h-[60vh]">
               <div className="space-y-4 py-4 px-1">
-                <div className="space-y-2">
-                  <Label htmlFor="nombreItemLocal">Nombre *</Label>
-                  <Input
-                    id="nombreItemLocal"
-                    value={itemLocalForm.nombre || ""}
-                    onChange={(e) => setItemLocalForm({ ...itemLocalForm, nombre: e.target.value })}
-                    placeholder="Nombre del producto"
-                    data-testid="input-nombre-item-local"
-                  />
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2 col-span-1">
+                    <Label htmlFor="codigoItemLocal">Código</Label>
+                    <Input
+                      id="codigoItemLocal"
+                      value={itemLocalForm.codigo || ""}
+                      onChange={(e) => setItemLocalForm({ ...itemLocalForm, codigo: e.target.value })}
+                      placeholder="1.01"
+                      data-testid="input-codigo-item-local"
+                    />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="nombreItemLocal">Nombre *</Label>
+                    <Input
+                      id="nombreItemLocal"
+                      value={itemLocalForm.nombre || ""}
+                      onChange={(e) => setItemLocalForm({ ...itemLocalForm, nombre: e.target.value })}
+                      placeholder="Nombre del producto"
+                      data-testid="input-nombre-item-local"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="descripcionItemLocal">Descripción</Label>
@@ -3646,32 +3821,73 @@ export default function LocalComercialPanel() {
                     data-testid="input-descripcion-item-local"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="precioItemLocal">Precio (S/)</Label>
-                    <Input
-                      id="precioItemLocal"
-                      type="number"
-                      step="0.01"
-                      value={itemLocalForm.precio || ""}
-                      onChange={(e) => setItemLocalForm({ ...itemLocalForm, precio: e.target.value })}
-                      placeholder="0.00"
-                      data-testid="input-precio-item-local"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="precioOfertaItemLocal">Precio Oferta (S/)</Label>
-                    <Input
-                      id="precioOfertaItemLocal"
-                      type="number"
-                      step="0.01"
-                      value={itemLocalForm.precioOferta || ""}
-                      onChange={(e) => setItemLocalForm({ ...itemLocalForm, precioOferta: e.target.value })}
-                      placeholder="0.00"
-                      data-testid="input-precio-oferta-item-local"
-                    />
+                
+                {/* Sistema de 4 Precios según Figma Frame 35 */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Precios por Tamaño (solo completa los necesarios)
+                  </Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="precio1ItemLocal" className="text-xs text-muted-foreground">
+                        {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio1 || "Personal"}
+                      </Label>
+                      <Input
+                        id="precio1ItemLocal"
+                        type="number"
+                        step="0.01"
+                        value={itemLocalForm.precio1 || ""}
+                        onChange={(e) => setItemLocalForm({ ...itemLocalForm, precio1: e.target.value })}
+                        placeholder="0.00"
+                        data-testid="input-precio1-item-local"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="precio2ItemLocal" className="text-xs text-muted-foreground">
+                        {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio2 || "Mediana"}
+                      </Label>
+                      <Input
+                        id="precio2ItemLocal"
+                        type="number"
+                        step="0.01"
+                        value={itemLocalForm.precio2 || ""}
+                        onChange={(e) => setItemLocalForm({ ...itemLocalForm, precio2: e.target.value })}
+                        placeholder="0.00"
+                        data-testid="input-precio2-item-local"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="precio3ItemLocal" className="text-xs text-muted-foreground">
+                        {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio3 || "Familiar"}
+                      </Label>
+                      <Input
+                        id="precio3ItemLocal"
+                        type="number"
+                        step="0.01"
+                        value={itemLocalForm.precio3 || ""}
+                        onChange={(e) => setItemLocalForm({ ...itemLocalForm, precio3: e.target.value })}
+                        placeholder="0.00"
+                        data-testid="input-precio3-item-local"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="precio4ItemLocal" className="text-xs text-muted-foreground">
+                        {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio4 || "Extra"}
+                      </Label>
+                      <Input
+                        id="precio4ItemLocal"
+                        type="number"
+                        step="0.01"
+                        value={itemLocalForm.precio4 || ""}
+                        onChange={(e) => setItemLocalForm({ ...itemLocalForm, precio4: e.target.value })}
+                        placeholder="0.00"
+                        data-testid="input-precio4-item-local"
+                      />
+                    </div>
                   </div>
                 </div>
+
                 <div className="space-y-2">
                   <Label>Categoría</Label>
                   <Select
@@ -3688,19 +3904,45 @@ export default function LocalComercialPanel() {
                       <SelectItem value="none">Sin categoría</SelectItem>
                       {miCatalogoLocal?.categorias?.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
+                          {cat.codigo && <span className="text-muted-foreground mr-1">{cat.codigo}</span>}
                           {cat.icono} {cat.nombre}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ingredientesItemLocal">Ingredientes</Label>
+                    <Textarea
+                      id="ingredientesItemLocal"
+                      value={itemLocalForm.ingredientes || ""}
+                      onChange={(e) => setItemLocalForm({ ...itemLocalForm, ingredientes: e.target.value })}
+                      placeholder="Lista de ingredientes..."
+                      className="h-20"
+                      data-testid="input-ingredientes-item-local"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tiempoItemLocal">Tiempo Preparación</Label>
+                    <Input
+                      id="tiempoItemLocal"
+                      value={itemLocalForm.tiempoPreparacion || ""}
+                      onChange={(e) => setItemLocalForm({ ...itemLocalForm, tiempoPreparacion: e.target.value })}
+                      placeholder="15-20 min"
+                      data-testid="input-tiempo-item-local"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label>Imagen del Producto</Label>
                   <ImageUpload
-                    value={itemLocalForm.imagenes?.[0]}
+                    value={itemLocalForm.imagenUrl}
                     onChange={(url) => setItemLocalForm({ 
                       ...itemLocalForm, 
-                      imagenes: url ? [url] : [] 
+                      imagenUrl: url || "" 
                     })}
                     endpoint="servicios"
                     enableEditor={true}
