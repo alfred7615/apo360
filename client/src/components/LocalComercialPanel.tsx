@@ -897,17 +897,27 @@ export default function LocalComercialPanel() {
 
   const guardarCategoriaLocalMutation = useMutation({
     mutationFn: (data: Partial<CategoriaCatalogoLocal>) => {
+      const payload = {
+        codigo: data.codigo,
+        nombre: data.nombre,
+        descripcion: data.descripcion,
+        icono: data.icono,
+        categoriaPadreId: data.categoriaPadreId,
+        etiquetaPrecio1: data.etiquetaPrecio1,
+        etiquetaPrecio2: data.etiquetaPrecio2,
+        etiquetaPrecio3: data.etiquetaPrecio3,
+        etiquetaPrecio4: data.etiquetaPrecio4,
+      };
       if (editingCategoria) {
-        const { nombre, descripcion, icono, categoriaPadreId } = data;
-        return apiRequest("PUT", `/api/mi-catalogo-local/categorias/${editingCategoria.id}`, { nombre, descripcion, icono, categoriaPadreId });
+        return apiRequest("PUT", `/api/mi-catalogo-local/categorias/${editingCategoria.id}`, payload);
       }
-      return apiRequest("POST", "/api/mi-catalogo-local/categorias", data);
+      return apiRequest("POST", "/api/mi-catalogo-local/categorias", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mi-catalogo-local"] });
       setShowCategoriaModal(false);
       setEditingCategoria(null);
-      setCategoriaForm({ nombre: "", descripcion: "", icono: "", categoriaPadreId: null });
+      setCategoriaForm({ codigo: "", nombre: "", descripcion: "", icono: "", categoriaPadreId: null, etiquetaPrecio1: "Personal", etiquetaPrecio2: "Mediana", etiquetaPrecio3: "Familiar", etiquetaPrecio4: "Extra" });
       toast({ title: editingCategoria ? "Categoría actualizada" : "Categoría creada" });
     },
     onError: (error: any) => {
@@ -928,17 +938,31 @@ export default function LocalComercialPanel() {
 
   const guardarItemLocalMutation = useMutation({
     mutationFn: (data: Partial<ItemCatalogoLocal>) => {
+      const payload = {
+        codigo: data.codigo,
+        nombre: data.nombre,
+        descripcion: data.descripcion,
+        precio1: data.precio1,
+        precio2: data.precio2,
+        precio3: data.precio3,
+        precio4: data.precio4,
+        categoriaId: data.categoriaId,
+        imagenUrl: data.imagenUrl,
+        ingredientes: data.ingredientes,
+        tiempoPreparacion: data.tiempoPreparacion,
+        disponible: data.disponible,
+        destacado: data.destacado,
+      };
       if (editingItemLocal) {
-        const { nombre, descripcion, precio, precioOferta, categoriaId, imagenes, disponible, destacado } = data;
-        return apiRequest("PUT", `/api/mi-catalogo-local/items/${editingItemLocal.id}`, { nombre, descripcion, precio, precioOferta, categoriaId, imagenes, disponible, destacado });
+        return apiRequest("PUT", `/api/mi-catalogo-local/items/${editingItemLocal.id}`, payload);
       }
-      return apiRequest("POST", "/api/mi-catalogo-local/items", data);
+      return apiRequest("POST", "/api/mi-catalogo-local/items", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mi-catalogo-local"] });
       setShowItemLocalModal(false);
       setEditingItemLocal(null);
-      setItemLocalForm({ nombre: "", descripcion: "", precio: "", precioOferta: "", categoriaId: null, imagenes: [], disponible: true, destacado: false });
+      setItemLocalForm({ codigo: "", nombre: "", descripcion: "", precio1: "", precio2: "", precio3: "", precio4: "", categoriaId: null, imagenUrl: "", ingredientes: "", tiempoPreparacion: "", disponible: true, destacado: false });
       toast({ title: editingItemLocal ? "Producto actualizado" : "Producto creado" });
     },
     onError: (error: any) => {
@@ -3812,6 +3836,12 @@ export default function LocalComercialPanel() {
                         step="0.01"
                         value={itemLocalForm.precio1 || ""}
                         onChange={(e) => setItemLocalForm({ ...itemLocalForm, precio1: e.target.value })}
+                        onBlur={(e) => {
+                          const val = e.target.value;
+                          if (val && !isNaN(parseFloat(val))) {
+                            setItemLocalForm({ ...itemLocalForm, precio1: parseFloat(val).toFixed(2) });
+                          }
+                        }}
                         placeholder="0.00"
                         data-testid="input-precio1-item-local"
                       />
@@ -3826,6 +3856,12 @@ export default function LocalComercialPanel() {
                         step="0.01"
                         value={itemLocalForm.precio2 || ""}
                         onChange={(e) => setItemLocalForm({ ...itemLocalForm, precio2: e.target.value })}
+                        onBlur={(e) => {
+                          const val = e.target.value;
+                          if (val && !isNaN(parseFloat(val))) {
+                            setItemLocalForm({ ...itemLocalForm, precio2: parseFloat(val).toFixed(2) });
+                          }
+                        }}
                         placeholder="0.00"
                         data-testid="input-precio2-item-local"
                       />
@@ -3840,6 +3876,12 @@ export default function LocalComercialPanel() {
                         step="0.01"
                         value={itemLocalForm.precio3 || ""}
                         onChange={(e) => setItemLocalForm({ ...itemLocalForm, precio3: e.target.value })}
+                        onBlur={(e) => {
+                          const val = e.target.value;
+                          if (val && !isNaN(parseFloat(val))) {
+                            setItemLocalForm({ ...itemLocalForm, precio3: parseFloat(val).toFixed(2) });
+                          }
+                        }}
                         placeholder="0.00"
                         data-testid="input-precio3-item-local"
                       />
@@ -3854,6 +3896,12 @@ export default function LocalComercialPanel() {
                         step="0.01"
                         value={itemLocalForm.precio4 || ""}
                         onChange={(e) => setItemLocalForm({ ...itemLocalForm, precio4: e.target.value })}
+                        onBlur={(e) => {
+                          const val = e.target.value;
+                          if (val && !isNaN(parseFloat(val))) {
+                            setItemLocalForm({ ...itemLocalForm, precio4: parseFloat(val).toFixed(2) });
+                          }
+                        }}
                         placeholder="0.00"
                         data-testid="input-precio4-item-local"
                       />
