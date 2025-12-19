@@ -1627,6 +1627,7 @@ export type ConfiguracionCosto = typeof configuracionCostos.$inferSelect;
 
 // ============================================================
 // CATÁLOGOS DE LOCALES COMERCIALES (cartas, menús completos)
+// Estructura según Figma Frame 35: Logo + Nombre + Redes Sociales + Ubicación
 // ============================================================
 export const catalogosLocales = pgTable("catalogos_locales", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1634,14 +1635,24 @@ export const catalogosLocales = pgTable("catalogos_locales", {
   nombre: varchar("nombre", { length: 200 }).notNull(),
   descripcion: text("descripcion"),
   logoUrl: varchar("logo_url"),
+  bannerUrl: varchar("banner_url"),
   direccion: text("direccion"),
   gpsLatitud: real("gps_latitud"),
   gpsLongitud: real("gps_longitud"),
   telefono: varchar("telefono", { length: 20 }),
   whatsapp: varchar("whatsapp", { length: 20 }),
   horario: varchar("horario", { length: 200 }),
+  // Redes Sociales (Figma Frame 35)
+  facebook: varchar("facebook"),
+  instagram: varchar("instagram"),
+  tiktok: varchar("tiktok"),
+  youtube: varchar("youtube"),
+  pinterest: varchar("pinterest"),
+  paginaWeb: varchar("pagina_web"),
+  // Estado y métricas
   activo: boolean("activo").default(true),
   destacado: boolean("destacado").default(false),
+  verificado: boolean("verificado").default(false),
   totalFavoritos: integer("total_favoritos").default(0),
   totalVistas: integer("total_vistas").default(0),
   orden: integer("orden").default(0),
@@ -1654,16 +1665,23 @@ export type InsertCatalogoLocal = z.infer<typeof insertCatalogoLocalSchema>;
 export type CatalogoLocal = typeof catalogosLocales.$inferSelect;
 
 // ============================================================
-// CATEGORÍAS DE CATÁLOGOS (ej: Pizzas Clásicas, Pizzas Gourmet)
+// CATEGORÍAS DE CATÁLOGOS (ej: 1.00 PIZZAS CLASICAS, 2.00 PIZZAS PREMIUM)
+// Código numérico jerárquico según Figma Frame 35
 // ============================================================
 export const categoriasCatalogo = pgTable("categorias_catalogo", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   catalogoId: varchar("catalogo_id").notNull().references(() => catalogosLocales.id),
+  codigo: varchar("codigo", { length: 10 }).notNull(), // "1.00", "2.00", "3.00" - código visible en el catálogo
   nombre: varchar("nombre", { length: 100 }).notNull(),
   descripcion: text("descripcion"),
   imagenUrl: varchar("imagen_url"),
   orden: integer("orden").default(0),
   activo: boolean("activo").default(true),
+  // Etiquetas de tamaños personalizables por categoría (Figma: Personal, Mediana, Familiar, Extra)
+  etiquetaPrecio1: varchar("etiqueta_precio_1", { length: 50 }).default("Personal"),
+  etiquetaPrecio2: varchar("etiqueta_precio_2", { length: 50 }).default("Mediana"),
+  etiquetaPrecio3: varchar("etiqueta_precio_3", { length: 50 }).default("Familiar"),
+  etiquetaPrecio4: varchar("etiqueta_precio_4", { length: 50 }).default("Extra"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -1672,21 +1690,32 @@ export type InsertCategoriaCatalogo = z.infer<typeof insertCategoriaCatalogoSche
 export type CategoriaCatalogo = typeof categoriasCatalogo.$inferSelect;
 
 // ============================================================
-// ITEMS DE CATÁLOGO (productos dentro del catálogo con categoría)
+// ITEMS DE CATÁLOGO / PRODUCTOS (subcategorías según Figma Frame 35)
+// Código: 1.01, 1.02, 1.03 = subcategorías de categoría 1.00
+// Sistema de 4 precios flexible: solo se muestran los que tienen valor
 // ============================================================
 export const itemsCatalogo = pgTable("items_catalogo", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   catalogoId: varchar("catalogo_id").notNull().references(() => catalogosLocales.id),
   categoriaId: varchar("categoria_id").references(() => categoriasCatalogo.id),
+  codigo: varchar("codigo", { length: 10 }), // "1.01", "1.02", "2.01" - subcódigo del producto
   nombre: varchar("nombre", { length: 200 }).notNull(),
   descripcion: text("descripcion"),
-  precio: decimal("precio", { precision: 10, scale: 2 }).notNull(),
+  // Sistema de 4 precios (Figma Frame 35: Personal, Mediana, Familiar, Extra)
+  // Solo se mostrarán los precios que tengan valor (flexible)
+  precio1: decimal("precio_1", { precision: 10, scale: 2 }), // Personal
+  precio2: decimal("precio_2", { precision: 10, scale: 2 }), // Mediana
+  precio3: decimal("precio_3", { precision: 10, scale: 2 }), // Familiar
+  precio4: decimal("precio_4", { precision: 10, scale: 2 }), // Extra
+  // Campos legacy para compatibilidad
+  precio: decimal("precio", { precision: 10, scale: 2 }),
   precioOferta: decimal("precio_oferta", { precision: 10, scale: 2 }),
   imagenUrl: varchar("imagen_url"),
   ingredientes: text("ingredientes"),
   tiempoPreparacion: varchar("tiempo_preparacion", { length: 50 }),
   disponible: boolean("disponible").default(true),
   destacado: boolean("destacado").default(false),
+  // Métricas de interacción social (Figma: botones corazón, estrella, compartir)
   likes: integer("likes").default(0),
   favoritos: integer("favoritos").default(0),
   compartidos: integer("compartidos").default(0),
