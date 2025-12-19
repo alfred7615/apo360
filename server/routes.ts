@@ -6584,6 +6584,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!catalogo) {
         return res.status(400).json({ message: "Debes crear un catálogo primero" });
       }
+
+      // Validar código único si se proporciona
+      if (req.body.codigo) {
+        const categoriasExistentes = await storage.getCategoriasCatalogo(catalogo.id);
+        const codigoExiste = categoriasExistentes.some(c => c.codigo === req.body.codigo);
+        if (codigoExiste) {
+          return res.status(400).json({ message: `El código "${req.body.codigo}" ya existe. Por favor usa un código diferente.` });
+        }
+      }
       
       const categoria = await storage.createCategoriaCatalogo({
         ...req.body,
@@ -6610,6 +6619,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categoria = await storage.getCategoriaCatalogo(req.params.id);
       if (!categoria || categoria.catalogoId !== catalogo.id) {
         return res.status(403).json({ message: "No tienes permiso para modificar esta categoría" });
+      }
+
+      // Validar código único si se proporciona (excluyendo la categoría actual)
+      if (req.body.codigo && req.body.codigo !== categoria.codigo) {
+        const categoriasExistentes = await storage.getCategoriasCatalogo(catalogo.id);
+        const codigoExiste = categoriasExistentes.some((c: any) => c.codigo === req.body.codigo && c.id !== req.params.id);
+        if (codigoExiste) {
+          return res.status(400).json({ message: `El código "${req.body.codigo}" ya existe. Por favor usa un código diferente.` });
+        }
       }
       
       const actualizada = await storage.updateCategoriaCatalogo(req.params.id, req.body);
@@ -6647,6 +6665,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ITEMS DEL CATÁLOGO (Productos)
   // ============================================================
 
+  // Helper para limpiar datos numéricos (convertir strings vacíos a null)
+  const limpiarPrecio = (valor: any): string | null => {
+    if (valor === null || valor === undefined || valor === "") return null;
+    const num = parseFloat(valor);
+    return isNaN(num) ? null : num.toFixed(2);
+  };
+
   // Crear item
   app.post('/api/mi-catalogo-local/items', isAuthenticated, async (req: any, res) => {
     try {
@@ -6656,11 +6681,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!catalogo) {
         return res.status(400).json({ message: "Debes crear un catálogo primero" });
       }
-      
-      const item = await storage.createItemCatalogoLocal({
+
+      // Validar código único si se proporciona
+      if (req.body.codigo) {
+        const itemsExistentes = await storage.getItemsCatalogo(catalogo.id);
+        const codigoExiste = itemsExistentes.some((i: any) => i.codigo === req.body.codigo);
+        if (codigoExiste) {
+          return res.status(400).json({ message: `El código "${req.body.codigo}" ya existe. Por favor usa un código diferente.` });
+        }
+      }
+
+      // Limpiar precios vacíos
+      const datosLimpios = {
         ...req.body,
         catalogoId: catalogo.id,
-      });
+        precio: limpiarPrecio(req.body.precio),
+        precio1: limpiarPrecio(req.body.precio1),
+        precio2: limpiarPrecio(req.body.precio2),
+        precio3: limpiarPrecio(req.body.precio3),
+        precio4: limpiarPrecio(req.body.precio4),
+        precioOferta: limpiarPrecio(req.body.precioOferta),
+      };
+      
+      const item = await storage.createItemCatalogoLocal(datosLimpios);
       
       res.status(201).json(item);
     } catch (error: any) {
@@ -6683,8 +6726,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!item || item.catalogoId !== catalogo.id) {
         return res.status(403).json({ message: "No tienes permiso para modificar este producto" });
       }
+
+      // Validar código único si se proporciona (excluyendo el item actual)
+      if (req.body.codigo && req.body.codigo !== item.codigo) {
+        const itemsExistentes = await storage.getItemsCatalogo(catalogo.id);
+        const codigoExiste = itemsExistentes.some((i: any) => i.codigo === req.body.codigo && i.id !== req.params.id);
+        if (codigoExiste) {
+          return res.status(400).json({ message: `El código "${req.body.codigo}" ya existe. Por favor usa un código diferente.` });
+        }
+      }
+
+      // Limpiar precios vacíos
+      const datosLimpios = {
+        ...req.body,
+        precio: limpiarPrecio(req.body.precio),
+        precio1: limpiarPrecio(req.body.precio1),
+        precio2: limpiarPrecio(req.body.precio2),
+        precio3: limpiarPrecio(req.body.precio3),
+        precio4: limpiarPrecio(req.body.precio4),
+        precioOferta: limpiarPrecio(req.body.precioOferta),
+      };
       
-      const actualizado = await storage.updateItemCatalogoLocal(req.params.id, req.body);
+      const actualizado = await storage.updateItemCatalogoLocal(req.params.id, datosLimpios);
       res.json(actualizado);
     } catch (error: any) {
       console.error("Error al actualizar item:", error);

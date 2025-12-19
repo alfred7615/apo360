@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUpload } from "@/components/ImageUpload";
 import { MapPicker } from "@/components/MapPicker";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
@@ -3819,17 +3820,30 @@ export default function LocalComercialPanel() {
                   />
                 </div>
                 
-                {/* Sistema de 4 Precios según Figma Frame 35 */}
-                <div className="space-y-2">
+                {/* Sistema de 4 Precios con checkboxes - Figma Frame 35 */}
+                <div className="space-y-3">
                   <Label className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    Precios por Tamaño (solo completa los necesarios)
+                    Precios por Tamaño (habilita los que necesites)
                   </Label>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="precio1ItemLocal" className="text-xs text-muted-foreground">
-                        {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio1 || "Personal"}
-                      </Label>
+                    {/* Precio 1 */}
+                    <div className="space-y-1 p-2 border rounded-md">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="habilitarPrecio1"
+                          checked={!!itemLocalForm.precio1}
+                          onCheckedChange={(checked) => {
+                            if (!checked) {
+                              setItemLocalForm({ ...itemLocalForm, precio1: "" });
+                            }
+                          }}
+                          data-testid="checkbox-precio1-item"
+                        />
+                        <Label htmlFor="habilitarPrecio1" className="text-xs text-primary font-medium cursor-pointer">
+                          {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio1 || "Personal"}
+                        </Label>
+                      </div>
                       <Input
                         id="precio1ItemLocal"
                         type="number"
@@ -3846,10 +3860,23 @@ export default function LocalComercialPanel() {
                         data-testid="input-precio1-item-local"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="precio2ItemLocal" className="text-xs text-muted-foreground">
-                        {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio2 || "Mediana"}
-                      </Label>
+                    {/* Precio 2 */}
+                    <div className="space-y-1 p-2 border rounded-md">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="habilitarPrecio2"
+                          checked={!!itemLocalForm.precio2}
+                          onCheckedChange={(checked) => {
+                            if (!checked) {
+                              setItemLocalForm({ ...itemLocalForm, precio2: "" });
+                            }
+                          }}
+                          data-testid="checkbox-precio2-item"
+                        />
+                        <Label htmlFor="habilitarPrecio2" className="text-xs text-primary font-medium cursor-pointer">
+                          {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio2 || "Mediana"}
+                        </Label>
+                      </div>
                       <Input
                         id="precio2ItemLocal"
                         type="number"
@@ -3866,10 +3893,23 @@ export default function LocalComercialPanel() {
                         data-testid="input-precio2-item-local"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="precio3ItemLocal" className="text-xs text-muted-foreground">
-                        {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio3 || "Familiar"}
-                      </Label>
+                    {/* Precio 3 */}
+                    <div className="space-y-1 p-2 border rounded-md">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="habilitarPrecio3"
+                          checked={!!itemLocalForm.precio3}
+                          onCheckedChange={(checked) => {
+                            if (!checked) {
+                              setItemLocalForm({ ...itemLocalForm, precio3: "" });
+                            }
+                          }}
+                          data-testid="checkbox-precio3-item"
+                        />
+                        <Label htmlFor="habilitarPrecio3" className="text-xs text-primary font-medium cursor-pointer">
+                          {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio3 || "Familiar"}
+                        </Label>
+                      </div>
                       <Input
                         id="precio3ItemLocal"
                         type="number"
@@ -3886,10 +3926,23 @@ export default function LocalComercialPanel() {
                         data-testid="input-precio3-item-local"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="precio4ItemLocal" className="text-xs text-muted-foreground">
-                        {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio4 || "Extra"}
-                      </Label>
+                    {/* Precio 4 */}
+                    <div className="space-y-1 p-2 border rounded-md">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="habilitarPrecio4"
+                          checked={!!itemLocalForm.precio4}
+                          onCheckedChange={(checked) => {
+                            if (!checked) {
+                              setItemLocalForm({ ...itemLocalForm, precio4: "" });
+                            }
+                          }}
+                          data-testid="checkbox-precio4-item"
+                        />
+                        <Label htmlFor="habilitarPrecio4" className="text-xs text-primary font-medium cursor-pointer">
+                          {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio4 || "Extra"}
+                        </Label>
+                      </div>
                       <Input
                         id="precio4ItemLocal"
                         type="number"
