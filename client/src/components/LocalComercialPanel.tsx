@@ -96,6 +96,10 @@ interface CategoriaCatalogoLocal {
   etiquetaPrecio2?: string;
   etiquetaPrecio3?: string;
   etiquetaPrecio4?: string;
+  habilitarPrecio1?: boolean;
+  habilitarPrecio2?: boolean;
+  habilitarPrecio3?: boolean;
+  habilitarPrecio4?: boolean;
 }
 
 interface ItemCatalogoLocal {
