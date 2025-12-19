@@ -961,13 +961,22 @@ export default function LocalComercialPanel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mi-catalogo-local"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mi-saldo"] });
       setShowItemLocalModal(false);
       setEditingItemLocal(null);
       setItemLocalForm({ codigo: "", nombre: "", descripcion: "", precio1: "", precio2: "", precio3: "", precio4: "", categoriaId: null, imagenUrl: "", ingredientes: "", tiempoPreparacion: "", disponible: true, destacado: false });
-      toast({ title: editingItemLocal ? "Producto actualizado" : "Producto creado" });
+      toast({ title: editingItemLocal ? "Producto actualizado" : "Producto creado", description: !editingItemLocal ? "Se descontó S/ 0.20 de tu saldo" : undefined });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      if (error.message?.includes('Saldo insuficiente') || error.tipoError === 'saldo_insuficiente') {
+        toast({ 
+          title: "Saldo Insuficiente", 
+          description: error.message || "No tienes saldo suficiente para crear un producto. Recarga tu saldo desde el Panel de Usuario.", 
+          variant: "destructive" 
+        });
+      } else {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      }
     },
   });
 

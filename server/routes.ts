@@ -6682,6 +6682,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Debes crear un catálogo primero" });
       }
 
+      // Validar saldo del usuario para crear producto
+      const configCosto = await storage.getConfiguracionCosto('crear_producto');
+      const costoCreacion = configCosto?.montoFijo ? parseFloat(configCosto.montoFijo) : 0.20;
+      const saldoMinimo = configCosto?.saldoMinimo ? parseFloat(configCosto.saldoMinimo) : 0.50;
+      
+      const saldoUsuario = await storage.getSaldoUsuario(usuarioId);
+      const saldoActual = saldoUsuario ? parseFloat(saldoUsuario.saldo) : 0;
+      
+      if (saldoActual < costoCreacion) {
+        return res.status(402).json({ 
+          message: `Saldo insuficiente. Necesitas S/ ${costoCreacion.toFixed(2)} para crear un producto. Tu saldo actual es S/ ${saldoActual.toFixed(2)}. Por favor recarga tu saldo.`,
+          saldoActual: saldoActual.toFixed(2),
+          costoRequerido: costoCreacion.toFixed(2),
+          saldoMinimo: saldoMinimo.toFixed(2),
+          tipoError: 'saldo_insuficiente'
+        });
+      }
+
       // Validar código único si se proporciona
       if (req.body.codigo) {
         const itemsExistentes = await storage.getItemsCatalogo(catalogo.id);
@@ -6704,6 +6722,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const item = await storage.createItemCatalogoLocal(datosLimpios);
+
+      // Descontar saldo del usuario
+      await storage.actualizarSaldo(usuarioId, costoCreacion, 'egreso');
+
+      // Registrar la transacción
+      await storage.createTransaccionSaldo({
+        usuarioId,
+        tipo: 'egreso',
+        concepto: `Creación de producto: ${datosLimpios.nombre || 'Sin nombre'}`,
+        monto: costoCreacion.toFixed(2),
+        saldoAnterior: saldoActual.toFixed(2),
+        saldoNuevo: (saldoActual - costoCreacion).toFixed(2),
+        referenciaId: item.id,
+        referenciaTipo: 'producto_catalogo',
+        estado: 'completado',
+      });
       
       res.status(201).json(item);
     } catch (error: any) {
