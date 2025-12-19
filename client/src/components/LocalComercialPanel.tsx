@@ -1500,39 +1500,6 @@ export default function LocalComercialPanel() {
                   </Card>
                 ) : (
                   <div className="space-y-4">
-                    {/* Info del catálogo */}
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            {miCatalogoLocal.logoUrl ? (
-                              <img 
-                                src={miCatalogoLocal.logoUrl} 
-                                alt={miCatalogoLocal.nombre}
-                                className="w-12 h-12 object-cover rounded-lg"
-                              />
-                            ) : (
-                              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                                <Store className="h-6 w-6 text-primary" />
-                              </div>
-                            )}
-                            <div>
-                              <h4 className="font-medium">{miCatalogoLocal.nombre}</h4>
-                              {miCatalogoLocal.descripcion && (
-                                <p className="text-sm text-muted-foreground line-clamp-1">
-                                  {miCatalogoLocal.descripcion}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={miCatalogoLocal.activo ? "default" : "secondary"}>
-                              {miCatalogoLocal.activo ? "Activo" : "Inactivo"}
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
 
                     {/* Categorías y productos */}
                     {(!miCatalogoLocal.categorias || miCatalogoLocal.categorias.length === 0) && 
@@ -1549,67 +1516,73 @@ export default function LocalComercialPanel() {
                         </CardContent>
                       </Card>
                     ) : (
-                      <div className="space-y-4">
-                        {/* Mostrar categorías */}
+                      <div className="space-y-3">
+                        {/* Mostrar categorías en formato lista */}
                         {miCatalogoLocal.categorias && miCatalogoLocal.categorias.filter(c => !c.categoriaPadreId).map((categoria) => (
-                          <Card key={categoria.id} data-testid={`card-categoria-${categoria.id}`}>
-                            <CardHeader className="pb-2">
-                              <div className="flex items-center justify-between gap-4">
-                                <CardTitle className="text-base flex items-center gap-2">
-                                  {categoria.codigo && (
-                                    <Badge variant="secondary" className="text-xs">{categoria.codigo}</Badge>
-                                  )}
+                          <div key={categoria.id} className="border rounded-lg overflow-hidden" data-testid={`card-categoria-${categoria.id}`}>
+                            {/* Header de categoría - formato: CÓDIGO | NOMBRE */}
+                            <div className="bg-primary/10 px-4 py-3 flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-3">
+                                <span className="font-bold text-primary text-lg min-w-[50px]">
+                                  {categoria.codigo || "-"}
+                                </span>
+                                <span className="font-semibold text-base uppercase flex items-center gap-2">
                                   {categoria.icono && <span>{categoria.icono}</span>}
                                   {categoria.nombre}
-                                </CardTitle>
-                                <div className="flex items-center gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => {
-                                      setEditingCategoria(categoria);
-                                      setCategoriaForm({
-                                        codigo: categoria.codigo || "",
-                                        nombre: categoria.nombre,
-                                        descripcion: categoria.descripcion || "",
-                                        icono: categoria.icono || "",
-                                        categoriaPadreId: categoria.categoriaPadreId,
-                                        etiquetaPrecio1: categoria.etiquetaPrecio1 || "Personal",
-                                        etiquetaPrecio2: categoria.etiquetaPrecio2 || "Mediana",
-                                        etiquetaPrecio3: categoria.etiquetaPrecio3 || "Familiar",
-                                        etiquetaPrecio4: categoria.etiquetaPrecio4 || "Extra",
-                                      });
-                                      setShowCategoriaModal(true);
-                                    }}
-                                    data-testid={`button-editar-categoria-${categoria.id}`}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={() => eliminarCategoriaLocalMutation.mutate(categoria.id)}
-                                    data-testid={`button-eliminar-categoria-${categoria.id}`}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                                </span>
                               </div>
-                              {categoria.descripcion && (
-                                <CardDescription>{categoria.descripcion}</CardDescription>
-                              )}
-                            </CardHeader>
-                            <CardContent>
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => {
+                                    setEditingCategoria(categoria);
+                                    setCategoriaForm({
+                                      codigo: categoria.codigo || "",
+                                      nombre: categoria.nombre,
+                                      descripcion: categoria.descripcion || "",
+                                      icono: categoria.icono || "",
+                                      categoriaPadreId: categoria.categoriaPadreId,
+                                      etiquetaPrecio1: categoria.etiquetaPrecio1 || "Personal",
+                                      etiquetaPrecio2: categoria.etiquetaPrecio2 || "Mediana",
+                                      etiquetaPrecio3: categoria.etiquetaPrecio3 || "Familiar",
+                                      etiquetaPrecio4: categoria.etiquetaPrecio4 || "Extra",
+                                    });
+                                    setShowCategoriaModal(true);
+                                  }}
+                                  data-testid={`button-editar-categoria-${categoria.id}`}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => eliminarCategoriaLocalMutation.mutate(categoria.id)}
+                                  data-testid={`button-eliminar-categoria-${categoria.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            {categoria.descripcion && (
+                              <p className="px-4 py-2 text-sm text-muted-foreground border-b">{categoria.descripcion}</p>
+                            )}
+                            <div className="p-4">
                               {/* Subcategorías */}
                               {(miCatalogoLocal.categorias?.filter(sub => sub.categoriaPadreId === categoria.id)?.length ?? 0) > 0 && (
-                                <div className="mb-4 pl-4 border-l-2 border-muted">
+                                <div className="mb-4 space-y-1">
                                   {miCatalogoLocal.categorias?.filter(sub => sub.categoriaPadreId === categoria.id).map((sub) => (
-                                    <div key={sub.id} className="flex items-center justify-between py-2">
-                                      <span className="text-sm font-medium flex items-center gap-2">
-                                        {sub.icono && <span>{sub.icono}</span>}
-                                        {sub.nombre}
-                                      </span>
+                                    <div key={sub.id} className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded">
+                                      <div className="flex items-center gap-3">
+                                        <span className="font-medium text-primary min-w-[50px]">
+                                          {sub.codigo || "-"}
+                                        </span>
+                                        <span className="text-sm font-medium flex items-center gap-2">
+                                          {sub.icono && <span>{sub.icono}</span>}
+                                          {sub.nombre}
+                                        </span>
+                                      </div>
                                       <div className="flex items-center gap-1">
                                         <Button 
                                           variant="ghost" 
@@ -1753,8 +1726,8 @@ export default function LocalComercialPanel() {
                                   </Card>
                                 ))}
                               </div>
-                            </CardContent>
-                          </Card>
+                            </div>
+                          </div>
                         ))}
 
                         {/* Productos sin categoría */}
