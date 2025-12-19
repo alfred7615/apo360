@@ -110,8 +110,10 @@ export default function SeccionLocalesComerciales() {
     }
   };
 
-  const formatPrecio = (precio: string | number) => {
+  const formatPrecio = (precio: string | number | null | undefined) => {
+    if (precio === null || precio === undefined) return "S/ 0.00";
     const num = typeof precio === "string" ? parseFloat(precio) : precio;
+    if (isNaN(num)) return "S/ 0.00";
     return `S/ ${num.toFixed(2)}`;
   };
 
@@ -144,7 +146,7 @@ export default function SeccionLocalesComerciales() {
             </Badge>
           )}
           
-          {item.precioOferta && parseFloat(item.precioOferta) < parseFloat(item.precio) && (
+          {item.precioOferta && item.precio && parseFloat(item.precioOferta) < parseFloat(item.precio) && (
             <Badge className="absolute top-2 right-2 bg-red-500 text-white border-0">
               Oferta
             </Badge>
@@ -164,7 +166,7 @@ export default function SeccionLocalesComerciales() {
           
           <div className="flex items-center justify-between mt-2">
             <div className="flex flex-col">
-              {item.precioOferta && parseFloat(item.precioOferta) < parseFloat(item.precio) ? (
+              {item.precioOferta && item.precio && parseFloat(item.precioOferta) < parseFloat(item.precio) ? (
                 <>
                   <span className="text-xs text-muted-foreground line-through">
                     {formatPrecio(item.precio)}
@@ -346,7 +348,7 @@ export default function SeccionLocalesComerciales() {
                 
                 <div className="flex items-center justify-between">
                   <div>
-                    {productoSeleccionado.precioOferta && 
+                    {productoSeleccionado.precioOferta && productoSeleccionado.precio &&
                      parseFloat(productoSeleccionado.precioOferta) < parseFloat(productoSeleccionado.precio) ? (
                       <div className="flex items-center gap-2">
                         <span className="text-lg text-muted-foreground line-through">
