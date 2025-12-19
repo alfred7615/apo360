@@ -908,6 +908,10 @@ export default function LocalComercialPanel() {
         etiquetaPrecio2: data.etiquetaPrecio2,
         etiquetaPrecio3: data.etiquetaPrecio3,
         etiquetaPrecio4: data.etiquetaPrecio4,
+        habilitarPrecio1: data.habilitarPrecio1,
+        habilitarPrecio2: data.habilitarPrecio2,
+        habilitarPrecio3: data.habilitarPrecio3,
+        habilitarPrecio4: data.habilitarPrecio4,
       };
       if (editingCategoria) {
         return apiRequest("PUT", `/api/mi-catalogo-local/categorias/${editingCategoria.id}`, payload);
@@ -918,7 +922,7 @@ export default function LocalComercialPanel() {
       queryClient.invalidateQueries({ queryKey: ["/api/mi-catalogo-local"] });
       setShowCategoriaModal(false);
       setEditingCategoria(null);
-      setCategoriaForm({ codigo: "", nombre: "", descripcion: "", icono: "", categoriaPadreId: null, etiquetaPrecio1: "Personal", etiquetaPrecio2: "Mediana", etiquetaPrecio3: "Familiar", etiquetaPrecio4: "Extra" });
+      setCategoriaForm({ codigo: "", nombre: "", descripcion: "", icono: "", categoriaPadreId: null, etiquetaPrecio1: "Personal", etiquetaPrecio2: "Mediana", etiquetaPrecio3: "Familiar", etiquetaPrecio4: "Extra", habilitarPrecio1: true, habilitarPrecio2: true, habilitarPrecio3: true, habilitarPrecio4: true });
       toast({ title: editingCategoria ? "Categoría actualizada" : "Categoría creada" });
     },
     onError: (error: any) => {
@@ -1581,6 +1585,10 @@ export default function LocalComercialPanel() {
                                       etiquetaPrecio2: categoria.etiquetaPrecio2 || "Mediana",
                                       etiquetaPrecio3: categoria.etiquetaPrecio3 || "Familiar",
                                       etiquetaPrecio4: categoria.etiquetaPrecio4 || "Extra",
+                                      habilitarPrecio1: categoria.habilitarPrecio1 !== false,
+                                      habilitarPrecio2: categoria.habilitarPrecio2 !== false,
+                                      habilitarPrecio3: categoria.habilitarPrecio3 !== false,
+                                      habilitarPrecio4: categoria.habilitarPrecio4 !== false,
                                     });
                                     setShowCategoriaModal(true);
                                   }}
@@ -1633,6 +1641,10 @@ export default function LocalComercialPanel() {
                                               etiquetaPrecio2: sub.etiquetaPrecio2 || "Mediana",
                                               etiquetaPrecio3: sub.etiquetaPrecio3 || "Familiar",
                                               etiquetaPrecio4: sub.etiquetaPrecio4 || "Extra",
+                                              habilitarPrecio1: sub.habilitarPrecio1 !== false,
+                                              habilitarPrecio2: sub.habilitarPrecio2 !== false,
+                                              habilitarPrecio3: sub.habilitarPrecio3 !== false,
+                                              habilitarPrecio4: sub.habilitarPrecio4 !== false,
                                             });
                                             setShowCategoriaModal(true);
                                           }}
@@ -3621,7 +3633,7 @@ export default function LocalComercialPanel() {
           setShowCategoriaModal(open);
           if (!open) {
             setEditingCategoria(null);
-            setCategoriaForm({ codigo: "", nombre: "", descripcion: "", icono: "", categoriaPadreId: null, etiquetaPrecio1: "Personal", etiquetaPrecio2: "Mediana", etiquetaPrecio3: "Familiar", etiquetaPrecio4: "Extra" });
+            setCategoriaForm({ codigo: "", nombre: "", descripcion: "", icono: "", categoriaPadreId: null, etiquetaPrecio1: "Personal", etiquetaPrecio2: "Mediana", etiquetaPrecio3: "Familiar", etiquetaPrecio4: "Extra", habilitarPrecio1: true, habilitarPrecio2: true, habilitarPrecio3: true, habilitarPrecio4: true });
           }
         }}>
           <DialogContent className="max-w-lg">
@@ -3708,46 +3720,82 @@ export default function LocalComercialPanel() {
                     Etiquetas de Tamaños/Precios
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Personaliza los nombres de cada columna de precio (ej: Personal, Mediana, Familiar, Extra)
+                    Personaliza los nombres de cada columna de precio. Desmarca para ocultar columnas.
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label htmlFor="etiquetaPrecio1" className="text-xs text-muted-foreground">Precio 1</Label>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="habilitarPrecio1"
+                          checked={categoriaForm.habilitarPrecio1 !== false}
+                          onCheckedChange={(checked) => setCategoriaForm({ ...categoriaForm, habilitarPrecio1: !!checked })}
+                          data-testid="checkbox-habilitar-precio-1"
+                        />
+                        <Label htmlFor="habilitarPrecio1" className="text-xs text-muted-foreground">Precio 1</Label>
+                      </div>
                       <Input
                         id="etiquetaPrecio1"
                         value={categoriaForm.etiquetaPrecio1 || "Personal"}
                         onChange={(e) => setCategoriaForm({ ...categoriaForm, etiquetaPrecio1: e.target.value })}
                         placeholder="Personal"
+                        disabled={categoriaForm.habilitarPrecio1 === false}
                         data-testid="input-etiqueta-precio-1"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="etiquetaPrecio2" className="text-xs text-muted-foreground">Precio 2</Label>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="habilitarPrecio2"
+                          checked={categoriaForm.habilitarPrecio2 !== false}
+                          onCheckedChange={(checked) => setCategoriaForm({ ...categoriaForm, habilitarPrecio2: !!checked })}
+                          data-testid="checkbox-habilitar-precio-2"
+                        />
+                        <Label htmlFor="habilitarPrecio2" className="text-xs text-muted-foreground">Precio 2</Label>
+                      </div>
                       <Input
                         id="etiquetaPrecio2"
                         value={categoriaForm.etiquetaPrecio2 || "Mediana"}
                         onChange={(e) => setCategoriaForm({ ...categoriaForm, etiquetaPrecio2: e.target.value })}
                         placeholder="Mediana"
+                        disabled={categoriaForm.habilitarPrecio2 === false}
                         data-testid="input-etiqueta-precio-2"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="etiquetaPrecio3" className="text-xs text-muted-foreground">Precio 3</Label>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="habilitarPrecio3"
+                          checked={categoriaForm.habilitarPrecio3 !== false}
+                          onCheckedChange={(checked) => setCategoriaForm({ ...categoriaForm, habilitarPrecio3: !!checked })}
+                          data-testid="checkbox-habilitar-precio-3"
+                        />
+                        <Label htmlFor="habilitarPrecio3" className="text-xs text-muted-foreground">Precio 3</Label>
+                      </div>
                       <Input
                         id="etiquetaPrecio3"
                         value={categoriaForm.etiquetaPrecio3 || "Familiar"}
                         onChange={(e) => setCategoriaForm({ ...categoriaForm, etiquetaPrecio3: e.target.value })}
                         placeholder="Familiar"
+                        disabled={categoriaForm.habilitarPrecio3 === false}
                         data-testid="input-etiqueta-precio-3"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="etiquetaPrecio4" className="text-xs text-muted-foreground">Precio 4</Label>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="habilitarPrecio4"
+                          checked={categoriaForm.habilitarPrecio4 !== false}
+                          onCheckedChange={(checked) => setCategoriaForm({ ...categoriaForm, habilitarPrecio4: !!checked })}
+                          data-testid="checkbox-habilitar-precio-4"
+                        />
+                        <Label htmlFor="habilitarPrecio4" className="text-xs text-muted-foreground">Precio 4</Label>
+                      </div>
                       <Input
                         id="etiquetaPrecio4"
                         value={categoriaForm.etiquetaPrecio4 || "Extra"}
                         onChange={(e) => setCategoriaForm({ ...categoriaForm, etiquetaPrecio4: e.target.value })}
                         placeholder="Extra"
+                        disabled={categoriaForm.habilitarPrecio4 === false}
                         data-testid="input-etiqueta-precio-4"
                       />
                     </div>

@@ -1682,6 +1682,11 @@ export const categoriasCatalogo = pgTable("categorias_catalogo", {
   etiquetaPrecio2: varchar("etiqueta_precio_2", { length: 50 }).default("Mediana"),
   etiquetaPrecio3: varchar("etiqueta_precio_3", { length: 50 }).default("Familiar"),
   etiquetaPrecio4: varchar("etiqueta_precio_4", { length: 50 }).default("Extra"),
+  // Checkboxes para habilitar/deshabilitar precios por categoría
+  habilitarPrecio1: boolean("habilitar_precio_1").default(true),
+  habilitarPrecio2: boolean("habilitar_precio_2").default(true),
+  habilitarPrecio3: boolean("habilitar_precio_3").default(true),
+  habilitarPrecio4: boolean("habilitar_precio_4").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
