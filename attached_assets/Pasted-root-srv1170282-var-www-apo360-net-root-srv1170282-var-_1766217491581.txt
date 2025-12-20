@@ -1,0 +1,40 @@
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# # Ver qué tablas existen
+root@srv1170282:/var/www/apo360.net# psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable" -c "\dt"
+
+
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# # Sincronizar schema con la base de datos (crear tablas faltantes)
+root@srv1170282:/var/www/apo360.net# cd /var/www/apo360.net && npm run db:push
+
+> rest-express@1.0.0 db:push
+> drizzle-kit push
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/var/www/apo360.net/drizzle.config.ts'
+Using 'pg' driver for database querying
+[✓] Pulling schema from database...
++ catalogos_locales table will be created
++ categorias_catalogo table will be created
++ favoritos_productos table will be created
++ interacciones_productos table will be created
++ items_catalogo table will be created
++ registro_auditoria table will be created
+--- all table conflicts resolved ---
+
+ Warning  Found data-loss statements:
+· You're about to delete sessions table with 5 items
+
+THIS ACTION WILL CAUSE DATA LOSS AND CANNOT BE REVERTED
+
+Do you still want to push changes?
+[✓] Changes applied
+root@srv1170282:/var/www/apo360.net# psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable" -c "ALTER TABLE items_catalogo ADD COLUMN IF NOT EXISTS etiqueta_precio_1 VARCHAR(50) DEFAULT 'Personal', ADD COLUMN IF NOT EXISTS etiqueta_precio_2 VARCHAR(50) DEFAULT 'Mediana', ADD COLUMN IF NOT EXISTS etiqueta_precio_3 VARCHAR(50) DEFAULT 'Familiar', ADD COLUMN IF NOT EXISTS etiqueta_precio_4 VARCHAR(50) DEFAULT 'Extra';"
+NOTICE:  column "etiqueta_precio_1" of relation "items_catalogo" already exists, skipping
+NOTICE:  column "etiqueta_precio_2" of relation "items_catalogo" already exists, skipping
+NOTICE:  column "etiqueta_precio_3" of relation "items_catalogo" already exists, skipping
+NOTICE:  column "etiqueta_precio_4" of relation "items_catalogo" already exists, skipping
+ALTER TABLE
+root@srv1170282:/var/www/apo360.net#
