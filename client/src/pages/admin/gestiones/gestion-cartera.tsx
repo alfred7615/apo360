@@ -2186,7 +2186,9 @@ function ReportesCartera() {
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [generandoPDF, setGenerandoPDF] = useState(false);
-  const [generandoBackup, setGenerandoBackup] = useState(false);
+  const [generandoBackupCartera, setGenerandoBackupCartera] = useState(false);
+  const [generandoBackupSistema, setGenerandoBackupSistema] = useState(false);
+  const [tipoBackupFiltro, setTipoBackupFiltro] = useState<"todos" | "cartera" | "sistema">("todos");
   const { toast } = useToast();
 
   const filtros = periodo === "personalizado" 
@@ -2225,8 +2227,31 @@ function ReportesCartera() {
     archivo: string;
     fecha: string;
     tamaño: number;
+    tipo: string;
   }[]>({
-    queryKey: ["/api/reportes/backups"],
+    queryKey: ["/api/reportes/backups", tipoBackupFiltro],
+    queryFn: async () => {
+      const params = tipoBackupFiltro !== "todos" ? `?tipo=${tipoBackupFiltro}` : "";
+      const response = await fetch(`/api/reportes/backups${params}`);
+      if (!response.ok) throw new Error("Error al obtener backups");
+      return response.json();
+    },
+  });
+
+  const { data: auditoria = [], isLoading: loadingAuditoria } = useQuery<{
+    id: number;
+    usuarioNombre: string;
+    tipoAccion: string;
+    entidad: string;
+    descripcion: string;
+    createdAt: string;
+  }[]>({
+    queryKey: ["/api/auditoria"],
+    queryFn: async () => {
+      const response = await fetch("/api/auditoria?limite=50");
+      if (!response.ok) throw new Error("Error al obtener auditoría");
+      return response.json();
+    },
   });
 
   const descargarPDF = async () => {
@@ -2261,18 +2286,33 @@ function ReportesCartera() {
     }
   };
 
-  const generarBackupManual = async () => {
-    setGenerandoBackup(true);
+  const generarBackupCarteraManual = async () => {
+    setGenerandoBackupCartera(true);
     try {
-      const response = await fetch("/api/reportes/backup", { method: "POST" });
-      if (!response.ok) throw new Error("Error al generar backup");
+      const response = await fetch("/api/reportes/backup/cartera", { method: "POST" });
+      if (!response.ok) throw new Error("Error al generar backup de cartera");
       
       queryClient.invalidateQueries({ queryKey: ["/api/reportes/backups"] });
-      toast({ title: "Backup generado exitosamente" });
+      toast({ title: "Backup de cartera (PDF) generado exitosamente" });
     } catch (error) {
-      toast({ title: "Error al generar backup", variant: "destructive" });
+      toast({ title: "Error al generar backup de cartera", variant: "destructive" });
     } finally {
-      setGenerandoBackup(false);
+      setGenerandoBackupCartera(false);
+    }
+  };
+
+  const generarBackupSistemaManual = async () => {
+    setGenerandoBackupSistema(true);
+    try {
+      const response = await fetch("/api/reportes/backup/sistema", { method: "POST" });
+      if (!response.ok) throw new Error("Error al generar backup del sistema");
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/reportes/backups"] });
+      toast({ title: "Backup del sistema (JSON) generado exitosamente" });
+    } catch (error) {
+      toast({ title: "Error al generar backup del sistema", variant: "destructive" });
+    } finally {
+      setGenerandoBackupSistema(false);
     }
   };
 
@@ -2446,36 +2486,76 @@ function ReportesCartera() {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Backups Disponibles
-            </CardTitle>
-            <CardDescription>
-              Archivos PDF de respaldo generados automáticamente
-            </CardDescription>
-          </div>
-          <Button 
-            onClick={generarBackupManual}
-            disabled={generandoBackup}
-            variant="outline"
-            data-testid="button-generar-backup"
-          >
-            {generandoBackup ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4 mr-2" />
-            )}
-            Generar Backup Ahora
-          </Button>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Sistema de Backups
+          </CardTitle>
+          <CardDescription>
+            Dos tipos de respaldo: Cartera (PDF financiero) y Sistema (JSON completo). Generación automática diaria a las 00:55 AM.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              onClick={generarBackupCarteraManual}
+              disabled={generandoBackupCartera}
+              variant="outline"
+              className="flex-1 min-w-[200px]"
+              data-testid="button-generar-backup-cartera"
+            >
+              {generandoBackupCartera ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <DollarSign className="h-4 w-4 mr-2" />
+              )}
+              Backup Cartera (PDF)
+            </Button>
+            <Button 
+              onClick={generarBackupSistemaManual}
+              disabled={generandoBackupSistema}
+              variant="outline"
+              className="flex-1 min-w-[200px]"
+              data-testid="button-generar-backup-sistema"
+            >
+              {generandoBackupSistema ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Wallet className="h-4 w-4 mr-2" />
+              )}
+              Backup Sistema (JSON)
+            </Button>
+          </div>
+
+          <div className="flex gap-2">
+            <Button 
+              variant={tipoBackupFiltro === "todos" ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setTipoBackupFiltro("todos")}
+            >
+              Todos
+            </Button>
+            <Button 
+              variant={tipoBackupFiltro === "cartera" ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setTipoBackupFiltro("cartera")}
+            >
+              Cartera
+            </Button>
+            <Button 
+              variant={tipoBackupFiltro === "sistema" ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setTipoBackupFiltro("sistema")}
+            >
+              Sistema
+            </Button>
+          </div>
+
           {loadingBackups ? (
             <div className="text-center py-8 text-muted-foreground">Cargando backups...</div>
           ) : backups.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No hay backups disponibles. El primer backup se generará automáticamente a las 12:55 AM.
+              No hay backups disponibles. El primer backup se generará automáticamente a las 00:55 AM.
             </div>
           ) : (
             <div className="space-y-2">
@@ -2485,11 +2565,16 @@ function ReportesCartera() {
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors"
                   data-testid={`row-backup-${index}`}
                 >
-                  <div>
-                    <p className="font-medium">{backup.archivo.split('/').pop()}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(backup.fecha), "dd MMM yyyy, HH:mm", { locale: es })} - {formatBytes(backup.tamaño)}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <Badge variant={backup.tipo === "cartera" ? "default" : "secondary"}>
+                      {backup.tipo === "cartera" ? "PDF" : "JSON"}
+                    </Badge>
+                    <div>
+                      <p className="font-medium">{backup.archivo.split('/').pop()}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(backup.fecha), "dd MMM yyyy, HH:mm", { locale: es })} - {formatBytes(backup.tamaño)}
+                      </p>
+                    </div>
                   </div>
                   <Button
                     variant="outline"
@@ -2502,6 +2587,59 @@ function ReportesCartera() {
                   >
                     Descargar
                   </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Registro de Auditoría
+          </CardTitle>
+          <CardDescription>
+            Historial de todas las actividades realizadas en el sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingAuditoria ? (
+            <div className="text-center py-8 text-muted-foreground">Cargando auditoría...</div>
+          ) : auditoria.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No hay registros de auditoría disponibles
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {auditoria.map((registro) => (
+                <div 
+                  key={registro.id} 
+                  className="flex items-start justify-between p-3 border rounded-lg"
+                  data-testid={`row-auditoria-${registro.id}`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge 
+                        variant={
+                          registro.tipoAccion === 'crear' ? 'default' :
+                          registro.tipoAccion === 'eliminar' ? 'destructive' :
+                          registro.tipoAccion === 'modificar' ? 'secondary' :
+                          'outline'
+                        }
+                      >
+                        {registro.tipoAccion}
+                      </Badge>
+                      <span className="font-medium">{registro.entidad}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {registro.descripcion || 'Sin descripción'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Por: {registro.usuarioNombre || 'Sistema'} - {format(new Date(registro.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
