@@ -3917,7 +3917,7 @@ export default function LocalComercialPanel() {
                         <Input
                           value={itemLocalForm.etiquetaPrecio1 || "Personal"}
                           onChange={(e) => setItemLocalForm({ ...itemLocalForm, etiquetaPrecio1: e.target.value })}
-                          className="h-6 text-xs font-medium text-primary border-0 bg-transparent p-0 focus-visible:ring-0"
+                          className="h-7 text-xs font-medium flex-1 px-2"
                           placeholder="Etiqueta"
                           data-testid="input-etiqueta-precio1"
                         />
@@ -3954,7 +3954,7 @@ export default function LocalComercialPanel() {
                         <Input
                           value={itemLocalForm.etiquetaPrecio2 || "Mediana"}
                           onChange={(e) => setItemLocalForm({ ...itemLocalForm, etiquetaPrecio2: e.target.value })}
-                          className="h-6 text-xs font-medium text-primary border-0 bg-transparent p-0 focus-visible:ring-0"
+                          className="h-7 text-xs font-medium flex-1 px-2"
                           placeholder="Etiqueta"
                           data-testid="input-etiqueta-precio2"
                         />
@@ -3991,7 +3991,7 @@ export default function LocalComercialPanel() {
                         <Input
                           value={itemLocalForm.etiquetaPrecio3 || "Familiar"}
                           onChange={(e) => setItemLocalForm({ ...itemLocalForm, etiquetaPrecio3: e.target.value })}
-                          className="h-6 text-xs font-medium text-primary border-0 bg-transparent p-0 focus-visible:ring-0"
+                          className="h-7 text-xs font-medium flex-1 px-2"
                           placeholder="Etiqueta"
                           data-testid="input-etiqueta-precio3"
                         />
@@ -4028,7 +4028,7 @@ export default function LocalComercialPanel() {
                         <Input
                           value={itemLocalForm.etiquetaPrecio4 || "Extra"}
                           onChange={(e) => setItemLocalForm({ ...itemLocalForm, etiquetaPrecio4: e.target.value })}
-                          className="h-6 text-xs font-medium text-primary border-0 bg-transparent p-0 focus-visible:ring-0"
+                          className="h-7 text-xs font-medium flex-1 px-2"
                           placeholder="Etiqueta"
                           data-testid="input-etiqueta-precio4"
                         />
