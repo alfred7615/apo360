@@ -38,7 +38,8 @@ import {
 import { paises, departamentosPeru, distritosPorDepartamento, obtenerDepartamentos, obtenerDistritos, buscarDepartamentos, buscarDistritos } from "@shared/ubicaciones-peru";
 import { registerAdminRoutes } from "./routes-admin";
 import { notificarSuperAdmins } from "./websocket";
-import { obtenerReporteCartera, generarPDFReporte, generarBackupDiario, listarBackups, obtenerRutaBackup } from "./services/reportesService";
+import { obtenerReporteCartera, generarPDFReporte, generarBackupCartera, generarBackupSistema, generarAmbosBackups, listarBackupsCartera, listarBackupsSistema, listarTodosBackups, obtenerRutaBackup } from "./services/reportesService";
+import { registrarActividad, obtenerRegistrosAuditoria, obtenerEstadisticasAuditoria, extraerInfoUsuario } from "./services/auditoriaService";
 import * as cron from "node-cron";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -6959,24 +6960,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generar backup manual
-  app.post('/api/reportes/backup', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+  // ============================================================
+  // BACKUPS - DOS TIPOS: CARTERA (PDF) Y SISTEMA (JSON)
+  // ============================================================
+
+  // Generar backup de cartera (PDF)
+  app.post('/api/reportes/backup/cartera', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
-      const rutaArchivo = await generarBackupDiario();
-      res.json({ 
-        message: "Backup generado exitosamente",
-        archivo: rutaArchivo,
+      const rutaArchivo = await generarBackupCartera();
+      const info = extraerInfoUsuario(req);
+      await registrarActividad({
+        ...info,
+        tipoAccion: 'crear',
+        entidad: 'backup_cartera',
+        descripcion: 'Backup de cartera generado manualmente',
+        modulo: 'reportes',
       });
+      res.json({ message: "Backup de cartera generado exitosamente", archivo: rutaArchivo });
     } catch (error: any) {
-      console.error("Error al generar backup:", error);
-      res.status(500).json({ message: error.message || "Error al generar backup" });
+      console.error("Error al generar backup de cartera:", error);
+      res.status(500).json({ message: error.message || "Error al generar backup de cartera" });
     }
   });
 
-  // Listar backups disponibles
+  // Generar backup del sistema (JSON)
+  app.post('/api/reportes/backup/sistema', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const rutaArchivo = await generarBackupSistema();
+      const info = extraerInfoUsuario(req);
+      await registrarActividad({
+        ...info,
+        tipoAccion: 'crear',
+        entidad: 'backup_sistema',
+        descripcion: 'Backup completo del sistema generado manualmente',
+        modulo: 'reportes',
+      });
+      res.json({ message: "Backup del sistema generado exitosamente", archivo: rutaArchivo });
+    } catch (error: any) {
+      console.error("Error al generar backup del sistema:", error);
+      res.status(500).json({ message: error.message || "Error al generar backup del sistema" });
+    }
+  });
+
+  // Generar ambos backups (cartera + sistema)
+  app.post('/api/reportes/backup/ambos', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const resultado = await generarAmbosBackups();
+      const info = extraerInfoUsuario(req);
+      await registrarActividad({
+        ...info,
+        tipoAccion: 'crear',
+        entidad: 'backup_completo',
+        descripcion: 'Backup completo (cartera + sistema) generado manualmente',
+        modulo: 'reportes',
+      });
+      res.json({ 
+        message: "Backups generados exitosamente", 
+        cartera: resultado.cartera,
+        sistema: resultado.sistema,
+      });
+    } catch (error: any) {
+      console.error("Error al generar backups:", error);
+      res.status(500).json({ message: error.message || "Error al generar backups" });
+    }
+  });
+
+  // Listar todos los backups disponibles
   app.get('/api/reportes/backups', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
-      const backups = listarBackups();
+      const { tipo } = req.query;
+      let backups;
+      if (tipo === 'cartera') {
+        backups = listarBackupsCartera();
+      } else if (tipo === 'sistema') {
+        backups = listarBackupsSistema();
+      } else {
+        backups = listarTodosBackups();
+      }
       res.json(backups);
     } catch (error: any) {
       console.error("Error al listar backups:", error);
@@ -7001,12 +7061,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Configurar backup automático a las 00:55 AM (hora de Lima, Perú)
-  cron.schedule('55 0 * * *', async () => {
-    console.log('[Cron] Iniciando backup automático de cartera...');
+  // ============================================================
+  // AUDITORÍA - REGISTRO DE ACTIVIDADES DEL SISTEMA
+  // ============================================================
+
+  // Obtener registros de auditoría
+  app.get('/api/auditoria', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
-      const rutaArchivo = await generarBackupDiario();
-      console.log('[Cron] Backup completado:', rutaArchivo);
+      const { desde, hasta, usuarioId, tipoAccion, entidad, modulo, limite } = req.query;
+      
+      const filtro = {
+        desde: desde ? new Date(desde as string) : undefined,
+        hasta: hasta ? new Date(hasta as string) : undefined,
+        usuarioId: usuarioId as string | undefined,
+        tipoAccion: tipoAccion as string | undefined,
+        entidad: entidad as string | undefined,
+        modulo: modulo as string | undefined,
+        limite: limite ? parseInt(limite as string) : 500,
+      };
+      
+      const registros = await obtenerRegistrosAuditoria(filtro);
+      res.json(registros);
+    } catch (error: any) {
+      console.error("Error al obtener registros de auditoría:", error);
+      res.status(500).json({ message: error.message || "Error al obtener auditoría" });
+    }
+  });
+
+  // Obtener estadísticas de auditoría
+  app.get('/api/auditoria/estadisticas', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { desde, hasta } = req.query;
+      
+      const estadisticas = await obtenerEstadisticasAuditoria(
+        desde ? new Date(desde as string) : undefined,
+        hasta ? new Date(hasta as string) : undefined,
+      );
+      
+      res.json(estadisticas);
+    } catch (error: any) {
+      console.error("Error al obtener estadísticas de auditoría:", error);
+      res.status(500).json({ message: error.message || "Error al obtener estadísticas" });
+    }
+  });
+
+  // ============================================================
+  // CRON JOB - BACKUP AUTOMÁTICO A LAS 00:55 AM
+  // ============================================================
+
+  cron.schedule('55 0 * * *', async () => {
+    console.log('[Cron] Iniciando backup automático (cartera + sistema)...');
+    try {
+      const resultado = await generarAmbosBackups();
+      await registrarActividad({
+        tipoAccion: 'crear',
+        entidad: 'backup_automatico',
+        descripcion: 'Backup automático diario generado por cron job',
+        datosNuevos: resultado,
+        modulo: 'sistema',
+      });
+      console.log('[Cron] Backups completados:', resultado);
     } catch (error) {
       console.error('[Cron] Error en backup automático:', error);
     }
