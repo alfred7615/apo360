@@ -1712,6 +1712,11 @@ export const itemsCatalogo = pgTable("items_catalogo", {
   precio2: decimal("precio_2", { precision: 10, scale: 2 }), // Mediana
   precio3: decimal("precio_3", { precision: 10, scale: 2 }), // Familiar
   precio4: decimal("precio_4", { precision: 10, scale: 2 }), // Extra
+  // Etiquetas personalizables para cada precio (ej: "Personal", "Mitad", "1/4", "Promoción")
+  etiquetaPrecio1: varchar("etiqueta_precio_1", { length: 50 }).default("Personal"),
+  etiquetaPrecio2: varchar("etiqueta_precio_2", { length: 50 }).default("Mediana"),
+  etiquetaPrecio3: varchar("etiqueta_precio_3", { length: 50 }).default("Familiar"),
+  etiquetaPrecio4: varchar("etiqueta_precio_4", { length: 50 }).default("Extra"),
   // Campos legacy para compatibilidad
   precio: decimal("precio", { precision: 10, scale: 2 }),
   precioOferta: decimal("precio_oferta", { precision: 10, scale: 2 }),

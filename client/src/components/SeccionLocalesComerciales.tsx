@@ -164,33 +164,63 @@ export default function SeccionLocalesComerciales() {
             </p>
           )}
           
-          <div className="flex items-center justify-between mt-2">
-            <div className="flex flex-col">
-              {item.precioOferta && item.precio && parseFloat(item.precioOferta) < parseFloat(item.precio) ? (
-                <>
-                  <span className="text-xs text-muted-foreground line-through">
-                    {formatPrecio(item.precio)}
-                  </span>
-                  <span className="font-bold text-green-600">
-                    {formatPrecio(item.precioOferta)}
-                  </span>
-                </>
-              ) : (
-                <span className="font-bold text-primary">
-                  {formatPrecio(item.precio)}
-                </span>
+          {/* Mostrar precios múltiples si existen, sino precio único */}
+          {(item.precio1 || item.precio2 || item.precio3 || item.precio4) ? (
+            <div className="grid grid-cols-2 gap-1 mt-2 text-xs">
+              {item.precio1 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{item.etiquetaPrecio1 || "Personal"}:</span>
+                  <span className="font-bold text-primary">S/ {item.precio1}</span>
+                </div>
+              )}
+              {item.precio2 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{item.etiquetaPrecio2 || "Mediana"}:</span>
+                  <span className="font-bold text-primary">S/ {item.precio2}</span>
+                </div>
+              )}
+              {item.precio3 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{item.etiquetaPrecio3 || "Familiar"}:</span>
+                  <span className="font-bold text-primary">S/ {item.precio3}</span>
+                </div>
+              )}
+              {item.precio4 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{item.etiquetaPrecio4 || "Extra"}:</span>
+                  <span className="font-bold text-primary">S/ {item.precio4}</span>
+                </div>
               )}
             </div>
-            
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <div className="flex items-center gap-1 text-xs">
-                <Heart className="h-3 w-3" />
-                <span>{item.likes || 0}</span>
+          ) : (
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex flex-col">
+                {item.precioOferta && item.precio && parseFloat(item.precioOferta) < parseFloat(item.precio) ? (
+                  <>
+                    <span className="text-xs text-muted-foreground line-through">
+                      {formatPrecio(item.precio)}
+                    </span>
+                    <span className="font-bold text-green-600">
+                      {formatPrecio(item.precioOferta)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="font-bold text-primary">
+                    {formatPrecio(item.precio)}
+                  </span>
+                )}
               </div>
-              <div className="flex items-center gap-1 text-xs">
-                <Eye className="h-3 w-3" />
-                <span>{item.vistas || 0}</span>
-              </div>
+            </div>
+          )}
+          
+          <div className="flex items-center gap-2 text-muted-foreground mt-2">
+            <div className="flex items-center gap-1 text-xs">
+              <Heart className="h-3 w-3" />
+              <span>{item.likes || 0}</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs">
+              <Eye className="h-3 w-3" />
+              <span>{item.vistas || 0}</span>
             </div>
           </div>
         </CardContent>
@@ -347,8 +377,36 @@ export default function SeccionLocalesComerciales() {
                 )}
                 
                 <div className="flex items-center justify-between">
-                  <div>
-                    {productoSeleccionado.precioOferta && productoSeleccionado.precio &&
+                  <div className="flex-1">
+                    {/* Mostrar precios múltiples si existen */}
+                    {(productoSeleccionado.precio1 || productoSeleccionado.precio2 || productoSeleccionado.precio3 || productoSeleccionado.precio4) ? (
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {productoSeleccionado.precio1 && (
+                          <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                            <span className="text-muted-foreground">{productoSeleccionado.etiquetaPrecio1 || "Personal"}:</span>
+                            <span className="font-bold text-primary">S/ {productoSeleccionado.precio1}</span>
+                          </div>
+                        )}
+                        {productoSeleccionado.precio2 && (
+                          <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                            <span className="text-muted-foreground">{productoSeleccionado.etiquetaPrecio2 || "Mediana"}:</span>
+                            <span className="font-bold text-primary">S/ {productoSeleccionado.precio2}</span>
+                          </div>
+                        )}
+                        {productoSeleccionado.precio3 && (
+                          <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                            <span className="text-muted-foreground">{productoSeleccionado.etiquetaPrecio3 || "Familiar"}:</span>
+                            <span className="font-bold text-primary">S/ {productoSeleccionado.precio3}</span>
+                          </div>
+                        )}
+                        {productoSeleccionado.precio4 && (
+                          <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                            <span className="text-muted-foreground">{productoSeleccionado.etiquetaPrecio4 || "Extra"}:</span>
+                            <span className="font-bold text-primary">S/ {productoSeleccionado.precio4}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : productoSeleccionado.precioOferta && productoSeleccionado.precio &&
                      parseFloat(productoSeleccionado.precioOferta) < parseFloat(productoSeleccionado.precio) ? (
                       <div className="flex items-center gap-2">
                         <span className="text-lg text-muted-foreground line-through">
@@ -366,7 +424,7 @@ export default function SeccionLocalesComerciales() {
                   </div>
                   
                   {productoSeleccionado.tiempoPreparacion && (
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="shrink-0">
                       <Clock className="h-3 w-3 mr-1" />
                       {productoSeleccionado.tiempoPreparacion}
                     </Badge>

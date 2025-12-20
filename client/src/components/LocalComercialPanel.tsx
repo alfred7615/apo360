@@ -113,6 +113,11 @@ interface ItemCatalogoLocal {
   precio2?: string;
   precio3?: string;
   precio4?: string;
+  // Etiquetas personalizables por producto (ej: "Mitad", "Entero", "1/4", "Promoción")
+  etiquetaPrecio1?: string;
+  etiquetaPrecio2?: string;
+  etiquetaPrecio3?: string;
+  etiquetaPrecio4?: string;
   precio?: string;
   precioOferta?: string;
   imagenUrl?: string;
@@ -1687,30 +1692,30 @@ export default function LocalComercialPanel() {
                                         )}
                                         <h5 className="font-medium text-sm truncate">{item.nombre}</h5>
                                       </div>
-                                      {/* Sistema de 4 precios flexible */}
+                                      {/* Sistema de 4 precios flexible con etiquetas del producto */}
                                       {(item.precio1 || item.precio2 || item.precio3 || item.precio4) && (
                                         <div className="grid grid-cols-2 gap-1 mt-2 text-xs">
                                           {item.precio1 && (
                                             <div className="flex items-center justify-between">
-                                              <span className="text-muted-foreground">{categoria.etiquetaPrecio1 || "Personal"}:</span>
+                                              <span className="text-muted-foreground">{item.etiquetaPrecio1 || categoria.etiquetaPrecio1 || "Personal"}:</span>
                                               <span className="font-bold text-primary">S/ {item.precio1}</span>
                                             </div>
                                           )}
                                           {item.precio2 && (
                                             <div className="flex items-center justify-between">
-                                              <span className="text-muted-foreground">{categoria.etiquetaPrecio2 || "Mediana"}:</span>
+                                              <span className="text-muted-foreground">{item.etiquetaPrecio2 || categoria.etiquetaPrecio2 || "Mediana"}:</span>
                                               <span className="font-bold text-primary">S/ {item.precio2}</span>
                                             </div>
                                           )}
                                           {item.precio3 && (
                                             <div className="flex items-center justify-between">
-                                              <span className="text-muted-foreground">{categoria.etiquetaPrecio3 || "Familiar"}:</span>
+                                              <span className="text-muted-foreground">{item.etiquetaPrecio3 || categoria.etiquetaPrecio3 || "Familiar"}:</span>
                                               <span className="font-bold text-primary">S/ {item.precio3}</span>
                                             </div>
                                           )}
                                           {item.precio4 && (
                                             <div className="flex items-center justify-between">
-                                              <span className="text-muted-foreground">{categoria.etiquetaPrecio4 || "Extra"}:</span>
+                                              <span className="text-muted-foreground">{item.etiquetaPrecio4 || categoria.etiquetaPrecio4 || "Extra"}:</span>
                                               <span className="font-bold text-primary">S/ {item.precio4}</span>
                                             </div>
                                           )}
@@ -1750,6 +1755,10 @@ export default function LocalComercialPanel() {
                                               precio2: item.precio2 || "",
                                               precio3: item.precio3 || "",
                                               precio4: item.precio4 || "",
+                                              etiquetaPrecio1: item.etiquetaPrecio1 || "Personal",
+                                              etiquetaPrecio2: item.etiquetaPrecio2 || "Mediana",
+                                              etiquetaPrecio3: item.etiquetaPrecio3 || "Familiar",
+                                              etiquetaPrecio4: item.etiquetaPrecio4 || "Extra",
                                               categoriaId: item.categoriaId,
                                               imagenUrl: item.imagenUrl || "",
                                               ingredientes: item.ingredientes || "",
@@ -1804,30 +1813,30 @@ export default function LocalComercialPanel() {
                                         )}
                                         <h5 className="font-medium text-sm truncate">{item.nombre}</h5>
                                       </div>
-                                      {/* Sistema de 4 precios flexible */}
+                                      {/* Sistema de 4 precios flexible con etiquetas del producto */}
                                       {(item.precio1 || item.precio2 || item.precio3 || item.precio4) && (
                                         <div className="grid grid-cols-2 gap-1 mt-2 text-xs">
                                           {item.precio1 && (
                                             <div className="flex items-center justify-between">
-                                              <span className="text-muted-foreground">Personal:</span>
+                                              <span className="text-muted-foreground">{item.etiquetaPrecio1 || "Personal"}:</span>
                                               <span className="font-bold text-primary">S/ {item.precio1}</span>
                                             </div>
                                           )}
                                           {item.precio2 && (
                                             <div className="flex items-center justify-between">
-                                              <span className="text-muted-foreground">Mediana:</span>
+                                              <span className="text-muted-foreground">{item.etiquetaPrecio2 || "Mediana"}:</span>
                                               <span className="font-bold text-primary">S/ {item.precio2}</span>
                                             </div>
                                           )}
                                           {item.precio3 && (
                                             <div className="flex items-center justify-between">
-                                              <span className="text-muted-foreground">Familiar:</span>
+                                              <span className="text-muted-foreground">{item.etiquetaPrecio3 || "Familiar"}:</span>
                                               <span className="font-bold text-primary">S/ {item.precio3}</span>
                                             </div>
                                           )}
                                           {item.precio4 && (
                                             <div className="flex items-center justify-between">
-                                              <span className="text-muted-foreground">Extra:</span>
+                                              <span className="text-muted-foreground">{item.etiquetaPrecio4 || "Extra"}:</span>
                                               <span className="font-bold text-primary">S/ {item.precio4}</span>
                                             </div>
                                           )}
@@ -1867,6 +1876,10 @@ export default function LocalComercialPanel() {
                                               precio2: item.precio2 || "",
                                               precio3: item.precio3 || "",
                                               precio4: item.precio4 || "",
+                                              etiquetaPrecio1: item.etiquetaPrecio1 || "Personal",
+                                              etiquetaPrecio2: item.etiquetaPrecio2 || "Mediana",
+                                              etiquetaPrecio3: item.etiquetaPrecio3 || "Familiar",
+                                              etiquetaPrecio4: item.etiquetaPrecio4 || "Extra",
                                               categoriaId: item.categoriaId,
                                               imagenUrl: item.imagenUrl || "",
                                               ingredientes: item.ingredientes || "",
@@ -3881,11 +3894,11 @@ export default function LocalComercialPanel() {
                   />
                 </div>
                 
-                {/* Sistema de 4 Precios con checkboxes - Figma Frame 35 */}
+                {/* Sistema de 4 Precios con etiquetas editables */}
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    Precios por Tamaño (habilita los que necesites)
+                    Precios por Tamaño (etiquetas editables)
                   </Label>
                   <div className="grid grid-cols-2 gap-3">
                     {/* Precio 1 */}
@@ -3901,9 +3914,13 @@ export default function LocalComercialPanel() {
                           }}
                           data-testid="checkbox-precio1-item"
                         />
-                        <Label htmlFor="habilitarPrecio1" className="text-xs text-primary font-medium cursor-pointer">
-                          {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio1 || "Personal"}
-                        </Label>
+                        <Input
+                          value={itemLocalForm.etiquetaPrecio1 || "Personal"}
+                          onChange={(e) => setItemLocalForm({ ...itemLocalForm, etiquetaPrecio1: e.target.value })}
+                          className="h-6 text-xs font-medium text-primary border-0 bg-transparent p-0 focus-visible:ring-0"
+                          placeholder="Etiqueta"
+                          data-testid="input-etiqueta-precio1"
+                        />
                       </div>
                       <Input
                         id="precio1ItemLocal"
@@ -3934,9 +3951,13 @@ export default function LocalComercialPanel() {
                           }}
                           data-testid="checkbox-precio2-item"
                         />
-                        <Label htmlFor="habilitarPrecio2" className="text-xs text-primary font-medium cursor-pointer">
-                          {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio2 || "Mediana"}
-                        </Label>
+                        <Input
+                          value={itemLocalForm.etiquetaPrecio2 || "Mediana"}
+                          onChange={(e) => setItemLocalForm({ ...itemLocalForm, etiquetaPrecio2: e.target.value })}
+                          className="h-6 text-xs font-medium text-primary border-0 bg-transparent p-0 focus-visible:ring-0"
+                          placeholder="Etiqueta"
+                          data-testid="input-etiqueta-precio2"
+                        />
                       </div>
                       <Input
                         id="precio2ItemLocal"
@@ -3967,9 +3988,13 @@ export default function LocalComercialPanel() {
                           }}
                           data-testid="checkbox-precio3-item"
                         />
-                        <Label htmlFor="habilitarPrecio3" className="text-xs text-primary font-medium cursor-pointer">
-                          {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio3 || "Familiar"}
-                        </Label>
+                        <Input
+                          value={itemLocalForm.etiquetaPrecio3 || "Familiar"}
+                          onChange={(e) => setItemLocalForm({ ...itemLocalForm, etiquetaPrecio3: e.target.value })}
+                          className="h-6 text-xs font-medium text-primary border-0 bg-transparent p-0 focus-visible:ring-0"
+                          placeholder="Etiqueta"
+                          data-testid="input-etiqueta-precio3"
+                        />
                       </div>
                       <Input
                         id="precio3ItemLocal"
@@ -4000,9 +4025,13 @@ export default function LocalComercialPanel() {
                           }}
                           data-testid="checkbox-precio4-item"
                         />
-                        <Label htmlFor="habilitarPrecio4" className="text-xs text-primary font-medium cursor-pointer">
-                          {miCatalogoLocal?.categorias?.find(c => c.id === itemLocalForm.categoriaId)?.etiquetaPrecio4 || "Extra"}
-                        </Label>
+                        <Input
+                          value={itemLocalForm.etiquetaPrecio4 || "Extra"}
+                          onChange={(e) => setItemLocalForm({ ...itemLocalForm, etiquetaPrecio4: e.target.value })}
+                          className="h-6 text-xs font-medium text-primary border-0 bg-transparent p-0 focus-visible:ring-0"
+                          placeholder="Etiqueta"
+                          data-testid="input-etiqueta-precio4"
+                        />
                       </div>
                       <Input
                         id="precio4ItemLocal"
