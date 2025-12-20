@@ -78,6 +78,10 @@ CREATE TABLE IF NOT EXISTS items_catalogo (
     precio_2 DECIMAL(10,2),
     precio_3 DECIMAL(10,2),
     precio_4 DECIMAL(10,2),
+    etiqueta_precio_1 VARCHAR(50) DEFAULT 'Personal',
+    etiqueta_precio_2 VARCHAR(50) DEFAULT 'Mediana',
+    etiqueta_precio_3 VARCHAR(50) DEFAULT 'Familiar',
+    etiqueta_precio_4 VARCHAR(50) DEFAULT 'Extra',
     precio DECIMAL(10,2),
     precio_oferta DECIMAL(10,2),
     imagen_url VARCHAR(255),
@@ -93,6 +97,13 @@ CREATE TABLE IF NOT EXISTS items_catalogo (
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Agregar columnas de etiquetas de precio si no existen (para tablas existentes)
+ALTER TABLE items_catalogo 
+ADD COLUMN IF NOT EXISTS etiqueta_precio_1 VARCHAR(50) DEFAULT 'Personal',
+ADD COLUMN IF NOT EXISTS etiqueta_precio_2 VARCHAR(50) DEFAULT 'Mediana',
+ADD COLUMN IF NOT EXISTS etiqueta_precio_3 VARCHAR(50) DEFAULT 'Familiar',
+ADD COLUMN IF NOT EXISTS etiqueta_precio_4 VARCHAR(50) DEFAULT 'Extra';
 
 -- ============================================================
 -- TABLA: FAVORITOS DE PRODUCTOS
