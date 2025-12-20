@@ -1783,3 +1783,27 @@ export type InsertRadioOnline = RadioOnlineInsert;
 export type InsertListaMp3 = ListaMp3Insert;
 export type InsertArchivoMp3 = ArchivoMp3Insert;
 export { viajeTaxi as viajesTaxi };
+
+// ============================================================
+// REGISTRO DE AUDITORÍA - Log de todas las actividades del sistema
+// ============================================================
+export const registroAuditoria = pgTable("registro_auditoria", {
+  id: serial("id").primaryKey(),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id),
+  usuarioNombre: varchar("usuario_nombre", { length: 255 }),
+  usuarioRol: varchar("usuario_rol", { length: 100 }),
+  tipoAccion: varchar("tipo_accion", { length: 50 }).notNull(), // 'crear', 'modificar', 'eliminar', 'suspender', 'activar', 'aprobar', 'rechazar'
+  entidad: varchar("entidad", { length: 100 }).notNull(), // nombre de la tabla/entidad afectada
+  entidadId: varchar("entidad_id", { length: 255 }), // ID del registro afectado
+  descripcion: text("descripcion"), // descripción legible de la acción
+  datosAnteriores: text("datos_anteriores"), // JSON con datos antes del cambio
+  datosNuevos: text("datos_nuevos"), // JSON con datos después del cambio
+  ip: varchar("ip", { length: 50 }),
+  userAgent: text("user_agent"),
+  modulo: varchar("modulo", { length: 100 }), // 'cartera', 'usuarios', 'locales', 'productos', etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertRegistroAuditoriaSchema = createInsertSchema(registroAuditoria).omit({ id: true, createdAt: true });
+export type InsertRegistroAuditoria = z.infer<typeof insertRegistroAuditoriaSchema>;
+export type RegistroAuditoria = typeof registroAuditoria.$inferSelect;
