@@ -6682,67 +6682,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Crear producto (requiere membresía o saldo)
+  // Crear producto (requiere membresía o saldo) - Usa lógica centralizada de cupos
   app.post('/api/productos-usuario', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       
-      // Verificar si tiene membresía activa
-      const membresiaActiva = await storage.getMembresiaActiva(userId);
+      // Usar lógica centralizada para calcular costo según membresía y cupos
+      const infoCosto = await storage.calcularCostoCreacionProducto(userId);
       
-      if (!membresiaActiva) {
-        // Sin membresía, cobrar del saldo
-        const configCosto = await storage.getConfiguracionCosto('crear_producto');
+      if (!infoCosto.puedeCrear) {
+        return res.status(402).json({ 
+          message: infoCosto.mensaje,
+          saldoActual: infoCosto.saldoActual.toFixed(2),
+          costoRequerido: infoCosto.costo.toFixed(2),
+          productosUsados: infoCosto.productosUsados,
+          productosIncluidos: infoCosto.productosIncluidos,
+          planNombre: infoCosto.planNombre,
+          tipoError: infoCosto.tipoError || 'saldo_insuficiente'
+        });
+      }
+      
+      // Solo descontar saldo si el cobro es por saldo (no membresía)
+      if (infoCosto.tipoCobro === 'saldo' && infoCosto.costo > 0) {
+        await storage.actualizarSaldo(userId, infoCosto.costo, 'egreso');
         
-        if (configCosto && configCosto.activo) {
-          const saldoData = await storage.getSaldoUsuario(userId);
-          const saldoActual = saldoData ? parseFloat(saldoData.saldo) : 0;
-          const saldoMinimo = parseFloat(configCosto.saldoMinimo || '0.50');
-          
-          // Verificar saldo mínimo
-          if (saldoActual < saldoMinimo) {
-            return res.status(400).json({ 
-              message: `Saldo insuficiente. Tu saldo actual es S/${saldoActual.toFixed(2)}. Necesitas al menos S/${saldoMinimo.toFixed(2)} para publicar productos. Por favor, recarga tu saldo.`,
-              saldoActual,
-              saldoMinimo,
-              tipo: 'saldo_insuficiente'
-            });
-          }
-          
-          // Calcular costo
-          let costo = 0;
-          const precioProducto = parseFloat(req.body.precio || '0');
-          
-          if (configCosto.usarMontoFijo) {
-            costo = parseFloat(configCosto.montoFijo || '0');
-          } else {
-            costo = precioProducto * (parseFloat(configCosto.porcentaje || '0') / 100);
-          }
-          
-          if (saldoActual < costo) {
-            return res.status(400).json({ 
-              message: `Saldo insuficiente para esta operación. El costo es S/${costo.toFixed(2)} y tu saldo es S/${saldoActual.toFixed(2)}.`,
-              saldoActual,
-              costoOperacion: costo,
-              tipo: 'saldo_insuficiente'
-            });
-          }
-          
-          // Descontar saldo
-          await storage.upsertSaldoUsuario({
-            usuarioId: userId,
-            saldo: (saldoActual - costo).toFixed(2)
-          });
-          
-          // Registrar transacción
-          await storage.createTransaccionSaldo({
-            usuarioId: userId,
-            tipo: 'gasto',
-            monto: costo.toFixed(2),
-            concepto: `Publicación de producto: ${req.body.nombre}`,
-            estado: 'completada'
-          });
-        }
+        // Registrar transacción
+        await storage.createTransaccionSaldo({
+          usuarioId: userId,
+          tipo: 'egreso',
+          monto: infoCosto.costo.toFixed(2),
+          concepto: `Publicación de producto: ${req.body.nombre}`,
+          saldoAnterior: infoCosto.saldoActual.toFixed(2),
+          saldoNuevo: (infoCosto.saldoActual - infoCosto.costo).toFixed(2),
+          estado: 'completado'
+        });
       }
       
       // Generar código único
@@ -6755,7 +6728,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         estado: 'activo'
       });
       
-      res.json(producto);
+      res.json({
+        ...producto,
+        infoCosto: {
+          tipoCobro: infoCosto.tipoCobro,
+          costo: infoCosto.costo,
+          mensaje: infoCosto.mensaje,
+          productosUsados: infoCosto.productosUsados + 1,
+          productosIncluidos: infoCosto.productosIncluidos
+        }
+      });
     } catch (error: any) {
       console.error("Error al crear producto:", error);
       res.status(400).json({ message: error.message || "Error al crear producto" });
@@ -7063,6 +7045,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return isNaN(num) ? null : num.toFixed(2);
   };
 
+  // Consultar cupos y costo para crear productos
+  app.get('/api/mi-catalogo-local/cupos', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const infoCosto = await storage.calcularCostoCreacionProducto(usuarioId);
+      
+      res.json({
+        tipoCobro: infoCosto.tipoCobro,
+        costo: infoCosto.costo,
+        saldoActual: infoCosto.saldoActual,
+        productosUsados: infoCosto.productosUsados,
+        productosIncluidos: infoCosto.productosIncluidos,
+        planNombre: infoCosto.planNombre,
+        puedeCrear: infoCosto.puedeCrear,
+        mensaje: infoCosto.mensaje
+      });
+    } catch (error: any) {
+      console.error("Error al consultar cupos:", error);
+      res.status(500).json({ message: error.message || "Error al consultar cupos" });
+    }
+  });
+
   // Crear item
   app.post('/api/mi-catalogo-local/items', isAuthenticated, async (req: any, res) => {
     try {
@@ -7073,21 +7077,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Debes crear un catálogo primero" });
       }
 
-      // Validar saldo del usuario para crear producto
-      const configCosto = await storage.getConfiguracionCosto('crear_producto');
-      const costoCreacion = configCosto?.montoFijo ? parseFloat(configCosto.montoFijo) : 0.20;
-      const saldoMinimo = configCosto?.saldoMinimo ? parseFloat(configCosto.saldoMinimo) : 0.50;
+      // Calcular costo según membresía y cupos disponibles
+      const infoCosto = await storage.calcularCostoCreacionProducto(usuarioId);
       
-      const saldoUsuario = await storage.getSaldoUsuario(usuarioId);
-      const saldoActual = saldoUsuario ? parseFloat(saldoUsuario.saldo) : 0;
-      
-      if (saldoActual < costoCreacion) {
+      if (!infoCosto.puedeCrear) {
         return res.status(402).json({ 
-          message: `Saldo insuficiente. Necesitas S/ ${costoCreacion.toFixed(2)} para crear un producto. Tu saldo actual es S/ ${saldoActual.toFixed(2)}. Por favor recarga tu saldo.`,
-          saldoActual: saldoActual.toFixed(2),
-          costoRequerido: costoCreacion.toFixed(2),
-          saldoMinimo: saldoMinimo.toFixed(2),
-          tipoError: 'saldo_insuficiente'
+          message: infoCosto.mensaje,
+          saldoActual: infoCosto.saldoActual.toFixed(2),
+          costoRequerido: infoCosto.costo.toFixed(2),
+          productosUsados: infoCosto.productosUsados,
+          productosIncluidos: infoCosto.productosIncluidos,
+          planNombre: infoCosto.planNombre,
+          tipoError: infoCosto.tipoError || 'saldo_insuficiente'
         });
       }
 
@@ -7114,23 +7115,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const item = await storage.createItemCatalogoLocal(datosLimpios);
 
-      // Descontar saldo del usuario
-      await storage.actualizarSaldo(usuarioId, costoCreacion, 'egreso');
+      // Solo descontar saldo si el cobro es por saldo (no membresía)
+      if (infoCosto.tipoCobro === 'saldo' && infoCosto.costo > 0) {
+        await storage.actualizarSaldo(usuarioId, infoCosto.costo, 'egreso');
 
-      // Registrar la transacción
-      await storage.createTransaccionSaldo({
-        usuarioId,
-        tipo: 'egreso',
-        concepto: `Creación de producto: ${datosLimpios.nombre || 'Sin nombre'}`,
-        monto: costoCreacion.toFixed(2),
-        saldoAnterior: saldoActual.toFixed(2),
-        saldoNuevo: (saldoActual - costoCreacion).toFixed(2),
-        referenciaId: item.id,
-        referenciaTipo: 'producto_catalogo',
-        estado: 'completado',
-      });
+        // Registrar la transacción
+        await storage.createTransaccionSaldo({
+          usuarioId,
+          tipo: 'egreso',
+          concepto: `Creación de producto: ${datosLimpios.nombre || 'Sin nombre'}`,
+          monto: infoCosto.costo.toFixed(2),
+          saldoAnterior: infoCosto.saldoActual.toFixed(2),
+          saldoNuevo: (infoCosto.saldoActual - infoCosto.costo).toFixed(2),
+          referenciaId: item.id,
+          referenciaTipo: 'producto_catalogo',
+          estado: 'completado',
+        });
+      }
       
-      res.status(201).json(item);
+      res.status(201).json({
+        ...item,
+        infoCosto: {
+          tipoCobro: infoCosto.tipoCobro,
+          costo: infoCosto.costo,
+          mensaje: infoCosto.mensaje,
+          productosUsados: infoCosto.productosUsados + 1,
+          productosIncluidos: infoCosto.productosIncluidos
+        }
+      });
     } catch (error: any) {
       console.error("Error al crear item:", error);
       res.status(500).json({ message: error.message || "Error al crear item" });

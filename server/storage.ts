@@ -4095,6 +4095,110 @@ export class DatabaseStorage implements IStorage {
     }
     return result;
   }
+
+  // ============================================================
+  // HELPER: CALCULAR COSTO CREACIÓN PRODUCTO SEGÚN MEMBRESÍA
+  // Cuenta productos de AMBAS tablas: items_catalogo y productos_usuario
+  // ============================================================
+  async calcularCostoCreacionProducto(usuarioId: string): Promise<{
+    tipoCobro: 'membresia' | 'saldo';
+    tipoError?: 'cupos_excedidos' | 'saldo_insuficiente' | 'cupos_y_saldo_insuficiente';
+    costo: number;
+    saldoActual: number;
+    productosUsados: number;
+    productosIncluidos: number;
+    planNombre?: string;
+    puedeCrear: boolean;
+    mensaje?: string;
+  }> {
+    const membresia = await this.getMembresiaActiva(usuarioId);
+    const saldoData = await this.getSaldoUsuario(usuarioId);
+    const saldoActual = saldoData ? parseFloat(saldoData.saldo) : 0;
+    const configCosto = await this.getConfiguracionCosto('crear_producto');
+    const costoBase = configCosto?.montoFijo ? parseFloat(configCosto.montoFijo) : 0.20;
+    
+    // Contar productos de items_catalogo (disponible !== false incluye null/true)
+    let productosItemsCatalogo = 0;
+    const catalogo = await this.getCatalogoLocalPorUsuario(usuarioId);
+    if (catalogo) {
+      const items = await this.getItemsCatalogo(catalogo.id);
+      productosItemsCatalogo = items.filter((item: any) => item.disponible !== false).length;
+    }
+    
+    // Contar productos de productos_usuario (solo estado 'activo')
+    const productosUsuarioList = await this.getProductosUsuario({ usuarioId, estado: 'activo' });
+    const productosUsuarioActivos = productosUsuarioList.length;
+    
+    // Total de productos usados (suma de ambas tablas)
+    const productosUsados = productosItemsCatalogo + productosUsuarioActivos;
+    
+    if (membresia) {
+      const plan = await this.getPlanMembresia(membresia.planId);
+      const productosIncluidos = plan?.productosIncluidos || 0;
+      
+      if (productosUsados < productosIncluidos) {
+        return {
+          tipoCobro: 'membresia',
+          costo: 0,
+          saldoActual,
+          productosUsados,
+          productosIncluidos,
+          planNombre: plan?.nombre,
+          puedeCrear: true,
+          mensaje: `Cupo de membresía: ${productosUsados + 1}/${productosIncluidos}`
+        };
+      }
+      
+      if (saldoActual >= costoBase) {
+        return {
+          tipoCobro: 'saldo',
+          tipoError: 'cupos_excedidos',
+          costo: costoBase,
+          saldoActual,
+          productosUsados,
+          productosIncluidos,
+          planNombre: plan?.nombre,
+          puedeCrear: true,
+          mensaje: `Excedió cupos del plan (${productosUsados}/${productosIncluidos}). Costo adicional: S/ ${costoBase.toFixed(2)}`
+        };
+      }
+      
+      return {
+        tipoCobro: 'saldo',
+        tipoError: 'cupos_y_saldo_insuficiente',
+        costo: costoBase,
+        saldoActual,
+        productosUsados,
+        productosIncluidos,
+        planNombre: plan?.nombre,
+        puedeCrear: false,
+        mensaje: `Excedió cupos del plan (${productosUsados}/${productosIncluidos}) y saldo insuficiente. Necesita S/ ${costoBase.toFixed(2)}, tiene S/ ${saldoActual.toFixed(2)}`
+      };
+    }
+    
+    if (saldoActual >= costoBase) {
+      return {
+        tipoCobro: 'saldo',
+        costo: costoBase,
+        saldoActual,
+        productosUsados,
+        productosIncluidos: 0,
+        puedeCrear: true,
+        mensaje: `Sin membresía. Costo: S/ ${costoBase.toFixed(2)}`
+      };
+    }
+    
+    return {
+      tipoCobro: 'saldo',
+      tipoError: 'saldo_insuficiente',
+      costo: costoBase,
+      saldoActual,
+      productosUsados,
+      productosIncluidos: 0,
+      puedeCrear: false,
+      mensaje: `Saldo insuficiente. Necesita S/ ${costoBase.toFixed(2)}, tiene S/ ${saldoActual.toFixed(2)}`
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();
