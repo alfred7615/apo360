@@ -2,10 +2,17 @@ import PDFDocument from 'pdfkit';
 import * as fs from 'fs';
 import * as path from 'path';
 import { db } from '../db';
-import { transaccionesSaldo, saldosUsuarios, usuarios } from '../../shared/schema';
+import { 
+  transaccionesSaldo, saldosUsuarios, usuarios, solicitudesSaldo,
+  metodosPago, monedas, planesMembresia, membresiasUsuarios,
+  configuracionCostos, catalogosLocales, categoriasCatalogo, itemsCatalogo,
+  productosUsuario, categoriasProductosUsuario, registroAuditoria,
+  publicidad, servicios, gruposChat, mensajes
+} from '../../shared/schema';
 import { sql, eq, and, gte, lte, desc } from 'drizzle-orm';
 
-const BACKUP_DIR = path.join(process.cwd(), 'backups', 'cartera');
+const BACKUP_DIR_CARTERA = path.join(process.cwd(), 'backups', 'cartera');
+const BACKUP_DIR_SISTEMA = path.join(process.cwd(), 'backups', 'sistema');
 
 function asegurarDirectorio(dir: string) {
   if (!fs.existsSync(dir)) {
@@ -210,13 +217,13 @@ export async function generarPDFReporte(filtro: FiltroReporte): Promise<Buffer> 
   });
 }
 
-export async function generarBackupDiario(): Promise<string> {
+export async function generarBackupCartera(): Promise<string> {
   const ahora = new Date();
   const año = ahora.getFullYear().toString();
   const mes = (ahora.getMonth() + 1).toString().padStart(2, '0');
   const dia = ahora.getDate().toString().padStart(2, '0');
   
-  const dirBackup = path.join(BACKUP_DIR, año, mes);
+  const dirBackup = path.join(BACKUP_DIR_CARTERA, año, mes);
   
   try {
     asegurarDirectorio(dirBackup);
@@ -250,15 +257,29 @@ export async function generarBackupDiario(): Promise<string> {
   }
 }
 
-export function listarBackups(): { archivo: string; fecha: Date; tamaño: number }[] {
-  const backups: { archivo: string; fecha: Date; tamaño: number }[] = [];
+export function listarBackupsCartera(): { archivo: string; fecha: Date; tamaño: number; tipo: string }[] {
+  return listarBackupsDir(BACKUP_DIR_CARTERA, 'cartera');
+}
+
+export function listarBackupsSistema(): { archivo: string; fecha: Date; tamaño: number; tipo: string }[] {
+  return listarBackupsDir(BACKUP_DIR_SISTEMA, 'sistema');
+}
+
+export function listarTodosBackups(): { archivo: string; fecha: Date; tamaño: number; tipo: string }[] {
+  const cartera = listarBackupsCartera();
+  const sistema = listarBackupsSistema();
+  return [...cartera, ...sistema].sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+}
+
+function listarBackupsDir(baseDir: string, tipo: string): { archivo: string; fecha: Date; tamaño: number; tipo: string }[] {
+  const backups: { archivo: string; fecha: Date; tamaño: number; tipo: string }[] = [];
   
   try {
-    if (!fs.existsSync(BACKUP_DIR)) {
+    if (!fs.existsSync(baseDir)) {
       return backups;
     }
     
-    function buscarPDFs(dir: string) {
+    function buscarArchivos(dir: string) {
       try {
         const items = fs.readdirSync(dir);
         for (const item of items) {
@@ -266,12 +287,13 @@ export function listarBackups(): { archivo: string; fecha: Date; tamaño: number
           try {
             const stat = fs.statSync(ruta);
             if (stat.isDirectory()) {
-              buscarPDFs(ruta);
-            } else if (item.endsWith('.pdf')) {
+              buscarArchivos(ruta);
+            } else if (item.endsWith('.pdf') || item.endsWith('.json')) {
               backups.push({
                 archivo: ruta.replace(process.cwd() + '/', ''),
                 fecha: stat.mtime,
                 tamaño: stat.size,
+                tipo,
               });
             }
           } catch (statError) {
@@ -283,7 +305,7 @@ export function listarBackups(): { archivo: string; fecha: Date; tamaño: number
       }
     }
     
-    buscarPDFs(BACKUP_DIR);
+    buscarArchivos(baseDir);
   } catch (error) {
     console.error('[Backup] Error general al listar backups:', error);
   }
@@ -292,7 +314,92 @@ export function listarBackups(): { archivo: string; fecha: Date; tamaño: number
 }
 
 export function obtenerRutaBackup(nombreArchivo: string): string | null {
-  const backups = listarBackups();
+  const backups = listarTodosBackups();
   const backup = backups.find(b => b.archivo.includes(nombreArchivo));
   return backup ? path.join(process.cwd(), backup.archivo) : null;
+}
+
+export async function generarBackupSistema(): Promise<string> {
+  const ahora = new Date();
+  const año = ahora.getFullYear().toString();
+  const mes = (ahora.getMonth() + 1).toString().padStart(2, '0');
+  const dia = ahora.getDate().toString().padStart(2, '0');
+  const hora = ahora.getHours().toString().padStart(2, '0');
+  const minuto = ahora.getMinutes().toString().padStart(2, '0');
+  
+  const dirBackup = path.join(BACKUP_DIR_SISTEMA, año, mes);
+  
+  try {
+    asegurarDirectorio(dirBackup);
+  } catch (error) {
+    console.error('[Backup Sistema] Error al crear directorio:', error);
+    throw new Error('No se pudo crear el directorio de backup del sistema');
+  }
+  
+  const nombreArchivo = `backup_sistema_${año}${mes}${dia}_${hora}${minuto}.json`;
+  const rutaArchivo = path.join(dirBackup, nombreArchivo);
+  
+  try {
+    const [
+      listaUsuarios,
+      listaSaldos,
+      listaTransacciones,
+      listaSolicitudes,
+      listaMetodos,
+      listaMonedas,
+      listaPlanes,
+      listaMembresias,
+      listaCostos,
+      listaAuditoria,
+    ] = await Promise.all([
+      db.select({ id: usuarios.id, email: usuarios.email, nombre: usuarios.firstName, apellido: usuarios.lastName, rol: usuarios.rol, estado: usuarios.estado }).from(usuarios),
+      db.select().from(saldosUsuarios),
+      db.select().from(transaccionesSaldo).orderBy(desc(transaccionesSaldo.createdAt)).limit(5000),
+      db.select().from(solicitudesSaldo).orderBy(desc(solicitudesSaldo.createdAt)).limit(1000),
+      db.select().from(metodosPago),
+      db.select().from(monedas),
+      db.select().from(planesMembresia),
+      db.select().from(membresiasUsuarios),
+      db.select().from(configuracionCostos),
+      db.select().from(registroAuditoria).orderBy(desc(registroAuditoria.createdAt)).limit(5000),
+    ]);
+
+    const backupData = {
+      fechaGeneracion: ahora.toISOString(),
+      version: '1.0',
+      datos: {
+        usuarios: { cantidad: listaUsuarios.length, registros: listaUsuarios },
+        saldos: { cantidad: listaSaldos.length, registros: listaSaldos },
+        transacciones: { cantidad: listaTransacciones.length, registros: listaTransacciones },
+        solicitudes: { cantidad: listaSolicitudes.length, registros: listaSolicitudes },
+        metodosPago: { cantidad: listaMetodos.length, registros: listaMetodos },
+        monedas: { cantidad: listaMonedas.length, registros: listaMonedas },
+        planes: { cantidad: listaPlanes.length, registros: listaPlanes },
+        membresias: { cantidad: listaMembresias.length, registros: listaMembresias },
+        configuracionCostos: { cantidad: listaCostos.length, registros: listaCostos },
+        auditoria: { cantidad: listaAuditoria.length, registros: listaAuditoria },
+      },
+      resumen: {
+        totalUsuarios: listaUsuarios.length,
+        totalTransacciones: listaTransacciones.length,
+        totalSaldos: listaSaldos.reduce((sum, s) => sum + parseFloat(s.saldo || '0'), 0),
+        totalAuditoria: listaAuditoria.length,
+      }
+    };
+
+    await fs.promises.writeFile(rutaArchivo, JSON.stringify(backupData, null, 2));
+    console.log(`[Backup Sistema] Archivo generado: ${rutaArchivo}`);
+    return rutaArchivo;
+  } catch (error) {
+    console.error('[Backup Sistema] Error al generar backup:', error);
+    throw new Error('No se pudo generar el backup del sistema');
+  }
+}
+
+export async function generarAmbosBackups(): Promise<{ cartera: string; sistema: string }> {
+  const [cartera, sistema] = await Promise.all([
+    generarBackupCartera(),
+    generarBackupSistema(),
+  ]);
+  return { cartera, sistema };
 }
