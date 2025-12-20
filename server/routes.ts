@@ -38,6 +38,8 @@ import {
 import { paises, departamentosPeru, distritosPorDepartamento, obtenerDepartamentos, obtenerDistritos, buscarDepartamentos, buscarDistritos } from "@shared/ubicaciones-peru";
 import { registerAdminRoutes } from "./routes-admin";
 import { notificarSuperAdmins } from "./websocket";
+import { obtenerReporteCartera, generarPDFReporte, generarBackupDiario, listarBackups, obtenerRutaBackup } from "./services/reportesService";
+import * as cron from "node-cron";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configurar autenticación
@@ -6907,6 +6909,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message || "Error al obtener catálogos" });
     }
   });
+
+  // ============================================================
+  // REPORTES Y BACKUP DE CARTERA
+  // ============================================================
+
+  // Obtener reporte de cartera con filtros
+  app.get('/api/reportes/cartera', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { periodo, desde, hasta, usuarioId } = req.query;
+      
+      const filtro: any = {
+        periodo: periodo,
+        desde: desde ? new Date(desde as string) : undefined,
+        hasta: hasta ? new Date(hasta as string) : undefined,
+        usuarioId: usuarioId,
+      };
+      
+      const reporte = await obtenerReporteCartera(filtro);
+      res.json(reporte);
+    } catch (error: any) {
+      console.error("Error al obtener reporte de cartera:", error);
+      res.status(500).json({ message: error.message || "Error al generar reporte" });
+    }
+  });
+
+  // Generar y descargar PDF de reporte
+  app.get('/api/reportes/cartera/pdf', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { periodo, desde, hasta, usuarioId } = req.query;
+      
+      const filtro: any = {
+        periodo: periodo,
+        desde: desde ? new Date(desde as string) : undefined,
+        hasta: hasta ? new Date(hasta as string) : undefined,
+        usuarioId: usuarioId,
+      };
+      
+      const pdfBuffer = await generarPDFReporte(filtro);
+      
+      const nombreArchivo = `reporte_cartera_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
+      res.send(pdfBuffer);
+    } catch (error: any) {
+      console.error("Error al generar PDF de reporte:", error);
+      res.status(500).json({ message: error.message || "Error al generar PDF" });
+    }
+  });
+
+  // Generar backup manual
+  app.post('/api/reportes/backup', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const rutaArchivo = await generarBackupDiario();
+      res.json({ 
+        message: "Backup generado exitosamente",
+        archivo: rutaArchivo,
+      });
+    } catch (error: any) {
+      console.error("Error al generar backup:", error);
+      res.status(500).json({ message: error.message || "Error al generar backup" });
+    }
+  });
+
+  // Listar backups disponibles
+  app.get('/api/reportes/backups', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const backups = listarBackups();
+      res.json(backups);
+    } catch (error: any) {
+      console.error("Error al listar backups:", error);
+      res.status(500).json({ message: error.message || "Error al listar backups" });
+    }
+  });
+
+  // Descargar backup específico
+  app.get('/api/reportes/backups/:nombreArchivo', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { nombreArchivo } = req.params;
+      const rutaArchivo = obtenerRutaBackup(nombreArchivo);
+      
+      if (!rutaArchivo) {
+        return res.status(404).json({ message: "Backup no encontrado" });
+      }
+      
+      res.download(rutaArchivo);
+    } catch (error: any) {
+      console.error("Error al descargar backup:", error);
+      res.status(500).json({ message: error.message || "Error al descargar backup" });
+    }
+  });
+
+  // Configurar backup automático a las 00:55 AM (hora de Lima, Perú)
+  cron.schedule('55 0 * * *', async () => {
+    console.log('[Cron] Iniciando backup automático de cartera...');
+    try {
+      const rutaArchivo = await generarBackupDiario();
+      console.log('[Cron] Backup completado:', rutaArchivo);
+    } catch (error) {
+      console.error('[Cron] Error en backup automático:', error);
+    }
+  });
+
+  console.log('[Cron] Backup automático programado para las 00:55 AM (hora de Lima)');
 
   // ============================================================
   // CONFIGURACIÓN DE WEBSOCKET

@@ -799,6 +799,15 @@ export default function GestionCarteraScreen() {
               <Percent className="h-4 w-4" />
               <span className="text-xs sm:text-sm">Costos</span>
             </Button>
+            <Button
+              variant={activeTab === "reportes" ? "default" : "outline"}
+              onClick={() => setActiveTab("reportes")}
+              className="flex items-center justify-center gap-2 h-auto py-3"
+              data-testid="tab-reportes"
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span className="text-xs sm:text-sm">Reportes</span>
+            </Button>
           </div>
           
           <div className="flex items-center gap-2 justify-end">
@@ -1436,6 +1445,10 @@ export default function GestionCarteraScreen() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="reportes" className="mt-6">
+          <ReportesCartera />
         </TabsContent>
       </Tabs>
 
@@ -2164,6 +2177,337 @@ export default function GestionCarteraScreen() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function ReportesCartera() {
+  const [periodo, setPeriodo] = useState("diario");
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
+  const [generandoPDF, setGenerandoPDF] = useState(false);
+  const [generandoBackup, setGenerandoBackup] = useState(false);
+  const { toast } = useToast();
+
+  const filtros = periodo === "personalizado" 
+    ? { desde: fechaDesde, hasta: fechaHasta }
+    : { periodo };
+
+  const queryKey = periodo === "personalizado"
+    ? ["/api/reportes/cartera", { desde: fechaDesde, hasta: fechaHasta }]
+    : ["/api/reportes/cartera", { periodo }];
+
+  const { data: reporte, isLoading, refetch } = useQuery<{
+    totalIngresos: number;
+    totalEgresos: number;
+    cantidadTransacciones: number;
+    saldoPromedio: number;
+    transaccionesPorTipo: Record<string, { cantidad: number; monto: number }>;
+    transaccionesPorDia: { fecha: string; ingresos: number; egresos: number }[];
+  }>({
+    queryKey,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (periodo === "personalizado") {
+        if (fechaDesde) params.append("desde", fechaDesde);
+        if (fechaHasta) params.append("hasta", fechaHasta);
+      } else {
+        params.append("periodo", periodo);
+      }
+      const response = await fetch(`/api/reportes/cartera?${params}`);
+      if (!response.ok) throw new Error("Error al obtener reporte");
+      return response.json();
+    },
+    enabled: periodo !== "personalizado" || (!!fechaDesde && !!fechaHasta),
+  });
+
+  const { data: backups = [], isLoading: loadingBackups } = useQuery<{
+    archivo: string;
+    fecha: string;
+    tamaño: number;
+  }[]>({
+    queryKey: ["/api/reportes/backups"],
+  });
+
+  const descargarPDF = async () => {
+    setGenerandoPDF(true);
+    try {
+      const params = new URLSearchParams();
+      if (periodo === "personalizado") {
+        if (fechaDesde) params.append("desde", fechaDesde);
+        if (fechaHasta) params.append("hasta", fechaHasta);
+      } else {
+        params.append("periodo", periodo);
+      }
+      
+      const response = await fetch(`/api/reportes/cartera/pdf?${params}`);
+      if (!response.ok) throw new Error("Error al generar PDF");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reporte_cartera_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({ title: "PDF descargado exitosamente" });
+    } catch (error) {
+      toast({ title: "Error al descargar PDF", variant: "destructive" });
+    } finally {
+      setGenerandoPDF(false);
+    }
+  };
+
+  const generarBackupManual = async () => {
+    setGenerandoBackup(true);
+    try {
+      const response = await fetch("/api/reportes/backup", { method: "POST" });
+      if (!response.ok) throw new Error("Error al generar backup");
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/reportes/backups"] });
+      toast({ title: "Backup generado exitosamente" });
+    } catch (error) {
+      toast({ title: "Error al generar backup", variant: "destructive" });
+    } finally {
+      setGenerandoBackup(false);
+    }
+  };
+
+  const periodos = [
+    { valor: "diario", nombre: "Hoy" },
+    { valor: "semanal", nombre: "Última semana" },
+    { valor: "mensual", nombre: "Último mes" },
+    { valor: "trimestral", nombre: "Último trimestre" },
+    { valor: "anual", nombre: "Último año" },
+    { valor: "personalizado", nombre: "Rango personalizado" },
+  ];
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Reportes de Cartera
+          </CardTitle>
+          <CardDescription>
+            Analiza los movimientos financieros por período. El backup automático se ejecuta diariamente a las 12:55 AM
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="flex-1 min-w-[200px]">
+              <Label>Período</Label>
+              <Select value={periodo} onValueChange={setPeriodo}>
+                <SelectTrigger data-testid="select-periodo-reporte">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {periodos.map((p) => (
+                    <SelectItem key={p.valor} value={p.valor}>{p.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {periodo === "personalizado" && (
+              <>
+                <div className="min-w-[150px]">
+                  <Label>Desde</Label>
+                  <Input
+                    type="date"
+                    value={fechaDesde}
+                    onChange={(e) => setFechaDesde(e.target.value)}
+                    data-testid="input-fecha-desde"
+                  />
+                </div>
+                <div className="min-w-[150px]">
+                  <Label>Hasta</Label>
+                  <Input
+                    type="date"
+                    value={fechaHasta}
+                    onChange={(e) => setFechaHasta(e.target.value)}
+                    data-testid="input-fecha-hasta"
+                  />
+                </div>
+              </>
+            )}
+
+            <Button 
+              onClick={() => refetch()} 
+              variant="outline"
+              data-testid="button-actualizar-reporte"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Actualizar
+            </Button>
+            
+            <Button 
+              onClick={descargarPDF}
+              disabled={generandoPDF || isLoading}
+              data-testid="button-descargar-pdf"
+            >
+              {generandoPDF ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <DollarSign className="h-4 w-4 mr-2" />
+              )}
+              Descargar PDF
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Cargando reporte...</div>
+          ) : reporte ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                  <TrendingUp className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Total Ingresos</p>
+                  <p className="text-xl font-bold text-green-600">S/ {reporte.totalIngresos.toFixed(2)}</p>
+                </div>
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
+                  <TrendingDown className="h-6 w-6 text-red-600 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Total Egresos</p>
+                  <p className="text-xl font-bold text-red-600">S/ {reporte.totalEgresos.toFixed(2)}</p>
+                </div>
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
+                  <CreditCard className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Transacciones</p>
+                  <p className="text-xl font-bold text-blue-600">{reporte.cantidadTransacciones}</p>
+                </div>
+                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-center">
+                  <Wallet className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Balance</p>
+                  <p className={`text-xl font-bold ${reporte.totalIngresos - reporte.totalEgresos >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    S/ {(reporte.totalIngresos - reporte.totalEgresos).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              {Object.keys(reporte.transaccionesPorTipo).length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-3">Detalle por Tipo</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {Object.entries(reporte.transaccionesPorTipo).map(([tipo, data]) => (
+                      <div key={tipo} className="p-3 border rounded-lg">
+                        <p className="font-medium capitalize">{tipo}</p>
+                        <p className="text-sm text-muted-foreground">{data.cantidad} transacciones</p>
+                        <p className="font-bold">S/ {data.monto.toFixed(2)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {reporte.transaccionesPorDia.length > 0 && reporte.transaccionesPorDia.length <= 31 && (
+                <div>
+                  <h4 className="font-medium mb-3">Movimientos por Día</h4>
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="grid grid-cols-4 gap-2 p-3 bg-muted/50 text-sm font-medium">
+                      <span>Fecha</span>
+                      <span className="text-right text-green-600">Ingresos</span>
+                      <span className="text-right text-red-600">Egresos</span>
+                      <span className="text-right">Balance</span>
+                    </div>
+                    <div className="divide-y max-h-[300px] overflow-y-auto">
+                      {reporte.transaccionesPorDia.map((dia) => (
+                        <div key={dia.fecha} className="grid grid-cols-4 gap-2 p-3 text-sm">
+                          <span>{dia.fecha}</span>
+                          <span className="text-right text-green-600">+S/ {dia.ingresos.toFixed(2)}</span>
+                          <span className="text-right text-red-600">-S/ {dia.egresos.toFixed(2)}</span>
+                          <span className={`text-right font-medium ${dia.ingresos - dia.egresos >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            S/ {(dia.ingresos - dia.egresos).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Selecciona un período para ver el reporte
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Backups Disponibles
+            </CardTitle>
+            <CardDescription>
+              Archivos PDF de respaldo generados automáticamente
+            </CardDescription>
+          </div>
+          <Button 
+            onClick={generarBackupManual}
+            disabled={generandoBackup}
+            variant="outline"
+            data-testid="button-generar-backup"
+          >
+            {generandoBackup ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
+            Generar Backup Ahora
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {loadingBackups ? (
+            <div className="text-center py-8 text-muted-foreground">Cargando backups...</div>
+          ) : backups.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No hay backups disponibles. El primer backup se generará automáticamente a las 12:55 AM.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {backups.slice(0, 20).map((backup, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors"
+                  data-testid={`row-backup-${index}`}
+                >
+                  <div>
+                    <p className="font-medium">{backup.archivo.split('/').pop()}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {format(new Date(backup.fecha), "dd MMM yyyy, HH:mm", { locale: es })} - {formatBytes(backup.tamaño)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const nombreArchivo = backup.archivo.split('/').pop();
+                      window.open(`/api/reportes/backups/${nombreArchivo}`, '_blank');
+                    }}
+                    data-testid={`button-descargar-backup-${index}`}
+                  >
+                    Descargar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
