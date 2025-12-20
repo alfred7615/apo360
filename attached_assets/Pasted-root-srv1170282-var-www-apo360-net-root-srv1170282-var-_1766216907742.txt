@@ -1,0 +1,158 @@
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# git pull origin main &&
+> npm run build &&
+> pm2 restart apo360
+remote: Enumerating objects: 80, done.
+remote: Counting objects: 100% (80/80), done.
+remote: Compressing objects: 100% (9/9), done.
+remote: Total 61 (delta 52), reused 61 (delta 52), pack-reused 0 (from 0)
+Unpacking objects: 100% (61/61), 95.01 KiB | 1.64 MiB/s, done.
+From https://github.com/alfred7615/apo360
+ * branch            main       -> FETCH_HEAD
+   29a74fc..ca3f798  main       -> origin/main
+Merge made by the 'ort' strategy.
+ ACTUALIZACION_ETIQUETAS_PRECIOS.md                                          | 132 +++++++++
+ SQL_PRODUCCION_CATALOGO.md                                                  | 171 ++++++++++++
+ ...root-srv1170282-var-www-apo360-net-curl-https-apo360-n_1766209202940.txt | 170 ++++++++++++
+ ...oot-srv1170282-var-www-apo360-net-curl-I-https-apo360-_1766208877384.txt | 179 ++++++++++++
+ ...oot-srv1170282-var-www-apo360-net-npm-install-up-to-da_1766216504258.txt | 320 +++++++++++++++++++++
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1766208604876.txt | 539 ++++++++++++++++++++++++++++++++++++
+ client/src/components/LocalComercialPanel.tsx                               |  77 ++++--
+ client/src/components/SeccionLocalesComerciales.tsx                         | 131 ++++++---
+ client/src/pages/admin/gestiones/gestion-moneda.tsx                         | 197 ++++++++++++-
+Merge made by the 'ort' strategy.
+ ACTUALIZACION_ETIQUETAS_PRECIOS.md                                          | 132 +++++++++
+ SQL_PRODUCCION_CATALOGO.md                                                  | 171 ++++++++++++
+ ...root-srv1170282-var-www-apo360-net-curl-https-apo360-n_1766209202940.txt | 170 ++++++++++++
+ ...oot-srv1170282-var-www-apo360-net-curl-I-https-apo360-_1766208877384.txt | 179 ++++++++++++
+ ...oot-srv1170282-var-www-apo360-net-npm-install-up-to-da_1766216504258.txt | 320 +++++++++++++++++++++
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1766208604876.txt | 539 ++++++++++++++++++++++++++++++++++++
+ client/src/components/LocalComercialPanel.tsx                               |  77 ++++--
+ client/src/components/SeccionLocalesComerciales.tsx                         | 131 ++++++---
+ client/src/pages/admin/gestiones/gestion-moneda.tsx                         | 197 ++++++++++++-
+ public/assets/servicios/blob-1766215220162-427152328                        | Bin 0 -> 69427 bytes
+ server/routes.ts                                                            | 264 ++++++++++++------
+ server/storage.ts                                                           | 104 +++++++
+ shared/schema.ts                                                            |   5 +
+ 13 files changed, 2127 insertions(+), 162 deletions(-)
+ create mode 100644 ACTUALIZACION_ETIQUETAS_PRECIOS.md
+ create mode 100644 SQL_PRODUCCION_CATALOGO.md
+ create mode 100644 attached_assets/Pasted--root-srv1170282-var-www-apo360-net-curl-https-apo360-n_1766209202940.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-curl-I-https-apo360-_1766208877384.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-npm-install-up-to-da_1766216504258.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1766208604876.txt
+ create mode 100644 public/assets/servicios/blob-1766215220162-427152328
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js
+
+vite v5.4.20 building for production...
+transforming (4) src/App.tsx
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 3867 modules transformed.
+../dist/public/index.html                     1.53 kB │ gzip:   0.66 kB
+../dist/public/assets/index-CzjhVl1T.css    154.97 kB │ gzip:  28.52 kB
+../dist/public/assets/index-CJ-8MWdl.js   2,903.82 kB │ gzip: 763.08 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 24.14s
+▲ [WARNING] Duplicate member "updateServicio" in class body [duplicate-class-member]
+
+    server/storage.ts:1919:8:
+      1919 │   async updateServicio(id: string, data: any): Promise<any> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "updateServicio" is here:
+
+    server/storage.ts:861:8:
+      861 │   async updateServicio(id: string, data: Partial<InsertServicio>): Promise<Servicio | undefined> {
+          ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getFavoritosUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2484:8:
+      2484 │   async getFavoritosUsuario(usuarioId: string, tipo?: string): Promise<any[]> {
+           ╵         ~~~~~~~~~~~~~~~~~~~
+
+  The original member "getFavoritosUsuario" is here:
+
+    server/storage.ts:829:8:
+      829 │   async getFavoritosUsuario(usuarioId: string): Promise<any[]> {
+          ╵         ~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getInteraccionesUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2728:8:
+      2728 │   async getInteraccionesUsuario(
+           ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "getInteraccionesUsuario" is here:
+
+    server/storage.ts:605:8:
+      605 │   async getInteraccionesUsuario(publicidadId: string, usuarioId: string): Promise<{ hasLike: boolean; has...
+          ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getComentarios" in class body [duplicate-class-member]
+
+    server/storage.ts:2752:8:
+      2752 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "getComentarios" is here:
+
+    server/storage.ts:1888:8:
+      1888 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "createComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2768:8:
+      2768 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "createComentario" is here:
+
+    server/storage.ts:1901:8:
+      1901 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "deleteComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2782:8:
+      2782 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "deleteComentario" is here:
+
+    server/storage.ts:1909:8:
+      1909 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+6 of 9 warnings shown (disable the message limit with --log-limit=0)
+
+  dist/index.js  536.4kb
+
+⚡ Done in 61ms
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 22   │ online    │ 0%       │ 40.3mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 23   │ online    │ 0%       │ 40.0mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable" -c "ALTER TABLE items_catalogo ADD COLUMN IF NOT EXISTS etiqueta_precio_1 VARCHAR(50) DEFAULT 'Personal', ADD COLUMN IF NOT EXISTS etiqueta_precio_2 VARCHAR(50) DEFAULT 'Mediana', ADD COLUMN IF NOT EXISTS etiqueta_precio_3 VARCHAR(50) DEFAULT 'Familiar', ADD COLUMN IF NOT EXISTS etiqueta_precio_4 VARCHAR(50) DEFAULT 'Extra';"
+ERROR:  relation "items_catalogo" does not exist
+root@srv1170282:/var/www/apo360.net#
