@@ -2,9 +2,10 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import path from "path";
+import crypto from "crypto";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, and, ne, sql } from "drizzle-orm";
+import { eq, and, ne, sql, desc } from "drizzle-orm";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { createUploadMiddleware, getPublicUrl } from "./uploadConfigByEndpoint";
 import { requireSuperAdmin } from "./authMiddleware";
@@ -34,6 +35,13 @@ import {
   insertSectorSchema,
   mensajes,
   miembrosGrupo,
+  widgetsEmbebibles,
+  logosServicios,
+  publicidad,
+  itemsCatalogo,
+  categoriasServicio,
+  radiosOnline,
+  listasMp3,
 } from "@shared/schema";
 import { paises, departamentosPeru, distritosPorDepartamento, obtenerDepartamentos, obtenerDistritos, buscarDepartamentos, buscarDistritos } from "@shared/ubicaciones-peru";
 import { registerAdminRoutes } from "./routes-admin";
@@ -2202,6 +2210,302 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al obtener favoritos:", error);
       res.status(500).json({ message: "Error al obtener favoritos" });
+    }
+  });
+
+  // ============================================================
+  // RUTAS DE WIDGETS EMBEBIBLES
+  // ============================================================
+
+  // Obtener todos los widgets (admin)
+  app.get('/api/widgets', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const widgets = await db.select().from(widgetsEmbebibles).orderBy(desc(widgetsEmbebibles.createdAt));
+      res.json(widgets);
+    } catch (error) {
+      console.error("Error al obtener widgets:", error);
+      res.status(500).json({ message: "Error al obtener widgets" });
+    }
+  });
+
+  // Crear nuevo widget
+  app.post('/api/widgets', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const data = req.body;
+      const apiKey = crypto.randomBytes(32).toString('hex');
+      const [widget] = await db.insert(widgetsEmbebibles).values({
+        ...data,
+        apiKey: data.requiereApiKey ? apiKey : null,
+      }).returning();
+      res.json(widget);
+    } catch (error) {
+      console.error("Error al crear widget:", error);
+      res.status(500).json({ message: "Error al crear widget" });
+    }
+  });
+
+  // Actualizar widget
+  app.patch('/api/widgets/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = req.body;
+      const [widget] = await db.update(widgetsEmbebibles)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(widgetsEmbebibles.id, id))
+        .returning();
+      res.json(widget);
+    } catch (error) {
+      console.error("Error al actualizar widget:", error);
+      res.status(500).json({ message: "Error al actualizar widget" });
+    }
+  });
+
+  // Eliminar widget
+  app.delete('/api/widgets/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await db.delete(widgetsEmbebibles).where(eq(widgetsEmbebibles.id, id));
+      res.json({ message: "Widget eliminado" });
+    } catch (error) {
+      console.error("Error al eliminar widget:", error);
+      res.status(500).json({ message: "Error al eliminar widget" });
+    }
+  });
+
+  // ========== ENDPOINTS PÚBLICOS PARA WIDGETS ==========
+
+  // Obtener datos de widget (público - para sitios externos)
+  app.get('/api/embed/:widgetId', async (req, res) => {
+    try {
+      const { widgetId } = req.params;
+      const apiKey = req.query.key as string;
+      const origen = req.headers.origin || req.headers.referer || '';
+
+      const [widget] = await db.select().from(widgetsEmbebibles).where(eq(widgetsEmbebibles.id, widgetId));
+      
+      if (!widget || !widget.activo) {
+        return res.status(404).json({ message: "Widget no encontrado o inactivo" });
+      }
+
+      // Verificar API key si es requerida
+      if (widget.requiereApiKey && widget.apiKey !== apiKey) {
+        return res.status(401).json({ message: "API key inválida" });
+      }
+
+      // Verificar dominio permitido
+      if (widget.dominiosPermitidos && widget.dominiosPermitidos.length > 0) {
+        const dominioPermitido = widget.dominiosPermitidos.some(d => origen.includes(d));
+        if (!dominioPermitido) {
+          return res.status(403).json({ message: "Dominio no autorizado" });
+        }
+      }
+
+      // Incrementar visualizaciones
+      await db.update(widgetsEmbebibles)
+        .set({ totalVisualizaciones: (widget.totalVisualizaciones || 0) + 1 })
+        .where(eq(widgetsEmbebibles.id, widgetId));
+
+      // Obtener datos según el tipo de widget
+      let datos: any = [];
+      switch (widget.tipo) {
+        case 'carrusel_logos':
+        case 'logos_servicios':
+          datos = await db.select().from(logosServicios).where(eq(logosServicios.activo, true)).limit(widget.limite || 10);
+          break;
+        case 'slider_principal':
+          datos = await db.select().from(publicidad).where(eq(publicidad.tipo, 'slider')).limit(widget.limite || 10);
+          break;
+        case 'productos_destacados':
+          datos = await db.select().from(itemsCatalogo).where(eq(itemsCatalogo.destacado, true)).limit(widget.limite || 10);
+          break;
+        case 'productos_recientes':
+          datos = await db.select().from(itemsCatalogo).orderBy(desc(itemsCatalogo.createdAt)).limit(widget.limite || 10);
+          break;
+        case 'categorias_servicios':
+          datos = await db.select().from(categoriasServicio).where(eq(categoriasServicio.activo, true));
+          break;
+        case 'radio_listas':
+          const radios = await db.select().from(radiosOnline).where(eq(radiosOnline.activo, true)).limit(5);
+          const listas = await db.select().from(listasMp3).where(eq(listasMp3.activo, true)).limit(5);
+          datos = { radios, listas };
+          break;
+        case 'popup_emergencia':
+        case 'encuestas':
+          datos = await db.select().from(publicidad).where(eq(publicidad.tipo, widget.tipo === 'popup_emergencia' ? 'popup' : 'encuesta')).limit(1);
+          break;
+        default:
+          datos = [];
+      }
+
+      res.json({
+        widget: {
+          id: widget.id,
+          tipo: widget.tipo,
+          nombre: widget.nombre,
+          config: {
+            ancho: widget.ancho,
+            alto: widget.alto,
+            colorFondo: widget.colorFondo,
+            colorTexto: widget.colorTexto,
+            bordes: widget.bordes,
+            autoplay: widget.autoplay,
+            intervalo: widget.intervalo,
+            itemsPorVista: widget.itemsPorVista,
+            mostrarControles: widget.mostrarControles,
+            estilosPersonalizados: widget.estilosPersonalizados,
+          }
+        },
+        datos
+      });
+    } catch (error) {
+      console.error("Error al obtener datos del widget:", error);
+      res.status(500).json({ message: "Error al obtener datos del widget" });
+    }
+  });
+
+  // Servir archivo JavaScript embebible
+  app.get('/widget.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    const js = `
+(function() {
+  var APO360Widget = {
+    baseUrl: '${baseUrl}',
+    
+    init: function(config) {
+      var container = document.getElementById(config.containerId);
+      if (!container) {
+        console.error('APO360 Widget: Container not found');
+        return;
+      }
+      
+      var url = this.baseUrl + '/api/embed/' + config.widgetId;
+      if (config.apiKey) url += '?key=' + config.apiKey;
+      
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.message) {
+            container.innerHTML = '<p style="color:red;">' + data.message + '</p>';
+            return;
+          }
+          APO360Widget.render(container, data);
+        })
+        .catch(function(e) {
+          container.innerHTML = '<p style="color:red;">Error al cargar widget</p>';
+        });
+    },
+    
+    render: function(container, data) {
+      var w = data.widget;
+      var c = w.config;
+      var items = Array.isArray(data.datos) ? data.datos : [];
+      
+      container.style.width = c.ancho || '100%';
+      container.style.height = c.alto || 'auto';
+      container.style.backgroundColor = c.colorFondo || 'transparent';
+      if (c.colorTexto) container.style.color = c.colorTexto;
+      if (c.bordes) container.style.border = '1px solid #ccc';
+      container.style.overflow = 'hidden';
+      
+      var html = '<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:10px;">';
+      
+      if (w.tipo === 'carrusel_logos' || w.tipo === 'logos_servicios') {
+        items.forEach(function(item) {
+          html += '<a href="' + (item.enlace || '#') + '" target="_blank" style="display:block;width:80px;height:80px;">';
+          html += '<img src="' + (item.imagenUrl || item.imagen) + '" style="width:100%;height:100%;object-fit:contain;" alt="' + (item.nombre || '') + '">';
+          html += '</a>';
+        });
+      } else if (w.tipo === 'productos_destacados' || w.tipo === 'productos_recientes') {
+        items.forEach(function(item) {
+          html += '<div style="width:150px;text-align:center;padding:10px;border:1px solid #eee;border-radius:8px;">';
+          if (item.imagenes && item.imagenes[0]) {
+            html += '<img src="' + item.imagenes[0] + '" style="width:100%;height:100px;object-fit:cover;border-radius:4px;">';
+          }
+          html += '<p style="margin:5px 0;font-weight:bold;font-size:12px;">' + (item.nombre || '') + '</p>';
+          if (item.precio) html += '<p style="margin:0;color:#8B5CF6;">S/ ' + item.precio + '</p>';
+          html += '</div>';
+        });
+      } else if (w.tipo === 'categorias_servicios') {
+        items.forEach(function(item) {
+          html += '<div style="padding:8px 16px;background:#f5f5f5;border-radius:20px;font-size:14px;">' + (item.nombre || '') + '</div>';
+        });
+      } else if (w.tipo === 'radio_listas') {
+        var radios = data.datos.radios || [];
+        html += '<div style="width:100%;"><strong>Radios Online:</strong><ul style="margin:5px 0;">';
+        radios.forEach(function(r) {
+          html += '<li>' + r.nombre + '</li>';
+        });
+        html += '</ul></div>';
+      } else {
+        html += '<p>Widget tipo: ' + w.tipo + '</p>';
+      }
+      
+      html += '</div>';
+      if (c.estilosPersonalizados) {
+        html += '<style>' + c.estilosPersonalizados + '</style>';
+      }
+      
+      container.innerHTML = html;
+    }
+  };
+  
+  window.APO360Widget = APO360Widget;
+})();
+`;
+    res.send(js);
+  });
+
+  // Registrar click en widget (para estadísticas)
+  app.post('/api/embed/:widgetId/click', async (req, res) => {
+    try {
+      const { widgetId } = req.params;
+      const [widget] = await db.select().from(widgetsEmbebibles).where(eq(widgetsEmbebibles.id, widgetId));
+      if (widget) {
+        await db.update(widgetsEmbebibles)
+          .set({ totalClicks: (widget.totalClicks || 0) + 1 })
+          .where(eq(widgetsEmbebibles.id, widgetId));
+      }
+      res.json({ ok: true });
+    } catch (error) {
+      res.status(500).json({ message: "Error" });
+    }
+  });
+
+  // Generar código de embed para un widget
+  app.get('/api/widgets/:id/embed-code', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [widget] = await db.select().from(widgetsEmbebibles).where(eq(widgetsEmbebibles.id, id));
+      
+      if (!widget) {
+        return res.status(404).json({ message: "Widget no encontrado" });
+      }
+
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const apiKeyParam = widget.requiereApiKey ? `, apiKey: '${widget.apiKey}'` : '';
+      
+      const embedCode = `<!-- APO-360 Widget: ${widget.nombre} -->
+<div id="apo360-widget-${widget.id}"></div>
+<script src="${baseUrl}/widget.js"></script>
+<script>
+  APO360Widget.init({
+    containerId: 'apo360-widget-${widget.id}',
+    widgetId: '${widget.id}'${apiKeyParam}
+  });
+</script>`;
+
+      res.json({ 
+        embedCode,
+        widget,
+        previewUrl: `${baseUrl}/api/embed/${widget.id}`
+      });
+    } catch (error) {
+      console.error("Error al generar código embed:", error);
+      res.status(500).json({ message: "Error al generar código" });
     }
   });
 

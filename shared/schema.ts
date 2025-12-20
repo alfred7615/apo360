@@ -1807,3 +1807,43 @@ export const registroAuditoria = pgTable("registro_auditoria", {
 export const insertRegistroAuditoriaSchema = createInsertSchema(registroAuditoria).omit({ id: true, createdAt: true });
 export type InsertRegistroAuditoria = z.infer<typeof insertRegistroAuditoriaSchema>;
 export type RegistroAuditoria = typeof registroAuditoria.$inferSelect;
+
+// ============================================================
+// WIDGETS EMBEBIBLES - Sistema de widgets para compartir en otros sitios
+// ============================================================
+export const widgetsEmbebibles = pgTable("widgets_embebibles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nombre: varchar("nombre", { length: 255 }).notNull(),
+  tipo: varchar("tipo", { length: 100 }).notNull(), // 'carrusel_logos', 'slider_principal', 'logos_servicios', 'popup_emergencia', 'encuestas', 'radio_listas', 'productos_destacados', 'productos_recientes', 'categorias_servicios'
+  descripcion: text("descripcion"),
+  activo: boolean("activo").default(true),
+  // Configuración del widget
+  ancho: varchar("ancho", { length: 50 }).default("100%"),
+  alto: varchar("alto", { length: 50 }).default("auto"),
+  colorFondo: varchar("color_fondo", { length: 20 }).default("transparent"),
+  colorTexto: varchar("color_texto", { length: 20 }),
+  bordes: boolean("bordes").default(false),
+  autoplay: boolean("autoplay").default(true),
+  intervalo: integer("intervalo").default(5000), // milisegundos para autoplay
+  itemsPorVista: integer("items_por_vista").default(4),
+  mostrarControles: boolean("mostrar_controles").default(true),
+  estilosPersonalizados: text("estilos_personalizados"), // CSS adicional
+  // Filtros de contenido
+  categoriaId: varchar("categoria_id"),
+  limite: integer("limite").default(10),
+  orden: varchar("orden", { length: 50 }).default("reciente"), // 'reciente', 'destacado', 'aleatorio'
+  // Control de acceso
+  dominiosPermitidos: text("dominios_permitidos").array(), // null = todos permitidos
+  requiereApiKey: boolean("requiere_api_key").default(false),
+  apiKey: varchar("api_key", { length: 64 }),
+  // Estadísticas
+  totalVisualizaciones: integer("total_visualizaciones").default(0),
+  totalClicks: integer("total_clicks").default(0),
+  // Metadatos
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertWidgetEmbebibleSchema = createInsertSchema(widgetsEmbebibles).omit({ id: true, createdAt: true, updatedAt: true, totalVisualizaciones: true, totalClicks: true });
+export type InsertWidgetEmbebible = z.infer<typeof insertWidgetEmbebibleSchema>;
+export type WidgetEmbebible = typeof widgetsEmbebibles.$inferSelect;
