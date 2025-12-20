@@ -42,6 +42,7 @@ import {
   categoriasServicio,
   radiosOnline,
   listasMp3,
+  configuracionMonedas,
 } from "@shared/schema";
 import { paises, departamentosPeru, distritosPorDepartamento, obtenerDepartamentos, obtenerDistritos, buscarDepartamentos, buscarDistritos } from "@shared/ubicaciones-peru";
 import { registerAdminRoutes } from "./routes-admin";
@@ -4617,6 +4618,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al configurar historial de tasas:", error);
       res.status(500).json({ message: "Error al configurar historial de tasas", error: String(error) });
+    }
+  });
+
+  // Actualizar configuración de moneda por ID (super_admin)
+  app.patch('/api/admin/monedas/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const roles = await storage.getUserRoles(userId);
+      
+      if (!roles.includes('super_admin')) {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+      
+      const { id } = req.params;
+      const { tasaPromedioInternet, tasaPromedioLocal, activo } = req.body;
+      
+      // Actualizar la configuración de moneda
+      const updateData: any = { updatedAt: new Date(), ultimaActualizacion: new Date() };
+      if (tasaPromedioInternet !== undefined) updateData.tasaPromedioInternet = tasaPromedioInternet;
+      if (tasaPromedioLocal !== undefined) updateData.tasaPromedioLocal = tasaPromedioLocal;
+      if (activo !== undefined) updateData.activo = activo;
+      
+      const [actualizada] = await db.update(configuracionMonedas)
+        .set(updateData)
+        .where(eq(configuracionMonedas.id, id))
+        .returning();
+      
+      if (!actualizada) {
+        return res.status(404).json({ message: "Moneda no encontrada" });
+      }
+      
+      console.log(`✅ Moneda ${actualizada.codigo} actualizada por super_admin ${userId}`);
+      res.json(actualizada);
+    } catch (error) {
+      console.error("Error al actualizar moneda:", error);
+      res.status(500).json({ message: "Error al actualizar moneda" });
+    }
+  });
+
+  // Recalcular tasas locales promedio desde cambistas activos
+  app.post('/api/admin/monedas/recalcular-tasas-locales', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const roles = await storage.getUserRoles(userId);
+      
+      if (!roles.includes('super_admin')) {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+      
+      console.log('🔄 Recalculando tasas locales desde cambistas activos...');
+      
+      // Obtener todas las monedas configuradas
+      const monedas = await storage.getConfiguracionMonedas();
+      const monedasActualizadas: string[] = [];
+      
+      for (const moneda of monedas) {
+        if (moneda.esPrincipal) continue; // Saltar la moneda principal (PEN)
+        
+        // Obtener promedio de tasas locales para esta moneda vs PEN
+        const promedio = await storage.getPromedioTasasLocales(moneda.codigo, 'PEN');
+        
+        if (promedio && promedio.promedioVenta) {
+          // Actualizar la tasa promedio local en la configuración
+          await db.update(configuracionMonedas)
+            .set({ 
+              tasaPromedioLocal: String(promedio.promedioVenta.toFixed(6)),
+              ultimaActualizacion: new Date(),
+              updatedAt: new Date()
+            })
+            .where(eq(configuracionMonedas.codigo, moneda.codigo));
+          
+          monedasActualizadas.push(`${moneda.codigo}: ${promedio.promedioVenta.toFixed(4)}`);
+        }
+      }
+      
+      console.log(`✅ Tasas locales recalculadas: ${monedasActualizadas.join(', ')}`);
+      res.json({ 
+        message: `Tasas locales actualizadas para ${monedasActualizadas.length} monedas`,
+        monedasActualizadas 
+      });
+    } catch (error) {
+      console.error("Error al recalcular tasas locales:", error);
+      res.status(500).json({ message: "Error al recalcular tasas locales" });
     }
   });
 

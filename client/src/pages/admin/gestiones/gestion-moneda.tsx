@@ -5,8 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Coins, TrendingUp, TrendingDown, DollarSign, Edit, RefreshCw, History, Users, Calculator, Settings, Globe, MapPin, Database, Loader2, Clock } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Coins, TrendingUp, TrendingDown, DollarSign, Edit, RefreshCw, History, Users, Calculator, Settings, Globe, MapPin, Database, Loader2, Clock, Save, X } from "lucide-react";
 import { CambistasSection } from "@/components/admin/cambistas-section";
 import { CalculadoraCambio } from "@/components/CalculadoraCambio";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +18,13 @@ import type { ConfiguracionMoneda, TasaCambioLocal, HistorialTasaCambio } from "
 
 export default function GestionMonedaScreen() {
   const [activeTab, setActiveTab] = useState("calculadora");
+  const [monedaEditando, setMonedaEditando] = useState<ConfiguracionMoneda | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    tasaPromedioInternet: "",
+    tasaPromedioLocal: "",
+    activo: true,
+  });
   const { toast } = useToast();
 
   const { data: monedas, isLoading: cargandoMonedas, refetch: refetchMonedas } = useQuery<ConfiguracionMoneda[]>({
@@ -39,6 +49,51 @@ export default function GestionMonedaScreen() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
+
+  const actualizarMonedaMutation = useMutation({
+    mutationFn: (data: { id: string; tasaPromedioInternet?: string; tasaPromedioLocal?: string; activo?: boolean }) =>
+      apiRequest("PATCH", `/api/admin/monedas/${data.id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/monedas/configuracion"] });
+      toast({ title: "Moneda actualizada", description: "Los cambios se guardaron correctamente" });
+      setDialogOpen(false);
+      setMonedaEditando(null);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const recalcularTasasLocalesMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/monedas/recalcular-tasas-locales"),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/monedas/configuracion"] });
+      toast({ title: "Tasas locales actualizadas", description: data.message || "Promedios calculados desde cambistas activos" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleEditMoneda = (moneda: ConfiguracionMoneda) => {
+    setMonedaEditando(moneda);
+    setFormData({
+      tasaPromedioInternet: moneda.tasaPromedioInternet || "",
+      tasaPromedioLocal: moneda.tasaPromedioLocal || "",
+      activo: moneda.activo ?? true,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleGuardarMoneda = () => {
+    if (!monedaEditando) return;
+    actualizarMonedaMutation.mutate({
+      id: monedaEditando.id,
+      tasaPromedioInternet: formData.tasaPromedioInternet || undefined,
+      tasaPromedioLocal: formData.tasaPromedioLocal || undefined,
+      activo: formData.activo,
+    });
+  };
 
   const tasaUsdPen = monedas?.find(m => m.codigo === "USD")?.tasaPromedioInternet;
   const cantidadTasasActivas = tasasLocales?.filter(t => t.activo).length || 0;
@@ -137,15 +192,31 @@ export default function GestionMonedaScreen() {
               Historial
             </TabsTrigger>
           </TabsList>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => { refetchMonedas(); refetchTasas(); }}
-            data-testid="button-actualizar-tasas"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${cargandoMonedas || cargandoTasas ? "animate-spin" : ""}`} />
-            Actualizar
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => recalcularTasasLocalesMutation.mutate()}
+              disabled={recalcularTasasLocalesMutation.isPending}
+              data-testid="button-recalcular-locales"
+            >
+              {recalcularTasasLocalesMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <MapPin className="h-4 w-4 mr-2" />
+              )}
+              Recalcular Locales
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => { refetchMonedas(); refetchTasas(); }}
+              data-testid="button-actualizar-tasas"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${cargandoMonedas || cargandoTasas ? "animate-spin" : ""}`} />
+              Actualizar
+            </Button>
+          </div>
         </div>
 
         <TabsContent value="calculadora" className="mt-6">
@@ -171,7 +242,7 @@ export default function GestionMonedaScreen() {
                       data-testid={`item-comparacion-${moneda.codigo}`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-xl">{moneda.banderaUrl || "💱"}</span>
+                        <span className="text-xl">{monedasInfo[moneda.codigo]?.bandera || "💱"}</span>
                         <div>
                           <p className="font-medium">{moneda.codigo}</p>
                           <p className="text-xs text-muted-foreground">{moneda.nombreCorto}</p>
@@ -200,6 +271,14 @@ export default function GestionMonedaScreen() {
                               : "Sin datos"}
                           </p>
                         </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleEditMoneda(moneda)}
+                          data-testid={`button-edit-ref-${moneda.codigo}`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -208,7 +287,7 @@ export default function GestionMonedaScreen() {
                     <p className="text-xs text-muted-foreground text-center">
                       Las tasas locales se calculan como promedio de los cambistas activos.
                       <br />
-                      Actualización automática cada hora.
+                      Use "Recalcular Locales" para actualizar.
                     </p>
                   </div>
                 </div>
@@ -238,7 +317,7 @@ export default function GestionMonedaScreen() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
-                          {moneda.banderaUrl || moneda.simbolo}
+                          {monedasInfo[moneda.codigo]?.bandera || moneda.simbolo}
                         </div>
                         <div>
                           <p className="font-medium">{moneda.nombre}</p>
@@ -270,6 +349,7 @@ export default function GestionMonedaScreen() {
                         <Button 
                           size="icon" 
                           variant="ghost" 
+                          onClick={() => handleEditMoneda(moneda)}
                           data-testid={`button-edit-moneda-${moneda.codigo}`}
                         >
                           <Edit className="h-4 w-4" />
@@ -390,6 +470,97 @@ export default function GestionMonedaScreen() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {monedaEditando && (
+                <>
+                  <span className="text-xl">{monedasInfo[monedaEditando.codigo]?.bandera}</span>
+                  Editar {monedaEditando.nombre}
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Actualiza las tasas de cambio y estado de la moneda
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tasaInternet" className="text-right">
+                Tasa Internet
+              </Label>
+              <Input
+                id="tasaInternet"
+                type="number"
+                step="0.0001"
+                placeholder="Ej: 3.7500"
+                value={formData.tasaPromedioInternet}
+                onChange={(e) => setFormData({ ...formData, tasaPromedioInternet: e.target.value })}
+                className="col-span-3"
+                data-testid="input-tasa-internet"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tasaLocal" className="text-right">
+                Tasa Local
+              </Label>
+              <Input
+                id="tasaLocal"
+                type="number"
+                step="0.0001"
+                placeholder="Ej: 3.7200"
+                value={formData.tasaPromedioLocal}
+                onChange={(e) => setFormData({ ...formData, tasaPromedioLocal: e.target.value })}
+                className="col-span-3"
+                data-testid="input-tasa-local"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="activo" className="text-right">
+                Estado
+              </Label>
+              <div className="col-span-3 flex items-center gap-2">
+                <Switch
+                  id="activo"
+                  checked={formData.activo}
+                  onCheckedChange={(checked) => setFormData({ ...formData, activo: checked })}
+                  data-testid="switch-activo"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {formData.activo ? "Moneda activa" : "Moneda inactiva"}
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              <Globe className="inline h-3 w-3 mr-1" />
+              La tasa Internet es el valor referencial del mercado global.
+              <br />
+              <MapPin className="inline h-3 w-3 mr-1" />
+              La tasa Local se calcula automáticamente del promedio de cambistas.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} data-testid="button-cancelar-edicion">
+              <X className="h-4 w-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleGuardarMoneda} 
+              disabled={actualizarMonedaMutation.isPending}
+              data-testid="button-guardar-moneda"
+            >
+              {actualizarMonedaMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
