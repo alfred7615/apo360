@@ -1,0 +1,539 @@
+root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net# git pull origin main
+remote: Enumerating objects: 280, done.
+remote: Counting objects: 100% (280/280), done.
+remote: Compressing objects: 100% (45/45), done.
+remote: Total 253 (delta 209), reused 251 (delta 207), pack-reused 0 (from 0)
+Receiving objects: 100% (253/253), 6.59 MiB | 25.46 MiB/s, done.
+Resolving deltas: 100% (209/209), completed with 24 local objects.
+From https://github.com/alfred7615/apo360
+ * branch            main       -> FETCH_HEAD
+   274b731..29a74fc  main       -> origin/main
+Merge made by the 'ort' strategy.
+ ...-Users-APOMAYTA-C-Users-APOMAYTA-ssh-root-72-61-221-16_1765647757713.txt |  201 +++++
+ ...n-MI-PNEL-pesta-a-MI-NEGOCIO-en-la-opcion-CATALOGO-CRE_1765732535870.txt |   12 +
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765647936034.txt |   30 +
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765648137755.txt |   13 +
+ ...oot-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765648476224.txt |   12 +
+ client/src/components/GestionContactosFamiliares.tsx                        |  139 +++-
+ client/src/components/ImageUpload.tsx                                       |    2 +-
+ client/src/components/LocalComercialPanel.tsx                               | 1526 ++++++++++++++++++++++++++++++++---
+ client/src/components/SeccionLocalesComerciales.tsx                         |  482 +++++++++++
+ client/src/pages/admin/gestiones/gestion-cartera.tsx                        |  482 +++++++++++
+ client/src/pages/admin/gestiones/gestion-publicidad.tsx                     |  520 +++++++++++-
+ client/src/pages/home.tsx                                                   |    4 +
+ client/src/pages/panel-usuario.tsx                                          |  478 ++++++++---
+ client/src/pages/perfil.tsx                                                 |  613 +++++++++++---
+ package-lock.json                                                           |  191 +++++
+ package.json                                                                |    4 +
+ public/assets/documentos/firma-alfredo-apomayta-1765686070774-707105895.png |  Bin 0 -> 41913 bytes
+ public/assets/productos/firma-alfredo-apomayta-1765688041916-748177493.png  |  Bin 0 -> 41913 bytes
+ public/assets/productos/firma-alfredo-apomayta-1765720387483-844282075.png  |  Bin 0 -> 41913 bytes
+ .../assets/productos/la-hora-del-taxista-2025-1-1765720568348-713692090.png |  Bin 0 -> 2528571 bytes
+ public/assets/productos/logo-panico2-1765723568085-425192261.png            |  Bin 0 -> 935190 bytes
+ public/assets/productos/logo-panico2-1765724307260-935113793.png            |  Bin 0 -> 935190 bytes
+ public/assets/productos/logo-panico3-1765720558503-262676052.png            |  Bin 0 -> 1540732 bytes
+ public/assets/productos/logo-panico4-1765720377292-957903912.png            |  Bin 0 -> 1434929 bytes
+ public/assets/productos/logo-panico4-1765723608500-675230222.png            |  Bin 0 -> 1434929 bytes
+ public/assets/servicios/blob-1766159264041-993131298                        |  Bin 0 -> 51495 bytes
+ public/assets/servicios/blob-1766161595239-403235791                        |  Bin 0 -> 52107 bytes
+ public/assets/servicios/blob-1766163352418-480244481                        |  Bin 0 -> 44535 bytes
+ public/assets/servicios/firma-alfredo-apomayta-1765737155507-790813383.png  |  Bin 0 -> 41913 bytes
+ public/assets/servicios/logo06-1765730543624-365161324.png                  |  Bin 0 -> 100089 bytes
+ .../servicios/pizza-hawaiana-casera-17377227-1766161811943-48348556.webp    |  Bin 0 -> 66388 bytes
+ .../servicios/whatsapp-image-2025-12-14-at-5-1766163329892-553627803.jpeg   |  Bin 0 -> 140649 bytes
+ server/routes.ts                                                            | 1025 ++++++++++++++++++++++-
+ server/services/auditoriaService.ts                                         |  139 ++++
+ server/services/reportesService.ts                                          |  405 ++++++++++
+ server/storage.ts                                                           |  232 ++++++
+ shared/schema.ts                                                            |  210 ++++-
+ 37 files changed, 6389 insertions(+), 331 deletions(-)
+ create mode 100644 attached_assets/Pasted-C-Users-APOMAYTA-C-Users-APOMAYTA-ssh-root-72-61-221-16_1765647757713.txt
+ create mode 100644 attached_assets/Pasted-en-MI-PNEL-pesta-a-MI-NEGOCIO-en-la-opcion-CATALOGO-CRE_1765732535870.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765647936034.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765648137755.txt
+ create mode 100644 attached_assets/Pasted-root-srv1170282-var-www-apo360-net-root-srv1170282-var-_1765648476224.txt
+ create mode 100644 client/src/components/SeccionLocalesComerciales.tsx
+ create mode 100644 public/assets/documentos/firma-alfredo-apomayta-1765686070774-707105895.png
+ create mode 100644 public/assets/productos/firma-alfredo-apomayta-1765688041916-748177493.png
+ create mode 100644 public/assets/productos/firma-alfredo-apomayta-1765720387483-844282075.png
+ create mode 100644 public/assets/productos/la-hora-del-taxista-2025-1-1765720568348-713692090.png
+ create mode 100644 public/assets/productos/logo-panico2-1765723568085-425192261.png
+ create mode 100644 public/assets/productos/logo-panico2-1765724307260-935113793.png
+ create mode 100644 public/assets/productos/logo-panico3-1765720558503-262676052.png
+ create mode 100644 public/assets/productos/logo-panico4-1765720377292-957903912.png
+ create mode 100644 public/assets/productos/logo-panico4-1765723608500-675230222.png
+ create mode 100644 public/assets/servicios/blob-1766159264041-993131298
+ create mode 100644 public/assets/servicios/blob-1766161595239-403235791
+ create mode 100644 public/assets/servicios/blob-1766163352418-480244481
+ create mode 100644 public/assets/servicios/firma-alfredo-apomayta-1765737155507-790813383.png
+ create mode 100644 public/assets/servicios/logo06-1765730543624-365161324.png
+ create mode 100644 public/assets/servicios/pizza-hawaiana-casera-17377227-1766161811943-48348556.webp
+ create mode 100644 public/assets/servicios/whatsapp-image-2025-12-14-at-5-1766163329892-553627803.jpeg
+ create mode 100644 server/services/auditoriaService.ts
+ create mode 100644 server/services/reportesService.ts
+root@srv1170282:/var/www/apo360.net# npm install
+
+added 21 packages, and audited 567 packages in 7s
+
+72 packages are looking for funding
+  run `npm fund` for details
+
+10 vulnerabilities (3 low, 5 moderate, 2 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.7.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+npm notice To update run: npm install -g npm@11.7.0
+npm notice
+root@srv1170282:/var/www/apo360.net# npm run build
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js
+
+vite v5.4.20 building for production...
+transforming (4) src/App.tsx
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 3867 modules transformed.
+../dist/public/index.html                     1.53 kB │ gzip:   0.66 kB
+../dist/public/assets/index-CzjhVl1T.css    154.97 kB │ gzip:  28.52 kB
+../dist/public/assets/index-atAqF8Ip.js   2,897.86 kB │ gzip: 762.19 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 36.57s
+▲ [WARNING] Duplicate member "updateServicio" in class body [duplicate-class-member]
+
+    server/storage.ts:1919:8:
+      1919 │   async updateServicio(id: string, data: any): Promise<any> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "updateServicio" is here:
+
+    server/storage.ts:861:8:
+      861 │   async updateServicio(id: string, data: Partial<InsertServicio>): Promise<Servicio | undefined> {
+          ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getFavoritosUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2484:8:
+      2484 │   async getFavoritosUsuario(usuarioId: string, tipo?: string): Promise<any[]> {
+           ╵         ~~~~~~~~~~~~~~~~~~~
+
+  The original member "getFavoritosUsuario" is here:
+
+    server/storage.ts:829:8:
+      829 │   async getFavoritosUsuario(usuarioId: string): Promise<any[]> {
+          ╵         ~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getInteraccionesUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2728:8:
+      2728 │   async getInteraccionesUsuario(
+           ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "getInteraccionesUsuario" is here:
+
+    server/storage.ts:605:8:
+      605 │   async getInteraccionesUsuario(publicidadId: string, usuarioId: string): Promise<{ hasLike: boolean; has...
+          ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getComentarios" in class body [duplicate-class-member]
+
+    server/storage.ts:2752:8:
+      2752 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "getComentarios" is here:
+
+    server/storage.ts:1888:8:
+      1888 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "createComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2768:8:
+      2768 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "createComentario" is here:
+
+    server/storage.ts:1901:8:
+      1901 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "deleteComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2782:8:
+      2782 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "deleteComentario" is here:
+
+    server/storage.ts:1909:8:
+      1909 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+6 of 9 warnings shown (disable the message limit with --log-limit=0)
+
+  dist/index.js  529.4kb
+
+⚡ Done in 131ms
+root@srv1170282:/var/www/apo360.net# pm2 restart apo360
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [apo360](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 20   │ online    │ 0%       │ 41.3mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# pm2 logs apo360 --lines 30
+[TAILING] Tailing last 30 lines for [apo360] process (change the value with --lines option)
+/var/www/apo360.net/logs/error-0.log last 30 lines:
+0|apo360   |       code: 'invalid_type',
+0|apo360   |       expected: 'string',
+0|apo360   |       received: 'undefined',
+0|apo360   |       path: [Array],
+0|apo360   |       message: 'Required'
+0|apo360   |     }
+0|apo360   |   ],
+0|apo360   |   addIssue: [Function (anonymous)],
+0|apo360   |   addIssues: [Function (anonymous)],
+0|apo360   |   errors: [
+0|apo360   |     {
+0|apo360   |       code: 'invalid_type',
+0|apo360   |       expected: 'string',
+0|apo360   |       received: 'undefined',
+0|apo360   |       path: [Array],
+0|apo360   |       message: 'Required'
+0|apo360   |     }
+0|apo360   |   ]
+0|apo360   | }
+0|apo360   | 2025-12-14T03:44:54: Error: Formato de archivo no permitido. Solo se aceptan: JPG, PNG, WEBP, GIF, BMP, TIFF, SVG
+0|apo360   |     at fileFilter (file:///var/www/apo360.net/dist/index.js:4756:10)
+0|apo360   |     at wrappedFileFilter (/var/www/apo360.net/node_modules/multer/index.js:44:7)
+0|apo360   |     at Multipart.<anonymous> (/var/www/apo360.net/node_modules/multer/lib/make-middleware.js:132:7)
+0|apo360   |     at Multipart.emit (node:events:524:28)
+0|apo360   |     at HeaderParser.cb (/var/www/apo360.net/node_modules/busboy/lib/types/multipart.js:358:14)
+0|apo360   |     at HeaderParser.push (/var/www/apo360.net/node_modules/busboy/lib/types/multipart.js:162:20)
+0|apo360   |     at SBMH.ssCb [as _cb] (/var/www/apo360.net/node_modules/busboy/lib/types/multipart.js:394:37)
+0|apo360   |     at feed (/var/www/apo360.net/node_modules/streamsearch/lib/sbmh.js:248:10)
+0|apo360   |     at SBMH.push (/var/www/apo360.net/node_modules/streamsearch/lib/sbmh.js:104:16)
+0|apo360   |     at Multipart._write (/var/www/apo360.net/node_modules/busboy/lib/types/multipart.js:567:19)
+
+/var/www/apo360.net/logs/output-0.log last 30 lines:
+0|apo360   | 2025-12-20T02:51:48: 2:51:48 AM [express] GET /api/usuarios/me 200 in 287ms :: {"id":"user_1765376887230_v6wmpcu","email"…
+0|apo360   | 2025-12-20T02:51:49: 2:51:49 AM [express] GET /api/ubicaciones/distritos 200 in 4ms :: ["Tacna","Alto de la Alianza","Cal…
+0|apo360   | 2025-12-20T02:51:49: 2:51:49 AM [express] GET /api/sectores 200 in 5ms :: [{"id":"d7a9a8fb-36e4-4f04-bf6d-592bff28999e","…
+0|apo360   | 2025-12-20T03:54:52: 3:54:52 AM [express] GET /api/publicidad 200 in 130ms :: [{"id":"2906a495-955b-4b51-b84c-90f1663990d…
+0|apo360   | 2025-12-20T03:54:52: 3:54:52 AM [express] GET /api/estadisticas/publicas 200 in 40ms :: {"usuariosActivos":5,"serviciosLo…
+0|apo360   | 2025-12-20T03:54:53: 3:54:53 AM [express] GET /api/servicios 200 in 7ms :: []
+0|apo360   | 2025-12-20T03:54:53: 3:54:53 AM [express] GET /api/servicios 200 in 3ms :: []
+0|apo360   | 2025-12-20T03:54:54: 3:54:54 AM [express] GET /api/publicidad 200 in 4ms :: [{"id":"2906a495-955b-4b51-b84c-90f1663990d3"…
+0|apo360   | 2025-12-20T03:54:54: 3:54:54 AM [express] GET /api/configuracion/franja_emergencia 404 in 18ms :: {"message":"Configuraci…
+0|apo360   | 2025-12-20T03:54:56: 3:54:56 AM [express] GET /api/estadisticas/publicas 200 in 9ms :: {"usuariosActivos":5,"serviciosLoc…
+0|apo360   | 2025-12-20T03:54:56: 3:54:56 AM [express] GET /api/configuracion/franja_emergencia 404 in 3ms :: {"message":"Configuració…
+0|apo360   | 2025-12-20T04:31:54: 4:31:54 AM [express] GET /api/auth/user 401 in 5ms :: {"message":"No autorizado"}
+0|apo360   | 2025-12-20T04:31:54: 4:31:54 AM [express] GET /api/archivos-mp3 200 in 87ms :: []
+0|apo360   | 2025-12-20T04:31:54: 4:31:54 AM [express] GET /api/listas-mp3 200 in 97ms :: []
+0|apo360   | 2025-12-20T04:31:54: 4:31:54 AM [express] GET /api/radios-online 200 in 124ms :: [{"id":1,"nombre":"TacnaFM.apo","url":"h…
+0|apo360   | 2025-12-20T04:31:54: 4:31:54 AM [express] GET /api/servicios 200 in 56ms :: []
+0|apo360   | 2025-12-20T04:31:54: 4:31:54 AM [express] GET /api/configuracion/franja_emergencia 404 in 66ms :: {"message":"Configuraci…
+0|apo360   | 2025-12-20T04:31:54: 4:31:54 AM [express] GET /api/publicidad 200 in 80ms :: [{"id":"2906a495-955b-4b51-b84c-90f1663990d3…
+0|apo360   | 2025-12-20T04:31:54: 4:31:54 AM [express] GET /api/estadisticas/publicas 200 in 41ms :: {"usuariosActivos":5,"serviciosLo…
+0|apo360   | 2025-12-20T05:29:08: 🗄️ Usando PostgreSQL local (producción)
+0|apo360   | 2025-12-20T05:29:08: 🔐 Modo de autenticación solicitado: basic
+0|apo360   | 2025-12-20T05:29:08: 🔐 Configurando autenticación básica (email/contraseña)...
+0|apo360   | 2025-12-20T05:29:08: ✅ Autenticación básica configurada
+0|apo360   | 2025-12-20T05:29:08:    📧 Login: POST /api/auth/login
+0|apo360   | 2025-12-20T05:29:08:    📝 Registro: POST /api/auth/register
+0|apo360   | 2025-12-20T05:29:08: [Cron] Backup automático programado para las 00:55 AM (hora de Lima)
+0|apo360   | 2025-12-20T05:29:08: 🚀 Servidor WebSocket configurado en /ws
+0|apo360   | 2025-12-20T05:29:08: 5:29:08 AM [express] 🔄 Verificando migración de miembros_grupo...
+0|apo360   | 2025-12-20T05:29:08: 5:29:08 AM [express] ✅ Tabla miembros_grupo ya está sincronizada
+0|apo360   | 2025-12-20T05:29:08: 5:29:08 AM [express] serving on port 5000
+
+
+^C
+root@srv1170282:/var/www/apo360.net# # Conectar a PostgreSQL
+root@srv1170282:/var/www/apo360.net# psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable"
+psql (16.11 (Ubuntu 16.11-0ubuntu0.24.04.1))
+Type "help" for help.
+
+apo360_prod=> -- ============================================================
+ CAMBIO
+-- ====================apo360_prod=> -- TABLAS PARA CALCULADORA DE CAMBIO
+apo360_prod=> -- ============================================================
+apo360_prod=>
+apo360_prod=> -- Tabla: tipos_moneda
+apo360_prod=> CREATE TABLE IF NOT EXISTS tipos_moneda (
+apo360_prod(>     id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+apo360_prod(>     codigo VARCHAR(3) NOT NULL UNIQUE,
+apo360_prod(>     nombre VARCHAR(100) NOT NULL,
+apo360_prod(>     simbolo VARCHAR(10) NOT NULL,
+apo360_prod(>     activo BOOLEAN DEFAULT true,
+apo360_prod(>     created_at TIMESTAMP DEFAULT NOW()
+apo360_prod(> );
+ tasas_cambio
+CREATE TABLE IF NOT EXISTS tasas_cambio (
+    id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid()NOTICE:  relation "tipos_moneda" already exists, skipping
+::varchar,
+    moneda_origen_id VARCHAR(255CREATE TABLE
+) NOT NULL REFERENCES tipos_moneda(iapo360_prod=>
+apo360_prod=> -- Tabla: tasas_cambio
+apo360_prod=> CREATE TABLE IF NOT EXISTS tasas_cambio (
+apo360_prod(>     id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+apo360_prod(>     moneda_origen_id VARCHAR(255) NOT NULL REFERENCES tipos_moneda(id),
+apo360_prod(>     moneda_destino_id VARCHAR(255) NOT NULL REFERENCES tipos_moneda(id),
+apo360_prod(>     tasa REAL NOT NULL,
+apo360_prod(>     fecha_actualizacion TIMESTAMP DEFAULT NOW(),
+apo360_prod(>     actualizado_por_id VARCHAR(255) REFERENCES usuarios(id)
+apo360_prod(> );
+NOTICE:  relation "tasas_cambio" already exists, skipping TABLE IF NOT EXISTS monedas (
+    id V
+CREATE TABLE
+apo360_prod=>
+apo360_prod=> -- Tabla: monedas
+apo360_prod=> CREATE TABLE IF NOT EXISTS monedas (
+apo360_prod(>     id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+apo360_prod(>     codigo VARCHAR(10) NOT NULL UNIQUE,
+apo360_prod(>     nombre VARCHAR(50) NOT NULL,
+apo360_prod(>     simbolo VARCHAR(5) NOT NULL,
+apo360_prod(>     tasa_cambio_a_pen DECIMAL(10,4) DEFAULT 1,
+apo360_prod(>     activo BOOLEAN DEFAULT true,
+apo360_prod(>     es_principal BOOLEAN DEFAULT false,
+apo360_prod(>     orden INTEGER DEFAULT 0,
+apo360_prod(>     created_at TIMESTAMP DEFAULT NOW(),
+apo360_prod(>     updated_at TIMESTAMP DEFAULT NOW()
+apo360_prod(> );
+NOTICE:  relation "monedas" already exists, skipping
+CREATE TABLE
+apo360_prod=>
+apo360_prod=> -- Tabla: tasas_cambio_locales (Cambistas)
+apo360_prod=> CREATE TABLE IF NOT EXISTS tasas_cambio_locales (
+apo360_prod(>     id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+apo360_prod(>     cambista_id VARCHAR(255) NOT NULL REFERENCES usuarios(id),
+apo360_prod(>     moneda_origen_codigo VARCHAR(10) NOT NULL,
+apo360_prod(>     moneda_destino_codigo VARCHAR(10) NOT NULL,
+apo360_prod(>     tasa_compra DECIMAL(12,6) NOT NULL,
+apo360_prod(>     tasa_venta DECIMAL(12,6) NOT NULL,
+apo360_prod(>     ubicacion VARCHAR(200),
+apo360_prod(>     gps_latitud REAL,
+apo360_prod(>     gps_longitud REAL,
+apo360_prod(>     horario_atencion VARCHAR(200),
+apo360_prod(>     telefono VARCHAR(20),
+apo360_prod(>     whatsapp VARCHAR(20),
+apo360_prod(>     activo BOOLEAN DEFAULT true,
+apo360_prod(>     verificado BOOLEAN DEFAULT false,
+apo360_prod(>     created_at TIMESTAMP DEFAULT NOW(),
+apo360_prod(>     updated_at TIMESTAMP DEFAULT NOW()
+apo360_prod(> );
+
+CREATE TABLE IF NOT EXISTS historNOTICE:  relation "tasas_cambio_locales" already exists, skipping
+CREATE TABLE
+apo360_prod=>
+apo360_prod=> -- Tabla: historial_tasas_cambio
+apo360_prod=> CREATE TABLE IF NOT EXISTS historial_tasas_cambio (
+apo360_prod(>     id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+apo360_prod(>     cambista_id VARCHAR(255) NOT NULL REFERENCES usuarios(id),
+apo360_prod(>     tasa_local_id VARCHAR(255) REFERENCES tasas_cambio_locales(id),
+apo360_prod(>     moneda_origen_codigo VARCHAR(10) NOT NULL,
+apo360_prod(>     moneda_destino_codigo VARCHAR(10) NOT NULL,
+apo360_prod(>     tasa_compra_anterior DECIMAL(12,6),
+apo360_prod(>     tasa_venta_anterior DECIMAL(12,6),
+apo360_prod(>     tasa_compra_nueva DECIMAL(12,6) NOT NULL,
+apo360_prod(>     tasa_venta_nueva DECIMAL(12,6) NOT NULL,
+apo360_prod(>     tipo_accion VARCHAR(20) NOT NULL DEFAULT 'actualizacion',
+apo360_prod(>     ip_origen VARCHAR(45),
+apo360_prod(>     notas TEXT,
+apo360_prod(>     created_at TIMESTAMP DEFAULT NOW()
+apo360_prod(> );
+acion_monedas
+CREATE TABLE IF NOT EXINOTICE:  relation "historial_tasas_cambio" already exists, skipping
+STS configuracion_monedas (
+    id VARCHAR(CREATE TABLE
+apo360_prod=>
+apo360_prod=> -- Tabla: configuracion_monedas
+apo360_prod=> CREATE TABLE IF NOT EXISTS configuracion_monedas (
+apo360_prod(>     id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+apo360_prod(>     codigo VARCHAR(10) NOT NULL UNIQUE,
+apo360_prod(>     nombre VARCHAR(100) NOT NULL,
+apo360_prod(>     nombre_corto VARCHAR(50) NOT NULL,
+apo360_prod(>     simbolo VARCHAR(10) NOT NULL,
+apo360_prod(>     bandera_url VARCHAR(255),
+apo360_prod(>     tasa_promedio_internet DECIMAL(12,6),
+apo360_prod(>     tasa_promedio_local DECIMAL(12,6),
+apo360_prod(>     es_principal BOOLEAN DEFAULT false,
+apo360_prod(>     orden INTEGER DEFAULT 0,
+apo360_prod(>     activo BOOLEAN DEFAULT true,
+apo360_prod(>     ultima_actualizacion TIMESTAMP DEFAULT NOW(),
+apo360_prod(>     created_at TIMESTAMP DEFAULT NOW(),
+apo360_prod(>     updated_at TIMESTAMP DEFAULT NOW()
+apo360_prod(> );
+
+-- ==========================NOTICE:  relation "configuracion_monedas" already exists, skipping
+CREATE TABLE
+apo360_prod=>
+apo360_prod=> -- ============================================================
+apo360_prod=> -- TABLAS PARA SISTEMA DE MEMBRESÍA
+apo360_prod=> -- ============================================================
+apo360_prod=>
+apo360_prod=> -- Tabla: planes_membresia
+apo360_prod=> CREATE TABLE IF NOT EXISTS planes_membresia (
+apo360_prod(>     id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+apo360_prod(>     nombre VARCHAR(100) NOT NULL,
+apo360_prod(>     descripcion TEXT,
+apo360_prod(>     duracion_meses INTEGER NOT NULL,
+apo360_prod(>     precio_normal DECIMAL(10,2) NOT NULL,
+apo360_prod(>     precio_descuento DECIMAL(10,2),
+apo360_prod(>     porcentaje_descuento INTEGER,
+apo360_prod(>     beneficios JSONB,
+apo360_prod(>     productos_incluidos INTEGER DEFAULT 0,
+apo360_prod(>     destacado BOOLEAN DEFAULT false,
+apo360_prod(>     orden INTEGER DEFAULT 0,
+apo360_prod(>     activo BOOLEAN DEFAULT true,
+apo360_prod(>     created_at TIMESTAMP DEFAULT NOW(),
+apo360_prod(>     updated_at TIMESTAMP DEFAULT NOW()
+apo360_prod(> );
+CREATE TABLE IF NOT EXISTS membresias_usuarios (
+    id VARCHAR(255) PRIMANOTICE:  relation "planes_membresia" already exists, skipping
+CREATE TABLE
+apo360_prod=>
+apo360_prod=> -- Tabla: membresias_usuarios
+apo360_prod=> CREATE TABLE IF NOT EXISTS membresias_usuarios (
+apo360_prod(>     id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+apo360_prod(>     usuario_id VARCHAR(255) NOT NULL REFERENCES usuarios(id),
+apo360_prod(>     plan_id VARCHAR(255) NOT NULL REFERENCES planes_membresia(id),
+apo360_prod(>     fecha_inicio TIMESTAMP NOT NULL DEFAULT NOW(),
+apo360_prod(>     fecha_fin TIMESTAMP NOT NULL,
+apo360_prod(>     estado VARCHAR(20) DEFAULT 'activa',
+apo360_prod(>     productos_creados INTEGER DEFAULT 0,
+apo360_prod(>     monto_total DECIMAL(10,2) NOT NULL,
+apo360_prod(>     metodo_pago VARCHAR(50),
+apo360_prod(>     transaccion_id VARCHAR(255),
+apo360_prod(>     renovacion_automatica BOOLEAN DEFAULT false,
+apo360_prod(>     es_cortesia BOOLEAN DEFAULT false,
+apo360_prod(>     asignado_por VARCHAR(255) REFERENCES usuarios(id),
+apo360_prod(>     motivo_cortesia TEXT,
+apo360_prod(>     created_at TIMESTAMP DEFAULT NOW(),
+apo360_prod(>     updated_at TIMESTAMP DEFAULT NOW()
+apo360_prod(> );
+NOTICE:  relation "membresias_usuarios" already exists, skipping
+CREATE TABLE
+apo360_prod=>
+apo360_prod=> -- ============================================================
+apo360_prod=> -- TABLA PARA WIDGETS EMBEBIBLES
+apo360_prod=> -- ============================================================
+apo360_prod=>
+apo360_prod=> CREATE TABLE IF NOT EXISTS widgets_embebibles (
+apo360_prod(>     id VARCHAR(255) PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+apo360_prod(>     nombre VARCHAR(255) NOT NULL,
+apo360_prod(>     tipo VARCHAR(100) NOT NULL,
+apo360_prod(>     descripcion TEXT,
+apo360_prod(>     activo BOOLEAN DEFAULT true,
+apo360_prod(>     ancho VARCHAR(50) DEFAULT '100%',
+apo360_prod(>     alto VARCHAR(50) DEFAULT 'auto',
+apo360_prod(>     color_fondo VARCHAR(20) DEFAULT 'transparent',
+apo360_prod(>     color_texto VARCHAR(20),
+apo360_prod(>     bordes BOOLEAN DEFAULT false,
+apo360_prod(>     autoplay BOOLEAN DEFAULT true,
+apo360_prod(>     intervalo INTEGER DEFAULT 5000,
+apo360_prod(>     items_por_vista INTEGER DEFAULT 4,
+apo360_prod(>     mostrar_controles BOOLEAN DEFAULT true,
+apo360_prod(>     estilos_personalizados TEXT,
+apo360_prod(>     categoria_id VARCHAR(255),
+apo360_prod(>     limite INTEGER DEFAULT 10,
+apo360_prod(>     orden VARCHAR(50) DEFAULT 'reciente',
+apo360_prod(>     dominios_permitidos TEXT[],
+apo360_prod(>     requiere_api_key BOOLEAN DEFAULT false,
+apo360_prod(>     api_key VARCHAR(64),
+apo360_prod(>     total_visualizaciones INTEGER DEFAULT 0,
+apo360_prod(>     total_clicks INTEGER DEFAULT 0,
+apo360_prod(>     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+apo360_prod(>     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+apo360_prod(> );
+====================
+-- INSERTAR MONEDAS INICIALES PARA CALCULADORA
+-- ============================================================
+
+INSERT INTO configuracion_monedas (codigo, nombre, nombre_corto, simbolo, es_principal, orden, activo) VALUES
+('PEN', 'Sol Peruano', 'Sol', 'S/', true, 1, true),
+('USD', 'Dólar Estadounidense', 'Dólar', '$', false, 2, true),
+('CLP', 'Peso Chileno', 'Peso Chileno', '$CLP', false, 3, true),
+('ARS', 'Peso Argentino', 'Peso Argentino', '$ARS', false, 4, true),
+('BOB', 'Boliviano', 'Boliviano', 'Bs', false, 5, true)
+ON CONFLICT (codigo) DO NOTHING;
+
+-- ============================================================
+-- INSERTAR PLANES DE MEMBRESÍA (GRATIS Y PAGA)
+-- ============================================================
+
+INSERT INTO planes_membresia (nombre, descripcion, duracion_meses, precio_normal, precio_descuento, beneficios, productos_incluidos, destacado, orden, activo) VALUES
+('Gratuito', 'Plan básico sin costo', 999, 0.00, 0.00, '["Ver productos y servicios", "Acceso al chat comunitario", "Recibir alertas de emergencia", "Usar calculadora de cambio"]', 0, false, 1, true),
+('Personal', 'Plan ideal para emprendedores', 1, 9.90, 7.90, '["Todo del plan Gratuito", "Publicar hasta 5 productos", "Aparecer en búsquedas destacadas", "Estadísticas básicas"]', 5, false, 2, true),
+('Mediana', 'Plan para negocios en crecimiento', 3, 24.90, 19.90, '["Todo del plan Personal", "Publicar hasta CREATE TABLE
+apo360_prod=>
+apo360_prod=> -- ============================================================
+apo360_prod=> -- INSERTAR MONEDAS INICIALES PARA CALCULADORA
+apo360_prod=> -- ============================================================
+apo360_prod=>
+apo360_prod=> INSERT INTO configuracion_monedas (codigo, nombre, nombre_corto, simbolo, es_principal, orden, activo) VALUES
+apo360_prod-> ('PEN', 'Sol Peruano', 'Sol', 'S/', true, 1, true),
+apo360_prod-> ('USD', 'Dólar Estadounidense', 'Dólar', '$', false, 2, true),
+apo360_prod-> ('CLP', 'Peso Chileno', 'Peso Chileno', '$CLP', false, 3, true),
+apo360_prod-> ('ARS', 'Peso Argentino', 'Peso Argentino', '$ARS', false, 4, true),
+apo360_prod-> ('BOB', 'Boliviano', 'Boliviano', 'Bs', false, 5, true)
+apo360_prod-> ON CONFLICT (codigo) DO NOTHING;
+20 productos", "Prioridad en resultados de búsqueda", "Soporte prioritario", "Estadísticas avanzadas"]INSERT 0 5
+apo360_prod=>
+apo360_prod=> -- ============================================================
+apo360_prod=> -- INSERTAR PLANES DE MEMBRESÍA (GRATIS Y PAGA)
+apo360_prod=> -- ============================================================
+apo360_prod=>
+apo360_prod=> INSERT INTO planes_membresia (nombre, descripcion, duracion_meses, precio_normal, precio_descuento, beneficios, productos_incluidos, destacado, orden, activo) VALUES
+apo360_prod-> ('Gratuito', 'Plan básico sin costo', 999, 0.00, 0.00, '["Ver productos y servicios", "Acceso al chat comunitario", "Recibir alertas de emergencia", "Usar calculadora de cambio"]', 0, false, 1, true),
+apo360_prod-> ('Personal', 'Plan ideal para emprendedores', 1, 9.90, 7.90, '["Todo del plan Gratuito", "Publicar hasta 5 productos", "Aparecer en búsquedas destacadas", "Estadísticas básicas"]', 5, false, 2, true),
+apo360_prod-> ('Mediana', 'Plan para negocios en crecimiento', 3, 24.90, 19.90, '["Todo del plan Personal", "Publicar hasta 20 productos", "Prioridad en resultados de búsqueda", "Soporte prioritario", "Estadísticas avanzadas"]', 20, true, 3, true),
+apo360_prod-> ('Familiar', 'Plan para negocios establecidos', 6, 44.90, 34.90, '["Todo del plan Mediana", "Productos ilimitados", "Verificación de negocio", "Badge de verificado", "Reportes mensuales"]', 100, false, 4, true),
+apo360_prod-> ('Extra', 'Plan premium empresarial', 12, 79.90, 59.90, '["Todo del plan Familiar", "Destacar productos automáticamente", "Acceso a API", "Soporte VIP 24/7", "Personalización de página"]', 500, false, 5, true)
+apo360_prod-> ON CONFLICT DO NOTHING;
+icar tablas creadas
+SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' OINSERT 0 5
+apo360_prod=>
+apo360_prod=> -- Verificar tablas creadas
+apo360_prod=> SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;
+
+[1]+  Stopped                 psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable"
+root@srv1170282:/var/www/apo360.net# [1]+  Stopped                 psql "postgresql://apo360_admin:Admin2025@127.0.0.1:5432/apo360_prod?sslmode=disable"
+root@srv1170282:/var/www/apo360.net# pm2 status
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 20   │ online    │ 0%       │ 86.8mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net# curl -I https://apo360.net
+HTTP/2 200
+server: nginx/1.24.0 (Ubuntu)
+date: Sat, 20 Dec 2025 05:31:35 GMT
+content-type: text/html
+content-length: 1528
+last-modified: Sat, 20 Dec 2025 05:28:55 GMT
+etag: "69463417-5f8"
+accept-ranges: bytes
+
+root@srv1170282:/var/www/apo360.net# curl https://apo360.net/api/widgets
+{"message":"No autorizado"}root@srv1170282:/var/www/apo360.net#
+root@srv1170282:/var/www/apo360.net#
