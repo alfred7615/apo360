@@ -21,6 +21,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Heart, Bookmark, Share2, Eye, Star, Store, ChevronRight, Clock, Package, ShoppingCart, Zap } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { ItemCatalogo, CatalogoLocal } from "@shared/schema";
 
 interface CatalogoConItems extends CatalogoLocal {
@@ -36,6 +37,8 @@ export default function SeccionLocalesComerciales() {
   const { user, isAuthenticated } = useAuth();
   const [productoSeleccionado, setProductoSeleccionado] = useState<ItemCatalogo | null>(null);
   const [catalogoSeleccionado, setCatalogoSeleccionado] = useState<CatalogoConItems | null>(null);
+  const [preciosSeleccionados, setPreciosSeleccionados] = useState<number[]>([]);
+  const [agregandoCarrito, setAgregandoCarrito] = useState(false);
 
   const { data: itemsDestacados = [], isLoading: cargandoDestacados } = useQuery<ItemCatalogo[]>({
     queryKey: ["/api/items-destacados"],
@@ -75,7 +78,79 @@ export default function SeccionLocalesComerciales() {
 
   const handleVerProducto = (item: ItemCatalogo) => {
     setProductoSeleccionado(item);
+    setPreciosSeleccionados([]);
     registrarVistaMutation.mutate(item.id);
+  };
+
+  const togglePrecioSeleccionado = (index: number) => {
+    setPreciosSeleccionados(prev => 
+      prev.includes(index) 
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    );
+  };
+
+  const handleAgregarSeleccionadosCarrito = async (item: ItemCatalogo): Promise<boolean> => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión para agregar productos al carrito",
+      });
+      return false;
+    }
+
+    const preciosValidos = [
+      { precio: item.precio1, etiqueta: item.etiquetaPrecio1 || "Personal", num: 1 },
+      { precio: item.precio2, etiqueta: item.etiquetaPrecio2 || "Mediana", num: 2 },
+      { precio: item.precio3, etiqueta: item.etiquetaPrecio3 || "Familiar", num: 3 },
+      { precio: item.precio4, etiqueta: item.etiquetaPrecio4 || "Extra", num: 4 }
+    ].filter(p => p.precio && parseFloat(String(p.precio)) > 0);
+
+    const preciosAComprar = preciosSeleccionados.length > 0
+      ? preciosSeleccionados.map(idx => preciosValidos[idx]).filter(Boolean)
+      : [preciosValidos[0] || { precio: item.precio, etiqueta: "Unidad", num: 1 }];
+
+    setAgregandoCarrito(true);
+    try {
+      for (const precioInfo of preciosAComprar) {
+        await apiRequest("POST", "/api/carrito", {
+          itemCatalogoId: item.id,
+          tipoProducto: "item_catalogo",
+          cantidad: 1,
+          precioSeleccionado: precioInfo.num,
+          etiquetaPrecio: precioInfo.etiqueta,
+          precioUnitario: precioInfo.precio,
+          catalogoId: item.catalogoId,
+        });
+      }
+      toast({
+        title: "Agregado al carrito",
+        description: `${preciosAComprar.length} item(s) de ${item.nombre} agregado(s)`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/carrito"] });
+      setPreciosSeleccionados([]);
+      return true;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar al carrito",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setAgregandoCarrito(false);
+    }
+  };
+
+  const handleComprarSeleccionados = async (item: ItemCatalogo) => {
+    const exito = await handleAgregarSeleccionadosCarrito(item);
+    if (exito) {
+      setProductoSeleccionado(null);
+      toast({
+        title: "Producto agregado",
+        description: "Ve al carrito para completar tu pedido",
+      });
+    }
   };
 
   const handleInteraccion = (itemId: string, tipo: string) => {
@@ -121,14 +196,14 @@ export default function SeccionLocalesComerciales() {
     return `S/ ${num.toFixed(2)}`;
   };
 
-  const handleAgregarCarrito = async (item: ItemCatalogo, precioSeleccionado: number = 1, e?: MouseEvent) => {
+  const handleAgregarCarrito = async (item: ItemCatalogo, precioSeleccionado: number = 1, e?: MouseEvent): Promise<boolean> => {
     e?.stopPropagation();
     if (!isAuthenticated) {
       toast({
         title: "Inicia sesión",
         description: "Debes iniciar sesión para agregar productos al carrito",
       });
-      return;
+      return false;
     }
     
     const preciosValidos = [
@@ -138,7 +213,7 @@ export default function SeccionLocalesComerciales() {
       { precio: item.precio4, etiqueta: item.etiquetaPrecio4 || "Extra", num: 4 }
     ].filter(p => p.precio && parseFloat(String(p.precio)) > 0);
     
-    const precioInfo = preciosValidos[0] || { precio: item.precio, etiqueta: "Unidad", num: 1 };
+    const precioInfo = preciosValidos.find(p => p.num === precioSeleccionado) || preciosValidos[0] || { precio: item.precio, etiqueta: "Unidad", num: 1 };
     
     try {
       await apiRequest("POST", "/api/carrito", {
@@ -155,22 +230,26 @@ export default function SeccionLocalesComerciales() {
         description: `${item.nombre} se agregó correctamente`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/carrito"] });
+      return true;
     } catch (error) {
       toast({
         title: "Error",
         description: "No se pudo agregar al carrito",
         variant: "destructive",
       });
+      return false;
     }
   };
 
   const handleComprarAhora = async (item: ItemCatalogo, e?: MouseEvent) => {
     e?.stopPropagation();
-    await handleAgregarCarrito(item, 1, e);
-    toast({
-      title: "Producto agregado",
-      description: "Ve al carrito para completar tu pedido",
-    });
+    const exito = await handleAgregarCarrito(item, 1, e);
+    if (exito) {
+      toast({
+        title: "Producto agregado",
+        description: "Ve al carrito para completar tu pedido",
+      });
+    }
   };
 
   const ProductoCard = ({ item, tamanio = "normal" }: { item: ItemCatalogo; tamanio?: "normal" | "pequeno" }) => {
@@ -311,29 +390,27 @@ export default function SeccionLocalesComerciales() {
             </div>
           </div>
           
-          {esGrande && (
-            <div className="flex items-center gap-1.5 mt-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 h-7 text-xs"
-                onClick={(e) => handleAgregarCarrito(item, 1, e)}
-                data-testid={`button-carrito-${item.id}`}
-              >
-                <ShoppingCart className="h-3 w-3 mr-1" />
-                Carrito
-              </Button>
-              <Button
-                size="sm"
-                className="flex-1 h-7 text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0"
-                onClick={(e) => handleComprarAhora(item, e)}
-                data-testid={`button-comprar-${item.id}`}
-              >
-                <Zap className="h-3 w-3 mr-1" />
-                Comprar
-              </Button>
-            </div>
-          )}
+          <div className={`flex items-center gap-1.5 mt-2 ${esGrande ? '' : 'mt-1'}`}>
+            <Button
+              size="sm"
+              variant="outline"
+              className={`flex-1 ${esGrande ? 'h-7 text-xs' : 'h-6 text-[10px] px-1'}`}
+              onClick={(e) => handleAgregarCarrito(item, 1, e)}
+              data-testid={`button-carrito-${item.id}`}
+            >
+              <ShoppingCart className={`${esGrande ? 'h-3 w-3 mr-1' : 'h-3 w-3'}`} />
+              {esGrande && 'Carrito'}
+            </Button>
+            <Button
+              size="sm"
+              className={`flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 ${esGrande ? 'h-7 text-xs' : 'h-6 text-[10px] px-1'}`}
+              onClick={(e) => handleComprarAhora(item, e)}
+              data-testid={`button-comprar-${item.id}`}
+            >
+              <Zap className={`${esGrande ? 'h-3 w-3 mr-1' : 'h-3 w-3'}`} />
+              {esGrande && 'Comprar'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -487,55 +564,104 @@ export default function SeccionLocalesComerciales() {
                   </div>
                 )}
                 
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1">
-                    {/* Mostrar precios múltiples si existen valores válidos */}
-                    {(() => {
-                      const preciosValidos = [
-                        { precio: productoSeleccionado.precio1, etiqueta: productoSeleccionado.etiquetaPrecio1 || "Personal" },
-                        { precio: productoSeleccionado.precio2, etiqueta: productoSeleccionado.etiquetaPrecio2 || "Mediana" },
-                        { precio: productoSeleccionado.precio3, etiqueta: productoSeleccionado.etiquetaPrecio3 || "Familiar" },
-                        { precio: productoSeleccionado.precio4, etiqueta: productoSeleccionado.etiquetaPrecio4 || "Extra" }
-                      ].filter(p => p.precio && parseFloat(String(p.precio)) > 0);
-                      
-                      if (preciosValidos.length > 0) {
-                        return (
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            {preciosValidos.map((p, idx) => (
-                              <div key={idx} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                                <span className="text-muted-foreground">{p.etiqueta}:</span>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium">Selecciona tamaños para comprar:</h4>
+                    {productoSeleccionado.tiempoPreparacion && (
+                      <Badge variant="outline" className="shrink-0">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {productoSeleccionado.tiempoPreparacion}
+                      </Badge>
+                    )}
+                  </div>
+                  {(() => {
+                    const preciosValidos = [
+                      { precio: productoSeleccionado.precio1, etiqueta: productoSeleccionado.etiquetaPrecio1 || "Personal" },
+                      { precio: productoSeleccionado.precio2, etiqueta: productoSeleccionado.etiquetaPrecio2 || "Mediana" },
+                      { precio: productoSeleccionado.precio3, etiqueta: productoSeleccionado.etiquetaPrecio3 || "Familiar" },
+                      { precio: productoSeleccionado.precio4, etiqueta: productoSeleccionado.etiquetaPrecio4 || "Extra" }
+                    ].filter(p => p.precio && parseFloat(String(p.precio)) > 0);
+                    
+                    if (preciosValidos.length > 0) {
+                      return (
+                        <div className="grid grid-cols-2 gap-2">
+                          {preciosValidos.map((p, idx) => (
+                            <div 
+                              key={idx} 
+                              className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                preciosSeleccionados.includes(idx) 
+                                  ? 'border-primary bg-primary/10' 
+                                  : 'border-border hover:border-primary/50'
+                              }`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                togglePrecioSeleccionado(idx);
+                              }}
+                              data-testid={`checkbox-precio-${idx}`}
+                            >
+                              <Checkbox 
+                                checked={preciosSeleccionados.includes(idx)}
+                                onCheckedChange={() => togglePrecioSeleccionado(idx)}
+                                onClick={(e) => e.stopPropagation()}
+                                aria-label={`Seleccionar ${p.etiqueta}`}
+                              />
+                              <div className="flex-1 flex items-center justify-between">
+                                <span className="text-sm font-medium">{p.etiqueta}</span>
                                 <span className="font-bold text-primary">{formatPrecio(p.precio)}</span>
                               </div>
-                            ))}
-                          </div>
-                        );
-                      }
-                      if (productoSeleccionado.precioOferta && productoSeleccionado.precio &&
-                         parseFloat(String(productoSeleccionado.precioOferta)) < parseFloat(String(productoSeleccionado.precio))) {
-                        return (
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg text-muted-foreground line-through">
-                              {formatPrecio(productoSeleccionado.precio)}
-                            </span>
-                            <span className="text-2xl font-bold text-green-600">
-                              {formatPrecio(productoSeleccionado.precioOferta)}
-                            </span>
-                          </div>
-                        );
-                      }
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+                    if (productoSeleccionado.precioOferta && productoSeleccionado.precio &&
+                       parseFloat(String(productoSeleccionado.precioOferta)) < parseFloat(String(productoSeleccionado.precio))) {
                       return (
+                        <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                          <span className="text-lg text-muted-foreground line-through">
+                            {formatPrecio(productoSeleccionado.precio)}
+                          </span>
+                          <span className="text-2xl font-bold text-green-600">
+                            {formatPrecio(productoSeleccionado.precioOferta)}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="p-3 bg-muted/50 rounded-lg">
                         <span className="text-2xl font-bold text-primary">
                           {formatPrecio(productoSeleccionado.precio)}
                         </span>
-                      );
-                    })()}
+                      </div>
+                    );
+                  })()}
+                  
+                  <div className="flex items-center gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => handleAgregarSeleccionadosCarrito(productoSeleccionado)}
+                      disabled={agregandoCarrito}
+                      data-testid="button-agregar-carrito-modal"
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      {agregandoCarrito ? "Agregando..." : "Agregar al Carrito"}
+                    </Button>
+                    <Button
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0"
+                      onClick={() => handleComprarSeleccionados(productoSeleccionado)}
+                      disabled={agregandoCarrito}
+                      data-testid="button-comprar-modal"
+                    >
+                      <Zap className="h-4 w-4 mr-2" />
+                      Comprar Ahora
+                    </Button>
                   </div>
                   
-                  {productoSeleccionado.tiempoPreparacion && (
-                    <Badge variant="outline" className="shrink-0">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {productoSeleccionado.tiempoPreparacion}
-                    </Badge>
+                  {preciosSeleccionados.length > 0 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      {preciosSeleccionados.length} tamaño(s) seleccionado(s)
+                    </p>
                   )}
                 </div>
                 

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, User, Music, LogOut, Bell, Shield, Volume2, Star, Wallet, Plus, ArrowRight, X, Clock, DollarSign } from "lucide-react";
+import { Menu, User, Music, LogOut, Bell, Shield, Volume2, Star, Wallet, Plus, ArrowRight, X, Clock, DollarSign, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -39,7 +39,14 @@ export default function Encabezado() {
     enabled: isAuthenticated,
   });
 
+  // Query para obtener el carrito del usuario
+  const { data: carritoData } = useQuery<{ items: any[]; total: string; totalItems: number }>({
+    queryKey: ["/api/carrito"],
+    enabled: isAuthenticated,
+  });
+
   const saldo = (saldoData as any)?.saldo || "0.00";
+  const totalItemsCarrito = carritoData?.totalItems || 0;
   const ultimasRecargas = Array.isArray(recargasData) 
     ? recargasData.slice(0, 3) 
     : [];
@@ -164,6 +171,26 @@ export default function Encabezado() {
               abierto={selectorAudioAbierto} 
               onClose={() => setSelectorAudioAbierto(false)} 
             />
+
+            {/* Botón de Carrito - solo si está autenticado */}
+            {isAuthenticated && (
+              <Link href="/mi-panel?tab=tienda">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 relative touch-manipulation"
+                  data-testid="button-carrito-header"
+                  title="Mi Carrito"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  {totalItemsCarrito > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 border-2 border-purple-600 flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-white">{totalItemsCarrito > 99 ? '99+' : totalItemsCarrito}</span>
+                    </span>
+                  )}
+                </Button>
+              </Link>
+            )}
 
             {/* Botón de Billetera - solo si está autenticado */}
             {isAuthenticated && (
