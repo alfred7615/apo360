@@ -2076,3 +2076,38 @@ export const transaccionesPedidos = pgTable("transacciones_pedidos", {
 export const insertTransaccionPedidoSchema = createInsertSchema(transaccionesPedidos).omit({ id: true, createdAt: true });
 export type InsertTransaccionPedido = z.infer<typeof insertTransaccionPedidoSchema>;
 export type TransaccionPedido = typeof transaccionesPedidos.$inferSelect;
+
+// ============================================================
+// FORMAS DE PAGO DEL NEGOCIO - Métodos de pago que acepta cada negocio
+// ============================================================
+export const formasPagoNegocio = pgTable("formas_pago_negocio", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  negocioId: varchar("negocio_id").notNull().references(() => usuarios.id), // Usuario con rol 'local'
+  catalogoId: varchar("catalogo_id").references(() => catalogosLocales.id), // Opcional: vincular a catálogo específico
+  tipo: varchar("tipo", { length: 50 }).notNull(), // 'yape', 'plin', 'transferencia', 'efectivo', 'billetera'
+  nombre: varchar("nombre", { length: 100 }).notNull(), // Nombre descriptivo
+  // Datos según el tipo
+  telefono: varchar("telefono", { length: 20 }), // Para Yape/Plin
+  nombreTitular: varchar("nombre_titular", { length: 200 }), // Titular de cuenta
+  banco: varchar("banco", { length: 100 }), // Nombre del banco
+  numeroCuenta: varchar("numero_cuenta", { length: 100 }), // Número de cuenta
+  cci: varchar("cci", { length: 30 }), // Código interbancario
+  moneda: varchar("moneda", { length: 10 }).default("PEN"), // PEN, USD
+  // QR y comprobante
+  qrImagenUrl: varchar("qr_imagen_url"), // Imagen del QR de pago
+  instrucciones: text("instrucciones"), // Instrucciones adicionales para el cliente
+  // Configuración
+  aceptaBilletera: boolean("acepta_billetera").default(true), // Si acepta pago con billetera de la app
+  comisionPorcentaje: decimal("comision_porcentaje", { precision: 5, scale: 2 }).default("0"), // Comisión extra si aplica
+  montoMinimo: decimal("monto_minimo", { precision: 10, scale: 2 }), // Monto mínimo para usar este método
+  montoMaximo: decimal("monto_maximo", { precision: 10, scale: 2 }), // Monto máximo para usar este método
+  // Estado y orden
+  activo: boolean("activo").default(true),
+  orden: integer("orden").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertFormaPagoNegocioSchema = createInsertSchema(formasPagoNegocio).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertFormaPagoNegocio = z.infer<typeof insertFormaPagoNegocioSchema>;
+export type FormaPagoNegocio = typeof formasPagoNegocio.$inferSelect;
