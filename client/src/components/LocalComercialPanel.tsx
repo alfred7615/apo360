@@ -338,6 +338,297 @@ const TIPOS_PAGO = [
   { value: "otro", label: "Otro", icon: "💳" },
 ];
 
+interface TicketFacturacion {
+  id: string;
+  numeroTicket: string;
+  negocioId: string;
+  pedidoId?: string;
+  clienteId?: string;
+  nombreCliente?: string;
+  telefonoCliente?: string;
+  descripcionCompra?: string;
+  itemsJson?: string;
+  cantidadItems: number;
+  subtotal: string;
+  descuento?: string;
+  total: string;
+  moneda: string;
+  metodoPago?: string;
+  empleadoId?: string;
+  nombreEmpleado?: string;
+  funcionEmpleado?: string;
+  estado: string;
+  fechaEmision: string;
+}
+
+function SeccionFacturacion({ negocioId }: { negocioId: string | null }) {
+  const { toast } = useToast();
+  const [filtroFecha, setFiltroFecha] = useState("hoy");
+  const [ticketSeleccionado, setTicketSeleccionado] = useState<TicketFacturacion | null>(null);
+
+  const { data: tickets = [], isLoading } = useQuery<TicketFacturacion[]>({
+    queryKey: ["/api/tickets-facturacion", negocioId, filtroFecha],
+    enabled: !!negocioId,
+  });
+
+  const formatearFecha = (fecha: string) => {
+    return new Date(fecha).toLocaleString('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const calcularTotales = () => {
+    const total = tickets.reduce((acc, t) => acc + parseFloat(t.total || '0'), 0);
+    const cantidad = tickets.length;
+    return { total, cantidad };
+  };
+
+  const { total: totalVentas, cantidad: cantidadTickets } = calcularTotales();
+
+  if (!negocioId) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="py-8 text-center">
+          <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">Primero configura los datos de tu negocio</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h3 className="font-medium flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            Registro de Facturación
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Historial de tickets emitidos por compras
+          </p>
+        </div>
+        <Select value={filtroFecha} onValueChange={setFiltroFecha}>
+          <SelectTrigger className="w-[180px]" data-testid="select-filtro-fecha-facturacion">
+            <SelectValue placeholder="Filtrar por fecha" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="hoy">Hoy</SelectItem>
+            <SelectItem value="semana">Esta semana</SelectItem>
+            <SelectItem value="mes">Este mes</SelectItem>
+            <SelectItem value="todos">Todos</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Resumen de ventas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card data-testid="card-total-ventas">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-green-500" />
+              Total Ventas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-green-600" data-testid="text-total-ventas">
+              S/ {totalVentas.toFixed(2)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {filtroFecha === 'hoy' ? 'Ventas de hoy' : 
+               filtroFecha === 'semana' ? 'Ventas de la semana' : 
+               filtroFecha === 'mes' ? 'Ventas del mes' : 'Total histórico'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card data-testid="card-cantidad-tickets">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-blue-500" />
+              Tickets Emitidos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-blue-600" data-testid="text-cantidad-tickets">
+              {cantidadTickets}
+            </p>
+            <p className="text-xs text-muted-foreground">Comprobantes generados</p>
+          </CardContent>
+        </Card>
+        <Card data-testid="card-promedio-venta">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Star className="h-4 w-4 text-amber-500" />
+              Promedio
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-amber-600" data-testid="text-promedio-venta">
+              S/ {cantidadTickets > 0 ? (totalVentas / cantidadTickets).toFixed(2) : '0.00'}
+            </p>
+            <p className="text-xs text-muted-foreground">Promedio por ticket</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Lista de tickets */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : tickets.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="py-8 text-center">
+            <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No hay tickets emitidos</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Los tickets se generarán automáticamente cuando los clientes completen sus compras
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <ScrollArea className="h-[400px]">
+          <div className="space-y-3">
+            {tickets.map((ticket) => (
+              <Card 
+                key={ticket.id} 
+                className="cursor-pointer hover-elevate"
+                onClick={() => setTicketSeleccionado(ticket)}
+                data-testid={`card-ticket-${ticket.id}`}
+              >
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {ticket.numeroTicket}
+                        </Badge>
+                        <Badge 
+                          variant={ticket.estado === 'emitido' ? 'default' : 'destructive'}
+                          className="text-xs"
+                        >
+                          {ticket.estado === 'emitido' ? 'Emitido' : 
+                           ticket.estado === 'anulado' ? 'Anulado' : 'Reembolsado'}
+                        </Badge>
+                      </div>
+                      <p className="font-medium">
+                        {ticket.nombreCliente || 'Cliente'}
+                      </p>
+                      <p className="text-sm text-muted-foreground line-clamp-1">
+                        {ticket.descripcionCompra || `${ticket.cantidadItems} productos`}
+                      </p>
+                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {formatearFecha(ticket.fechaEmision)}
+                        </span>
+                        {ticket.nombreEmpleado && (
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {ticket.nombreEmpleado}
+                          </span>
+                        )}
+                        {ticket.metodoPago && (
+                          <span className="flex items-center gap-1">
+                            <CreditCard className="h-3 w-3" />
+                            {ticket.metodoPago}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-primary">
+                        S/ {parseFloat(ticket.total).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {ticket.cantidadItems} items
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </ScrollArea>
+      )}
+
+      {/* Modal de detalle de ticket */}
+      <Dialog open={!!ticketSeleccionado} onOpenChange={() => setTicketSeleccionado(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              Detalle de Ticket
+            </DialogTitle>
+            <DialogDescription>
+              {ticketSeleccionado?.numeroTicket}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {ticketSeleccionado && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <Label className="text-muted-foreground">Fecha y Hora</Label>
+                  <p className="font-medium">{formatearFecha(ticketSeleccionado.fechaEmision)}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Estado</Label>
+                  <Badge variant={ticketSeleccionado.estado === 'emitido' ? 'default' : 'destructive'}>
+                    {ticketSeleccionado.estado}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Cliente</Label>
+                  <p className="font-medium">{ticketSeleccionado.nombreCliente || 'Sin nombre'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Teléfono</Label>
+                  <p className="font-medium">{ticketSeleccionado.telefonoCliente || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Atendido por</Label>
+                  <p className="font-medium">{ticketSeleccionado.nombreEmpleado || 'Titular'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Método de Pago</Label>
+                  <p className="font-medium">{ticketSeleccionado.metodoPago || '-'}</p>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <Label className="text-muted-foreground">Detalle de Compra</Label>
+                <p className="text-sm mt-1">{ticketSeleccionado.descripcionCompra || 'Sin descripción'}</p>
+              </div>
+
+              <div className="border-t pt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>S/ {parseFloat(ticketSeleccionado.subtotal).toFixed(2)}</span>
+                </div>
+                {ticketSeleccionado.descuento && parseFloat(ticketSeleccionado.descuento) > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Descuento</span>
+                    <span>- S/ {parseFloat(ticketSeleccionado.descuento).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <span>Total</span>
+                  <span className="text-primary">S/ {parseFloat(ticketSeleccionado.total).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 function FormasPagoTab({ miNegocio }: { miNegocio: DatosNegocio | null }) {
   const { toast } = useToast();
   const [showModal, setShowModal] = useState(false);
@@ -1600,7 +1891,7 @@ export default function LocalComercialPanel() {
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9 gap-1">
+          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10 gap-1">
             <TabsTrigger value="negocio" data-testid="tab-datos-negocio" className="text-xs">
               <Store className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Negocio</span>
@@ -1620,6 +1911,10 @@ export default function LocalComercialPanel() {
             <TabsTrigger value="pagos" data-testid="tab-pagos" className="text-xs">
               <CreditCard className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Pagos</span>
+            </TabsTrigger>
+            <TabsTrigger value="facturacion" data-testid="tab-facturacion" className="text-xs">
+              <ClipboardList className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Facturación</span>
             </TabsTrigger>
             <TabsTrigger value="pedidos" data-testid="tab-pedidos" className="text-xs">
               <ShoppingCart className="h-4 w-4 mr-1" />
@@ -1926,6 +2221,20 @@ export default function LocalComercialPanel() {
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           Nuevo Producto
+                        </Button>
+                        <Button 
+                          variant="default"
+                          size="sm" 
+                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                          onClick={() => {
+                            if (miCatalogoLocal?.id) {
+                              window.open(`/carta/${miCatalogoLocal.id}`, '_blank');
+                            }
+                          }}
+                          data-testid="button-ver-carta-digital"
+                        >
+                          <UtensilsCrossed className="h-4 w-4 mr-2" />
+                          Carta Digital
                         </Button>
                       </>
                     )}
@@ -2628,6 +2937,11 @@ export default function LocalComercialPanel() {
           {/* TAB: Formas de Pago */}
           <TabsContent value="pagos" className="mt-4">
             <FormasPagoTab miNegocio={miNegocio ?? null} />
+          </TabsContent>
+
+          {/* TAB: Facturación - Historial de tickets emitidos */}
+          <TabsContent value="facturacion" className="mt-4">
+            <SeccionFacturacion negocioId={miNegocio?.id || null} />
           </TabsContent>
 
           {/* TAB: Pedidos */}

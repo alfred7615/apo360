@@ -7837,6 +7837,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================
+  // TICKETS DE FACTURACIÓN
+  // ============================================================
+  
+  // Obtener tickets de facturación del negocio
+  app.get('/api/tickets-facturacion', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { filtro } = req.query;
+      
+      const tickets = await storage.getTicketsFacturacionNegocio(usuarioId, filtro as string || 'hoy');
+      res.json(tickets);
+    } catch (error: any) {
+      console.error("Error al obtener tickets de facturación:", error);
+      res.status(500).json({ message: error.message || "Error al obtener tickets" });
+    }
+  });
+
+  // Crear nuevo ticket de facturación
+  app.post('/api/tickets-facturacion', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const ticketData = {
+        ...req.body,
+        negocioId: usuarioId,
+      };
+      
+      const ticket = await storage.createTicketFacturacion(ticketData);
+      res.status(201).json(ticket);
+    } catch (error: any) {
+      console.error("Error al crear ticket de facturación:", error);
+      res.status(500).json({ message: error.message || "Error al crear ticket" });
+    }
+  });
+
+  // Obtener un ticket específico
+  app.get('/api/tickets-facturacion/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const ticket = await storage.getTicketFacturacion(id);
+      if (!ticket || ticket.negocioId !== usuarioId) {
+        return res.status(404).json({ message: "Ticket no encontrado" });
+      }
+      
+      res.json(ticket);
+    } catch (error: any) {
+      console.error("Error al obtener ticket:", error);
+      res.status(500).json({ message: error.message || "Error al obtener ticket" });
+    }
+  });
+
+  // Anular ticket
+  app.patch('/api/tickets-facturacion/:id/anular', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      const { motivo } = req.body;
+      
+      const ticket = await storage.getTicketFacturacion(id);
+      if (!ticket || ticket.negocioId !== usuarioId) {
+        return res.status(404).json({ message: "Ticket no encontrado" });
+      }
+      
+      const updated = await storage.anularTicketFacturacion(id, motivo);
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error al anular ticket:", error);
+      res.status(500).json({ message: error.message || "Error al anular ticket" });
+    }
+  });
+
   // Obtener resumen del carrito con totales por negocio
   app.get('/api/carrito/resumen', isAuthenticated, async (req: any, res) => {
     try {

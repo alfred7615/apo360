@@ -2111,3 +2111,49 @@ export const formasPagoNegocio = pgTable("formas_pago_negocio", {
 export const insertFormaPagoNegocioSchema = createInsertSchema(formasPagoNegocio).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertFormaPagoNegocio = z.infer<typeof insertFormaPagoNegocioSchema>;
 export type FormaPagoNegocio = typeof formasPagoNegocio.$inferSelect;
+
+// ============================================================
+// TICKETS DE FACTURACIÓN - Registro de todas las ventas/tickets emitidos
+// ============================================================
+export const ticketsFacturacion = pgTable("tickets_facturacion", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  numeroTicket: varchar("numero_ticket", { length: 50 }).notNull(), // APO-YYMMDD-XXXXXX
+  negocioId: varchar("negocio_id").notNull().references(() => usuarios.id),
+  pedidoId: varchar("pedido_id").references(() => pedidos.id),
+  // Cliente que realizó la compra
+  clienteId: varchar("cliente_id").references(() => usuarios.id),
+  nombreCliente: varchar("nombre_cliente", { length: 200 }),
+  telefonoCliente: varchar("telefono_cliente", { length: 20 }),
+  // Descripción de la compra
+  descripcionCompra: text("descripcion_compra"), // Resumen de los items
+  itemsJson: text("items_json"), // JSON con detalles de cada item
+  cantidadItems: integer("cantidad_items").default(0),
+  // Montos
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  descuento: decimal("descuento", { precision: 10, scale: 2 }).default("0"),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  moneda: varchar("moneda", { length: 10 }).default("PEN"),
+  // Método de pago
+  metodoPago: varchar("metodo_pago", { length: 50 }),
+  formaPagoId: varchar("forma_pago_id").references(() => formasPagoNegocio.id),
+  voucherUrl: varchar("voucher_url"), // Imagen del voucher de pago
+  // Quién atendió/creó el ticket
+  empleadoId: varchar("empleado_id").references(() => usuarios.id),
+  nombreEmpleado: varchar("nombre_empleado", { length: 200 }),
+  funcionEmpleado: varchar("funcion_empleado", { length: 100 }),
+  // Estado
+  estado: varchar("estado", { length: 50 }).default("emitido"), // 'emitido', 'anulado', 'reembolsado'
+  motivoAnulacion: text("motivo_anulacion"),
+  // Datos adicionales
+  notas: text("notas"),
+  direccionEntrega: text("direccion_entrega"),
+  tipoEntrega: varchar("tipo_entrega", { length: 50 }), // 'local', 'delivery', 'recojo'
+  // Timestamps
+  fechaEmision: timestamp("fecha_emision").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTicketFacturacionSchema = createInsertSchema(ticketsFacturacion).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTicketFacturacion = z.infer<typeof insertTicketFacturacionSchema>;
+export type TicketFacturacion = typeof ticketsFacturacion.$inferSelect;

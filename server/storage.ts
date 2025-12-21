@@ -212,6 +212,9 @@ import {
   formasPagoNegocio,
   type FormaPagoNegocio,
   type InsertFormaPagoNegocio,
+  ticketsFacturacion,
+  type TicketFacturacion,
+  type InsertTicketFacturacion,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -505,6 +508,14 @@ export interface IStorage {
   createFormaPagoNegocio(data: InsertFormaPagoNegocio): Promise<FormaPagoNegocio>;
   updateFormaPagoNegocio(id: string, data: Partial<InsertFormaPagoNegocio>): Promise<FormaPagoNegocio | undefined>;
   deleteFormaPagoNegocio(id: string): Promise<void>;
+  
+  // ============================================================
+  // TICKETS DE FACTURACIÓN
+  // ============================================================
+  getTicketsFacturacionNegocio(negocioId: string, filtro?: string): Promise<TicketFacturacion[]>;
+  getTicketFacturacion(id: string): Promise<TicketFacturacion | undefined>;
+  createTicketFacturacion(data: InsertTicketFacturacion): Promise<TicketFacturacion>;
+  anularTicketFacturacion(id: string, motivo?: string): Promise<TicketFacturacion | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4634,6 +4645,58 @@ export class DatabaseStorage implements IStorage {
     await db.update(formasPagoNegocio)
       .set({ activo: false, updatedAt: new Date() })
       .where(eq(formasPagoNegocio.id, id));
+  }
+
+  // ============================================================
+  // TICKETS DE FACTURACIÓN
+  // ============================================================
+  
+  async getTicketsFacturacionNegocio(negocioId: string, filtro: string = 'hoy'): Promise<TicketFacturacion[]> {
+    let fechaInicio = new Date();
+    
+    switch (filtro) {
+      case 'hoy':
+        fechaInicio.setHours(0, 0, 0, 0);
+        break;
+      case 'semana':
+        fechaInicio.setDate(fechaInicio.getDate() - 7);
+        break;
+      case 'mes':
+        fechaInicio.setMonth(fechaInicio.getMonth() - 1);
+        break;
+      case 'todos':
+        fechaInicio = new Date(0);
+        break;
+    }
+    
+    return await db.select().from(ticketsFacturacion)
+      .where(and(
+        eq(ticketsFacturacion.negocioId, negocioId),
+        gte(ticketsFacturacion.fechaEmision, fechaInicio)
+      ))
+      .orderBy(desc(ticketsFacturacion.fechaEmision));
+  }
+
+  async getTicketFacturacion(id: string): Promise<TicketFacturacion | undefined> {
+    const [ticket] = await db.select().from(ticketsFacturacion).where(eq(ticketsFacturacion.id, id));
+    return ticket || undefined;
+  }
+
+  async createTicketFacturacion(data: InsertTicketFacturacion): Promise<TicketFacturacion> {
+    const [nuevo] = await db.insert(ticketsFacturacion).values(data).returning();
+    return nuevo;
+  }
+
+  async anularTicketFacturacion(id: string, motivo?: string): Promise<TicketFacturacion | undefined> {
+    const [updated] = await db.update(ticketsFacturacion)
+      .set({ 
+        estado: 'anulado', 
+        motivoAnulacion: motivo || 'Sin motivo especificado',
+        updatedAt: new Date() 
+      })
+      .where(eq(ticketsFacturacion.id, id))
+      .returning();
+    return updated || undefined;
   }
 }
 
