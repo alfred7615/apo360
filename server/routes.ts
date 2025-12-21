@@ -7964,7 +7964,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let localComercialId = null;
           
           if (item.catalogoId) {
-            const catalogo = await storage.getCatalogo(item.catalogoId);
+            const catalogo = await storage.getCatalogoLocal(item.catalogoId);
             if (catalogo) {
               nombreNegocio = catalogo.nombre || 'Negocio';
               localComercialId = catalogo.usuarioId || null;
