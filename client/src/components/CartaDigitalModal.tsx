@@ -315,62 +315,6 @@ export function CartaDigitalModal({ open, onOpenChange, catalogo, datosNegocio }
               )}
             </div>
           </div>
-          
-          <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
-            <Select value={monedaSeleccionada} onValueChange={setMonedaSeleccionada}>
-              <SelectTrigger className="w-[140px]" data-testid="select-moneda">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MONEDAS.map((m) => (
-                  <SelectItem key={m.codigo} value={m.codigo}>
-                    {m.simbolo} {m.codigo}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <div className="flex gap-1">
-              <Button size="icon" variant="outline" onClick={compartirWhatsApp} data-testid="btn-compartir-whatsapp">
-                <SiWhatsapp className="h-4 w-4 text-green-500" />
-              </Button>
-              <Button size="icon" variant="outline" onClick={compartirFacebook} data-testid="btn-compartir-facebook">
-                <SiFacebook className="h-4 w-4 text-blue-600" />
-              </Button>
-              <Button 
-                size="icon" 
-                variant="outline" 
-                onClick={async () => {
-                  const url = window.location.origin + `/carta/${catalogo?.id}`;
-                  const shareData = {
-                    title: `Carta Digital - ${datosNegocio?.nombreNegocio || catalogo?.nombre}`,
-                    text: `¡Mira la carta digital de ${datosNegocio?.nombreNegocio || catalogo?.nombre}!`,
-                    url: url,
-                  };
-                  if (navigator.share) {
-                    try {
-                      await navigator.share(shareData);
-                    } catch (err) {
-                      navigator.clipboard.writeText(url);
-                      toast({
-                        title: "Enlace copiado",
-                        description: "El enlace ha sido copiado al portapapeles",
-                      });
-                    }
-                  } else {
-                    navigator.clipboard.writeText(url);
-                    toast({
-                      title: "Enlace copiado",
-                      description: "El enlace ha sido copiado al portapapeles",
-                    });
-                  }
-                }}
-                data-testid="btn-compartir-general"
-              >
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
         </DialogHeader>
 
         <ScrollArea className="flex-1 overflow-y-auto touch-pan-y" data-testid="scroll-carta">
@@ -693,37 +637,95 @@ export function CartaDigitalModal({ open, onOpenChange, catalogo, datosNegocio }
         </ScrollArea>
 
         <div className="border-t p-4 bg-background shrink-0">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-4">
-              <div className="text-left">
-                <p className="text-sm text-muted-foreground">Total ({totalItems} items)</p>
-                <p className="text-2xl font-bold text-primary" data-testid="total-carta">
-                  {formatearPrecio(convertirPrecio(calcularTotal()))}
-                </p>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Select value={monedaSeleccionada} onValueChange={setMonedaSeleccionada}>
+                <SelectTrigger className="w-[120px]" data-testid="select-moneda">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONEDAS.map((m) => (
+                    <SelectItem key={m.codigo} value={m.codigo}>
+                      {m.simbolo} {m.codigo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <div className="flex gap-1">
+                <Button size="icon" variant="outline" onClick={compartirWhatsApp} data-testid="btn-compartir-whatsapp">
+                  <SiWhatsapp className="h-4 w-4 text-green-500" />
+                </Button>
+                <Button size="icon" variant="outline" onClick={compartirFacebook} data-testid="btn-compartir-facebook">
+                  <SiFacebook className="h-4 w-4 text-blue-600" />
+                </Button>
+                <Button 
+                  size="icon" 
+                  variant="outline" 
+                  onClick={async () => {
+                    const url = window.location.origin + `/carta/${catalogo?.id}`;
+                    const shareData = {
+                      title: `Carta Digital - ${datosNegocio?.nombreNegocio || catalogo?.nombre}`,
+                      text: `¡Mira la carta digital de ${datosNegocio?.nombreNegocio || catalogo?.nombre}!`,
+                      url: url,
+                    };
+                    if (navigator.share) {
+                      try {
+                        await navigator.share(shareData);
+                      } catch (err) {
+                        navigator.clipboard.writeText(url);
+                        toast({
+                          title: "Enlace copiado",
+                          description: "El enlace ha sido copiado al portapapeles",
+                        });
+                      }
+                    } else {
+                      navigator.clipboard.writeText(url);
+                      toast({
+                        title: "Enlace copiado",
+                        description: "El enlace ha sido copiado al portapapeles",
+                      });
+                    }
+                  }}
+                  data-testid="btn-compartir-general"
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
             
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSelecciones({});
-                  onOpenChange(false);
-                }}
-                data-testid="btn-cerrar-carta"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Cerrar
-              </Button>
-              <Button
-                onClick={agregarAlCarrito}
-                disabled={totalItems === 0}
-                className="gap-2"
-                data-testid="btn-agregar-carrito"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                Agregar al Carrito
-              </Button>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-4">
+                <div className="text-left">
+                  <p className="text-sm text-muted-foreground">Total ({totalItems} items)</p>
+                  <p className="text-2xl font-bold text-primary" data-testid="total-carta">
+                    {formatearPrecio(convertirPrecio(calcularTotal()))}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelecciones({});
+                    onOpenChange(false);
+                  }}
+                  data-testid="btn-cerrar-carta"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cerrar
+                </Button>
+                <Button
+                  onClick={agregarAlCarrito}
+                  disabled={totalItems === 0}
+                  className="gap-2"
+                  data-testid="btn-agregar-carrito"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  Agregar al Carrito
+                </Button>
+              </div>
             </div>
           </div>
         </div>
