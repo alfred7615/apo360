@@ -25,6 +25,7 @@ import BusesConductor from "@/pages/buses-conductor";
 import BusesPasajero from "@/pages/buses-pasajero";
 import Billetera from "@/pages/billetera";
 import CalculadoraCambio from "@/pages/calculadora-cambio";
+import CartaDigital from "@/pages/carta-digital";
 import NotFound from "@/pages/not-found";
 import NotificacionesAdmin from "@/components/NotificacionesAdmin";
 
@@ -59,6 +60,7 @@ function Router() {
       <Route path="/buses-pasajero" component={BusesPasajero} />
       <Route path="/billetera" component={Billetera} />
       <Route path="/calculadora-cambio" component={CalculadoraCambio} />
+      <Route path="/carta/:catalogoId" component={CartaDigital} />
       <Route component={NotFound} />
     </Switch>
   );
