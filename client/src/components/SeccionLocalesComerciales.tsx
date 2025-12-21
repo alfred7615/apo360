@@ -39,6 +39,7 @@ export default function SeccionLocalesComerciales() {
   const [catalogoSeleccionado, setCatalogoSeleccionado] = useState<CatalogoConItems | null>(null);
   const [preciosSeleccionados, setPreciosSeleccionados] = useState<number[]>([]);
   const [agregandoCarrito, setAgregandoCarrito] = useState(false);
+  const [cantidadProducto, setCantidadProducto] = useState(1);
 
   const { data: itemsDestacados = [], isLoading: cargandoDestacados } = useQuery<ItemCatalogo[]>({
     queryKey: ["/api/items-destacados"],
@@ -79,6 +80,7 @@ export default function SeccionLocalesComerciales() {
   const handleVerProducto = (item: ItemCatalogo) => {
     setProductoSeleccionado(item);
     setPreciosSeleccionados([]);
+    setCantidadProducto(1);
     registrarVistaMutation.mutate(item.id);
   };
 
@@ -116,7 +118,7 @@ export default function SeccionLocalesComerciales() {
         await apiRequest("POST", "/api/carrito", {
           itemCatalogoId: item.id,
           tipoProducto: "item_catalogo",
-          cantidad: 1,
+          cantidad: cantidadProducto,
           precioSeleccionado: precioInfo.num,
           etiquetaPrecio: precioInfo.etiqueta,
           precioUnitario: precioInfo.precio,
@@ -125,10 +127,12 @@ export default function SeccionLocalesComerciales() {
       }
       toast({
         title: "Agregado al carrito",
-        description: `${preciosAComprar.length} item(s) de ${item.nombre} agregado(s)`,
+        description: `${cantidadProducto} x ${item.nombre} (${preciosAComprar.length} tamaño(s)) agregado(s)`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/carrito"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/carrito/resumen"] });
       setPreciosSeleccionados([]);
+      setCantidadProducto(1);
       return true;
     } catch (error) {
       toast({
@@ -635,6 +639,34 @@ export default function SeccionLocalesComerciales() {
                       </div>
                     );
                   })()}
+                  
+                  <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+                    <span className="text-sm font-medium">Cantidad:</span>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setCantidadProducto(Math.max(1, cantidadProducto - 1))}
+                        disabled={cantidadProducto <= 1}
+                        data-testid="button-decrementar-cantidad"
+                      >
+                        <span className="text-lg font-bold">-</span>
+                      </Button>
+                      <span className="text-xl font-bold w-8 text-center" data-testid="text-cantidad">
+                        {cantidadProducto}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setCantidadProducto(cantidadProducto + 1)}
+                        data-testid="button-incrementar-cantidad"
+                      >
+                        <span className="text-lg font-bold">+</span>
+                      </Button>
+                    </div>
+                  </div>
                   
                   <div className="flex items-center gap-2 pt-2">
                     <Button

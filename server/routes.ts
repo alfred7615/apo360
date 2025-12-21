@@ -7843,16 +7843,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const usuarioId = req.user.claims.sub;
       const items = await storage.getCarritoUsuario(usuarioId);
       
+      // Enriquecer items con datos del producto
+      const itemsEnriquecidos = await Promise.all(items.map(async (item) => {
+        let nombreProducto = item.etiquetaPrecio || 'Producto';
+        let imagenProducto: string | null = null;
+        
+        if (item.tipoProducto === 'item_catalogo' && item.itemCatalogoId) {
+          const itemCatalogo = await storage.getItemCatalogo(item.itemCatalogoId);
+          if (itemCatalogo) {
+            nombreProducto = itemCatalogo.nombre + (item.etiquetaPrecio ? ` (${item.etiquetaPrecio})` : '');
+            imagenProducto = itemCatalogo.imagenUrl || null;
+          }
+        } else if (item.tipoProducto === 'producto_usuario' && item.productoUsuarioId) {
+          const producto = await storage.getProductoUsuario(item.productoUsuarioId);
+          if (producto) {
+            nombreProducto = producto.nombre + (item.etiquetaPrecio ? ` (${item.etiquetaPrecio})` : '');
+            imagenProducto = producto.imagenUrl || null;
+          }
+        }
+        
+        return {
+          id: item.id,
+          productoId: item.productoUsuarioId || null,
+          itemCatalogoId: item.itemCatalogoId || null,
+          catalogoId: item.catalogoId || null,
+          nombreProducto,
+          precioUnitario: item.precioUnitario,
+          cantidad: item.cantidad || 1,
+          imagenProducto,
+          notas: item.notas || null,
+        };
+      }));
+      
       // Agrupar por catálogo/negocio
       const porNegocio: Record<string, { 
         catalogoId: string | null; 
         localComercialId: string | null;
         nombreNegocio: string;
-        items: typeof items;
+        items: typeof itemsEnriquecidos;
         subtotal: number;
       }> = {};
       
-      for (const item of items) {
+      for (const item of itemsEnriquecidos) {
         const key = item.catalogoId || 'sin-catalogo';
         if (!porNegocio[key]) {
           let nombreNegocio = 'Productos';
@@ -7885,7 +7917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const resumen = Object.values(porNegocio);
       const totalGeneral = resumen.reduce((acc, neg) => acc + neg.subtotal, 0);
-      const totalItems = items.reduce((acc, item) => acc + (item.cantidad || 1), 0);
+      const totalItems = itemsEnriquecidos.reduce((acc, item) => acc + (item.cantidad || 1), 0);
       
       res.json({
         grupos: resumen,

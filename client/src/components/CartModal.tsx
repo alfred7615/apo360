@@ -13,10 +13,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { 
   Trash2, Minus, Plus, ShoppingBag, Store, ArrowRight, Loader2, 
   CreditCard, Wallet, Upload, Check, Phone, Building2, ArrowLeft,
-  CheckCircle2, AlertCircle
+  CheckCircle2, AlertCircle, Receipt
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import TicketModal from "./TicketModal";
+
+interface DatosTicket {
+  numeroTicket: string;
+  fechaHora: Date;
+  negocio: {
+    nombre: string;
+    direccion?: string;
+    telefono?: string;
+    ruc?: string;
+  };
+  items: { nombre: string; cantidad: number; precioUnitario: number; subtotal: number; }[];
+  subtotal: number;
+  descuento?: number;
+  total: number;
+  moneda: string;
+  metodoPago: string;
+  cliente?: { nombre?: string; telefono?: string; };
+  notas?: string;
+}
 
 interface CartModalProps {
   abierto: boolean;
@@ -98,6 +118,10 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
   const [voucherPreview, setVoucherPreview] = useState<string | null>(null);
   const [notasPedido, setNotasPedido] = useState("");
   const [procesando, setProcesando] = useState(false);
+  
+  // Ticket state
+  const [mostrarTicket, setMostrarTicket] = useState(false);
+  const [datosTicket, setDatosTicket] = useState<DatosTicket | null>(null);
 
   const { data: resumen, isLoading } = useQuery<ResumenCarrito>({
     queryKey: ["/api/carrito/resumen"],
@@ -120,6 +144,8 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
       setVoucherFile(null);
       setVoucherPreview(null);
       setNotasPedido("");
+      setMostrarTicket(false);
+      setDatosTicket(null);
     }
   }, [abierto]);
 
@@ -240,6 +266,15 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
     }
   };
 
+  const generarNumeroTicket = () => {
+    const fecha = new Date();
+    const año = fecha.getFullYear().toString().slice(-2);
+    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+    const dia = String(fecha.getDate()).padStart(2, "0");
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `APO-${año}${mes}${dia}-${random}`;
+  };
+
   const handleConfirmarCompra = async () => {
     if (!formaPagoSeleccionada && !usarBilletera) {
       toast({
@@ -289,6 +324,30 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           voucherUrl,
           notas: notasPedido,
         });
+        
+        // Generar datos del ticket para el primer negocio
+        if (!datosTicket) {
+          const itemsTicket = grupo.items.map(item => ({
+            nombre: item.nombreProducto || "Producto",
+            cantidad: item.cantidad,
+            precioUnitario: parseFloat(item.precioUnitario || "0"),
+            subtotal: parseFloat(item.precioUnitario || "0") * item.cantidad,
+          }));
+          
+          setDatosTicket({
+            numeroTicket: generarNumeroTicket(),
+            fechaHora: new Date(),
+            negocio: {
+              nombre: grupo.nombreNegocio,
+            },
+            items: itemsTicket,
+            subtotal: grupo.subtotal,
+            total: totalConvertido || grupo.subtotal,
+            moneda: monedaSeleccionada,
+            metodoPago: usarBilletera ? "Billetera APO-360" : (formaPagoSeleccionada?.nombre || formaPagoSeleccionada?.tipo || ""),
+            notas: notasPedido || undefined,
+          });
+        }
       }
     } catch (error) {
       console.error("Error al confirmar compra:", error);
@@ -666,6 +725,19 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           <span>Recibirás una notificación cuando sea confirmado</span>
         </div>
       </div>
+      
+      {datosTicket && (
+        <Button 
+          variant="outline"
+          onClick={() => setMostrarTicket(true)} 
+          className="w-full mb-3 border-purple-500 text-purple-600 hover:bg-purple-50"
+          data-testid="button-ver-ticket"
+        >
+          <Receipt className="h-4 w-4 mr-2" />
+          Ver Ticket de Compra
+        </Button>
+      )}
+      
       <Button 
         onClick={onClose} 
         className="w-full"
@@ -735,6 +807,12 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           </>
         )}
       </DialogContent>
+      
+      <TicketModal
+        abierto={mostrarTicket}
+        onClose={() => setMostrarTicket(false)}
+        datos={datosTicket}
+      />
     </Dialog>
   );
 }
