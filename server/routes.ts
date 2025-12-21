@@ -7723,6 +7723,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // FORMAS DE PAGO DEL NEGOCIO
+  // ============================================================
+
+  // Obtener formas de pago del negocio (público - para checkout)
+  app.get('/api/formas-pago-negocio/:negocioId', async (req, res) => {
+    try {
+      const { negocioId } = req.params;
+      const formas = await storage.getFormasPagoNegocio(negocioId);
+      res.json(formas);
+    } catch (error: any) {
+      console.error("Error al obtener formas de pago:", error);
+      res.status(500).json({ message: error.message || "Error al obtener formas de pago" });
+    }
+  });
+
+  // Obtener formas de pago por catálogo (público - para checkout)
+  app.get('/api/formas-pago-catalogo/:catalogoId', async (req, res) => {
+    try {
+      const { catalogoId } = req.params;
+      const formas = await storage.getFormasPagoPorCatalogo(catalogoId);
+      res.json(formas);
+    } catch (error: any) {
+      console.error("Error al obtener formas de pago:", error);
+      res.status(500).json({ message: error.message || "Error al obtener formas de pago" });
+    }
+  });
+
+  // Obtener mis formas de pago configuradas (para dueño del negocio)
+  app.get('/api/mis-formas-pago', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const formas = await storage.getFormasPagoNegocio(usuarioId);
+      res.json(formas);
+    } catch (error: any) {
+      console.error("Error al obtener mis formas de pago:", error);
+      res.status(500).json({ message: error.message || "Error al obtener formas de pago" });
+    }
+  });
+
+  // Crear forma de pago
+  app.post('/api/mis-formas-pago', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const data = { ...req.body, negocioId: usuarioId };
+      const nueva = await storage.createFormaPagoNegocio(data);
+      res.status(201).json(nueva);
+    } catch (error: any) {
+      console.error("Error al crear forma de pago:", error);
+      res.status(500).json({ message: error.message || "Error al crear forma de pago" });
+    }
+  });
+
+  // Actualizar forma de pago
+  app.patch('/api/mis-formas-pago/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const forma = await storage.getFormaPagoNegocio(id);
+      if (!forma || forma.negocioId !== usuarioId) {
+        return res.status(404).json({ message: "Forma de pago no encontrada" });
+      }
+      
+      const updated = await storage.updateFormaPagoNegocio(id, req.body);
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error al actualizar forma de pago:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar forma de pago" });
+    }
+  });
+
+  // Eliminar forma de pago (soft delete)
+  app.delete('/api/mis-formas-pago/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const forma = await storage.getFormaPagoNegocio(id);
+      if (!forma || forma.negocioId !== usuarioId) {
+        return res.status(404).json({ message: "Forma de pago no encontrada" });
+      }
+      
+      await storage.deleteFormaPagoNegocio(id);
+      res.json({ message: "Forma de pago eliminada" });
+    } catch (error: any) {
+      console.error("Error al eliminar forma de pago:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar forma de pago" });
+    }
+  });
+
+  // Obtener resumen del carrito con totales por negocio
+  app.get('/api/carrito/resumen', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const items = await storage.getCarritoUsuario(usuarioId);
+      
+      // Agrupar por catálogo/negocio
+      const porNegocio: Record<string, { 
+        catalogoId: string | null; 
+        localComercialId: string | null;
+        nombreNegocio: string;
+        items: typeof items;
+        subtotal: number;
+      }> = {};
+      
+      for (const item of items) {
+        const key = item.catalogoId || 'sin-catalogo';
+        if (!porNegocio[key]) {
+          let nombreNegocio = 'Productos';
+          let localComercialId = null;
+          
+          if (item.catalogoId) {
+            const catalogo = await storage.getCatalogo(item.catalogoId);
+            if (catalogo) {
+              nombreNegocio = catalogo.nombre || 'Negocio';
+              localComercialId = catalogo.usuarioId || null;
+            }
+          }
+          
+          porNegocio[key] = {
+            catalogoId: item.catalogoId,
+            localComercialId,
+            nombreNegocio,
+            items: [],
+            subtotal: 0
+          };
+        }
+        
+        const precioUnitario = parseFloat(String(item.precioUnitario || 0));
+        const cantidad = item.cantidad || 1;
+        const subtotalItem = precioUnitario * cantidad;
+        
+        porNegocio[key].items.push(item);
+        porNegocio[key].subtotal += subtotalItem;
+      }
+      
+      const resumen = Object.values(porNegocio);
+      const totalGeneral = resumen.reduce((acc, neg) => acc + neg.subtotal, 0);
+      const totalItems = items.reduce((acc, item) => acc + (item.cantidad || 1), 0);
+      
+      res.json({
+        grupos: resumen,
+        totalGeneral,
+        totalItems,
+        moneda: 'PEN'
+      });
+    } catch (error: any) {
+      console.error("Error al obtener resumen del carrito:", error);
+      res.status(500).json({ message: error.message || "Error al obtener resumen del carrito" });
+    }
+  });
+
+  // Endpoint de conversión de moneda para el carrito
+  app.get('/api/convertir-precio', async (req, res) => {
+    try {
+      const { monto, monedaOrigen, monedaDestino } = req.query;
+      
+      if (!monto || !monedaOrigen || !monedaDestino) {
+        return res.status(400).json({ message: "Parámetros requeridos: monto, monedaOrigen, monedaDestino" });
+      }
+      
+      const resultado = await storage.convertirPrecio(
+        parseFloat(String(monto)),
+        String(monedaOrigen),
+        String(monedaDestino)
+      );
+      
+      res.json(resultado);
+    } catch (error: any) {
+      console.error("Error en conversión de moneda:", error);
+      res.status(500).json({ message: error.message || "Error en conversión" });
+    }
+  });
+
+  // ============================================================
   // PEDIDOS - Sistema de órdenes
   // ============================================================
 

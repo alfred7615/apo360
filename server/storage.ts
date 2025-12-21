@@ -209,6 +209,9 @@ import {
   type InsertSolicitudDelivery,
   type TransaccionPedido,
   type InsertTransaccionPedido,
+  formasPagoNegocio,
+  type FormaPagoNegocio,
+  type InsertFormaPagoNegocio,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -492,6 +495,16 @@ export interface IStorage {
   getConfiguracionesCostos(): Promise<ConfiguracionCosto[]>;
   getConfiguracionCosto(tipoServicio: string): Promise<ConfiguracionCosto | undefined>;
   upsertConfiguracionCosto(data: InsertConfiguracionCosto): Promise<ConfiguracionCosto>;
+  
+  // ============================================================
+  // FORMAS DE PAGO DEL NEGOCIO
+  // ============================================================
+  getFormasPagoNegocio(negocioId: string): Promise<FormaPagoNegocio[]>;
+  getFormasPagoPorCatalogo(catalogoId: string): Promise<FormaPagoNegocio[]>;
+  getFormaPagoNegocio(id: string): Promise<FormaPagoNegocio | undefined>;
+  createFormaPagoNegocio(data: InsertFormaPagoNegocio): Promise<FormaPagoNegocio>;
+  updateFormaPagoNegocio(id: string, data: Partial<InsertFormaPagoNegocio>): Promise<FormaPagoNegocio | undefined>;
+  deleteFormaPagoNegocio(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4576,6 +4589,51 @@ export class DatabaseStorage implements IStorage {
     }
 
     return { montoConvertido: monto, tasaUsada: 1 };
+  }
+
+  // ============================================================
+  // FORMAS DE PAGO DEL NEGOCIO
+  // ============================================================
+  async getFormasPagoNegocio(negocioId: string): Promise<FormaPagoNegocio[]> {
+    return await db.select().from(formasPagoNegocio)
+      .where(and(
+        eq(formasPagoNegocio.negocioId, negocioId),
+        eq(formasPagoNegocio.activo, true)
+      ))
+      .orderBy(formasPagoNegocio.orden);
+  }
+
+  async getFormasPagoPorCatalogo(catalogoId: string): Promise<FormaPagoNegocio[]> {
+    return await db.select().from(formasPagoNegocio)
+      .where(and(
+        eq(formasPagoNegocio.catalogoId, catalogoId),
+        eq(formasPagoNegocio.activo, true)
+      ))
+      .orderBy(formasPagoNegocio.orden);
+  }
+
+  async getFormaPagoNegocio(id: string): Promise<FormaPagoNegocio | undefined> {
+    const [forma] = await db.select().from(formasPagoNegocio).where(eq(formasPagoNegocio.id, id));
+    return forma || undefined;
+  }
+
+  async createFormaPagoNegocio(data: InsertFormaPagoNegocio): Promise<FormaPagoNegocio> {
+    const [nueva] = await db.insert(formasPagoNegocio).values(data).returning();
+    return nueva;
+  }
+
+  async updateFormaPagoNegocio(id: string, data: Partial<InsertFormaPagoNegocio>): Promise<FormaPagoNegocio | undefined> {
+    const [updated] = await db.update(formasPagoNegocio)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(formasPagoNegocio.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteFormaPagoNegocio(id: string): Promise<void> {
+    await db.update(formasPagoNegocio)
+      .set({ activo: false, updatedAt: new Date() })
+      .where(eq(formasPagoNegocio.id, id));
   }
 }
 
