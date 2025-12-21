@@ -7565,6 +7565,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener formas de pago de un catálogo/negocio (público)
+  app.get('/api/carta-digital/:catalogoId/formas-pago', async (req, res) => {
+    try {
+      const { catalogoId } = req.params;
+      
+      // Obtener el catálogo para saber el usuarioId del negocio
+      const catalogo = await storage.getCatalogo(catalogoId);
+      if (!catalogo) {
+        return res.status(404).json({ message: "Catálogo no encontrado" });
+      }
+      
+      // Obtener formas de pago del negocio
+      const formasPago = await storage.getFormasPagoNegocio(catalogo.usuarioId);
+      
+      // Filtrar solo las activas
+      const formasActivas = formasPago.filter(f => f.activo !== false);
+      
+      res.json(formasActivas);
+    } catch (error: any) {
+      console.error("Error al obtener formas de pago:", error);
+      res.status(500).json({ message: error.message || "Error al obtener formas de pago" });
+    }
+  });
+
   // Convertir precio entre monedas (público)
   app.get('/api/conversion-moneda', async (req, res) => {
     try {
