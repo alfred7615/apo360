@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAudioController } from "@/contexts/AudioControllerContext";
 import { useQuery } from "@tanstack/react-query";
 import SelectorAudio from "./SelectorAudio";
+import CartModal from "./CartModal";
 
 export default function Encabezado() {
   const [location, setLocation] = useLocation();
@@ -23,6 +24,7 @@ export default function Encabezado() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [selectorAudioAbierto, setSelectorAudioAbierto] = useState(false);
   const [billeteraAbierta, setBilleteraAbierta] = useState(false);
+  const [carritoAbierto, setCarritoAbierto] = useState(false);
   
   const audio = useAudioController();
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -174,23 +176,32 @@ export default function Encabezado() {
 
             {/* Botón de Carrito - solo si está autenticado */}
             {isAuthenticated && (
-              <Link href="/mi-panel?tab=tienda">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20 relative touch-manipulation"
-                  data-testid="button-carrito-header"
-                  title="Mi Carrito"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  {totalItemsCarrito > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 border-2 border-purple-600 flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-white">{totalItemsCarrito > 99 ? '99+' : totalItemsCarrito}</span>
-                    </span>
-                  )}
-                </Button>
-              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-white/20 relative touch-manipulation"
+                onClick={() => setCarritoAbierto(true)}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  setCarritoAbierto(true);
+                }}
+                data-testid="button-carrito-header"
+                title="Mi Carrito"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {totalItemsCarrito > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 border-2 border-purple-600 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-white">{totalItemsCarrito > 99 ? '99+' : totalItemsCarrito}</span>
+                  </span>
+                )}
+              </Button>
             )}
+            
+            {/* Modal del Carrito */}
+            <CartModal 
+              abierto={carritoAbierto} 
+              onClose={() => setCarritoAbierto(false)} 
+            />
 
             {/* Botón de Billetera - solo si está autenticado */}
             {isAuthenticated && (
