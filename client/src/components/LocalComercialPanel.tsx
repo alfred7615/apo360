@@ -23,7 +23,8 @@ import {
   Instagram, Facebook, Image as ImageIcon, Loader2, UtensilsCrossed,
   CheckCircle, XCircle, Users, Megaphone, ShoppingCart, Truck, Map,
   History, Navigation, Heart, Share2, ExternalLink, Clock, DollarSign,
-  Package2, ClipboardList, MapPinned, Wallet, RefreshCw, Eye, Bookmark, Star
+  Package2, ClipboardList, MapPinned, Wallet, RefreshCw, Eye, Bookmark, Star,
+  CreditCard, QrCode, Building2
 } from "lucide-react";
 
 interface DatosNegocio {
@@ -308,6 +309,404 @@ interface SolicitudRecarga {
   estado?: string;
   notas?: string;
   createdAt?: string;
+}
+
+interface FormaPago {
+  id: string;
+  negocioId: string;
+  catalogoId?: string;
+  tipo: string;
+  nombre: string;
+  telefono?: string;
+  banco?: string;
+  numeroCuenta?: string;
+  cci?: string;
+  qrImageUrl?: string;
+  instrucciones?: string;
+  aceptaBilletera?: boolean;
+  comision?: string;
+  orden?: number;
+  activo?: boolean;
+}
+
+const TIPOS_PAGO = [
+  { value: "yape", label: "Yape", icon: "📱" },
+  { value: "plin", label: "Plin", icon: "📲" },
+  { value: "transferencia", label: "Transferencia Bancaria", icon: "🏦" },
+  { value: "efectivo", label: "Efectivo", icon: "💵" },
+  { value: "billetera", label: "Billetera Virtual", icon: "👛" },
+  { value: "otro", label: "Otro", icon: "💳" },
+];
+
+function FormasPagoTab({ miNegocio }: { miNegocio: DatosNegocio | null }) {
+  const { toast } = useToast();
+  const [showModal, setShowModal] = useState(false);
+  const [editingFormaPago, setEditingFormaPago] = useState<FormaPago | null>(null);
+  const [formData, setFormData] = useState<Partial<FormaPago>>({
+    tipo: "yape",
+    nombre: "",
+    telefono: "",
+    banco: "",
+    numeroCuenta: "",
+    cci: "",
+    qrImageUrl: "",
+    instrucciones: "",
+    aceptaBilletera: false,
+  });
+
+  const { data: formasPago = [], isLoading } = useQuery<FormaPago[]>({
+    queryKey: ["/api/mis-formas-pago"],
+    enabled: !!miNegocio,
+  });
+
+  const crearMutation = useMutation({
+    mutationFn: async (data: Partial<FormaPago>) => {
+      const res = await apiRequest("POST", "/api/mis-formas-pago", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-formas-pago"] });
+      toast({ title: "Método de pago creado" });
+      setShowModal(false);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    },
+  });
+
+  const actualizarMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<FormaPago> }) => {
+      const res = await apiRequest("PATCH", `/api/mis-formas-pago/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-formas-pago"] });
+      toast({ title: "Método de pago actualizado" });
+      setShowModal(false);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    },
+  });
+
+  const eliminarMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/mis-formas-pago/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-formas-pago"] });
+      toast({ title: "Método de pago eliminado" });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      tipo: "yape",
+      nombre: "",
+      telefono: "",
+      banco: "",
+      numeroCuenta: "",
+      cci: "",
+      qrImageUrl: "",
+      instrucciones: "",
+      aceptaBilletera: false,
+    });
+    setEditingFormaPago(null);
+  };
+
+  const handleEditar = (forma: FormaPago) => {
+    setEditingFormaPago(forma);
+    setFormData({
+      tipo: forma.tipo,
+      nombre: forma.nombre,
+      telefono: forma.telefono || "",
+      banco: forma.banco || "",
+      numeroCuenta: forma.numeroCuenta || "",
+      cci: forma.cci || "",
+      qrImageUrl: forma.qrImageUrl || "",
+      instrucciones: forma.instrucciones || "",
+      aceptaBilletera: forma.aceptaBilletera || false,
+    });
+    setShowModal(true);
+  };
+
+  const handleGuardar = () => {
+    if (!formData.nombre?.trim()) {
+      toast({ variant: "destructive", title: "Error", description: "El nombre es requerido" });
+      return;
+    }
+    if (editingFormaPago) {
+      actualizarMutation.mutate({ id: editingFormaPago.id, data: formData });
+    } else {
+      crearMutation.mutate(formData);
+    }
+  };
+
+  const getTipoInfo = (tipo: string) => {
+    return TIPOS_PAGO.find(t => t.value === tipo) || { value: tipo, label: tipo, icon: "💳" };
+  };
+
+  if (!miNegocio) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium">Formas de Pago</h3>
+            <p className="text-sm text-muted-foreground">Configura los métodos de pago que aceptas</p>
+          </div>
+        </div>
+        <Card className="border-dashed">
+          <CardContent className="py-8 text-center">
+            <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Primero configura los datos de tu negocio</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h3 className="font-medium">Formas de Pago</h3>
+          <p className="text-sm text-muted-foreground">Configura los métodos de pago que aceptas para tus ventas</p>
+        </div>
+        <Button 
+          size="sm" 
+          onClick={() => { resetForm(); setShowModal(true); }}
+          data-testid="button-agregar-forma-pago"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Agregar Método
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : formasPago.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="py-8 text-center">
+            <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No tienes métodos de pago configurados</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Agrega Yape, Plin, transferencias bancarias u otros métodos
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {formasPago.map((forma) => {
+            const tipoInfo = getTipoInfo(forma.tipo);
+            return (
+              <Card key={forma.id} className="hover-elevate" data-testid={`card-forma-pago-${forma.id}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl">
+                      {tipoInfo.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">{forma.nombre}</p>
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          {tipoInfo.label}
+                        </Badge>
+                      </div>
+                      {forma.telefono && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {forma.telefono}
+                        </p>
+                      )}
+                      {forma.banco && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          {forma.banco}
+                        </p>
+                      )}
+                      {forma.numeroCuenta && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          Cuenta: {forma.numeroCuenta}
+                        </p>
+                      )}
+                      {forma.aceptaBilletera && (
+                        <Badge variant="secondary" className="text-xs mt-1">
+                          <Wallet className="h-3 w-3 mr-1" />
+                          Acepta billetera
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-3 mt-3 border-t">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleEditar(forma)}
+                      data-testid={`button-editar-forma-pago-${forma.id}`}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => eliminarMutation.mutate(forma.id)}
+                      data-testid={`button-eliminar-forma-pago-${forma.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal para agregar/editar forma de pago */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingFormaPago ? "Editar" : "Agregar"} Método de Pago
+            </DialogTitle>
+            <DialogDescription>
+              Configura un método de pago para tus clientes
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Tipo de Pago</Label>
+              <Select 
+                value={formData.tipo} 
+                onValueChange={(val) => setFormData({ ...formData, tipo: val })}
+              >
+                <SelectTrigger data-testid="select-tipo-pago">
+                  <SelectValue placeholder="Seleccionar tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS_PAGO.map((tipo) => (
+                    <SelectItem key={tipo.value} value={tipo.value}>
+                      <span className="flex items-center gap-2">
+                        <span>{tipo.icon}</span>
+                        <span>{tipo.label}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Nombre / Titular *</Label>
+              <Input
+                value={formData.nombre || ""}
+                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                placeholder="Ej: Juan Pérez"
+                data-testid="input-nombre-pago"
+              />
+            </div>
+
+            {(formData.tipo === "yape" || formData.tipo === "plin") && (
+              <div className="space-y-2">
+                <Label>Número de Teléfono</Label>
+                <Input
+                  value={formData.telefono || ""}
+                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                  placeholder="999 999 999"
+                  data-testid="input-telefono-pago"
+                />
+              </div>
+            )}
+
+            {formData.tipo === "transferencia" && (
+              <>
+                <div className="space-y-2">
+                  <Label>Banco</Label>
+                  <Input
+                    value={formData.banco || ""}
+                    onChange={(e) => setFormData({ ...formData, banco: e.target.value })}
+                    placeholder="Ej: BCP, BBVA, Interbank..."
+                    data-testid="input-banco-pago"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Número de Cuenta</Label>
+                    <Input
+                      value={formData.numeroCuenta || ""}
+                      onChange={(e) => setFormData({ ...formData, numeroCuenta: e.target.value })}
+                      placeholder="Número de cuenta"
+                      data-testid="input-cuenta-pago"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>CCI (opcional)</Label>
+                    <Input
+                      value={formData.cci || ""}
+                      onChange={(e) => setFormData({ ...formData, cci: e.target.value })}
+                      placeholder="Código interbancario"
+                      data-testid="input-cci-pago"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="space-y-2">
+              <Label>Instrucciones (opcional)</Label>
+              <Textarea
+                value={formData.instrucciones || ""}
+                onChange={(e) => setFormData({ ...formData, instrucciones: e.target.value })}
+                placeholder="Instrucciones adicionales para el cliente..."
+                data-testid="input-instrucciones-pago"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="aceptaBilletera"
+                checked={formData.aceptaBilletera || false}
+                onCheckedChange={(checked) => setFormData({ ...formData, aceptaBilletera: !!checked })}
+                data-testid="checkbox-acepta-billetera"
+              />
+              <Label htmlFor="aceptaBilletera" className="text-sm cursor-pointer">
+                También acepto pagos con billetera virtual de APO-360
+              </Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowModal(false)} data-testid="button-cancelar-forma-pago">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleGuardar}
+              disabled={crearMutation.isPending || actualizarMutation.isPending}
+              data-testid="button-guardar-forma-pago"
+            >
+              {(crearMutation.isPending || actualizarMutation.isPending) ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
 
 function HistorialTab({ miNegocio }: { miNegocio: DatosNegocio | null }) {
@@ -1201,7 +1600,7 @@ export default function LocalComercialPanel() {
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 gap-1">
+          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9 gap-1">
             <TabsTrigger value="negocio" data-testid="tab-datos-negocio" className="text-xs">
               <Store className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Negocio</span>
@@ -1217,6 +1616,10 @@ export default function LocalComercialPanel() {
             <TabsTrigger value="publicidad" data-testid="tab-publicidad" className="text-xs">
               <Megaphone className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Publicidad</span>
+            </TabsTrigger>
+            <TabsTrigger value="pagos" data-testid="tab-pagos" className="text-xs">
+              <CreditCard className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Pagos</span>
             </TabsTrigger>
             <TabsTrigger value="pedidos" data-testid="tab-pedidos" className="text-xs">
               <ShoppingCart className="h-4 w-4 mr-1" />
@@ -2220,6 +2623,11 @@ export default function LocalComercialPanel() {
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          {/* TAB: Formas de Pago */}
+          <TabsContent value="pagos" className="mt-4">
+            <FormasPagoTab miNegocio={miNegocio ?? null} />
           </TabsContent>
 
           {/* TAB: Pedidos */}
