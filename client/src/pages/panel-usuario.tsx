@@ -182,6 +182,11 @@ export default function PanelUsuarioPage() {
     enabled: isAuthenticated,
   });
 
+  const { data: productosFavoritos = [], isLoading: loadingProductosFavoritos } = useQuery<any[]>({
+    queryKey: ["/api/mis-favoritos-productos"],
+    enabled: isAuthenticated,
+  });
+
   const { data: misProductos = [], isLoading: loadingProductos } = useQuery<any[]>({
     queryKey: ["/api/mis-productos"],
     enabled: isAuthenticated,
@@ -344,6 +349,7 @@ export default function PanelUsuarioPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/favoritos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-favoritos-productos"] });
       toast({ title: "Eliminado de favoritos" });
     },
     onError: (error: any) => {
@@ -711,11 +717,11 @@ export default function PanelUsuarioPage() {
               <CardDescription>Contenido que has guardado organizado por categoría</CardDescription>
             </CardHeader>
             <CardContent>
-              {loadingFavoritos ? (
+              {(loadingFavoritos || loadingProductosFavoritos) ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-              ) : favoritos.length === 0 ? (
+              ) : (favoritos.length === 0 && productosFavoritos.length === 0) ? (
                 <div className="text-center py-8">
                   <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="font-medium mb-2">Sin favoritos</h3>
@@ -890,6 +896,58 @@ export default function PanelUsuarioPage() {
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                               {favOtros.map(renderFavoritoCard)}
+                            </div>
+                          </div>
+                        )}
+
+                        {productosFavoritos.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <UtensilsCrossed className="h-5 w-5 text-orange-500" />
+                              <h3 className="font-semibold">Carta Digital - Productos Favoritos ({productosFavoritos.length})</h3>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                              {productosFavoritos.map((producto: any) => (
+                                <Card key={producto.id} className="hover-elevate overflow-hidden" data-testid={`card-producto-favorito-${producto.id}`}>
+                                  <div className="relative h-32 overflow-hidden">
+                                    {producto.imagenUrl ? (
+                                      <img 
+                                        src={producto.imagenUrl} 
+                                        alt={producto.nombre} 
+                                        className="w-full h-full object-cover" 
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full bg-gradient-to-br from-orange-100 to-yellow-100 dark:from-orange-900/30 dark:to-yellow-900/30 flex items-center justify-center">
+                                        <Package className="h-10 w-10 text-muted-foreground/50" />
+                                      </div>
+                                    )}
+                                    {producto.destacado && (
+                                      <Badge className="absolute top-2 left-2 bg-yellow-500 text-white border-0 text-[10px]">
+                                        <Star className="h-3 w-3 mr-1 fill-current" />
+                                        Destacado
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <CardContent className="p-3">
+                                    {producto.codigo && (
+                                      <span className="text-[10px] font-mono text-primary font-semibold bg-primary/10 px-1 rounded">
+                                        {producto.codigo}
+                                      </span>
+                                    )}
+                                    <h3 className="font-medium text-sm line-clamp-2 mt-1">{producto.nombre}</h3>
+                                    <div className="flex items-center justify-between mt-2">
+                                      <span className="font-bold text-primary text-sm">
+                                        S/ {producto.precio || producto.precio1 || "0.00"}
+                                      </span>
+                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <span className="flex items-center gap-0.5">
+                                          <Heart className="h-3 w-3 fill-red-500 text-red-500" /> {producto.likes || 0}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
                             </div>
                           </div>
                         )}

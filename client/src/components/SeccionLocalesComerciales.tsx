@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -20,11 +20,15 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Heart, Bookmark, Share2, Eye, Star, Store, ChevronRight, Clock, Package } from "lucide-react";
+import { Heart, Bookmark, Share2, Eye, Star, Store, ChevronRight, Clock, Package, ShoppingCart, Zap } from "lucide-react";
 import type { ItemCatalogo, CatalogoLocal } from "@shared/schema";
 
 interface CatalogoConItems extends CatalogoLocal {
   items: ItemCatalogo[];
+}
+
+interface ItemCatalogoExtendido extends ItemCatalogo {
+  categoriaNombre?: string;
 }
 
 export default function SeccionLocalesComerciales() {
@@ -117,16 +121,76 @@ export default function SeccionLocalesComerciales() {
     return `S/ ${num.toFixed(2)}`;
   };
 
+  const handleAgregarCarrito = async (item: ItemCatalogo, precioSeleccionado: number = 1, e?: MouseEvent) => {
+    e?.stopPropagation();
+    if (!isAuthenticated) {
+      toast({
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión para agregar productos al carrito",
+      });
+      return;
+    }
+    
+    const preciosValidos = [
+      { precio: item.precio1, etiqueta: item.etiquetaPrecio1 || "Personal", num: 1 },
+      { precio: item.precio2, etiqueta: item.etiquetaPrecio2 || "Mediana", num: 2 },
+      { precio: item.precio3, etiqueta: item.etiquetaPrecio3 || "Familiar", num: 3 },
+      { precio: item.precio4, etiqueta: item.etiquetaPrecio4 || "Extra", num: 4 }
+    ].filter(p => p.precio && parseFloat(String(p.precio)) > 0);
+    
+    const precioInfo = preciosValidos[0] || { precio: item.precio, etiqueta: "Unidad", num: 1 };
+    
+    try {
+      await apiRequest("POST", "/api/carrito", {
+        itemCatalogoId: item.id,
+        tipoProducto: "item_catalogo",
+        cantidad: 1,
+        precioSeleccionado: precioInfo.num,
+        etiquetaPrecio: precioInfo.etiqueta,
+        precioUnitario: precioInfo.precio,
+        catalogoId: item.catalogoId,
+      });
+      toast({
+        title: "Agregado al carrito",
+        description: `${item.nombre} se agregó correctamente`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/carrito"] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar al carrito",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleComprarAhora = async (item: ItemCatalogo, e?: MouseEvent) => {
+    e?.stopPropagation();
+    await handleAgregarCarrito(item, 1, e);
+    toast({
+      title: "Producto agregado",
+      description: "Ve al carrito para completar tu pedido",
+    });
+  };
+
   const ProductoCard = ({ item, tamanio = "normal" }: { item: ItemCatalogo; tamanio?: "normal" | "pequeno" }) => {
     const esGrande = tamanio === "normal";
+    const tieneOferta = item.precioOferta && item.precio && parseFloat(String(item.precioOferta)) < parseFloat(String(item.precio));
+    
+    const preciosValidos = [
+      { precio: item.precio1, etiqueta: item.etiquetaPrecio1 || "Personal" },
+      { precio: item.precio2, etiqueta: item.etiquetaPrecio2 || "Mediana" },
+      { precio: item.precio3, etiqueta: item.etiquetaPrecio3 || "Familiar" },
+      { precio: item.precio4, etiqueta: item.etiquetaPrecio4 || "Extra" }
+    ].filter(p => p.precio && parseFloat(String(p.precio)) > 0);
     
     return (
       <Card 
-        className="hover-elevate active-elevate-2 cursor-pointer overflow-hidden transition-all"
+        className="hover-elevate active-elevate-2 cursor-pointer overflow-hidden transition-all flex flex-col h-full"
         onClick={() => handleVerProducto(item)}
         data-testid={`card-producto-${item.id}`}
       >
-        <div className={`relative ${esGrande ? 'h-48' : 'h-32'}`}>
+        <div className={`relative ${esGrande ? 'h-40' : 'h-28'}`}>
           {item.imagenUrl ? (
             <img
               src={item.imagenUrl}
@@ -135,88 +199,141 @@ export default function SeccionLocalesComerciales() {
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center">
-              <Package className="h-12 w-12 text-muted-foreground/50" />
+              <Package className={`${esGrande ? 'h-10 w-10' : 'h-8 w-8'} text-muted-foreground/50`} />
             </div>
           )}
           
-          {item.destacado && (
-            <Badge className="absolute top-2 left-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
-              <Star className="h-3 w-3 mr-1 fill-current" />
-              Destacado
-            </Badge>
-          )}
-          
-          {item.precioOferta && item.precio && parseFloat(item.precioOferta) < parseFloat(item.precio) && (
-            <Badge className="absolute top-2 right-2 bg-red-500 text-white border-0">
-              Oferta
-            </Badge>
-          )}
+          <div className="absolute top-1.5 left-1.5 right-1.5 flex justify-between items-start pointer-events-none">
+            {item.destacado ? (
+              <div className="bg-yellow-500 text-white px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-md">
+                <Star className="h-3 w-3 fill-current" />
+                <span className="text-[10px] font-semibold">Destacado</span>
+              </div>
+            ) : <div />}
+            
+            {tieneOferta && (
+              <div className="bg-red-500 text-white px-1.5 py-0.5 rounded-md shadow-md">
+                <span className="text-[10px] font-bold">OFERTA</span>
+              </div>
+            )}
+          </div>
         </div>
         
-        <CardContent className={`${esGrande ? 'p-4' : 'p-3'}`}>
-          <h3 className={`font-semibold truncate ${esGrande ? 'text-base' : 'text-sm'}`}>
+        <CardContent className={`${esGrande ? 'p-3' : 'p-2'} flex flex-col flex-1`}>
+          {item.codigo && (
+            <div className="flex items-center gap-1 mb-0.5">
+              <span className="text-[10px] font-mono text-primary font-semibold bg-primary/10 px-1 rounded">
+                {item.codigo}
+              </span>
+              {(item as ItemCatalogoExtendido).categoriaNombre && (
+                <span className="text-[10px] text-muted-foreground truncate">
+                  {(item as ItemCatalogoExtendido).categoriaNombre}
+                </span>
+              )}
+            </div>
+          )}
+          
+          <h3 className={`font-semibold leading-tight ${esGrande ? 'text-sm line-clamp-2 min-h-[2.5rem]' : 'text-xs line-clamp-2 min-h-[2rem]'}`}>
             {item.nombre}
           </h3>
           
-          {esGrande && item.descripcion && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-              {item.descripcion}
-            </p>
-          )}
-          
-          {/* Mostrar precios múltiples si existen valores válidos, sino precio único */}
-          {(() => {
-            const preciosValidos = [
-              { precio: item.precio1, etiqueta: item.etiquetaPrecio1 || "Personal" },
-              { precio: item.precio2, etiqueta: item.etiquetaPrecio2 || "Mediana" },
-              { precio: item.precio3, etiqueta: item.etiquetaPrecio3 || "Familiar" },
-              { precio: item.precio4, etiqueta: item.etiquetaPrecio4 || "Extra" }
-            ].filter(p => p.precio && parseFloat(String(p.precio)) > 0);
-            
-            if (preciosValidos.length > 0) {
-              return (
-                <div className="grid grid-cols-2 gap-1 mt-2 text-xs">
-                  {preciosValidos.map((p, idx) => (
-                    <div key={idx} className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{p.etiqueta}:</span>
-                      <span className="font-bold text-primary">{formatPrecio(p.precio)}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            }
-            return (
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex flex-col">
-                  {item.precioOferta && item.precio && parseFloat(String(item.precioOferta)) < parseFloat(String(item.precio)) ? (
-                    <>
-                      <span className="text-xs text-muted-foreground line-through">
-                        {formatPrecio(item.precio)}
-                      </span>
-                      <span className="font-bold text-green-600">
-                        {formatPrecio(item.precioOferta)}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="font-bold text-primary">
+          <div className={`mt-1.5 flex-1 ${esGrande ? 'space-y-0.5' : ''}`}>
+            {preciosValidos.length > 0 ? (
+              <div className={`grid ${preciosValidos.length > 2 ? 'grid-cols-2' : 'grid-cols-1'} gap-x-2 gap-y-0.5`}>
+                {preciosValidos.slice(0, esGrande ? 4 : 2).map((p, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted-foreground truncate">{p.etiqueta}</span>
+                    <span className="font-bold text-primary ml-1">{formatPrecio(p.precio)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                {tieneOferta ? (
+                  <>
+                    <span className="text-[10px] text-muted-foreground line-through">
                       {formatPrecio(item.precio)}
                     </span>
-                  )}
-                </div>
+                    <span className={`font-bold text-green-600 ${esGrande ? 'text-sm' : 'text-xs'}`}>
+                      {formatPrecio(item.precioOferta)}
+                    </span>
+                  </>
+                ) : (
+                  <span className={`font-bold text-primary ${esGrande ? 'text-sm' : 'text-xs'}`}>
+                    {formatPrecio(item.precio)}
+                  </span>
+                )}
               </div>
-            );
-          })()}
+            )}
+          </div>
           
-          <div className="flex items-center gap-2 text-muted-foreground mt-2">
-            <div className="flex items-center gap-1 text-xs">
-              <Heart className="h-3 w-3" />
-              <span>{item.likes || 0}</span>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleInteraccion(item.id, "like");
+                }}
+                className="flex items-center gap-0.5 text-muted-foreground hover:text-red-500 transition-colors"
+                data-testid={`button-like-${item.id}`}
+              >
+                <Heart className={`h-3.5 w-3.5 ${(item.likes || 0) > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                <span className="text-[10px]">{item.likes || 0}</span>
+              </button>
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleInteraccion(item.id, "favorito");
+                }}
+                className="flex items-center gap-0.5 text-muted-foreground hover:text-yellow-500 transition-colors"
+                data-testid={`button-favorito-${item.id}`}
+              >
+                <Bookmark className={`h-3.5 w-3.5 ${(item.favoritos || 0) > 0 ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                <span className="text-[10px]">{item.favoritos || 0}</span>
+              </button>
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCompartir(item);
+                }}
+                className="text-muted-foreground hover:text-blue-500 transition-colors"
+                data-testid={`button-compartir-${item.id}`}
+              >
+                <Share2 className="h-3.5 w-3.5" />
+              </button>
             </div>
-            <div className="flex items-center gap-1 text-xs">
-              <Eye className="h-3 w-3" />
-              <span>{item.vistas || 0}</span>
+            
+            <div className="flex items-center gap-1">
+              <Eye className="h-3 w-3 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">{item.vistas || 0}</span>
             </div>
           </div>
+          
+          {esGrande && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 h-7 text-xs"
+                onClick={(e) => handleAgregarCarrito(item, 1, e)}
+                data-testid={`button-carrito-${item.id}`}
+              >
+                <ShoppingCart className="h-3 w-3 mr-1" />
+                Carrito
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 h-7 text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0"
+                onClick={(e) => handleComprarAhora(item, e)}
+                data-testid={`button-comprar-${item.id}`}
+              >
+                <Zap className="h-3 w-3 mr-1" />
+                Comprar
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
