@@ -7529,6 +7529,644 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('[Cron] Backup automático programado para las 00:55 AM (hora de Lima)');
 
   // ============================================================
+  // CARTA DIGITAL - Acceso público sin autenticación
+  // ============================================================
+
+  // Obtener carta digital completa de un local (público)
+  app.get('/api/carta-digital/:catalogoId', async (req, res) => {
+    try {
+      const { catalogoId } = req.params;
+      const carta = await storage.getCartaDigital(catalogoId);
+      if (!carta) {
+        return res.status(404).json({ message: "Catálogo no encontrado" });
+      }
+      
+      // Obtener datos del local comercial
+      const catalogo = carta.catalogo;
+      let localComercial = null;
+      if (catalogo.usuarioId) {
+        localComercial = await storage.getUser(catalogo.usuarioId);
+      }
+      
+      res.json({
+        ...carta,
+        localComercial: localComercial ? {
+          id: localComercial.id,
+          nombre: localComercial.nombre || localComercial.nombreCompleto,
+          direccion: localComercial.direccion,
+          telefono: localComercial.telefono,
+          email: localComercial.email,
+          foto: localComercial.foto || localComercial.fotoUrl,
+        } : null,
+      });
+    } catch (error: any) {
+      console.error("Error al obtener carta digital:", error);
+      res.status(500).json({ message: error.message || "Error al obtener carta" });
+    }
+  });
+
+  // Convertir precio entre monedas (público)
+  app.get('/api/conversion-moneda', async (req, res) => {
+    try {
+      const { monto, origen, destino } = req.query;
+      if (!monto || !origen || !destino) {
+        return res.status(400).json({ message: "Parámetros requeridos: monto, origen, destino" });
+      }
+      
+      const resultado = await storage.convertirPrecio(
+        parseFloat(monto as string),
+        origen as string,
+        destino as string
+      );
+      
+      res.json(resultado);
+    } catch (error: any) {
+      console.error("Error en conversión de moneda:", error);
+      res.status(500).json({ message: error.message || "Error en conversión" });
+    }
+  });
+
+  // ============================================================
+  // CARRITO DE COMPRAS - Requiere autenticación
+  // ============================================================
+
+  // Obtener carrito del usuario
+  app.get('/api/carrito', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { catalogoId } = req.query;
+      
+      let items = await storage.getCarritoUsuario(usuarioId);
+      
+      // Filtrar por catálogo si se especifica
+      if (catalogoId) {
+        items = items.filter(item => item.catalogoId === catalogoId);
+      }
+      
+      // Enriquecer con datos del producto
+      const itemsEnriquecidos = await Promise.all(items.map(async (item) => {
+        let producto = null;
+        if (item.tipoProducto === 'item_catalogo' && item.itemCatalogoId) {
+          producto = await storage.getItemCatalogo(item.itemCatalogoId);
+        } else if (item.tipoProducto === 'producto_usuario' && item.productoUsuarioId) {
+          producto = await storage.getProductoUsuario(item.productoUsuarioId);
+        }
+        return { ...item, producto };
+      }));
+      
+      const { total, items: totalItems } = await storage.getTotalCarrito(usuarioId, catalogoId as string | undefined);
+      
+      res.json({ items: itemsEnriquecidos, total, totalItems });
+    } catch (error: any) {
+      console.error("Error al obtener carrito:", error);
+      res.status(500).json({ message: error.message || "Error al obtener carrito" });
+    }
+  });
+
+  // Agregar item al carrito
+  app.post('/api/carrito', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { 
+        itemCatalogoId, 
+        productoUsuarioId, 
+        tipoProducto, 
+        cantidad, 
+        precioSeleccionado, 
+        etiquetaPrecio, 
+        precioUnitario, 
+        catalogoId,
+        notas 
+      } = req.body;
+      
+      if (!tipoProducto || !precioUnitario) {
+        return res.status(400).json({ message: "Datos incompletos" });
+      }
+      
+      const item = await storage.addItemCarrito({
+        usuarioId,
+        itemCatalogoId: itemCatalogoId || null,
+        productoUsuarioId: productoUsuarioId || null,
+        tipoProducto,
+        cantidad: cantidad || 1,
+        precioSeleccionado: precioSeleccionado || 1,
+        etiquetaPrecio: etiquetaPrecio || null,
+        precioUnitario: precioUnitario.toString(),
+        monedaOriginal: 'PEN',
+        catalogoId: catalogoId || null,
+        notas: notas || null,
+      });
+      
+      res.status(201).json(item);
+    } catch (error: any) {
+      console.error("Error al agregar al carrito:", error);
+      res.status(500).json({ message: error.message || "Error al agregar al carrito" });
+    }
+  });
+
+  // Actualizar cantidad de item en carrito
+  app.patch('/api/carrito/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      const { cantidad, notas } = req.body;
+      
+      const item = await storage.getItemCarrito(id);
+      if (!item || item.usuarioId !== usuarioId) {
+        return res.status(404).json({ message: "Item no encontrado" });
+      }
+      
+      if (cantidad <= 0) {
+        await storage.deleteItemCarrito(id);
+        return res.json({ message: "Item eliminado" });
+      }
+      
+      const actualizado = await storage.updateItemCarrito(id, { cantidad, notas });
+      res.json(actualizado);
+    } catch (error: any) {
+      console.error("Error al actualizar carrito:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar carrito" });
+    }
+  });
+
+  // Eliminar item del carrito
+  app.delete('/api/carrito/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const item = await storage.getItemCarrito(id);
+      if (!item || item.usuarioId !== usuarioId) {
+        return res.status(404).json({ message: "Item no encontrado" });
+      }
+      
+      await storage.deleteItemCarrito(id);
+      res.json({ message: "Item eliminado" });
+    } catch (error: any) {
+      console.error("Error al eliminar del carrito:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar del carrito" });
+    }
+  });
+
+  // Limpiar carrito completo
+  app.delete('/api/carrito', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { catalogoId } = req.query;
+      
+      await storage.limpiarCarritoUsuario(usuarioId, catalogoId as string | undefined);
+      res.json({ message: "Carrito limpiado" });
+    } catch (error: any) {
+      console.error("Error al limpiar carrito:", error);
+      res.status(500).json({ message: error.message || "Error al limpiar carrito" });
+    }
+  });
+
+  // ============================================================
+  // PEDIDOS - Sistema de órdenes
+  // ============================================================
+
+  // Obtener pedidos del usuario
+  app.get('/api/mis-pedidos', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { estado } = req.query;
+      
+      const pedidosLista = await storage.getPedidosUsuario(usuarioId, estado as string | undefined);
+      
+      // Enriquecer con items y datos del local
+      const pedidosEnriquecidos = await Promise.all(pedidosLista.map(async (pedido) => {
+        const items = await storage.getItemsPedido(pedido.id);
+        const historial = await storage.getHistorialPedido(pedido.id);
+        let localComercial = null;
+        if (pedido.localComercialId) {
+          const local = await storage.getUser(pedido.localComercialId);
+          if (local) {
+            localComercial = {
+              id: local.id,
+              nombre: local.nombre || local.nombreCompleto,
+              telefono: local.telefono,
+              foto: local.foto || local.fotoUrl,
+            };
+          }
+        }
+        return { ...pedido, items, historial, localComercial };
+      }));
+      
+      res.json(pedidosEnriquecidos);
+    } catch (error: any) {
+      console.error("Error al obtener pedidos:", error);
+      res.status(500).json({ message: error.message || "Error al obtener pedidos" });
+    }
+  });
+
+  // Obtener detalle de un pedido
+  app.get('/api/mis-pedidos/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const pedido = await storage.getPedido(id);
+      if (!pedido) {
+        return res.status(404).json({ message: "Pedido no encontrado" });
+      }
+      
+      // Verificar que el pedido pertenece al usuario o es el local
+      if (pedido.usuarioId !== usuarioId && pedido.localComercialId !== usuarioId) {
+        return res.status(403).json({ message: "No autorizado" });
+      }
+      
+      const items = await storage.getItemsPedido(id);
+      const historial = await storage.getHistorialPedido(id);
+      const solicitudDelivery = await storage.getSolicitudDeliveryPorPedido(id);
+      
+      let localComercial = null;
+      if (pedido.localComercialId) {
+        const local = await storage.getUser(pedido.localComercialId);
+        if (local) {
+          localComercial = {
+            id: local.id,
+            nombre: local.nombre || local.nombreCompleto,
+            direccion: local.direccion,
+            telefono: local.telefono,
+            foto: local.foto || local.fotoUrl,
+          };
+        }
+      }
+      
+      res.json({ ...pedido, items, historial, solicitudDelivery, localComercial });
+    } catch (error: any) {
+      console.error("Error al obtener pedido:", error);
+      res.status(500).json({ message: error.message || "Error al obtener pedido" });
+    }
+  });
+
+  // Crear pedido desde carrito
+  app.post('/api/pedidos', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { 
+        catalogoId, 
+        tipoEntrega, 
+        direccionEntrega, 
+        latitudEntrega, 
+        longitudEntrega,
+        referenciaEntrega,
+        metodoPago,
+        notasCliente,
+        moneda = 'PEN',
+      } = req.body;
+      
+      // Obtener items del carrito para este catálogo
+      let itemsCarrito = await storage.getCarritoUsuario(usuarioId);
+      if (catalogoId) {
+        itemsCarrito = itemsCarrito.filter(item => item.catalogoId === catalogoId);
+      }
+      
+      if (itemsCarrito.length === 0) {
+        return res.status(400).json({ message: "Carrito vacío" });
+      }
+      
+      // Calcular subtotal
+      const subtotal = itemsCarrito.reduce((sum, item) => {
+        return sum + (parseFloat(item.precioUnitario) * item.cantidad);
+      }, 0);
+      
+      // Obtener catálogo para saber el local comercial
+      const catalogo = catalogoId ? await storage.getCatalogoLocal(catalogoId) : null;
+      const localComercialId = catalogo?.usuarioId || null;
+      
+      // Validar saldo si paga con billetera
+      if (metodoPago === 'billetera') {
+        const saldo = await storage.getSaldoUsuario(usuarioId);
+        const saldoActual = saldo ? parseFloat(saldo.saldo) : 0;
+        if (saldoActual < subtotal) {
+          return res.status(400).json({ 
+            message: `Saldo insuficiente. Necesita S/ ${subtotal.toFixed(2)}, tiene S/ ${saldoActual.toFixed(2)}` 
+          });
+        }
+      }
+      
+      // Crear pedido
+      const pedido = await storage.createPedido({
+        usuarioId,
+        catalogoId: catalogoId || null,
+        localComercialId,
+        subtotal: subtotal.toString(),
+        costoDelivery: "0",
+        descuento: "0",
+        total: subtotal.toString(),
+        moneda,
+        tipoEntrega: tipoEntrega || 'recoger',
+        direccionEntrega: direccionEntrega || null,
+        latitudEntrega: latitudEntrega || null,
+        longitudEntrega: longitudEntrega || null,
+        referenciaEntrega: referenciaEntrega || null,
+        estado: 'pendiente',
+        metodoPago: metodoPago || 'billetera',
+        estadoPago: 'pendiente',
+        notasCliente: notasCliente || null,
+      });
+      
+      // Agregar items al pedido
+      for (const itemCarrito of itemsCarrito) {
+        let nombreProducto = 'Producto';
+        let descripcionProducto = null;
+        let imagenProducto = null;
+        
+        if (itemCarrito.tipoProducto === 'item_catalogo' && itemCarrito.itemCatalogoId) {
+          const producto = await storage.getItemCatalogo(itemCarrito.itemCatalogoId);
+          if (producto) {
+            nombreProducto = producto.nombre;
+            descripcionProducto = producto.descripcion;
+            imagenProducto = producto.imagenUrl;
+          }
+        } else if (itemCarrito.tipoProducto === 'producto_usuario' && itemCarrito.productoUsuarioId) {
+          const producto = await storage.getProductoUsuario(itemCarrito.productoUsuarioId);
+          if (producto) {
+            nombreProducto = producto.nombre;
+            descripcionProducto = producto.descripcion;
+            imagenProducto = producto.imagenUrl;
+          }
+        }
+        
+        await storage.addItemPedido({
+          pedidoId: pedido.id,
+          itemCatalogoId: itemCarrito.itemCatalogoId,
+          productoUsuarioId: itemCarrito.productoUsuarioId,
+          tipoProducto: itemCarrito.tipoProducto,
+          nombreProducto,
+          descripcionProducto,
+          imagenProducto,
+          precioSeleccionado: itemCarrito.precioSeleccionado,
+          etiquetaPrecio: itemCarrito.etiquetaPrecio,
+          precioUnitario: itemCarrito.precioUnitario,
+          cantidad: itemCarrito.cantidad,
+          subtotal: (parseFloat(itemCarrito.precioUnitario) * itemCarrito.cantidad).toString(),
+          notas: itemCarrito.notas,
+        });
+      }
+      
+      // Limpiar carrito
+      await storage.limpiarCarritoUsuario(usuarioId, catalogoId);
+      
+      // Notificar al local comercial via WebSocket
+      if (localComercialId) {
+        notificarSuperAdmins(`nuevo_pedido:${localComercialId}`, { pedidoId: pedido.id });
+      }
+      
+      res.status(201).json(pedido);
+    } catch (error: any) {
+      console.error("Error al crear pedido:", error);
+      res.status(500).json({ message: error.message || "Error al crear pedido" });
+    }
+  });
+
+  // Cambiar estado del pedido (para locales comerciales)
+  app.patch('/api/pedidos/:id/estado', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      const { estado, descripcion, motivoCancelacion } = req.body;
+      
+      const pedido = await storage.getPedido(id);
+      if (!pedido) {
+        return res.status(404).json({ message: "Pedido no encontrado" });
+      }
+      
+      // Determinar tipo de usuario y verificar permisos
+      let tipoUsuario = 'cliente';
+      if (pedido.localComercialId === usuarioId) {
+        tipoUsuario = 'local';
+      } else if (pedido.deliveryId === usuarioId) {
+        tipoUsuario = 'delivery';
+      } else if (pedido.usuarioId !== usuarioId) {
+        return res.status(403).json({ message: "No autorizado" });
+      }
+      
+      // Validar transiciones de estado permitidas
+      const transicionesPermitidas: Record<string, string[]> = {
+        'pendiente': ['aceptado', 'cancelado'],
+        'aceptado': ['preparando', 'cancelado'],
+        'preparando': ['listo', 'cancelado'],
+        'listo': ['en_camino', 'entregado'],
+        'en_camino': ['entregado'],
+        'entregado': ['confirmado'],
+      };
+      
+      if (!transicionesPermitidas[pedido.estado!]?.includes(estado)) {
+        return res.status(400).json({ 
+          message: `No se puede cambiar de ${pedido.estado} a ${estado}` 
+        });
+      }
+      
+      // Actualizar datos adicionales si es cancelación
+      if (estado === 'cancelado' && motivoCancelacion) {
+        await storage.updatePedido(id, { 
+          motivoCancelacion, 
+          canceladoPor: tipoUsuario 
+        });
+      }
+      
+      const actualizado = await storage.cambiarEstadoPedido(id, estado, usuarioId, tipoUsuario, descripcion);
+      
+      // Notificar cambio de estado via WebSocket
+      notificarSuperAdmins(`pedido_estado:${pedido.usuarioId}`, { pedidoId: id, estado });
+      if (pedido.localComercialId && pedido.localComercialId !== usuarioId) {
+        notificarSuperAdmins(`pedido_estado:${pedido.localComercialId}`, { pedidoId: id, estado });
+      }
+      
+      res.json(actualizado);
+    } catch (error: any) {
+      console.error("Error al cambiar estado:", error);
+      res.status(500).json({ message: error.message || "Error al cambiar estado" });
+    }
+  });
+
+  // Cola de pedidos para local comercial
+  app.get('/api/local/cola-pedidos', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      
+      const cola = await storage.getColaPedidosLocal(usuarioId);
+      
+      // Enriquecer con items
+      const colaEnriquecida = await Promise.all(cola.map(async (pedido) => {
+        const items = await storage.getItemsPedido(pedido.id);
+        let cliente = null;
+        const user = await storage.getUser(pedido.usuarioId);
+        if (user) {
+          cliente = {
+            id: user.id,
+            nombre: user.nombre || user.nombreCompleto,
+            telefono: user.telefono,
+          };
+        }
+        return { ...pedido, items, cliente };
+      }));
+      
+      res.json(colaEnriquecida);
+    } catch (error: any) {
+      console.error("Error al obtener cola:", error);
+      res.status(500).json({ message: error.message || "Error al obtener cola" });
+    }
+  });
+
+  // ============================================================
+  // SOLICITUDES DE DELIVERY
+  // ============================================================
+
+  // Crear solicitud de delivery para un pedido
+  app.post('/api/pedidos/:pedidoId/delivery', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { pedidoId } = req.params;
+      const { tipoVehiculo } = req.body;
+      
+      const pedido = await storage.getPedido(pedidoId);
+      if (!pedido) {
+        return res.status(404).json({ message: "Pedido no encontrado" });
+      }
+      
+      // Verificar permisos (usuario o local)
+      if (pedido.usuarioId !== usuarioId && pedido.localComercialId !== usuarioId) {
+        return res.status(403).json({ message: "No autorizado" });
+      }
+      
+      // Verificar que no exista solicitud activa
+      const solicitudExistente = await storage.getSolicitudDeliveryPorPedido(pedidoId);
+      if (solicitudExistente && solicitudExistente.estado !== 'cancelado') {
+        return res.status(400).json({ message: "Ya existe una solicitud de delivery activa" });
+      }
+      
+      // Obtener datos del local
+      let direccionOrigen = null;
+      let latitudOrigen = null;
+      let longitudOrigen = null;
+      
+      if (pedido.localComercialId) {
+        const local = await storage.getUser(pedido.localComercialId);
+        if (local) {
+          direccionOrigen = local.direccion;
+        }
+      }
+      
+      const solicitud = await storage.createSolicitudDelivery({
+        pedidoId,
+        localComercialId: pedido.localComercialId,
+        latitudOrigen,
+        longitudOrigen,
+        direccionOrigen,
+        latitudDestino: pedido.latitudEntrega,
+        longitudDestino: pedido.longitudEntrega,
+        direccionDestino: pedido.direccionEntrega,
+        tipoVehiculo: tipoVehiculo || 'moto',
+        estado: 'pendiente',
+      });
+      
+      // Notificar a conductores disponibles
+      notificarSuperAdmins('nueva_solicitud_delivery', { solicitudId: solicitud.id });
+      
+      res.status(201).json(solicitud);
+    } catch (error: any) {
+      console.error("Error al crear solicitud delivery:", error);
+      res.status(500).json({ message: error.message || "Error al crear solicitud" });
+    }
+  });
+
+  // Obtener solicitudes de delivery pendientes (para conductores)
+  app.get('/api/delivery/solicitudes', isAuthenticated, async (req: any, res) => {
+    try {
+      const { estado } = req.query;
+      const solicitudes = await storage.getSolicitudesDelivery(estado as string | undefined);
+      res.json(solicitudes);
+    } catch (error: any) {
+      console.error("Error al obtener solicitudes:", error);
+      res.status(500).json({ message: error.message || "Error al obtener solicitudes" });
+    }
+  });
+
+  // Aceptar solicitud de delivery (conductor)
+  app.post('/api/delivery/solicitudes/:id/aceptar', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const solicitud = await storage.getSolicitudDelivery(id);
+      if (!solicitud) {
+        return res.status(404).json({ message: "Solicitud no encontrada" });
+      }
+      
+      if (solicitud.estado !== 'pendiente') {
+        return res.status(400).json({ message: "Solicitud ya no está disponible" });
+      }
+      
+      // Obtener datos del conductor
+      const conductor = await storage.getUser(usuarioId);
+      
+      const actualizado = await storage.asignarDelivery(id, usuarioId, {
+        nombre: conductor?.nombre || conductor?.nombreCompleto || 'Conductor',
+        telefono: conductor?.telefono,
+        vehiculo: '', // Se puede obtener de credenciales_conductor
+        placa: '',
+      });
+      
+      // Actualizar pedido con el delivery asignado
+      if (solicitud.pedidoId) {
+        await storage.updatePedido(solicitud.pedidoId, { 
+          deliveryId: usuarioId,
+          deliveryTipo: solicitud.tipoVehiculo,
+        });
+      }
+      
+      // Notificar al cliente y local
+      const pedido = await storage.getPedido(solicitud.pedidoId);
+      if (pedido) {
+        notificarSuperAdmins(`delivery_asignado:${pedido.usuarioId}`, { solicitudId: id });
+        if (pedido.localComercialId) {
+          notificarSuperAdmins(`delivery_asignado:${pedido.localComercialId}`, { solicitudId: id });
+        }
+      }
+      
+      res.json(actualizado);
+    } catch (error: any) {
+      console.error("Error al aceptar solicitud:", error);
+      res.status(500).json({ message: error.message || "Error al aceptar solicitud" });
+    }
+  });
+
+  // Actualizar ubicación del delivery
+  app.patch('/api/delivery/solicitudes/:id/ubicacion', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      const { latitud, longitud } = req.body;
+      
+      const solicitud = await storage.getSolicitudDelivery(id);
+      if (!solicitud || solicitud.deliveryId !== usuarioId) {
+        return res.status(403).json({ message: "No autorizado" });
+      }
+      
+      const actualizado = await storage.actualizarUbicacionDelivery(id, latitud, longitud);
+      
+      // Notificar ubicación en tiempo real
+      const pedido = await storage.getPedido(solicitud.pedidoId);
+      if (pedido) {
+        notificarSuperAdmins(`ubicacion_delivery:${pedido.usuarioId}`, { 
+          solicitudId: id, 
+          latitud, 
+          longitud 
+        });
+      }
+      
+      res.json(actualizado);
+    } catch (error: any) {
+      console.error("Error al actualizar ubicación:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar ubicación" });
+    }
+  });
+
+  // ============================================================
   // CONFIGURACIÓN DE WEBSOCKET
   // ============================================================
 

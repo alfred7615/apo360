@@ -1852,3 +1852,227 @@ export const widgetsEmbebibles = pgTable("widgets_embebibles", {
 export const insertWidgetEmbebibleSchema = createInsertSchema(widgetsEmbebibles).omit({ id: true, createdAt: true, updatedAt: true, totalVisualizaciones: true, totalClicks: true });
 export type InsertWidgetEmbebible = z.infer<typeof insertWidgetEmbebibleSchema>;
 export type WidgetEmbebible = typeof widgetsEmbebibles.$inferSelect;
+
+// ============================================================
+// CARRITO DE COMPRAS - Items temporales antes del pedido
+// ============================================================
+export const carritoCompras = pgTable("carrito_compras", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  itemCatalogoId: varchar("item_catalogo_id").references(() => itemsCatalogo.id),
+  productoUsuarioId: varchar("producto_usuario_id").references(() => productosUsuario.id),
+  tipoProducto: varchar("tipo_producto", { length: 50 }).notNull(), // 'item_catalogo', 'producto_usuario'
+  cantidad: integer("cantidad").default(1).notNull(),
+  precioSeleccionado: integer("precio_seleccionado").default(1), // 1, 2, 3, 4 (qué precio se seleccionó)
+  etiquetaPrecio: varchar("etiqueta_precio", { length: 50 }),
+  precioUnitario: decimal("precio_unitario", { precision: 10, scale: 2 }).notNull(),
+  monedaOriginal: varchar("moneda_original", { length: 10 }).default("PEN"),
+  catalogoId: varchar("catalogo_id").references(() => catalogosLocales.id),
+  notas: text("notas"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCarritoComprasSchema = createInsertSchema(carritoCompras).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCarritoCompras = z.infer<typeof insertCarritoComprasSchema>;
+export type CarritoCompras = typeof carritoCompras.$inferSelect;
+
+// ============================================================
+// PEDIDOS - Registro de pedidos realizados
+// ============================================================
+export const pedidos = pgTable("pedidos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  numeroPedido: serial("numero_pedido").notNull(), // Auto-incrementable para referencia
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  catalogoId: varchar("catalogo_id").references(() => catalogosLocales.id),
+  localComercialId: varchar("local_comercial_id").references(() => usuarios.id), // Dueño del local
+  // Totales y moneda
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  costoDelivery: decimal("costo_delivery", { precision: 10, scale: 2 }).default("0"),
+  descuento: decimal("descuento", { precision: 10, scale: 2 }).default("0"),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  moneda: varchar("moneda", { length: 10 }).default("PEN"),
+  tasaCambioUsada: decimal("tasa_cambio_usada", { precision: 10, scale: 4 }),
+  // Tipo de entrega
+  tipoEntrega: varchar("tipo_entrega", { length: 50 }).default("recoger"), // 'recoger', 'delivery'
+  direccionEntrega: text("direccion_entrega"),
+  latitudEntrega: decimal("latitud_entrega", { precision: 10, scale: 8 }),
+  longitudEntrega: decimal("longitud_entrega", { precision: 11, scale: 8 }),
+  referenciaEntrega: text("referencia_entrega"),
+  // Estado del pedido (7 estados)
+  estado: varchar("estado", { length: 50 }).default("pendiente"), // 'pendiente', 'aceptado', 'preparando', 'listo', 'en_camino', 'entregado', 'confirmado'
+  estadoAnterior: varchar("estado_anterior", { length: 50 }),
+  // Pago
+  metodoPago: varchar("metodo_pago", { length: 50 }).default("billetera"), // 'billetera', 'efectivo', 'yape', 'plin'
+  estadoPago: varchar("estado_pago", { length: 50 }).default("pendiente"), // 'pendiente', 'pagado', 'reembolsado'
+  transaccionBilleteraId: varchar("transaccion_billetera_id"),
+  // Notas y comunicación
+  notasCliente: text("notas_cliente"),
+  notasLocal: text("notas_local"),
+  // Tiempos
+  tiempoEstimadoPreparacion: integer("tiempo_estimado_preparacion"), // minutos
+  horaEstimadaEntrega: timestamp("hora_estimada_entrega"),
+  // Fechas de estados
+  fechaAceptado: timestamp("fecha_aceptado"),
+  fechaPreparando: timestamp("fecha_preparando"),
+  fechaListo: timestamp("fecha_listo"),
+  fechaEnCamino: timestamp("fecha_en_camino"),
+  fechaEntregado: timestamp("fecha_entregado"),
+  fechaConfirmado: timestamp("fecha_confirmado"),
+  fechaCancelado: timestamp("fecha_cancelado"),
+  motivoCancelacion: text("motivo_cancelacion"),
+  canceladoPor: varchar("cancelado_por", { length: 50 }), // 'usuario', 'local', 'sistema'
+  // Delivery asignado
+  deliveryId: varchar("delivery_id").references(() => usuarios.id),
+  deliveryTipo: varchar("delivery_tipo", { length: 50 }), // 'taxi', 'moto'
+  // Calificación
+  calificacionLocal: integer("calificacion_local"),
+  comentarioLocal: text("comentario_local"),
+  calificacionDelivery: integer("calificacion_delivery"),
+  comentarioDelivery: text("comentario_delivery"),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertPedidoSchema = createInsertSchema(pedidos).omit({ id: true, numeroPedido: true, createdAt: true, updatedAt: true });
+export type InsertPedido = z.infer<typeof insertPedidoSchema>;
+export type Pedido = typeof pedidos.$inferSelect;
+
+// ============================================================
+// ITEMS DE PEDIDO - Productos incluidos en cada pedido
+// ============================================================
+export const itemsPedido = pgTable("items_pedido", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pedidoId: varchar("pedido_id").notNull().references(() => pedidos.id, { onDelete: "cascade" }),
+  itemCatalogoId: varchar("item_catalogo_id").references(() => itemsCatalogo.id),
+  productoUsuarioId: varchar("producto_usuario_id").references(() => productosUsuario.id),
+  tipoProducto: varchar("tipo_producto", { length: 50 }).notNull(),
+  // Datos del producto al momento del pedido (snapshot)
+  nombreProducto: varchar("nombre_producto", { length: 200 }).notNull(),
+  descripcionProducto: text("descripcion_producto"),
+  imagenProducto: varchar("imagen_producto"),
+  // Precio y cantidad
+  precioSeleccionado: integer("precio_seleccionado").default(1), // 1, 2, 3, 4
+  etiquetaPrecio: varchar("etiqueta_precio", { length: 50 }),
+  precioUnitario: decimal("precio_unitario", { precision: 10, scale: 2 }).notNull(),
+  cantidad: integer("cantidad").default(1).notNull(),
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  // Notas específicas del item
+  notas: text("notas"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertItemPedidoSchema = createInsertSchema(itemsPedido).omit({ id: true, createdAt: true });
+export type InsertItemPedido = z.infer<typeof insertItemPedidoSchema>;
+export type ItemPedido = typeof itemsPedido.$inferSelect;
+
+// ============================================================
+// HISTORIAL DE ESTADOS DEL PEDIDO - Timeline de cambios
+// ============================================================
+export const historialEstadosPedido = pgTable("historial_estados_pedido", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pedidoId: varchar("pedido_id").notNull().references(() => pedidos.id, { onDelete: "cascade" }),
+  estadoAnterior: varchar("estado_anterior", { length: 50 }),
+  estadoNuevo: varchar("estado_nuevo", { length: 50 }).notNull(),
+  descripcion: text("descripcion"),
+  usuarioId: varchar("usuario_id").references(() => usuarios.id), // Quién hizo el cambio
+  tipoUsuario: varchar("tipo_usuario", { length: 50 }), // 'cliente', 'local', 'delivery', 'sistema'
+  metadata: text("metadata"), // JSON con datos adicionales
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertHistorialEstadoPedidoSchema = createInsertSchema(historialEstadosPedido).omit({ id: true, createdAt: true });
+export type InsertHistorialEstadoPedido = z.infer<typeof insertHistorialEstadoPedidoSchema>;
+export type HistorialEstadoPedido = typeof historialEstadosPedido.$inferSelect;
+
+// ============================================================
+// SOLICITUDES DE DELIVERY - Asignación de repartidores
+// ============================================================
+export const solicitudesDelivery = pgTable("solicitudes_delivery", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pedidoId: varchar("pedido_id").notNull().references(() => pedidos.id),
+  localComercialId: varchar("local_comercial_id").references(() => usuarios.id),
+  // Ubicaciones
+  latitudOrigen: decimal("latitud_origen", { precision: 10, scale: 8 }),
+  longitudOrigen: decimal("longitud_origen", { precision: 11, scale: 8 }),
+  direccionOrigen: text("direccion_origen"),
+  latitudDestino: decimal("latitud_destino", { precision: 10, scale: 8 }),
+  longitudDestino: decimal("longitud_destino", { precision: 11, scale: 8 }),
+  direccionDestino: text("direccion_destino"),
+  // Tipo de vehículo solicitado
+  tipoVehiculo: varchar("tipo_vehiculo", { length: 50 }).default("moto"), // 'moto', 'taxi', 'bicicleta'
+  // Estado
+  estado: varchar("estado", { length: 50 }).default("pendiente"), // 'pendiente', 'asignado', 'en_camino_recojo', 'recogido', 'en_camino_entrega', 'entregado', 'cancelado'
+  // Delivery asignado
+  deliveryId: varchar("delivery_id").references(() => usuarios.id),
+  nombreDelivery: varchar("nombre_delivery", { length: 200 }),
+  telefonoDelivery: varchar("telefono_delivery", { length: 20 }),
+  vehiculoDelivery: varchar("vehiculo_delivery", { length: 100 }),
+  placaDelivery: varchar("placa_delivery", { length: 20 }),
+  // Tracking en tiempo real
+  latitudActual: decimal("latitud_actual", { precision: 10, scale: 8 }),
+  longitudActual: decimal("longitud_actual", { precision: 11, scale: 8 }),
+  ultimaActualizacionUbicacion: timestamp("ultima_actualizacion_ubicacion"),
+  // Costos
+  costoEstimado: decimal("costo_estimado", { precision: 10, scale: 2 }),
+  costoFinal: decimal("costo_final", { precision: 10, scale: 2 }),
+  distanciaKm: decimal("distancia_km", { precision: 10, scale: 2 }),
+  // Tiempos
+  tiempoEstimadoMinutos: integer("tiempo_estimado_minutos"),
+  fechaAsignado: timestamp("fecha_asignado"),
+  fechaRecogido: timestamp("fecha_recogido"),
+  fechaEntregado: timestamp("fecha_entregado"),
+  fechaCancelado: timestamp("fecha_cancelado"),
+  motivoCancelacion: text("motivo_cancelacion"),
+  // Confirmaciones
+  codigoConfirmacionRecojo: varchar("codigo_confirmacion_recojo", { length: 10 }),
+  codigoConfirmacionEntrega: varchar("codigo_confirmacion_entrega", { length: 10 }),
+  fotoRecojo: varchar("foto_recojo"),
+  fotoEntrega: varchar("foto_entrega"),
+  firmaEntrega: text("firma_entrega"), // Base64 de la firma
+  // Calificación
+  calificacionDelivery: integer("calificacion_delivery"),
+  comentarioDelivery: text("comentario_delivery"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSolicitudDeliverySchema = createInsertSchema(solicitudesDelivery).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSolicitudDelivery = z.infer<typeof insertSolicitudDeliverySchema>;
+export type SolicitudDelivery = typeof solicitudesDelivery.$inferSelect;
+
+// ============================================================
+// TRANSACCIONES DE PEDIDOS - Pagos y movimientos de billetera
+// ============================================================
+export const transaccionesPedidos = pgTable("transacciones_pedidos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pedidoId: varchar("pedido_id").notNull().references(() => pedidos.id),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  localComercialId: varchar("local_comercial_id").references(() => usuarios.id),
+  deliveryId: varchar("delivery_id").references(() => usuarios.id),
+  // Tipo de transacción
+  tipo: varchar("tipo", { length: 50 }).notNull(), // 'pago_pedido', 'comision_plataforma', 'pago_local', 'pago_delivery', 'reembolso'
+  // Montos
+  monto: decimal("monto", { precision: 10, scale: 2 }).notNull(),
+  moneda: varchar("moneda", { length: 10 }).default("PEN"),
+  // Comisiones
+  comisionPlataforma: decimal("comision_plataforma", { precision: 10, scale: 2 }).default("0"),
+  porcentajeComision: decimal("porcentaje_comision", { precision: 5, scale: 2 }).default("0"),
+  // Billetera
+  billeteraOrigenId: varchar("billetera_origen_id"),
+  billeteraDestinoId: varchar("billetera_destino_id"),
+  saldoAnteriorOrigen: decimal("saldo_anterior_origen", { precision: 10, scale: 2 }),
+  saldoNuevoOrigen: decimal("saldo_nuevo_origen", { precision: 10, scale: 2 }),
+  saldoAnteriorDestino: decimal("saldo_anterior_destino", { precision: 10, scale: 2 }),
+  saldoNuevoDestino: decimal("saldo_nuevo_destino", { precision: 10, scale: 2 }),
+  // Estado
+  estado: varchar("estado", { length: 50 }).default("completado"), // 'pendiente', 'completado', 'fallido', 'revertido'
+  descripcion: text("descripcion"),
+  referencia: varchar("referencia", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertTransaccionPedidoSchema = createInsertSchema(transaccionesPedidos).omit({ id: true, createdAt: true });
+export type InsertTransaccionPedido = z.infer<typeof insertTransaccionPedidoSchema>;
+export type TransaccionPedido = typeof transaccionesPedidos.$inferSelect;

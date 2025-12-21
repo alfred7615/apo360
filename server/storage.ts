@@ -191,6 +191,24 @@ import {
   type InsertFavoritoProducto,
   type InteraccionProducto,
   type InsertInteraccionProducto,
+  carritoCompras,
+  pedidos,
+  itemsPedido,
+  historialEstadosPedido,
+  solicitudesDelivery,
+  transaccionesPedidos,
+  type CarritoCompras,
+  type InsertCarritoCompras,
+  type Pedido,
+  type InsertPedido,
+  type ItemPedido,
+  type InsertItemPedido,
+  type HistorialEstadoPedido,
+  type InsertHistorialEstadoPedido,
+  type SolicitudDelivery,
+  type InsertSolicitudDelivery,
+  type TransaccionPedido,
+  type InsertTransaccionPedido,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
@@ -4198,6 +4216,366 @@ export class DatabaseStorage implements IStorage {
       puedeCrear: false,
       mensaje: `Saldo insuficiente. Necesita S/ ${costoBase.toFixed(2)}, tiene S/ ${saldoActual.toFixed(2)}`
     };
+  }
+
+  // ============================================================
+  // CARRITO DE COMPRAS
+  // ============================================================
+  async getCarritoUsuario(usuarioId: string): Promise<CarritoCompras[]> {
+    return await db.select().from(carritoCompras)
+      .where(eq(carritoCompras.usuarioId, usuarioId))
+      .orderBy(desc(carritoCompras.createdAt));
+  }
+
+  async getItemCarrito(id: string): Promise<CarritoCompras | undefined> {
+    const [item] = await db.select().from(carritoCompras).where(eq(carritoCompras.id, id));
+    return item;
+  }
+
+  async addItemCarrito(data: InsertCarritoCompras): Promise<CarritoCompras> {
+    const [item] = await db.insert(carritoCompras).values(data).returning();
+    return item;
+  }
+
+  async updateItemCarrito(id: string, data: Partial<InsertCarritoCompras>): Promise<CarritoCompras | undefined> {
+    const [actualizado] = await db.update(carritoCompras)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(carritoCompras.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async deleteItemCarrito(id: string): Promise<void> {
+    await db.delete(carritoCompras).where(eq(carritoCompras.id, id));
+  }
+
+  async limpiarCarritoUsuario(usuarioId: string, catalogoId?: string): Promise<void> {
+    if (catalogoId) {
+      await db.delete(carritoCompras).where(
+        and(eq(carritoCompras.usuarioId, usuarioId), eq(carritoCompras.catalogoId, catalogoId))
+      );
+    } else {
+      await db.delete(carritoCompras).where(eq(carritoCompras.usuarioId, usuarioId));
+    }
+  }
+
+  async getTotalCarrito(usuarioId: string, catalogoId?: string): Promise<{ total: number; items: number }> {
+    let items: CarritoCompras[];
+    if (catalogoId) {
+      items = await db.select().from(carritoCompras)
+        .where(and(eq(carritoCompras.usuarioId, usuarioId), eq(carritoCompras.catalogoId, catalogoId)));
+    } else {
+      items = await db.select().from(carritoCompras)
+        .where(eq(carritoCompras.usuarioId, usuarioId));
+    }
+    
+    const total = items.reduce((sum, item) => {
+      return sum + (parseFloat(item.precioUnitario) * item.cantidad);
+    }, 0);
+    
+    return { total, items: items.length };
+  }
+
+  // ============================================================
+  // PEDIDOS
+  // ============================================================
+  async getPedidosUsuario(usuarioId: string, estado?: string): Promise<Pedido[]> {
+    if (estado) {
+      return await db.select().from(pedidos)
+        .where(and(eq(pedidos.usuarioId, usuarioId), eq(pedidos.estado, estado)))
+        .orderBy(desc(pedidos.createdAt));
+    }
+    return await db.select().from(pedidos)
+      .where(eq(pedidos.usuarioId, usuarioId))
+      .orderBy(desc(pedidos.createdAt));
+  }
+
+  async getPedidosLocal(localComercialId: string, estado?: string): Promise<Pedido[]> {
+    if (estado) {
+      return await db.select().from(pedidos)
+        .where(and(eq(pedidos.localComercialId, localComercialId), eq(pedidos.estado, estado)))
+        .orderBy(desc(pedidos.createdAt));
+    }
+    return await db.select().from(pedidos)
+      .where(eq(pedidos.localComercialId, localComercialId))
+      .orderBy(desc(pedidos.createdAt));
+  }
+
+  async getPedido(id: string): Promise<Pedido | undefined> {
+    const [pedido] = await db.select().from(pedidos).where(eq(pedidos.id, id));
+    return pedido;
+  }
+
+  async createPedido(data: InsertPedido): Promise<Pedido> {
+    const [pedido] = await db.insert(pedidos).values(data).returning();
+    return pedido;
+  }
+
+  async updatePedido(id: string, data: Partial<InsertPedido>): Promise<Pedido | undefined> {
+    const [actualizado] = await db.update(pedidos)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(pedidos.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async cambiarEstadoPedido(id: string, nuevoEstado: string, usuarioId?: string, tipoUsuario?: string, descripcion?: string): Promise<Pedido | undefined> {
+    const pedido = await this.getPedido(id);
+    if (!pedido) return undefined;
+
+    const fechaCampo: Record<string, string> = {
+      'aceptado': 'fechaAceptado',
+      'preparando': 'fechaPreparando',
+      'listo': 'fechaListo',
+      'en_camino': 'fechaEnCamino',
+      'entregado': 'fechaEntregado',
+      'confirmado': 'fechaConfirmado',
+      'cancelado': 'fechaCancelado',
+    };
+
+    const updateData: any = {
+      estadoAnterior: pedido.estado,
+      estado: nuevoEstado,
+      updatedAt: new Date(),
+    };
+
+    if (fechaCampo[nuevoEstado]) {
+      updateData[fechaCampo[nuevoEstado]] = new Date();
+    }
+
+    const [actualizado] = await db.update(pedidos)
+      .set(updateData)
+      .where(eq(pedidos.id, id))
+      .returning();
+
+    await db.insert(historialEstadosPedido).values({
+      pedidoId: id,
+      estadoAnterior: pedido.estado,
+      estadoNuevo: nuevoEstado,
+      descripcion: descripcion || `Cambio de estado: ${pedido.estado} -> ${nuevoEstado}`,
+      usuarioId,
+      tipoUsuario,
+    });
+
+    return actualizado;
+  }
+
+  async getColaPedidosLocal(localComercialId: string): Promise<Pedido[]> {
+    return await db.select().from(pedidos)
+      .where(and(
+        eq(pedidos.localComercialId, localComercialId),
+        sql`${pedidos.estado} IN ('pendiente', 'aceptado', 'preparando', 'listo')`
+      ))
+      .orderBy(pedidos.createdAt);
+  }
+
+  // ============================================================
+  // ITEMS DE PEDIDO
+  // ============================================================
+  async getItemsPedido(pedidoId: string): Promise<ItemPedido[]> {
+    return await db.select().from(itemsPedido)
+      .where(eq(itemsPedido.pedidoId, pedidoId))
+      .orderBy(itemsPedido.createdAt);
+  }
+
+  async addItemPedido(data: InsertItemPedido): Promise<ItemPedido> {
+    const [item] = await db.insert(itemsPedido).values(data).returning();
+    return item;
+  }
+
+  async addItemsPedido(items: InsertItemPedido[]): Promise<ItemPedido[]> {
+    if (items.length === 0) return [];
+    return await db.insert(itemsPedido).values(items).returning();
+  }
+
+  // ============================================================
+  // HISTORIAL DE ESTADOS
+  // ============================================================
+  async getHistorialPedido(pedidoId: string): Promise<HistorialEstadoPedido[]> {
+    return await db.select().from(historialEstadosPedido)
+      .where(eq(historialEstadosPedido.pedidoId, pedidoId))
+      .orderBy(historialEstadosPedido.createdAt);
+  }
+
+  // ============================================================
+  // SOLICITUDES DE DELIVERY
+  // ============================================================
+  async getSolicitudesDelivery(estado?: string): Promise<SolicitudDelivery[]> {
+    if (estado) {
+      return await db.select().from(solicitudesDelivery)
+        .where(eq(solicitudesDelivery.estado, estado))
+        .orderBy(desc(solicitudesDelivery.createdAt));
+    }
+    return await db.select().from(solicitudesDelivery)
+      .orderBy(desc(solicitudesDelivery.createdAt));
+  }
+
+  async getSolicitudDelivery(id: string): Promise<SolicitudDelivery | undefined> {
+    const [solicitud] = await db.select().from(solicitudesDelivery).where(eq(solicitudesDelivery.id, id));
+    return solicitud;
+  }
+
+  async getSolicitudDeliveryPorPedido(pedidoId: string): Promise<SolicitudDelivery | undefined> {
+    const [solicitud] = await db.select().from(solicitudesDelivery).where(eq(solicitudesDelivery.pedidoId, pedidoId));
+    return solicitud;
+  }
+
+  async createSolicitudDelivery(data: InsertSolicitudDelivery): Promise<SolicitudDelivery> {
+    const [solicitud] = await db.insert(solicitudesDelivery).values(data).returning();
+    return solicitud;
+  }
+
+  async updateSolicitudDelivery(id: string, data: Partial<InsertSolicitudDelivery>): Promise<SolicitudDelivery | undefined> {
+    const [actualizado] = await db.update(solicitudesDelivery)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(solicitudesDelivery.id, id))
+      .returning();
+    return actualizado;
+  }
+
+  async asignarDelivery(solicitudId: string, deliveryId: string, datosDelivery: { nombre?: string; telefono?: string; vehiculo?: string; placa?: string }): Promise<SolicitudDelivery | undefined> {
+    const [actualizado] = await db.update(solicitudesDelivery)
+      .set({
+        deliveryId,
+        nombreDelivery: datosDelivery.nombre,
+        telefonoDelivery: datosDelivery.telefono,
+        vehiculoDelivery: datosDelivery.vehiculo,
+        placaDelivery: datosDelivery.placa,
+        estado: 'asignado',
+        fechaAsignado: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(solicitudesDelivery.id, solicitudId))
+      .returning();
+    return actualizado;
+  }
+
+  async actualizarUbicacionDelivery(solicitudId: string, latitud: string, longitud: string): Promise<SolicitudDelivery | undefined> {
+    const [actualizado] = await db.update(solicitudesDelivery)
+      .set({
+        latitudActual: latitud,
+        longitudActual: longitud,
+        ultimaActualizacionUbicacion: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(solicitudesDelivery.id, solicitudId))
+      .returning();
+    return actualizado;
+  }
+
+  // ============================================================
+  // TRANSACCIONES DE PEDIDOS
+  // ============================================================
+  async getTransaccionesPedido(pedidoId: string): Promise<TransaccionPedido[]> {
+    return await db.select().from(transaccionesPedidos)
+      .where(eq(transaccionesPedidos.pedidoId, pedidoId))
+      .orderBy(desc(transaccionesPedidos.createdAt));
+  }
+
+  async createTransaccionPedido(data: InsertTransaccionPedido): Promise<TransaccionPedido> {
+    const [transaccion] = await db.insert(transaccionesPedidos).values(data).returning();
+    return transaccion;
+  }
+
+  // ============================================================
+  // CARTA DIGITAL - Obtener catálogo completo con categorías y productos
+  // ============================================================
+  async getCartaDigital(catalogoId: string): Promise<{
+    catalogo: CatalogoLocal;
+    categorias: Array<CategoriaCatalogo & { items: ItemCatalogo[] }>;
+  } | null> {
+    const catalogo = await this.getCatalogoLocal(catalogoId);
+    if (!catalogo) return null;
+
+    const categorias = await this.getCategoriasCatalogo(catalogoId);
+    const categoriasConItems: Array<CategoriaCatalogo & { items: ItemCatalogo[] }> = [];
+
+    for (const categoria of categorias) {
+      const items = await db.select().from(itemsCatalogo)
+        .where(and(
+          eq(itemsCatalogo.catalogoId, catalogoId),
+          eq(itemsCatalogo.categoriaId, categoria.id),
+          eq(itemsCatalogo.disponible, true)
+        ))
+        .orderBy(itemsCatalogo.orden);
+      categoriasConItems.push({ ...categoria, items });
+    }
+
+    const itemsSinCategoria = await db.select().from(itemsCatalogo)
+      .where(and(
+        eq(itemsCatalogo.catalogoId, catalogoId),
+        sql`${itemsCatalogo.categoriaId} IS NULL`,
+        eq(itemsCatalogo.disponible, true)
+      ))
+      .orderBy(itemsCatalogo.orden);
+
+    if (itemsSinCategoria.length > 0) {
+      categoriasConItems.push({
+        id: 'sin-categoria',
+        catalogoId,
+        codigo: '0.00',
+        nombre: 'Otros',
+        descripcion: null,
+        imagenUrl: null,
+        orden: 999,
+        activo: true,
+        etiquetaPrecio1: 'Personal',
+        etiquetaPrecio2: 'Mediana',
+        etiquetaPrecio3: 'Familiar',
+        etiquetaPrecio4: 'Extra',
+        habilitarPrecio1: true,
+        habilitarPrecio2: true,
+        habilitarPrecio3: true,
+        habilitarPrecio4: true,
+        createdAt: new Date(),
+        categoriaPadreId: null,
+        items: itemsSinCategoria,
+      });
+    }
+
+    return { catalogo, categorias: categoriasConItems };
+  }
+
+  // ============================================================
+  // CONVERSIÓN DE MONEDA - Usar tasas de cambistas locales
+  // ============================================================
+  async convertirPrecio(monto: number, monedaOrigen: string, monedaDestino: string): Promise<{ montoConvertido: number; tasaUsada: number }> {
+    if (monedaOrigen === monedaDestino) {
+      return { montoConvertido: monto, tasaUsada: 1 };
+    }
+
+    try {
+      const tasaLocal = await db.select().from(tasasCambioLocales)
+        .where(and(
+          eq(tasasCambioLocales.monedaOrigenCodigo, monedaOrigen),
+          eq(tasasCambioLocales.monedaDestinoCodigo, monedaDestino),
+          eq(tasasCambioLocales.activo, true)
+        ))
+        .limit(1);
+
+      if (tasaLocal.length > 0) {
+        const tasa = parseFloat(String(tasaLocal[0].tasaVenta || tasaLocal[0].tasaCompra || '1'));
+        return { montoConvertido: monto * tasa, tasaUsada: tasa };
+      }
+
+      const tasaInversa = await db.select().from(tasasCambioLocales)
+        .where(and(
+          eq(tasasCambioLocales.monedaOrigenCodigo, monedaDestino),
+          eq(tasasCambioLocales.monedaDestinoCodigo, monedaOrigen),
+          eq(tasasCambioLocales.activo, true)
+        ))
+        .limit(1);
+
+      if (tasaInversa.length > 0) {
+        const tasaCompra = parseFloat(String(tasaInversa[0].tasaCompra || '1'));
+        const tasa = 1 / tasaCompra;
+        return { montoConvertido: monto * tasa, tasaUsada: tasa };
+      }
+    } catch (error) {
+      console.error("Error en conversión de moneda:", error);
+    }
+
+    return { montoConvertido: monto, tasaUsada: 1 };
   }
 }
 

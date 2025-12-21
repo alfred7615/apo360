@@ -44,6 +44,14 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 - **User Panel (Panel de Usuario)**: Consolidated dashboard with tabs for Favorites, Marketplace (Mi Tienda Online), and Conductor. Access gated by profile verification.
 - **Profile Verification System**: Backend endpoint validates user profile completeness across 5 areas (perfilBasico, chat, taxiPasajero, conductor, vendedor) with a blocking component for restricted features.
 - **Currency Exchange Calculator System**: Complete system with 5 currencies (PEN, USD, CLP, ARS, BOB), local exchange rates from "cambistas", a responsive calculator (modal and dedicated page), and an admin panel section for management. Includes automatic history tracking: every time a cambista creates or updates exchange rates, the change is recorded in `historial_tasas_cambio` table with previous/new values, action type, and timestamp.
+- **Digital Menu/Cart System (Carta Digital)**: Complete order management system with:
+  - **Public Carta Digital**: Access catalogs without login (`/api/carta-digital/:catalogoId`)
+  - **Shopping Cart**: Full CRUD operations (`/api/carrito`)
+  - **Order Management**: 7-state workflow (pendiente → aceptado → preparando → listo → en_camino → entregado → confirmado)
+  - **Delivery Tracking**: Real-time location updates, driver assignment, WebSocket notifications
+  - **Wallet Integration**: Balance validation for wallet payments
+  - **Currency Conversion**: Uses local cambista rates from `tasas_cambio_locales` table
+  - **Database Tables**: `carrito_compras`, `pedidos`, `items_pedido`, `historial_estados_pedido`, `solicitudes_delivery`, `transacciones_pedidos`
 
 ### System Design Choices
 - **Modular Project Structure**: Clear separation between `client`, `server`, and `shared`.
