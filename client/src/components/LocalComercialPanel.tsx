@@ -1380,6 +1380,7 @@ export default function LocalComercialPanel() {
   const [showCatalogoLocalModal, setShowCatalogoLocalModal] = useState(false);
   const [showCategoriaModal, setShowCategoriaModal] = useState(false);
   const [showItemLocalModal, setShowItemLocalModal] = useState(false);
+  const [showCartaDigitalModal, setShowCartaDigitalModal] = useState(false);
   const [editingCategoria, setEditingCategoria] = useState<CategoriaCatalogoLocal | null>(null);
   const [editingItemLocal, setEditingItemLocal] = useState<ItemCatalogoLocal | null>(null);
   const [categoriaForm, setCategoriaForm] = useState<Partial<CategoriaCatalogoLocal>>({
@@ -2226,11 +2227,7 @@ export default function LocalComercialPanel() {
                           variant="default"
                           size="sm" 
                           className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                          onClick={() => {
-                            if (miCatalogoLocal?.id) {
-                              window.open(`/carta/${miCatalogoLocal.id}`, '_blank');
-                            }
-                          }}
+                          onClick={() => setShowCartaDigitalModal(true)}
                           data-testid="button-ver-carta-digital"
                         >
                           <UtensilsCrossed className="h-4 w-4 mr-2" />
@@ -4879,6 +4876,276 @@ export default function LocalComercialPanel() {
                   <Save className="h-4 w-4 mr-2" />
                 )}
                 {editingItemLocal ? "Actualizar" : "Crear"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Carta Digital */}
+        <Dialog open={showCartaDigitalModal} onOpenChange={setShowCartaDigitalModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UtensilsCrossed className="h-5 w-5 text-primary" />
+                Carta Digital - {miCatalogoLocal?.nombre || "Mi Catálogo"}
+              </DialogTitle>
+              <DialogDescription>
+                Vista previa de tu catálogo. Los clientes pueden agregar productos al carrito desde aquí.
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-1 pr-4">
+              <div className="space-y-4">
+                {/* Categorías y productos */}
+                {miCatalogoLocal?.categorias && miCatalogoLocal.categorias.filter(c => !c.categoriaPadreId).map((categoria) => (
+                  <div key={categoria.id} className="space-y-3">
+                    <h3 className="font-semibold text-lg flex items-center gap-2 border-b pb-2">
+                      {categoria.icono && <span>{categoria.icono}</span>}
+                      {categoria.nombre}
+                    </h3>
+                    <div className="grid gap-3">
+                      {/* Items de esta categoría */}
+                      {(miCatalogoLocal.items || []).filter(item => item.categoriaId === categoria.id && item.disponible !== false).map((item) => (
+                        <Card key={item.id} className="overflow-hidden" data-testid={`carta-item-${item.id}`}>
+                          <CardContent className="p-0">
+                            <div className="flex">
+                              {item.imagenUrl && (
+                                <img
+                                  src={item.imagenUrl}
+                                  alt={item.nombre}
+                                  className="w-20 h-20 object-cover"
+                                />
+                              )}
+                              <div className="flex-1 p-3 flex flex-col justify-between">
+                                <div>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <h4 className="font-medium text-sm">{item.nombre}</h4>
+                                    {item.destacado && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        <Star className="h-3 w-3 mr-1" />
+                                        Destacado
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {item.descripcion && (
+                                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                      {item.descripcion}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex items-center justify-between mt-2">
+                                  <div className="flex items-center gap-2">
+                                    {item.precioOferta ? (
+                                      <>
+                                        <span className="font-bold text-primary text-sm">
+                                          S/ {parseFloat(item.precioOferta).toFixed(2)}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground line-through">
+                                          S/ {parseFloat(item.precio || "0").toFixed(2)}
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <span className="font-bold text-sm">
+                                        S/ {parseFloat(item.precio || "0").toFixed(2)}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      try {
+                                        const precioFinal = item.precioOferta || item.precio || "0";
+                                        await apiRequest("POST", "/api/carrito", {
+                                          itemCatalogoId: item.id,
+                                          catalogoId: miCatalogoLocal?.id,
+                                          cantidad: 1,
+                                          tipoProducto: 'item_catalogo',
+                                          precioUnitario: precioFinal,
+                                          etiquetaPrecio: item.nombre,
+                                        });
+                                        queryClient.invalidateQueries({ queryKey: ["/api/carrito"] });
+                                        queryClient.invalidateQueries({ queryKey: ["/api/carrito/resumen"] });
+                                        toast({
+                                          title: "Agregado",
+                                          description: `${item.nombre} agregado al carrito`,
+                                        });
+                                      } catch (error: any) {
+                                        toast({
+                                          variant: "destructive",
+                                          title: "Error",
+                                          description: error.message || "No se pudo agregar al carrito",
+                                        });
+                                      }
+                                    }}
+                                    data-testid={`carta-agregar-${item.id}`}
+                                  >
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Agregar
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                      {/* Subcategorías */}
+                      {miCatalogoLocal.categorias?.filter(sub => sub.categoriaPadreId === categoria.id).map((subcategoria) => (
+                        <div key={subcategoria.id} className="ml-4 space-y-2">
+                          <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                            {subcategoria.icono && <span>{subcategoria.icono}</span>}
+                            {subcategoria.nombre}
+                          </h4>
+                          {(miCatalogoLocal.items || []).filter(item => item.categoriaId === subcategoria.id && item.disponible !== false).map((item) => (
+                            <Card key={item.id} className="overflow-hidden" data-testid={`carta-item-${item.id}`}>
+                              <CardContent className="p-0">
+                                <div className="flex">
+                                  {item.imagenUrl && (
+                                    <img
+                                      src={item.imagenUrl}
+                                      alt={item.nombre}
+                                      className="w-16 h-16 object-cover"
+                                    />
+                                  )}
+                                  <div className="flex-1 p-2 flex items-center justify-between">
+                                    <div>
+                                      <h5 className="font-medium text-sm">{item.nombre}</h5>
+                                      <span className="font-bold text-primary text-sm">
+                                        S/ {parseFloat(item.precioOferta || item.precio || "0").toFixed(2)}
+                                      </span>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      onClick={async () => {
+                                        try {
+                                          const precioFinal = item.precioOferta || item.precio || "0";
+                                          await apiRequest("POST", "/api/carrito", {
+                                            itemCatalogoId: item.id,
+                                            catalogoId: miCatalogoLocal?.id,
+                                            cantidad: 1,
+                                            tipoProducto: 'item_catalogo',
+                                            precioUnitario: precioFinal,
+                                            etiquetaPrecio: item.nombre,
+                                          });
+                                          queryClient.invalidateQueries({ queryKey: ["/api/carrito"] });
+                                          queryClient.invalidateQueries({ queryKey: ["/api/carrito/resumen"] });
+                                          toast({
+                                            title: "Agregado",
+                                            description: `${item.nombre} agregado al carrito`,
+                                          });
+                                        } catch (error: any) {
+                                          toast({
+                                            variant: "destructive",
+                                            title: "Error",
+                                            description: error.message || "No se pudo agregar al carrito",
+                                          });
+                                        }
+                                      }}
+                                      data-testid={`carta-agregar-${item.id}`}
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Items sin categoría */}
+                {(miCatalogoLocal?.items?.filter(item => !item.categoriaId && item.disponible !== false)?.length || 0) > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-lg border-b pb-2">Otros productos</h3>
+                    <div className="grid gap-3">
+                      {miCatalogoLocal?.items?.filter(item => !item.categoriaId && item.disponible !== false).map((item) => (
+                        <Card key={item.id} className="overflow-hidden">
+                          <CardContent className="p-0">
+                            <div className="flex">
+                              {item.imagenUrl && (
+                                <img
+                                  src={item.imagenUrl}
+                                  alt={item.nombre}
+                                  className="w-20 h-20 object-cover"
+                                />
+                              )}
+                              <div className="flex-1 p-3 flex items-center justify-between">
+                                <div>
+                                  <h4 className="font-medium text-sm">{item.nombre}</h4>
+                                  <span className="font-bold text-primary text-sm">
+                                    S/ {parseFloat(item.precioOferta || item.precio || "0").toFixed(2)}
+                                  </span>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  onClick={async () => {
+                                    try {
+                                      const precioFinal = item.precioOferta || item.precio || "0";
+                                      await apiRequest("POST", "/api/carrito", {
+                                        itemCatalogoId: item.id,
+                                        catalogoId: miCatalogoLocal?.id,
+                                        cantidad: 1,
+                                        tipoProducto: 'item_catalogo',
+                                        precioUnitario: precioFinal,
+                                        etiquetaPrecio: item.nombre,
+                                      });
+                                      queryClient.invalidateQueries({ queryKey: ["/api/carrito"] });
+                                      queryClient.invalidateQueries({ queryKey: ["/api/carrito/resumen"] });
+                                      toast({
+                                        title: "Agregado",
+                                        description: `${item.nombre} agregado al carrito`,
+                                      });
+                                    } catch (error: any) {
+                                      toast({
+                                        variant: "destructive",
+                                        title: "Error",
+                                        description: error.message || "No se pudo agregar al carrito",
+                                      });
+                                    }
+                                  }}
+                                  data-testid={`carta-agregar-${item.id}`}
+                                >
+                                  <Plus className="h-4 w-4 mr-1" />
+                                  Agregar
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Mensaje si está vacío */}
+                {(!miCatalogoLocal?.categorias || miCatalogoLocal.categorias.length === 0) && 
+                 (!miCatalogoLocal?.items || miCatalogoLocal.items.length === 0) && (
+                  <div className="text-center py-8">
+                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Tu catálogo está vacío</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Agrega categorías y productos para que aparezcan aquí
+                    </p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+            <DialogFooter className="mt-4">
+              <Button variant="outline" onClick={() => setShowCartaDigitalModal(false)}>
+                Cerrar
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowCartaDigitalModal(false);
+                  // Trigger para abrir el carrito del encabezado
+                  const event = new CustomEvent('abrirCarrito');
+                  window.dispatchEvent(event);
+                }}
+                className="bg-gradient-to-r from-purple-600 to-pink-600"
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Ver Carrito
               </Button>
             </DialogFooter>
           </DialogContent>

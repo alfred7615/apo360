@@ -84,11 +84,14 @@ export default function CartaDigital() {
   });
 
   const agregarAlCarritoMutation = useMutation({
-    mutationFn: async ({ itemId, cantidad }: { itemId: string; cantidad: number }) => {
+    mutationFn: async ({ itemId, cantidad, precio, nombreItem }: { itemId: string; cantidad: number; precio: string; nombreItem: string }) => {
       return await apiRequest("POST", "/api/carrito", {
         itemCatalogoId: itemId,
         catalogoId: catalogoId,
         cantidad,
+        tipoProducto: 'item_catalogo',
+        precioUnitario: precio,
+        etiquetaPrecio: nombreItem,
       });
     },
     onSuccess: () => {
@@ -129,8 +132,9 @@ export default function CartaDigital() {
       return nuevo;
     });
 
+    const precioFinal = item.precioOferta || item.precio;
     agregarAlCarritoMutation.mutate(
-      { itemId: item.id, cantidad: 1 },
+      { itemId: item.id, cantidad: 1, precio: precioFinal, nombreItem: item.nombre },
       {
         onSettled: () => setAgregando(null),
       }
