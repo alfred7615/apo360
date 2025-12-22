@@ -128,9 +128,8 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
   const [tasaUsada, setTasaUsada] = useState<number>(1);
   const [convirtiendo, setConvirtiendo] = useState(false);
   
-  // Checkout state
-  const [formaPagoSeleccionada, setFormaPagoSeleccionada] = useState<FormaPago | null>(null);
-  const [usarBilletera, setUsarBilletera] = useState(false);
+  // Checkout state - ahora por negocio
+  const [pagosPorNegocio, setPagosPorNegocio] = useState<Record<string, { formaPago: FormaPago | null; usarBilletera: boolean }>>({});
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
   const [voucherPreview, setVoucherPreview] = useState<string | null>(null);
   const [notasPedido, setNotasPedido] = useState("");
@@ -143,18 +142,67 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
   // Ubicación delivery state
   const [lugarSeleccionadoId, setLugarSeleccionadoId] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
+  
+  // Formas de pago por catálogo
+  const [formasPagoPorCatalogo, setFormasPagoPorCatalogo] = useState<Record<string, FormaPago[]>>({});
 
   const { data: resumen, isLoading } = useQuery<ResumenCarrito>({
     queryKey: ["/api/carrito/resumen"],
     enabled: abierto,
   });
 
-  // Obtener formas de pago del primer negocio (asumiendo compra de un solo negocio por ahora)
+  // Obtener formas de pago de TODOS los negocios en el carrito
+  useEffect(() => {
+    const fetchFormasPago = async () => {
+      if (!resumen?.grupos || paso !== "pago") return;
+      
+      const nuevasFormasPago: Record<string, FormaPago[]> = {};
+      
+      for (const grupo of resumen.grupos) {
+        if (!grupo.catalogoId) continue;
+        try {
+          const res = await fetch(`/api/carta-digital/${grupo.catalogoId}/formas-pago`);
+          if (res.ok) {
+            const formas = await res.json();
+            nuevasFormasPago[grupo.catalogoId] = formas;
+          } else {
+            nuevasFormasPago[grupo.catalogoId] = [];
+          }
+        } catch {
+          nuevasFormasPago[grupo.catalogoId] = [];
+        }
+      }
+      
+      setFormasPagoPorCatalogo(nuevasFormasPago);
+    };
+    
+    fetchFormasPago();
+  }, [resumen?.grupos, paso]);
+  
+  // Compatibilidad con código existente (para primer negocio)
   const primerCatalogoId = resumen?.grupos?.[0]?.catalogoId;
-  const { data: formasPagoNegocio = [] } = useQuery<FormaPago[]>({
-    queryKey: ["/api/carta-digital", primerCatalogoId, "formas-pago"],
-    enabled: !!primerCatalogoId && paso === "pago",
-  });
+  const formasPagoNegocio = primerCatalogoId ? (formasPagoPorCatalogo[primerCatalogoId] || []) : [];
+  
+  // Variables de compatibilidad para el código existente
+  const pagoActual = primerCatalogoId ? pagosPorNegocio[primerCatalogoId] : null;
+  const formaPagoSeleccionada = pagoActual?.formaPago || null;
+  const usarBilletera = pagoActual?.usarBilletera || false;
+  
+  const setFormaPagoSeleccionada = (forma: FormaPago | null) => {
+    if (!primerCatalogoId) return;
+    setPagosPorNegocio(prev => ({
+      ...prev,
+      [primerCatalogoId]: { formaPago: forma, usarBilletera: false }
+    }));
+  };
+  
+  const setUsarBilletera = (usar: boolean) => {
+    if (!primerCatalogoId) return;
+    setPagosPorNegocio(prev => ({
+      ...prev,
+      [primerCatalogoId]: { formaPago: null, usarBilletera: usar }
+    }));
+  };
   
   // Obtener lugares del usuario
   const { data: lugaresUsuario = [] } = useQuery<LugarUsuario[]>({
@@ -175,8 +223,8 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
   useEffect(() => {
     if (!abierto) {
       setPaso("carrito");
-      setFormaPagoSeleccionada(null);
-      setUsarBilletera(false);
+      setPagosPorNegocio({});
+      setFormasPagoPorCatalogo({});
       setVoucherFile(null);
       setVoucherPreview(null);
       setNotasPedido("");
