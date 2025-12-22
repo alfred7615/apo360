@@ -792,11 +792,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PEDIDOS DEL NEGOCIO (LocalComercialPanel)
   // ============================================================
   
-  // Obtener estadísticas de pedidos del negocio
+  // Obtener estadísticas de pedidos del negocio (usa tabla pedidos de carta digital)
   app.get('/api/mi-negocio/pedidos/estadisticas', isAuthenticated, async (req: any, res) => {
     try {
       const usuarioId = req.user.claims.sub;
-      const estadisticas = await storage.getEstadisticasPedidosNegocio(usuarioId);
+      
+      // Buscar en tabla pedidos por localComercialId
+      const todosPedidos = await storage.getPedidosLocal(usuarioId);
+      
+      // Estados posibles (incluye legacy y nuevos)
+      const estadosRecibidos = ['pendiente'];
+      const estadosAtendidos = ['aceptado', 'preparando', 'en_preparacion', 'listo', 'listo_para_envio', 'llamando_delivery', 'entregado_a_delivery', 'en_camino'];
+      const estadosEntregados = ['entregado', 'confirmado', 'completado', 'recibido_conforme', 'entregado_conforme'];
+      
+      const estadisticas = {
+        recibidos: todosPedidos.filter(p => estadosRecibidos.includes(p.estado)).length,
+        atendidos: todosPedidos.filter(p => estadosAtendidos.includes(p.estado)).length,
+        entregados: todosPedidos.filter(p => estadosEntregados.includes(p.estado)).length,
+      };
+      
       res.json(estadisticas);
     } catch (error: any) {
       console.error("Error al obtener estadísticas de pedidos:", error);
@@ -804,21 +818,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Obtener pedidos del negocio
+  // Obtener pedidos del negocio (usa tabla pedidos de carta digital)
   app.get('/api/mi-negocio/pedidos', isAuthenticated, async (req: any, res) => {
     try {
       const usuarioId = req.user.claims.sub;
       const { estado } = req.query;
       
-      let pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
-      
-      // Filtrar por estado si se especifica
-      if (estado && estado !== 'todos') {
-        pedidos = pedidos.filter(p => p.estado === estado);
-      }
+      // Buscar en tabla pedidos por localComercialId (que es el ID del usuario dueño del negocio)
+      let listaPedidos = await storage.getPedidosLocal(usuarioId, estado !== 'todos' ? estado : undefined);
       
       // Enriquecer con datos del cliente
-      const pedidosEnriquecidos = await Promise.all(pedidos.map(async (pedido) => {
+      const pedidosEnriquecidos = await Promise.all(listaPedidos.map(async (pedido) => {
         const cliente = await storage.getUser(pedido.usuarioId);
         return {
           ...pedido,
@@ -840,45 +850,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Actualizar estado de pedido del negocio
-  // Flujo completo: pendiente → aceptado → preparando → listo → llamando_delivery → 
-  // entregado_a_delivery → en_camino → entregado → recibido_conforme
+  // Actualizar estado de pedido del negocio (usa tabla pedidos de carta digital)
+  // Flujo completo: pendiente → aceptado → preparando → listo → en_camino → entregado → confirmado
   app.patch('/api/mi-negocio/pedidos/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const usuarioId = req.user.claims.sub;
       
-      // Verificar que el pedido pertenece al negocio del usuario
-      const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
-      const pedidoExistente = pedidos.find(p => p.id === id);
+      // Verificar que el pedido pertenece al negocio del usuario (usar tabla pedidos)
+      const pedidoExistente = await storage.getPedido(id);
       
-      if (!pedidoExistente) {
+      if (!pedidoExistente || pedidoExistente.localComercialId !== usuarioId) {
         return res.status(403).json({ message: "No tienes permiso para modificar este pedido" });
       }
       
       const { estado, notas } = req.body;
-      const updateData: any = { estado };
       
-      // Si el estado es entregado/completado/recibido_conforme, establecer completedAt
-      if (['entregado', 'completado', 'recibido_conforme', 'entregado_conforme'].includes(estado)) {
-        updateData.completedAt = new Date();
-      }
-      
-      const pedido = await storage.updatePedidoDelivery(id, updateData);
-      
-      // Registrar en historial de estados
-      try {
-        await storage.addHistorialEstadoPedido({
-          pedidoId: id,
-          estadoAnterior: pedidoExistente.estado || 'pendiente',
-          estadoNuevo: estado,
-          usuarioId: usuarioId,
-          tipoUsuario: 'local',
-          descripcion: notas || null,
-        });
-      } catch (e) {
-        // El historial no es crítico, continuar
-      }
+      // Usar función correcta para actualizar pedido de carta digital
+      const pedido = await storage.cambiarEstadoPedido(id, estado, usuarioId, 'local', notas);
       
       res.json(pedido);
     } catch (error: any) {
@@ -887,22 +876,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Estadísticas de delivery del negocio
+  // Estadísticas de delivery del negocio (usa tabla pedidos de carta digital)
   app.get('/api/mi-negocio/delivery/estadisticas', isAuthenticated, async (req: any, res) => {
     try {
       const usuarioId = req.user.claims.sub;
       
-      // Obtener pedidos del negocio
-      const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
+      // Obtener pedidos del negocio desde tabla pedidos
+      const todosPedidos = await storage.getPedidosLocal(usuarioId);
       
-      const atendido = pedidos.filter(p => p.estado === 'en_preparacion' || p.estado === 'preparando' || p.estado === 'listo_para_envio').length;
-      const enCamino = pedidos.filter(p => p.estado === 'en_camino').length;
+      // Estados de atención (incluye legacy)
+      const estadosAtendido = ['preparando', 'en_preparacion', 'listo', 'listo_para_envio', 'llamando_delivery', 'entregado_a_delivery'];
+      const atendido = todosPedidos.filter(p => estadosAtendido.includes(p.estado)).length;
+      const enCamino = todosPedidos.filter(p => p.estado === 'en_camino').length;
+      
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
-      const entregadoHoy = pedidos.filter(p => 
-        (p.estado === 'entregado' || p.estado === 'completado') && 
-        p.completedAt && new Date(p.completedAt) >= hoy
-      ).length;
+      
+      // Estados de entrega (incluye legacy)
+      const estadosEntregado = ['entregado', 'confirmado', 'completado', 'recibido_conforme', 'entregado_conforme'];
+      const entregadoHoy = todosPedidos.filter(p => {
+        if (!estadosEntregado.includes(p.estado)) return false;
+        const fechaRef = p.fechaEntregado || p.fechaConfirmado || p.updatedAt;
+        return fechaRef && new Date(fechaRef) >= hoy;
+      }).length;
       
       res.json({ atendido, enCamino, entregado: entregadoHoy });
     } catch (error: any) {
@@ -911,35 +907,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Obtener entregas activas del negocio
+  // Obtener entregas activas del negocio (usa tabla pedidos de carta digital)
   app.get('/api/mi-negocio/delivery/activas', isAuthenticated, async (req: any, res) => {
     try {
       const usuarioId = req.user.claims.sub;
       
-      const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
+      // Obtener pedidos del negocio desde tabla pedidos
+      const todosPedidos = await storage.getPedidosLocal(usuarioId);
       
-      // Filtrar solo entregas activas con estados del flujo completo
+      // Estados activos (incluye legacy)
       const estadosActivos = [
         'pendiente', 'aceptado', 'preparando', 'en_preparacion', 
         'listo', 'listo_para_envio', 'llamando_delivery', 
         'entregado_a_delivery', 'en_camino'
       ];
-      const activas = pedidos.filter(p => 
-        estadosActivos.includes(p.estado || 'pendiente')
-      );
+      const activas = todosPedidos.filter(p => estadosActivos.includes(p.estado));
       
       // Enriquecer con coordenadas de la solicitud de delivery si existe
       const entregasConUbicacion = await Promise.all(activas.map(async (pedido) => {
         // Buscar la solicitud de delivery asociada al pedido
         const solicitud = await storage.getSolicitudDeliveryPorPedido(pedido.id);
         
-        // Usar coordenadas del delivery solo si existen, mantener las del pedido si no
-        const latitudFinal = solicitud?.latitudActual 
-          ? parseFloat(solicitud.latitudActual) 
-          : pedido.latitud;
-        const longitudFinal = solicitud?.longitudActual 
-          ? parseFloat(solicitud.longitudActual) 
-          : pedido.longitud;
+        // Compatibilidad con campos de ubicación (nuevos y legacy)
+        const latitudFinal = solicitud?.latitudActual || (pedido as any).latitudEntrega || (pedido as any).latitud || null;
+        const longitudFinal = solicitud?.longitudActual || (pedido as any).longitudEntrega || (pedido as any).longitud || null;
         
         return {
           ...pedido,
@@ -963,24 +954,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Solicitar delivery para un pedido
+  // Solicitar delivery para un pedido (usa tabla pedidos de carta digital)
   app.post('/api/mi-negocio/delivery/solicitar/:pedidoId', isAuthenticated, async (req: any, res) => {
     try {
       const usuarioId = req.user.claims.sub;
       const { pedidoId } = req.params;
       
       // Verificar que el pedido pertenece al negocio del usuario
-      const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
-      const pedido = pedidos.find(p => p.id === pedidoId);
+      const pedido = await storage.getPedido(pedidoId);
       
-      if (!pedido) {
+      if (!pedido || pedido.localComercialId !== usuarioId) {
         return res.status(404).json({ message: "Pedido no encontrado" });
       }
       
-      // Actualizar estado a listo_para_envio (esperando repartidor)
-      const actualizado = await storage.updatePedidoDelivery(pedidoId, {
-        estado: 'listo_para_envio'
-      });
+      // Actualizar estado a listo (esperando repartidor)
+      const actualizado = await storage.cambiarEstadoPedido(pedidoId, 'listo', usuarioId, 'local');
       
       res.json(actualizado);
     } catch (error: any) {
@@ -993,20 +981,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // HISTORIAL DEL NEGOCIO (LocalComercialPanel)
   // ============================================================
 
-  // Historial de pedidos completados
+  // Historial de pedidos completados (usa tabla pedidos de carta digital)
   app.get('/api/mi-negocio/historial/pedidos', isAuthenticated, async (req: any, res) => {
     try {
       const usuarioId = req.user.claims.sub;
       
-      const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
+      // Obtener pedidos del negocio desde tabla pedidos
+      const todosPedidos = await storage.getPedidosLocal(usuarioId);
       
-      // Filtrar solo pedidos completados/entregados
-      const completados = pedidos.filter(p => 
-        ['entregado', 'completado', 'cancelado'].includes(p.estado || '')
+      // Estados finales (incluye legacy)
+      const estadosFinales = ['entregado', 'confirmado', 'completado', 'recibido_conforme', 'entregado_conforme', 'cancelado'];
+      
+      // Filtrar solo pedidos completados/entregados/cancelados
+      const completados = todosPedidos.filter(p => 
+        estadosFinales.includes(p.estado)
       ).sort((a, b) => {
-        const fechaA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-        const fechaB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
-        return fechaB - fechaA; // Más recientes primero
+        const fechaA = a.fechaEntregado || a.fechaConfirmado || a.updatedAt;
+        const fechaB = b.fechaEntregado || b.fechaConfirmado || b.updatedAt;
+        const timeA = fechaA ? new Date(fechaA).getTime() : 0;
+        const timeB = fechaB ? new Date(fechaB).getTime() : 0;
+        return timeB - timeA; // Más recientes primero
       });
       
       // Enriquecer con datos del cliente
