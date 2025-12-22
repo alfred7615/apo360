@@ -8398,6 +8398,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener pedidos activos del usuario (no confirmados ni cancelados)
+  app.get('/api/mis-pedidos/activos', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      
+      // Estados activos (no finalizados)
+      const estadosActivos = ['pendiente', 'aceptado', 'preparando', 'listo', 'en_camino', 'entregado'];
+      const pedidosActivos = await storage.getPedidosUsuarioActivos(usuarioId, estadosActivos);
+      
+      // Enriquecer con nombre del local
+      const pedidosEnriquecidos = await Promise.all(pedidosActivos.map(async (pedido) => {
+        let nombreLocal = null;
+        if (pedido.localComercialId) {
+          const local = await storage.getUser(pedido.localComercialId);
+          const negocio = await storage.getDatosNegocio(pedido.localComercialId);
+          nombreLocal = negocio?.nombreComercial || local?.nombreCompleto || local?.firstName || "Local";
+        }
+        return { ...pedido, nombreLocal };
+      }));
+      
+      res.json(pedidosEnriquecidos);
+    } catch (error: any) {
+      console.error("Error al obtener pedidos activos:", error);
+      res.status(500).json({ message: error.message || "Error al obtener pedidos activos" });
+    }
+  });
+
+  // Confirmar recepción del pedido (cliente confirma que recibió el pedido)
+  app.patch('/api/mis-pedidos/:id/confirmar', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const pedido = await storage.getPedido(id);
+      if (!pedido) {
+        return res.status(404).json({ message: "Pedido no encontrado" });
+      }
+      
+      // Verificar que el pedido pertenece al usuario
+      if (pedido.usuarioId !== usuarioId) {
+        return res.status(403).json({ message: "No autorizado" });
+      }
+      
+      // Verificar que el estado es "entregado" para poder confirmar
+      if (pedido.estado !== 'entregado') {
+        return res.status(400).json({ message: "Solo puedes confirmar pedidos que han sido entregados" });
+      }
+      
+      // Actualizar estado a confirmado
+      const pedidoActualizado = await storage.updatePedido(id, {
+        estado: 'confirmado',
+        estadoAnterior: pedido.estado,
+        fechaConfirmado: new Date(),
+      });
+      
+      // Registrar en historial
+      await storage.createHistorialEstadoPedido({
+        pedidoId: id,
+        estadoAnterior: 'entregado',
+        estadoNuevo: 'confirmado',
+        descripcion: 'Cliente confirmó recepción del pedido',
+        usuarioId: usuarioId,
+        tipoUsuario: 'cliente',
+      });
+      
+      res.json(pedidoActualizado);
+    } catch (error: any) {
+      console.error("Error al confirmar recepción:", error);
+      res.status(500).json({ message: error.message || "Error al confirmar recepción" });
+    }
+  });
+
   // Obtener detalle de un pedido
   app.get('/api/mis-pedidos/:id', isAuthenticated, async (req: any, res) => {
     try {

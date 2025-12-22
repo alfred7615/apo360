@@ -1341,6 +1341,11 @@ export default function LocalComercialPanel() {
 
   const { data: usuariosBuscados = [], isLoading: buscandoUsuarios } = useQuery<UsuarioBasico[]>({
     queryKey: ["/api/buscar-usuarios", busquedaUsuario],
+    queryFn: async () => {
+      const res = await fetch(`/api/buscar-usuarios?q=${encodeURIComponent(busquedaUsuario)}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Error al buscar usuarios');
+      return res.json();
+    },
     enabled: busquedaUsuario.length >= 3,
   });
 

@@ -217,7 +217,7 @@ import {
   type InsertTicketFacturacion,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql, gte } from "drizzle-orm";
+import { eq, and, desc, sql, gte, inArray } from "drizzle-orm";
 
 // Interfaz del storage
 export interface IStorage {
@@ -4328,6 +4328,15 @@ export class DatabaseStorage implements IStorage {
     }
     return await db.select().from(pedidos)
       .where(eq(pedidos.usuarioId, usuarioId))
+      .orderBy(desc(pedidos.createdAt));
+  }
+
+  async getPedidosUsuarioActivos(usuarioId: string, estadosActivos: string[]): Promise<Pedido[]> {
+    return await db.select().from(pedidos)
+      .where(and(
+        eq(pedidos.usuarioId, usuarioId),
+        inArray(pedidos.estado, estadosActivos)
+      ))
       .orderBy(desc(pedidos.createdAt));
   }
 

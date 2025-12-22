@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { AudioControllerProvider } from "@/contexts/AudioControllerContext";
 import Encabezado from "@/components/Encabezado";
+import BarraEstadoPedido from "@/components/BarraEstadoPedido";
 import BotonPanico from "@/components/BotonPanico";
 import PiePagina from "@/components/PiePagina";
 import SolicitudPermisos from "@/components/SolicitudPermisos";
@@ -75,6 +76,7 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col">
       <Encabezado />
+      {isAuthenticated && !esRutaAdmin && <BarraEstadoPedido />}
       <main className="flex-1">
         <Router />
       </main>
