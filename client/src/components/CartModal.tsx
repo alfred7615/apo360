@@ -440,12 +440,12 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
   };
 
   const handleConfirmarCompra = async () => {
-    // Permitir si se delega el pago a otro usuario
-    if (!formaPagoSeleccionada && !usarBilletera && !usuarioPagadorSeleccionado) {
+    // Siempre se requiere forma de pago (incluso con pago delegado, el pagador debe completar el pago)
+    if (!formaPagoSeleccionada && !usarBilletera) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Selecciona una forma de pago o delega a otro usuario",
+        description: "Selecciona una forma de pago",
       });
       return;
     }
@@ -1138,10 +1138,10 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           onClick={handleConfirmarCompra}
           disabled={
             procesando || 
-            (!formaPagoSeleccionada && !usarBilletera && !usuarioPagadorSeleccionado) ||
-            (formasPagoNegocio.length === 0 && !saldoSuficiente && !usuarioPagadorSeleccionado) ||
-            // Voucher obligatorio cuando no es billetera (excepto si se delega el pago)
-            !!(formaPagoSeleccionada && !usarBilletera && !voucherFile && !usuarioPagadorSeleccionado)
+            (!formaPagoSeleccionada && !usarBilletera) ||
+            (formasPagoNegocio.length === 0 && !saldoSuficiente) ||
+            // Voucher obligatorio cuando no es billetera
+            !!(formaPagoSeleccionada && !usarBilletera && !voucherFile)
           }
           data-testid="button-confirmar-compra"
         >
@@ -1150,9 +1150,9 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           ) : (
             <CreditCard className="h-4 w-4 mr-2" />
           )}
-          {formasPagoNegocio.length === 0 && !saldoSuficiente && !usuarioPagadorSeleccionado
+          {formasPagoNegocio.length === 0 && !saldoSuficiente
             ? "Recarga tu billetera" 
-            : formaPagoSeleccionada && !usarBilletera && !voucherFile && !usuarioPagadorSeleccionado
+            : formaPagoSeleccionada && !usarBilletera && !voucherFile
               ? "Sube el comprobante"
               : usuarioPagadorSeleccionado
                 ? "Enviar solicitud de pago"

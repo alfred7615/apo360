@@ -155,9 +155,9 @@ export default function FranjaCartasDigitales() {
         key={`${catalogo.id}-${idx}`}
         className="flex-shrink-0 cursor-pointer hover-elevate active-elevate-2 transition-all"
         style={{ 
-          marginLeft: "12px", 
-          marginRight: "12px",
-          width: "100px"
+          marginLeft: "8px", 
+          marginRight: "8px",
+          width: "80px"  // Más compacto para que quepan más en 500px
         }}
         onClick={() => handleClick(catalogo)}
         data-testid={`carta-digital-${catalogo.id}-${idx}`}
@@ -167,15 +167,15 @@ export default function FranjaCartasDigitales() {
             <img
               src={catalogo.logoUrl}
               alt={catalogo.nombre}
-              className="h-[70px] w-[70px] object-cover rounded-lg shadow-md border-2 border-white/50"
-              style={{ minWidth: "70px" }}
+              className="h-[60px] w-[60px] object-cover rounded-lg shadow-md border-2 border-white/50"
+              style={{ minWidth: "60px" }}
             />
           ) : (
-            <div className="h-[70px] w-[70px] rounded-lg shadow-md border-2 border-white/50 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <Store className="h-8 w-8 text-white" />
+            <div className="h-[60px] w-[60px] rounded-lg shadow-md border-2 border-white/50 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <Store className="h-7 w-7 text-white" />
             </div>
           )}
-          <span className="mt-1 text-[10px] font-medium text-center line-clamp-2 max-w-[90px]" style={{ color: "#9b2d5a" }}>
+          <span className="mt-1 text-[9px] font-medium text-center line-clamp-2 max-w-[75px]" style={{ color: "#9b2d5a" }}>
             {catalogo.nombre}
           </span>
         </div>
@@ -196,9 +196,11 @@ export default function FranjaCartasDigitales() {
       
       <div
         ref={contenedorRef}
-        className="w-full overflow-hidden border-y border-pink-200/30"
+        className="mx-auto overflow-hidden border-y border-pink-200/30 rounded-lg"
         style={{ 
-          height: "120px",
+          maxWidth: "500px",  // Máximo 500px de ancho
+          width: "100%",      // Se ajusta al dispositivo móvil
+          height: "110px",
           backgroundColor: "rgb(252, 231, 243)" // pink-100
         }}
         onTouchStart={handleTouchStart}

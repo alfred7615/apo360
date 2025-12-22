@@ -3780,6 +3780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Crear el pedido
       // Nota: Se mantiene estado "pendiente" para compatibilidad con sistema existente
       // Los campos pedidoAdicional y pagoDelegado se usan para lógica adicional
+      // Cuando hay pago delegado, el usuario pagador deberá completar el pago normal
       const pedido = await storage.createPedido({
         usuarioId: userId,
         catalogoId,
@@ -3794,7 +3795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referenciaEntrega,
         estado: "pendiente",
         estadoPago: "pendiente",
-        metodoPago: pagoDelegado ? "delegado" : (metodoPago || "efectivo"),
+        metodoPago: metodoPago || "efectivo",
         notasCliente: notas,
         pedidoAdicional: pedidoAdicional || null,
         usuarioPagadorId: usuarioPagadorId || null,
