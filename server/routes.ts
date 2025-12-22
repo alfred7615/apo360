@@ -3690,6 +3690,260 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // RUTAS DE PEDIDOS (CARTA DIGITAL)
+  // ============================================================
+
+  // Crear nuevo pedido desde carta digital
+  app.post('/api/pedidos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const {
+        catalogoId,
+        localComercialId,
+        items,
+        total,
+        moneda,
+        metodoPago,
+        formaPagoId,
+        voucherUrl,
+        notas,
+        tipoEntrega,
+        direccionEntrega,
+        latitudEntrega,
+        longitudEntrega,
+        referenciaEntrega,
+      } = req.body;
+
+      // Validaciones básicas
+      if (!items || items.length === 0) {
+        return res.status(400).json({ message: "El pedido debe tener al menos un producto" });
+      }
+
+      // Calcular subtotal de items
+      let subtotalCalculado = 0;
+      for (const item of items) {
+        const precio = parseFloat(item.precioUnitario) || 0;
+        subtotalCalculado += precio * (item.cantidad || 1);
+      }
+
+      // Crear el pedido
+      const pedido = await storage.createPedido({
+        usuarioId: userId,
+        catalogoId,
+        localComercialId,
+        subtotal: subtotalCalculado.toFixed(2),
+        total: total || subtotalCalculado.toFixed(2),
+        moneda: moneda || "PEN",
+        tipoEntrega: tipoEntrega || "recoger",
+        direccionEntrega,
+        latitudEntrega,
+        longitudEntrega,
+        referenciaEntrega,
+        estado: "pendiente",
+        estadoPago: "pendiente",
+        metodoPago: metodoPago || "efectivo",
+        notasCliente: notas,
+      });
+
+      // Crear items del pedido
+      for (const item of items) {
+        const precio = parseFloat(item.precioUnitario) || 0;
+        await storage.addItemPedido({
+          pedidoId: pedido.id,
+          itemCatalogoId: item.itemCatalogoId,
+          productoUsuarioId: item.productoId,
+          tipoProducto: item.itemCatalogoId ? "catalogo" : "usuario",
+          nombreProducto: item.nombreProducto || "Producto",
+          precioUnitario: precio.toFixed(2),
+          cantidad: item.cantidad || 1,
+          subtotal: (precio * (item.cantidad || 1)).toFixed(2),
+        });
+      }
+
+      // Registrar historial de estado inicial
+      await storage.addHistorialEstadoPedido({
+        pedidoId: pedido.id,
+        estadoAnterior: null,
+        estadoNuevo: "pendiente",
+        descripcion: "Pedido creado",
+        usuarioId: userId,
+        tipoUsuario: "cliente",
+      });
+
+      // Si hay voucher, guardarlo en el pedido
+      if (voucherUrl) {
+        await storage.updatePedido(pedido.id, {
+          notasCliente: `${notas || ""}\n\n[Voucher: ${voucherUrl}]`.trim(),
+        });
+      }
+
+      // Vaciar el carrito del usuario para este catálogo
+      const carritos = await storage.getCarritoUsuario(userId);
+      for (const carrito of carritos) {
+        if (carrito.catalogoId === catalogoId) {
+          await storage.deleteItemCarrito(carrito.id);
+        }
+      }
+
+      // Notificar al negocio vía WebSocket (si está disponible)
+      try {
+        if (localComercialId) {
+          notificarSuperAdmins({
+            tipo: "nuevo_pedido",
+            pedidoId: pedido.id,
+            localComercialId,
+            mensaje: "Nuevo pedido recibido",
+          });
+        }
+      } catch (e) {
+        // Notificación no crítica
+      }
+
+      res.json({ 
+        success: true, 
+        pedido,
+        message: "Pedido creado exitosamente" 
+      });
+    } catch (error: any) {
+      console.error("Error al crear pedido:", error);
+      res.status(500).json({ message: error.message || "Error al crear el pedido" });
+    }
+  });
+
+  // Obtener mis pedidos (como cliente)
+  app.get('/api/mis-pedidos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { estado } = req.query;
+      const pedidos = await storage.getPedidosUsuario(userId, estado as string);
+      res.json(pedidos);
+    } catch (error) {
+      console.error("Error al obtener mis pedidos:", error);
+      res.status(500).json({ message: "Error al obtener pedidos" });
+    }
+  });
+
+  // Obtener pedidos de mi negocio (para FACTURACION)
+  app.get('/api/pedidos-negocio', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { estado } = req.query;
+      const pedidos = await storage.getPedidosLocal(userId, estado as string);
+      
+      // Para cada pedido, obtener sus items
+      const pedidosConItems = await Promise.all(pedidos.map(async (pedido) => {
+        const items = await storage.getItemsPedido(pedido.id);
+        return { ...pedido, items };
+      }));
+      
+      res.json(pedidosConItems);
+    } catch (error) {
+      console.error("Error al obtener pedidos del negocio:", error);
+      res.status(500).json({ message: "Error al obtener pedidos" });
+    }
+  });
+
+  // Obtener detalle de un pedido
+  app.get('/api/pedidos/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const pedido = await storage.getPedido(id);
+      if (!pedido) {
+        return res.status(404).json({ message: "Pedido no encontrado" });
+      }
+      
+      const items = await storage.getItemsPedido(id);
+      const historial = await storage.getHistorialPedido(id);
+      
+      res.json({ ...pedido, items, historial });
+    } catch (error) {
+      console.error("Error al obtener pedido:", error);
+      res.status(500).json({ message: "Error al obtener pedido" });
+    }
+  });
+
+  // Cambiar estado de un pedido
+  app.patch('/api/pedidos/:id/estado', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const { estado, descripcion, tipoUsuario } = req.body;
+
+      const pedidoActualizado = await storage.cambiarEstadoPedido(
+        id, 
+        estado, 
+        userId, 
+        tipoUsuario || "cliente",
+        descripcion
+      );
+
+      if (!pedidoActualizado) {
+        return res.status(404).json({ message: "Pedido no encontrado" });
+      }
+
+      res.json(pedidoActualizado);
+    } catch (error: any) {
+      console.error("Error al cambiar estado del pedido:", error);
+      res.status(500).json({ message: error.message || "Error al cambiar estado" });
+    }
+  });
+
+  // Asignar delivery a un pedido
+  app.patch('/api/pedidos/:id/delivery', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { deliveryId, deliveryTipo } = req.body;
+
+      const pedido = await storage.updatePedido(id, {
+        deliveryId,
+        deliveryTipo,
+      });
+
+      if (!pedido) {
+        return res.status(404).json({ message: "Pedido no encontrado" });
+      }
+
+      res.json(pedido);
+    } catch (error) {
+      console.error("Error al asignar delivery:", error);
+      res.status(500).json({ message: "Error al asignar delivery" });
+    }
+  });
+
+  // Actualizar ubicación del delivery (para tracking en tiempo real)
+  app.patch('/api/pedidos/:id/ubicacion-delivery', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const { latitud, longitud } = req.body;
+
+      const pedido = await storage.getPedido(id);
+      if (!pedido) {
+        return res.status(404).json({ message: "Pedido no encontrado" });
+      }
+
+      // Verificar que el usuario es el delivery asignado
+      if (pedido.deliveryId !== userId) {
+        return res.status(403).json({ message: "No tienes permiso para actualizar este pedido" });
+      }
+
+      // Guardar ubicación en solicitud de delivery
+      const solicitud = await storage.getSolicitudDeliveryPorPedido(id);
+      if (solicitud) {
+        await storage.updateSolicitudDelivery(solicitud.id, {
+          latitudActual: latitud,
+          longitudActual: longitud,
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error al actualizar ubicación:", error);
+      res.status(500).json({ message: "Error al actualizar ubicación" });
+    }
+  });
+
+  // ============================================================
   // RUTAS DE TAXI
   // ============================================================
 

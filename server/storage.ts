@@ -4421,6 +4421,11 @@ export class DatabaseStorage implements IStorage {
       .orderBy(historialEstadosPedido.createdAt);
   }
 
+  async addHistorialEstadoPedido(data: InsertHistorialEstadoPedido): Promise<HistorialEstadoPedido> {
+    const [historial] = await db.insert(historialEstadosPedido).values(data).returning();
+    return historial;
+  }
+
   // ============================================================
   // SOLICITUDES DE DELIVERY
   // ============================================================
