@@ -145,6 +145,7 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
   
   // Formas de pago por catálogo
   const [formasPagoPorCatalogo, setFormasPagoPorCatalogo] = useState<Record<string, FormaPago[]>>({});
+  const [cargandoFormasPago, setCargandoFormasPago] = useState(false);
 
   const { data: resumen, isLoading } = useQuery<ResumenCarrito>({
     queryKey: ["/api/carrito/resumen"],
@@ -156,6 +157,7 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
     const fetchFormasPago = async () => {
       if (!resumen?.grupos || paso !== "pago") return;
       
+      setCargandoFormasPago(true);
       const nuevasFormasPago: Record<string, FormaPago[]> = {};
       
       for (const grupo of resumen.grupos) {
@@ -174,6 +176,7 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
       }
       
       setFormasPagoPorCatalogo(nuevasFormasPago);
+      setCargandoFormasPago(false);
     };
     
     fetchFormasPago();
@@ -740,8 +743,16 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
               </CardContent>
             </Card>
 
+            {/* Cargando formas de pago */}
+            {cargandoFormasPago && (
+              <div className="p-4 border rounded-lg bg-muted/30 flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
+                <span className="text-sm text-muted-foreground">Cargando métodos de pago del negocio...</span>
+              </div>
+            )}
+
             {/* Mensaje cuando el negocio no tiene formas de pago configuradas */}
-            {formasPagoNegocio.length === 0 && (
+            {!cargandoFormasPago && formasPagoNegocio.length === 0 && (
               <div className="p-4 border rounded-lg bg-muted/30 space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <Store className="h-4 w-4" />
@@ -755,7 +766,7 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
             )}
 
             {/* Formas de pago del negocio */}
-            {formasPagoNegocio.length > 0 && (
+            {!cargandoFormasPago && formasPagoNegocio.length > 0 && (
               <>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
                   <Store className="h-4 w-4" />
