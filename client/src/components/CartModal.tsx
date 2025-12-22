@@ -682,8 +682,8 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
 
   const renderPago = () => (
     <>
-      <ScrollArea className="flex-1 px-4">
-        <div className="space-y-4 pb-4">
+      <div className="flex-1 overflow-y-auto px-4" style={{ maxHeight: 'calc(85vh - 200px)' }}>
+        <div className="space-y-4 pb-6">
           <div className="flex justify-between items-center py-2">
             <span className="text-muted-foreground">Total a pagar:</span>
             <span className="font-bold text-lg text-purple-600">
@@ -958,7 +958,7 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
             </div>
           </div>
         </div>
-      </ScrollArea>
+      </div>
 
       <div className="border-t bg-muted/30 p-4 space-y-3">
         <Button
