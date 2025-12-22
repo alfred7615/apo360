@@ -41,6 +41,7 @@ export default function SeccionLocalesComerciales() {
   const [agregandoCarrito, setAgregandoCarrito] = useState(false);
   const [cantidadProducto, setCantidadProducto] = useState(1);
   const [misInteracciones, setMisInteracciones] = useState<Record<string, { like: boolean; favorito: boolean }>>({});
+  const [modalPrecio, setModalPrecio] = useState<{ abierto: boolean; item: ItemCatalogo | null; accion: 'carrito' | 'comprar' }>({ abierto: false, item: null, accion: 'carrito' });
 
   const { data: itemsDestacados = [], isLoading: cargandoDestacados } = useQuery<ItemCatalogo[]>({
     queryKey: ["/api/items-destacados"],
@@ -242,23 +243,36 @@ export default function SeccionLocalesComerciales() {
     return `S/ ${num.toFixed(2)}`;
   };
 
-  const handleAgregarCarrito = async (item: ItemCatalogo, precioSeleccionado: number = 1, e?: MouseEvent): Promise<boolean> => {
+  const obtenerPreciosValidos = (item: ItemCatalogo) => {
+    return [
+      { precio: item.precio1, etiqueta: item.etiquetaPrecio1 || "Personal", num: 1 },
+      { precio: item.precio2, etiqueta: item.etiquetaPrecio2 || "Mediana", num: 2 },
+      { precio: item.precio3, etiqueta: item.etiquetaPrecio3 || "Familiar", num: 3 },
+      { precio: item.precio4, etiqueta: item.etiquetaPrecio4 || "Extra", num: 4 }
+    ].filter(p => p.precio && parseFloat(String(p.precio)) > 0);
+  };
+
+  const handleClickCarrito = (item: ItemCatalogo, accion: 'carrito' | 'comprar', e?: MouseEvent) => {
     e?.stopPropagation();
     if (!isAuthenticated) {
       toast({
         title: "Inicia sesión",
         description: "Debes iniciar sesión para agregar productos al carrito",
       });
-      return false;
+      return;
     }
     
-    const preciosValidos = [
-      { precio: item.precio1, etiqueta: item.etiquetaPrecio1 || "Personal", num: 1 },
-      { precio: item.precio2, etiqueta: item.etiquetaPrecio2 || "Mediana", num: 2 },
-      { precio: item.precio3, etiqueta: item.etiquetaPrecio3 || "Familiar", num: 3 },
-      { precio: item.precio4, etiqueta: item.etiquetaPrecio4 || "Extra", num: 4 }
-    ].filter(p => p.precio && parseFloat(String(p.precio)) > 0);
+    const preciosValidos = obtenerPreciosValidos(item);
     
+    if (preciosValidos.length > 1) {
+      setModalPrecio({ abierto: true, item, accion });
+    } else {
+      handleAgregarCarritoDirecto(item, 1, accion);
+    }
+  };
+
+  const handleAgregarCarritoDirecto = async (item: ItemCatalogo, precioSeleccionado: number = 1, accion: 'carrito' | 'comprar' = 'carrito'): Promise<boolean> => {
+    const preciosValidos = obtenerPreciosValidos(item);
     const precioInfo = preciosValidos.find(p => p.num === precioSeleccionado) || preciosValidos[0] || { precio: item.precio, etiqueta: "Unidad", num: 1 };
     
     try {
@@ -287,14 +301,10 @@ export default function SeccionLocalesComerciales() {
     }
   };
 
-  const handleComprarAhora = async (item: ItemCatalogo, e?: MouseEvent) => {
-    e?.stopPropagation();
-    const exito = await handleAgregarCarrito(item, 1, e);
-    if (exito) {
-      toast({
-        title: "Producto agregado",
-        description: "Ve al carrito para completar tu pedido",
-      });
+  const handleConfirmarPrecioModal = (precioNum: number) => {
+    if (modalPrecio.item) {
+      handleAgregarCarritoDirecto(modalPrecio.item, precioNum, modalPrecio.accion);
+      setModalPrecio({ abierto: false, item: null, accion: 'carrito' });
     }
   };
 
@@ -441,7 +451,7 @@ export default function SeccionLocalesComerciales() {
               size="sm"
               variant="outline"
               className={`flex-1 ${esGrande ? 'h-7 text-xs' : 'h-6 text-[10px] px-1'}`}
-              onClick={(e) => handleAgregarCarrito(item, 1, e)}
+              onClick={(e) => handleClickCarrito(item, 'carrito', e)}
               data-testid={`button-carrito-${item.id}`}
             >
               <ShoppingCart className={`${esGrande ? 'h-3 w-3 mr-1' : 'h-3 w-3'}`} />
@@ -450,7 +460,7 @@ export default function SeccionLocalesComerciales() {
             <Button
               size="sm"
               className={`flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 ${esGrande ? 'h-7 text-xs' : 'h-6 text-[10px] px-1'}`}
-              onClick={(e) => handleComprarAhora(item, e)}
+              onClick={(e) => handleClickCarrito(item, 'comprar', e)}
               data-testid={`button-comprar-${item.id}`}
             >
               <Zap className={`${esGrande ? 'h-3 w-3 mr-1' : 'h-3 w-3'}`} />
@@ -842,6 +852,39 @@ export default function SeccionLocalesComerciales() {
                 ))}
               </div>
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={modalPrecio.abierto} onOpenChange={(open) => !open && setModalPrecio({ abierto: false, item: null, accion: 'carrito' })}>
+        <DialogContent className="sm:max-w-md" data-testid="modal-seleccion-precio">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Selecciona el tamaño
+            </DialogTitle>
+            <DialogDescription>
+              {modalPrecio.item?.nombre}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {modalPrecio.item && (
+            <div className="grid gap-2 py-4">
+              {obtenerPreciosValidos(modalPrecio.item).map((opcion) => (
+                <Button
+                  key={opcion.num}
+                  variant="outline"
+                  className="w-full justify-between h-12 text-left"
+                  onClick={() => handleConfirmarPrecioModal(opcion.num)}
+                  data-testid={`button-precio-${opcion.num}`}
+                >
+                  <span className="font-medium">{opcion.etiqueta}</span>
+                  <Badge variant="secondary" className="text-base font-bold">
+                    {formatPrecio(opcion.precio)}
+                  </Badge>
+                </Button>
+              ))}
+            </div>
           )}
         </DialogContent>
       </Dialog>
