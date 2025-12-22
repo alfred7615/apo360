@@ -209,3 +209,97 @@ export default function BarraEstadoPedido() {
     </>
   );
 }
+
+// Componente reutilizable para mostrar franja de estado en cada fila de pedido
+interface FranjaEstadoPedidoProps {
+  estado: string;
+  tipoEntrega?: string;
+  compact?: boolean;
+}
+
+// Función para normalizar los alias de estados a los estados base
+function normalizarEstado(estado: string): string {
+  const mapeoEstados: Record<string, string> = {
+    // Estados base (se mantienen igual)
+    "pendiente": "pendiente",
+    "aceptado": "aceptado",
+    "preparando": "preparando",
+    "listo": "listo",
+    "en_camino": "en_camino",
+    "entregado": "entregado",
+    "confirmado": "confirmado",
+    // Alias de estados
+    "en_preparacion": "preparando",
+    "listo_para_envio": "listo",
+    "recibido_conforme": "confirmado",
+    "completado": "confirmado",
+    "recibido": "pendiente",
+    // Posibles variantes adicionales
+    "aceptado_negocio": "aceptado",
+    "aceptado_tienda": "aceptado",
+    "en_camino_delivery": "en_camino",
+    "entregado_cliente": "entregado",
+    "confirmado_cliente": "confirmado",
+    "cancelado": "pendiente", // Para cancelados, mostramos en pendiente (deshabilitado)
+  };
+  // Fallback: si no está en el mapeo, intentar detectar el estado base
+  if (mapeoEstados[estado]) {
+    return mapeoEstados[estado];
+  }
+  // Intentar detectar por contenido
+  if (estado.includes("prepar")) return "preparando";
+  if (estado.includes("acept")) return "aceptado";
+  if (estado.includes("listo")) return "listo";
+  if (estado.includes("camino")) return "en_camino";
+  if (estado.includes("entreg")) return "entregado";
+  if (estado.includes("confirm") || estado.includes("complet")) return "confirmado";
+  // Por defecto, mostrar como pendiente
+  return "pendiente";
+}
+
+export function FranjaEstadoPedido({ estado, tipoEntrega, compact = false }: FranjaEstadoPedidoProps) {
+  const estadoNormalizado = normalizarEstado(estado || "pendiente");
+  const indiceEstado = ESTADOS_CLIENTE.findIndex(e => e.key === estadoNormalizado);
+  const esParaRecoger = tipoEntrega === "recoger" || tipoEntrega === "local";
+
+  // Filtrar estados para omitir en_camino si es para recoger
+  const estadosFiltrados = esParaRecoger 
+    ? ESTADOS_CLIENTE.filter(e => e.key !== "en_camino")
+    : ESTADOS_CLIENTE;
+
+  return (
+    <div 
+      className={`w-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-between text-white font-medium rounded-sm ${
+        compact ? "h-4 px-1 text-[8px]" : "h-5 px-2 text-[9px]"
+      }`}
+      data-testid="franja-estado-pedido"
+    >
+      <div className="flex items-center gap-0.5 flex-1">
+        {estadosFiltrados.map((estadoItem, index) => {
+          const esActual = estadoItem.key === estadoNormalizado;
+          const esCompletado = ESTADOS_CLIENTE.findIndex(e => e.key === estadoItem.key) < indiceEstado;
+          const Icon = estadoItem.icon;
+
+          return (
+            <div
+              key={estadoItem.key}
+              className={`flex items-center gap-0.5 ${
+                esActual 
+                  ? "text-white font-bold" 
+                  : esCompletado 
+                    ? "text-white/80" 
+                    : "text-white/40"
+              }`}
+            >
+              <Icon className={`${compact ? "h-2.5 w-2.5" : "h-3 w-3"} ${esActual ? "animate-pulse" : ""}`} />
+              <span className={compact ? "hidden lg:inline" : "hidden sm:inline"}>{estadoItem.label}</span>
+              {index < estadosFiltrados.length - 1 && (
+                <span className="mx-0.5 text-white/30">→</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

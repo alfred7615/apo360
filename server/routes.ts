@@ -8454,7 +8454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Registrar en historial
-      await storage.createHistorialEstadoPedido({
+      await storage.addHistorialEstadoPedido({
         pedidoId: id,
         estadoAnterior: 'entregado',
         estadoNuevo: 'confirmado',

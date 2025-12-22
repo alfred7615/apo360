@@ -27,6 +27,7 @@ import {
   CreditCard, QrCode, Building2
 } from "lucide-react";
 import { CartaDigitalModal } from "@/components/CartaDigitalModal";
+import { FranjaEstadoPedido } from "@/components/BarraEstadoPedido";
 
 interface DatosNegocio {
   id: string;
@@ -201,6 +202,7 @@ interface PedidoNegocio {
   latitud?: number;
   longitud?: number;
   estado?: string;
+  tipoEntrega?: string;
   conductorId?: string;
   notas?: string;
   createdAt?: string;
@@ -3055,6 +3057,12 @@ export default function LocalComercialPanel() {
                     <div className="space-y-3">
                       {misPedidos.map((pedido) => (
                         <Card key={pedido.id} data-testid={`card-pedido-${pedido.id}`}>
+                          {/* Franja de estado del pedido */}
+                          <FranjaEstadoPedido 
+                            estado={pedido.estado || "pendiente"} 
+                            tipoEntrega={pedido.tipoEntrega}
+                            compact={true}
+                          />
                           <CardContent className="py-4">
                             <div className="flex items-start justify-between flex-wrap gap-3">
                               <div className="flex-1 min-w-0">
