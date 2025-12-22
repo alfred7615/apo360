@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { 
   Trash2, Minus, Plus, ShoppingBag, Store, ArrowRight, Loader2, 
   CreditCard, Wallet, Upload, Check, Phone, Building2, ArrowLeft,
-  CheckCircle2, AlertCircle, Receipt
+  CheckCircle2, AlertCircle, Receipt, MapPin, Copy, CheckCheck
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -49,10 +49,27 @@ interface CarritoItem {
   itemCatalogoId: string | null;
   catalogoId: string | null;
   nombreProducto: string | null;
+  codigoProducto: string | null;
+  nombreCategoria: string | null;
+  codigoCategoria: string | null;
+  etiquetaPrecio: string | null;
   precioUnitario: string | null;
   cantidad: number;
   imagenProducto: string | null;
   notas: string | null;
+}
+
+interface LugarUsuario {
+  id: string;
+  nombre: string;
+  latitud: number;
+  longitud: number;
+  direccion: string | null;
+}
+
+interface SaldoUsuario {
+  saldo: string;
+  moneda: string;
 }
 
 interface ResumenGrupo {
@@ -122,6 +139,10 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
   // Ticket state
   const [mostrarTicket, setMostrarTicket] = useState(false);
   const [datosTicket, setDatosTicket] = useState<DatosTicket | null>(null);
+  
+  // Ubicación delivery state
+  const [lugarSeleccionadoId, setLugarSeleccionadoId] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState<string | null>(null);
 
   const { data: resumen, isLoading } = useQuery<ResumenCarrito>({
     queryKey: ["/api/carrito/resumen"],
@@ -134,6 +155,21 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
     queryKey: ["/api/carta-digital", primerCatalogoId, "formas-pago"],
     enabled: !!primerCatalogoId && paso === "pago",
   });
+  
+  // Obtener lugares del usuario
+  const { data: lugaresUsuario = [] } = useQuery<LugarUsuario[]>({
+    queryKey: ["/api/lugares-usuario"],
+    enabled: paso === "pago",
+  });
+  
+  // Obtener saldo de la billetera
+  const { data: saldoUsuario } = useQuery<SaldoUsuario>({
+    queryKey: ["/api/saldos/mi-saldo"],
+    enabled: paso === "pago",
+  });
+  
+  const saldoDisponible = parseFloat(saldoUsuario?.saldo || "0");
+  const saldoSuficiente = saldoDisponible >= (totalConvertido || resumen?.totalGeneral || 0);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -146,8 +182,28 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
       setNotasPedido("");
       setMostrarTicket(false);
       setDatosTicket(null);
+      setLugarSeleccionadoId(null);
+      setCopiado(null);
     }
   }, [abierto]);
+  
+  const copiarAlPortapapeles = async (texto: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(texto);
+      setCopiado(id);
+      toast({
+        title: "Copiado",
+        description: "Número copiado al portapapeles",
+      });
+      setTimeout(() => setCopiado(null), 2000);
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo copiar al portapapeles",
+      });
+    }
+  };
 
   useEffect(() => {
     const convertir = async () => {
@@ -305,6 +361,22 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
         }
       }
 
+      // Obtener datos de ubicación si se seleccionó
+      let direccionEntrega = null;
+      let latitudEntrega = null;
+      let longitudEntrega = null;
+      let referenciaEntrega = null;
+      
+      if (lugarSeleccionadoId) {
+        const lugar = lugaresUsuario.find(l => l.id === lugarSeleccionadoId);
+        if (lugar) {
+          direccionEntrega = lugar.direccion || lugar.nombre;
+          latitudEntrega = lugar.latitud;
+          longitudEntrega = lugar.longitud;
+          referenciaEntrega = lugar.nombre;
+        }
+      }
+
       // Crear pedido para cada grupo/negocio
       for (const grupo of resumen?.grupos || []) {
         await crearPedidoMutation.mutateAsync({
@@ -323,6 +395,11 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           formaPagoId: formaPagoSeleccionada?.id,
           voucherUrl,
           notas: notasPedido,
+          tipoEntrega: lugarSeleccionadoId ? "delivery" : "recoger",
+          direccionEntrega,
+          latitudEntrega,
+          longitudEntrega,
+          referenciaEntrega,
         });
         
         // Generar datos del ticket para el primer negocio
@@ -359,11 +436,14 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
 
   const renderCarrito = () => (
     <>
-      <ScrollArea className="flex-1 px-4">
+      <div 
+        className="flex-1 overflow-y-auto px-4 overscroll-contain"
+        style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
+      >
         <div className="space-y-4 pb-4">
           {resumen?.grupos.map((grupo, index) => (
             <div key={grupo.catalogoId || `grupo-${index}`} className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm font-medium text-purple-600 bg-purple-50 dark:bg-purple-950/30 p-2 rounded-lg">
                 <Store className="h-4 w-4" />
                 <span>{grupo.nombreNegocio}</span>
               </div>
@@ -371,35 +451,63 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
               {grupo.items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex gap-3 p-3 rounded-lg border bg-card"
+                  className="p-3 rounded-lg border bg-card"
                   data-testid={`cart-item-${item.id}`}
                 >
-                  {item.imagenProducto ? (
-                    <img
-                      src={item.imagenProducto}
-                      alt={item.nombreProducto || "Producto"}
-                      className="w-16 h-16 object-cover rounded-md"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center">
-                      <ShoppingBag className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                  )}
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {item.nombreProducto || "Producto"}
-                    </p>
-                    <p className="text-sm text-purple-600 font-semibold">
-                      S/ {parseFloat(item.precioUnitario || "0").toFixed(2)}
-                    </p>
-                    {item.notas && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {item.notas}
-                      </p>
+                  <div className="flex gap-3">
+                    {item.imagenProducto ? (
+                      <img
+                        src={item.imagenProducto}
+                        alt={item.nombreProducto || "Producto"}
+                        className="w-14 h-14 object-cover rounded-md flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
+                        <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                      </div>
                     )}
                     
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex-1 min-w-0">
+                      {/* Categoría en letras pequeñas */}
+                      {item.codigoCategoria && item.nombreCategoria && (
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">
+                          {item.codigoCategoria} {item.nombreCategoria}
+                        </p>
+                      )}
+                      
+                      {/* Código + Nombre del producto */}
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium text-sm leading-tight">
+                          {item.codigoProducto && (
+                            <span className="text-purple-600">{item.codigoProducto} </span>
+                          )}
+                          {item.nombreProducto || "Producto"}
+                        </p>
+                        {/* Precio a la derecha */}
+                        <p className="text-sm text-purple-600 font-bold whitespace-nowrap">
+                          S/ {parseFloat(item.precioUnitario || "0").toFixed(2)}
+                        </p>
+                      </div>
+                      
+                      {/* Etiqueta de precio (tamaño) */}
+                      {item.etiquetaPrecio && (
+                        <Badge variant="secondary" className="text-[10px] h-4 mt-1">
+                          {item.etiquetaPrecio}
+                        </Badge>
+                      )}
+                      
+                      {item.notas && (
+                        <p className="text-xs text-muted-foreground truncate mt-1">
+                          {item.notas}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Cantidad abajo */}
+                  <div className="flex items-center justify-between mt-3 pt-2 border-t">
+                    <span className="text-xs text-muted-foreground">Cantidad:</span>
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="icon"
@@ -427,7 +535,7 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-destructive hover:text-destructive ml-auto"
+                        className="h-7 w-7 text-destructive hover:text-destructive ml-2"
                         onClick={() => handleEliminar(item.id)}
                         disabled={eliminarItemMutation.isPending}
                         data-testid={`button-remove-${item.id}`}
@@ -439,9 +547,9 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
                 </div>
               ))}
               
-              <div className="flex justify-between text-sm px-1">
+              <div className="flex justify-between text-sm px-1 py-1 bg-muted/50 rounded">
                 <span className="text-muted-foreground">Subtotal:</span>
-                <span className="font-medium">S/ {formatearPrecio(grupo.subtotal)}</span>
+                <span className="font-semibold">S/ {formatearPrecio(grupo.subtotal)}</span>
               </div>
               
               {index < (resumen?.grupos.length || 0) - 1 && (
@@ -450,7 +558,7 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
             </div>
           ))}
         </div>
-      </ScrollArea>
+      </div>
 
       <div className="border-t bg-muted/30 p-4 space-y-4">
         <div className="flex items-center gap-2">
@@ -538,23 +646,43 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
             
             {/* Billetera APO-360 */}
             <Card 
-              className={`cursor-pointer transition-all ${usarBilletera ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-950' : 'hover-elevate'}`}
+              className={`cursor-pointer transition-all ${!saldoSuficiente ? 'opacity-60' : ''} ${usarBilletera ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-950' : 'hover-elevate'}`}
               onClick={() => {
-                setUsarBilletera(true);
-                setFormaPagoSeleccionada(null);
+                if (saldoSuficiente) {
+                  setUsarBilletera(true);
+                  setFormaPagoSeleccionada(null);
+                } else {
+                  toast({
+                    variant: "destructive",
+                    title: "Saldo insuficiente",
+                    description: "Recarga tu billetera o selecciona otra forma de pago del negocio",
+                  });
+                }
               }}
               data-testid="card-pago-billetera"
             >
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
-                  <Wallet className="h-6 w-6 text-white" />
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
+                    <Wallet className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">Billetera APO-360</p>
+                    <p className="text-sm text-muted-foreground">
+                      Saldo: <span className={saldoSuficiente ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                        S/ {formatearPrecio(saldoDisponible)}
+                      </span>
+                    </p>
+                  </div>
+                  {usarBilletera && saldoSuficiente && (
+                    <Check className="h-5 w-5 text-purple-600" />
+                  )}
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium">Billetera APO-360</p>
-                  <p className="text-sm text-muted-foreground">Paga con tu saldo disponible</p>
-                </div>
-                {usarBilletera && (
-                  <Check className="h-5 w-5 text-purple-600" />
+                {!saldoSuficiente && (
+                  <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <AlertCircle className="h-3 w-3" />
+                    Saldo insuficiente. Usa las formas de pago del negocio.
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -589,6 +717,24 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
                               <span className="flex items-center gap-1">
                                 <Phone className="h-3 w-3" />
                                 {forma.telefono}
+                                {(forma.tipo === "yape" || forma.tipo === "plin") && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-5 w-5 ml-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      copiarAlPortapapeles(forma.telefono!, `tel-${forma.id}`);
+                                    }}
+                                    data-testid={`btn-copiar-telefono-${forma.id}`}
+                                  >
+                                    {copiado === `tel-${forma.id}` ? (
+                                      <CheckCheck className="h-3 w-3 text-green-600" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                )}
                               </span>
                             )}
                             {forma.banco && (
@@ -599,9 +745,27 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
                             )}
                           </div>
                           {forma.numeroCuenta && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Cuenta: {forma.numeroCuenta}
-                            </p>
+                            <div className="flex items-center gap-1 mt-1">
+                              <p className="text-xs text-muted-foreground">
+                                Cuenta: {forma.numeroCuenta}
+                              </p>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  copiarAlPortapapeles(forma.numeroCuenta!, `cuenta-${forma.id}`);
+                                }}
+                                data-testid={`btn-copiar-cuenta-${forma.id}`}
+                              >
+                                {copiado === `cuenta-${forma.id}` ? (
+                                  <CheckCheck className="h-3 w-3 text-green-600" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
                           )}
                         </div>
                         {formaPagoSeleccionada?.id === forma.id && (
@@ -662,17 +826,57 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
               </div>
             )}
 
-            {/* Notas del pedido */}
-            <div className="space-y-2 pt-2">
-              <Label>Notas adicionales (opcional)</Label>
-              <Textarea
-                value={notasPedido}
-                onChange={(e) => setNotasPedido(e.target.value)}
-                placeholder="Indicaciones especiales, dirección de entrega..."
-                className="resize-none"
-                rows={2}
-                data-testid="textarea-notas-pedido"
-              />
+            {/* Notas del pedido y ubicación */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-start gap-3">
+                <div className="flex-1 space-y-2">
+                  <Label>Notas adicionales (opcional)</Label>
+                  <Textarea
+                    value={notasPedido}
+                    onChange={(e) => setNotasPedido(e.target.value)}
+                    placeholder="Referencias para llegar, detalles del pedido..."
+                    className="resize-none"
+                    rows={2}
+                    data-testid="textarea-notas-pedido"
+                  />
+                </div>
+                
+                {/* Selector de ubicación */}
+                <div className="w-1/3 space-y-2">
+                  <Label className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    Ubicación
+                  </Label>
+                  <Select
+                    value={lugarSeleccionadoId || ""}
+                    onValueChange={(value) => setLugarSeleccionadoId(value || null)}
+                  >
+                    <SelectTrigger className="w-full" data-testid="select-ubicacion">
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sin ubicación</SelectItem>
+                      {lugaresUsuario.map((lugar) => (
+                        <SelectItem key={lugar.id} value={lugar.id}>
+                          {lugar.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {lugarSeleccionadoId && (
+                    <p className="text-xs text-muted-foreground">
+                      {lugaresUsuario.find(l => l.id === lugarSeleccionadoId)?.direccion || "GPS guardado"}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {lugaresUsuario.length === 0 && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  Puedes guardar tus ubicaciones en tu perfil para delivery
+                </p>
+              )}
             </div>
           </div>
         </div>

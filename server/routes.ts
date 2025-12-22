@@ -7916,21 +7916,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const usuarioId = req.user.claims.sub;
       const items = await storage.getCarritoUsuario(usuarioId);
       
-      // Enriquecer items con datos del producto
+      // Enriquecer items con datos del producto, categoría y código
       const itemsEnriquecidos = await Promise.all(items.map(async (item) => {
         let nombreProducto = item.etiquetaPrecio || 'Producto';
         let imagenProducto: string | null = null;
+        let codigoProducto: string | null = null;
+        let nombreCategoria: string | null = null;
+        let codigoCategoria: string | null = null;
+        let etiquetaPrecio: string | null = item.etiquetaPrecio || null;
         
         if (item.tipoProducto === 'item_catalogo' && item.itemCatalogoId) {
-          const itemCatalogo = await storage.getItemCatalogo(item.itemCatalogoId);
+          const itemCatalogo = await storage.getItemCatalogoLocal(item.itemCatalogoId);
           if (itemCatalogo) {
-            nombreProducto = itemCatalogo.nombre + (item.etiquetaPrecio ? ` (${item.etiquetaPrecio})` : '');
+            nombreProducto = itemCatalogo.nombre;
             imagenProducto = itemCatalogo.imagenUrl || null;
+            codigoProducto = itemCatalogo.codigo || null;
+            
+            // Obtener categoría
+            if (itemCatalogo.categoriaId) {
+              const categoria = await storage.getCategoriaCatalogo(itemCatalogo.categoriaId);
+              if (categoria) {
+                nombreCategoria = categoria.nombre;
+                codigoCategoria = categoria.codigo;
+              }
+            }
           }
         } else if (item.tipoProducto === 'producto_usuario' && item.productoUsuarioId) {
           const producto = await storage.getProductoUsuario(item.productoUsuarioId);
           if (producto) {
-            nombreProducto = producto.nombre + (item.etiquetaPrecio ? ` (${item.etiquetaPrecio})` : '');
+            nombreProducto = producto.nombre;
             imagenProducto = producto.imagenUrl || null;
           }
         }
@@ -7941,6 +7955,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           itemCatalogoId: item.itemCatalogoId || null,
           catalogoId: item.catalogoId || null,
           nombreProducto,
+          codigoProducto,
+          nombreCategoria,
+          codigoCategoria,
+          etiquetaPrecio,
           precioUnitario: item.precioUnitario,
           cantidad: item.cantidad || 1,
           imagenProducto,
