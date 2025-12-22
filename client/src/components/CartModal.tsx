@@ -339,8 +339,12 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
 
   const crearPedidoMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log("DEBUG: Enviando pedido a /api/pedidos", data);
       const res = await apiRequest("POST", "/api/pedidos", data);
-      return res.json();
+      console.log("DEBUG: Respuesta recibida", res.status, res.ok);
+      const json = await res.json();
+      console.log("DEBUG: JSON parseado", json);
+      return json;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/carrito"] });
