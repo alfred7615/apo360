@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { AudioControllerProvider } from "@/contexts/AudioControllerContext";
+import { CartProvider } from "@/contexts/CartContext";
 import Encabezado from "@/components/Encabezado";
 import BarraEstadoPedido from "@/components/BarraEstadoPedido";
 import BotonPanico from "@/components/BotonPanico";
@@ -27,6 +28,7 @@ import BusesPasajero from "@/pages/buses-pasajero";
 import Billetera from "@/pages/billetera";
 import CalculadoraCambio from "@/pages/calculadora-cambio";
 import CartaDigital from "@/pages/carta-digital";
+import Delivery from "@/pages/delivery";
 import NotFound from "@/pages/not-found";
 import NotificacionesAdmin from "@/components/NotificacionesAdmin";
 
@@ -62,6 +64,8 @@ function Router() {
       <Route path="/billetera" component={Billetera} />
       <Route path="/calculadora-cambio" component={CalculadoraCambio} />
       <Route path="/carta/:catalogoId" component={CartaDigital} />
+      <Route path="/delivery" component={Delivery} />
+      <Route path="/servicios" component={Delivery} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -93,9 +97,11 @@ function App() {
       <TooltipProvider>
         <ViewModeProvider>
           <AudioControllerProvider>
-            <AppContent />
-            <Toaster />
-            <NotificacionesAdmin />
+            <CartProvider>
+              <AppContent />
+              <Toaster />
+              <NotificacionesAdmin />
+            </CartProvider>
           </AudioControllerProvider>
         </ViewModeProvider>
       </TooltipProvider>

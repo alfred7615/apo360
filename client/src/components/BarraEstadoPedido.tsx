@@ -124,7 +124,7 @@ export default function BarraEstadoPedido() {
   return (
     <>
       <div 
-        className="w-full h-5 bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-between px-2 text-white text-[10px] font-medium shadow-sm"
+        className="w-full h-5 bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-between px-2 text-white text-[10px] font-medium shadow-sm sticky top-12 z-40"
         data-testid="barra-estado-pedido"
       >
         {/* Estados del pedido - visualización compacta */}

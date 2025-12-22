@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useAudioController } from "@/contexts/AudioControllerContext";
+import { useCart } from "@/contexts/CartContext";
 import { useQuery } from "@tanstack/react-query";
 import SelectorAudio from "./SelectorAudio";
 import CartModal from "./CartModal";
@@ -21,10 +22,10 @@ import CartModal from "./CartModal";
 export default function Encabezado() {
   const [location, setLocation] = useLocation();
   const { user, isAuthenticated } = useAuth();
+  const { carritoAbierto, pasoInicial, abrirCarrito, cerrarCarrito } = useCart();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [selectorAudioAbierto, setSelectorAudioAbierto] = useState(false);
   const [billeteraAbierta, setBilleteraAbierta] = useState(false);
-  const [carritoAbierto, setCarritoAbierto] = useState(false);
   
   const audio = useAudioController();
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -180,10 +181,10 @@ export default function Encabezado() {
                 variant="ghost"
                 size="icon"
                 className="text-white hover:bg-white/20 relative touch-manipulation"
-                onClick={() => setCarritoAbierto(true)}
+                onClick={() => abrirCarrito("carrito")}
                 onTouchEnd={(e) => {
                   e.preventDefault();
-                  setCarritoAbierto(true);
+                  abrirCarrito("carrito");
                 }}
                 data-testid="button-carrito-header"
                 title="Mi Carrito"
@@ -200,7 +201,8 @@ export default function Encabezado() {
             {/* Modal del Carrito */}
             <CartModal 
               abierto={carritoAbierto} 
-              onClose={() => setCarritoAbierto(false)} 
+              onClose={cerrarCarrito}
+              pasoInicial={pasoInicial}
             />
 
             {/* Botón de Billetera - solo si está autenticado */}

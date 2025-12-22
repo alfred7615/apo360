@@ -2,6 +2,7 @@ import { useState, type MouseEvent } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ interface ItemCatalogoExtendido extends ItemCatalogo {
 export default function SeccionLocalesComerciales() {
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
+  const { abrirCarrito } = useCart();
   const [productoSeleccionado, setProductoSeleccionado] = useState<ItemCatalogo | null>(null);
   const [catalogoSeleccionado, setCatalogoSeleccionado] = useState<CatalogoConItems | null>(null);
   const [preciosSeleccionados, setPreciosSeleccionados] = useState<number[]>([]);
@@ -285,11 +287,17 @@ export default function SeccionLocalesComerciales() {
         precioUnitario: precioInfo.precio,
         catalogoId: item.catalogoId,
       });
-      toast({
-        title: "Agregado al carrito",
-        description: `${item.nombre} se agregó correctamente`,
-      });
       queryClient.invalidateQueries({ queryKey: ["/api/carrito"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/carrito/resumen"] });
+      
+      if (accion === 'comprar') {
+        abrirCarrito("pago");
+      } else {
+        toast({
+          title: "Agregado al carrito",
+          description: `${item.nombre} se agregó correctamente`,
+        });
+      }
       return true;
     } catch (error) {
       toast({
@@ -412,7 +420,7 @@ export default function SeccionLocalesComerciales() {
                 className="flex items-center gap-0.5 text-muted-foreground hover:text-red-500 transition-colors"
                 data-testid={`button-like-${item.id}`}
               >
-                <Heart className={`h-3.5 w-3.5 ${usuarioHaDadoLike(item.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+                <Heart className={`h-3.5 w-3.5 ${usuarioHaDadoLike(item.id) ? 'fill-red-500 text-red-500' : 'text-gray-600 dark:text-gray-500'}`} />
                 <span className="text-[10px]">{item.likes || 0}</span>
               </button>
               
@@ -424,7 +432,7 @@ export default function SeccionLocalesComerciales() {
                 className="flex items-center gap-0.5 text-muted-foreground hover:text-yellow-500 transition-colors"
                 data-testid={`button-favorito-${item.id}`}
               >
-                <Bookmark className={`h-3.5 w-3.5 ${usuarioHaDadoFavorito(item.id) ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'}`} />
+                <Bookmark className={`h-3.5 w-3.5 ${usuarioHaDadoFavorito(item.id) ? 'fill-yellow-500 text-yellow-500' : 'text-gray-600 dark:text-gray-500'}`} />
                 <span className="text-[10px]">{item.favoritos || 0}</span>
               </button>
               

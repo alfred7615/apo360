@@ -42,6 +42,7 @@ interface DatosTicket {
 interface CartModalProps {
   abierto: boolean;
   onClose: () => void;
+  pasoInicial?: "carrito" | "pago" | "confirmacion";
 }
 
 interface CarritoItem {
@@ -121,9 +122,15 @@ const TIPOS_PAGO_ICONOS: Record<string, string> = {
 
 type PasoCheckout = "carrito" | "pago" | "confirmacion";
 
-export default function CartModal({ abierto, onClose }: CartModalProps) {
+export default function CartModal({ abierto, onClose, pasoInicial = "carrito" }: CartModalProps) {
   const { toast } = useToast();
-  const [paso, setPaso] = useState<PasoCheckout>("carrito");
+  const [paso, setPaso] = useState<PasoCheckout>(pasoInicial);
+  
+  useEffect(() => {
+    if (abierto) {
+      setPaso(pasoInicial);
+    }
+  }, [abierto, pasoInicial]);
   const [monedaSeleccionada, setMonedaSeleccionada] = useState("PEN");
   const [totalConvertido, setTotalConvertido] = useState<number | null>(null);
   const [tasaUsada, setTasaUsada] = useState<number>(1);
