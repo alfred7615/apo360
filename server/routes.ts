@@ -872,8 +872,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pedidoId: id,
           estadoAnterior: pedidoExistente.estado || 'pendiente',
           estadoNuevo: estado,
-          cambiadoPor: usuarioId,
-          notas: notas || null,
+          usuarioId: usuarioId,
+          tipoUsuario: 'local',
+          descripcion: notas || null,
         });
       } catch (e) {
         // El historial no es crítico, continuar
@@ -8425,127 +8426,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error al obtener pedido:", error);
       res.status(500).json({ message: error.message || "Error al obtener pedido" });
-    }
-  });
-
-  // Crear pedido desde carrito
-  app.post('/api/pedidos', isAuthenticated, async (req: any, res) => {
-    try {
-      const usuarioId = req.user.claims.sub;
-      const { 
-        catalogoId, 
-        tipoEntrega, 
-        direccionEntrega, 
-        latitudEntrega, 
-        longitudEntrega,
-        referenciaEntrega,
-        metodoPago,
-        notasCliente,
-        moneda = 'PEN',
-      } = req.body;
-      
-      // Obtener items del carrito para este catálogo
-      let itemsCarrito = await storage.getCarritoUsuario(usuarioId);
-      if (catalogoId) {
-        itemsCarrito = itemsCarrito.filter(item => item.catalogoId === catalogoId);
-      }
-      
-      if (itemsCarrito.length === 0) {
-        return res.status(400).json({ message: "Carrito vacío" });
-      }
-      
-      // Calcular subtotal
-      const subtotal = itemsCarrito.reduce((sum, item) => {
-        return sum + (parseFloat(item.precioUnitario) * item.cantidad);
-      }, 0);
-      
-      // Obtener catálogo para saber el local comercial
-      const catalogo = catalogoId ? await storage.getCatalogoLocal(catalogoId) : null;
-      const localComercialId = catalogo?.usuarioId || null;
-      
-      // Validar saldo si paga con billetera
-      if (metodoPago === 'billetera') {
-        const saldo = await storage.getSaldoUsuario(usuarioId);
-        const saldoActual = saldo ? parseFloat(saldo.saldo) : 0;
-        if (saldoActual < subtotal) {
-          return res.status(400).json({ 
-            message: `Saldo insuficiente. Necesita S/ ${subtotal.toFixed(2)}, tiene S/ ${saldoActual.toFixed(2)}` 
-          });
-        }
-      }
-      
-      // Crear pedido
-      const pedido = await storage.createPedido({
-        usuarioId,
-        catalogoId: catalogoId || null,
-        localComercialId,
-        subtotal: subtotal.toString(),
-        costoDelivery: "0",
-        descuento: "0",
-        total: subtotal.toString(),
-        moneda,
-        tipoEntrega: tipoEntrega || 'recoger',
-        direccionEntrega: direccionEntrega || null,
-        latitudEntrega: latitudEntrega || null,
-        longitudEntrega: longitudEntrega || null,
-        referenciaEntrega: referenciaEntrega || null,
-        estado: 'pendiente',
-        metodoPago: metodoPago || 'billetera',
-        estadoPago: 'pendiente',
-        notasCliente: notasCliente || null,
-      });
-      
-      // Agregar items al pedido
-      for (const itemCarrito of itemsCarrito) {
-        let nombreProducto = 'Producto';
-        let descripcionProducto = null;
-        let imagenProducto = null;
-        
-        if (itemCarrito.tipoProducto === 'item_catalogo' && itemCarrito.itemCatalogoId) {
-          const producto = await storage.getItemCatalogo(itemCarrito.itemCatalogoId);
-          if (producto) {
-            nombreProducto = producto.nombre;
-            descripcionProducto = producto.descripcion;
-            imagenProducto = producto.imagenUrl;
-          }
-        } else if (itemCarrito.tipoProducto === 'producto_usuario' && itemCarrito.productoUsuarioId) {
-          const producto = await storage.getProductoUsuario(itemCarrito.productoUsuarioId);
-          if (producto) {
-            nombreProducto = producto.nombre;
-            descripcionProducto = producto.descripcion;
-            imagenProducto = producto.imagenUrl;
-          }
-        }
-        
-        await storage.addItemPedido({
-          pedidoId: pedido.id,
-          itemCatalogoId: itemCarrito.itemCatalogoId,
-          productoUsuarioId: itemCarrito.productoUsuarioId,
-          tipoProducto: itemCarrito.tipoProducto,
-          nombreProducto,
-          descripcionProducto,
-          imagenProducto,
-          precioSeleccionado: itemCarrito.precioSeleccionado,
-          etiquetaPrecio: itemCarrito.etiquetaPrecio,
-          precioUnitario: itemCarrito.precioUnitario,
-          cantidad: itemCarrito.cantidad,
-          subtotal: (parseFloat(itemCarrito.precioUnitario) * itemCarrito.cantidad).toString(),
-          notas: itemCarrito.notas,
-        });
-      }
-      
-      // Limpiar carrito
-      await storage.limpiarCarritoUsuario(usuarioId, catalogoId);
-      
-      // Notificar al local comercial via WebSocket
-      if (localComercialId) {
-        notificarSuperAdmins(`nuevo_pedido:${localComercialId}`, { pedidoId: pedido.id });
-      }
-      
-      res.status(201).json(pedido);
-    } catch (error: any) {
-      console.error("Error al crear pedido:", error);
-      res.status(500).json({ message: error.message || "Error al crear pedido" });
     }
   });
 
