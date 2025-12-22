@@ -68,3 +68,13 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 -   **Email Services**: SMTP (via Gmail SMTP)
 -   **Fonts**: Google Fonts (Inter)
 -   **Google People API**: For Google Contacts import.
+
+## Recent Changes (December 2025)
+
+### Bug Fixes
+- **CONFIRMAR COMPRA Checkout Bug Fixed**: Added guard in `server/index-dev.ts` Vite catch-all middleware to skip non-GET requests and `/api` routes. This ensures POST requests to `/api/pedidos` reach Express instead of being served HTML by Vite's SPA fallback.
+- **Reaction Icons (Like/Favorite) Now Gray by Default**: Modified `SeccionLocalesComerciales.tsx` to show Heart and Bookmark icons in gray by default. Icons only show color (red for likes, yellow for favorites) when the current authenticated user has interacted with that specific product.
+
+### New Features
+- **User Interactions Map Endpoint**: Added `GET /api/mis-interacciones-productos` endpoint that returns a map of all user's product interactions (likes and favorites) for efficient frontend rendering.
+- **Storage Method**: Added `getMisInteraccionesProductos()` in `server/storage.ts` to fetch all interactions for a user as a hash map.

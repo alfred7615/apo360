@@ -3745,6 +3745,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Crear nuevo pedido desde carta digital
   app.post('/api/pedidos', isAuthenticated, async (req: any, res) => {
+    console.log("🛒 POST /api/pedidos - Request recibido", { 
+      body: req.body,
+      userId: req.user?.claims?.sub 
+    });
     try {
       const userId = req.user.claims.sub;
       const {
@@ -7567,6 +7571,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error al obtener favoritos:", error);
       res.status(500).json({ message: error.message || "Error al obtener favoritos" });
+    }
+  });
+
+  // Mapa de mis interacciones en productos (likes y favoritos)
+  app.get('/api/mis-interacciones-productos', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const interacciones = await storage.getMisInteraccionesProductos(usuarioId);
+      res.json(interacciones);
+    } catch (error: any) {
+      console.error("Error al obtener interacciones:", error);
+      res.status(500).json({ message: error.message || "Error al obtener interacciones" });
     }
   });
 

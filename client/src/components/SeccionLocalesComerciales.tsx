@@ -40,6 +40,7 @@ export default function SeccionLocalesComerciales() {
   const [preciosSeleccionados, setPreciosSeleccionados] = useState<number[]>([]);
   const [agregandoCarrito, setAgregandoCarrito] = useState(false);
   const [cantidadProducto, setCantidadProducto] = useState(1);
+  const [misInteracciones, setMisInteracciones] = useState<Record<string, { like: boolean; favorito: boolean }>>({});
 
   const { data: itemsDestacados = [], isLoading: cargandoDestacados } = useQuery<ItemCatalogo[]>({
     queryKey: ["/api/items-destacados"],
@@ -53,6 +54,21 @@ export default function SeccionLocalesComerciales() {
     queryKey: ["/api/catalogos-con-items"],
   });
 
+  const { data: favoritosUsuario = [] } = useQuery<any[]>({
+    queryKey: ["/api/favoritos"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: misFavoritosProductos = [] } = useQuery<any[]>({
+    queryKey: ["/api/mis-favoritos-productos"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: mapaInteraccionesUsuario = {} } = useQuery<Record<string, { like: boolean; favorito: boolean }>>({
+    queryKey: ["/api/mis-interacciones-productos"],
+    enabled: isAuthenticated,
+  });
+
   const registrarVistaMutation = useMutation({
     mutationFn: async (itemId: string) => {
       await apiRequest("POST", `/api/items-catalogo/${itemId}/vista`);
@@ -61,12 +77,24 @@ export default function SeccionLocalesComerciales() {
 
   const interaccionMutation = useMutation({
     mutationFn: async ({ itemId, tipo }: { itemId: string; tipo: string }) => {
-      return await apiRequest("POST", `/api/items-catalogo/${itemId}/interaccion`, { tipo });
+      const res = await apiRequest("POST", `/api/items-catalogo/${itemId}/interaccion`, { tipo });
+      return { itemId, tipo, resultado: await res.json() };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const { itemId, tipo, resultado } = data;
+      setMisInteracciones(prev => ({
+        ...prev,
+        [itemId]: {
+          ...prev[itemId],
+          [tipo]: resultado.activo,
+        }
+      }));
       queryClient.invalidateQueries({ queryKey: ["/api/items-destacados"] });
       queryClient.invalidateQueries({ queryKey: ["/api/items-recientes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/catalogos-con-items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-favoritos-productos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-interacciones-productos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/favoritos"] });
     },
     onError: () => {
       toast({
@@ -166,6 +194,20 @@ export default function SeccionLocalesComerciales() {
       return;
     }
     interaccionMutation.mutate({ itemId, tipo });
+  };
+
+  const usuarioHaDadoLike = (itemId: string): boolean => {
+    if (misInteracciones[itemId]?.like !== undefined) {
+      return misInteracciones[itemId].like;
+    }
+    return mapaInteraccionesUsuario[itemId]?.like || false;
+  };
+
+  const usuarioHaDadoFavorito = (itemId: string): boolean => {
+    if (misInteracciones[itemId]?.favorito !== undefined) {
+      return misInteracciones[itemId].favorito;
+    }
+    return mapaInteraccionesUsuario[itemId]?.favorito || false;
   };
 
   const handleCompartir = async (item: ItemCatalogo) => {
@@ -360,7 +402,7 @@ export default function SeccionLocalesComerciales() {
                 className="flex items-center gap-0.5 text-muted-foreground hover:text-red-500 transition-colors"
                 data-testid={`button-like-${item.id}`}
               >
-                <Heart className={`h-3.5 w-3.5 ${(item.likes || 0) > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                <Heart className={`h-3.5 w-3.5 ${usuarioHaDadoLike(item.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
                 <span className="text-[10px]">{item.likes || 0}</span>
               </button>
               
@@ -372,7 +414,7 @@ export default function SeccionLocalesComerciales() {
                 className="flex items-center gap-0.5 text-muted-foreground hover:text-yellow-500 transition-colors"
                 data-testid={`button-favorito-${item.id}`}
               >
-                <Bookmark className={`h-3.5 w-3.5 ${(item.favoritos || 0) > 0 ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                <Bookmark className={`h-3.5 w-3.5 ${usuarioHaDadoFavorito(item.id) ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'}`} />
                 <span className="text-[10px]">{item.favoritos || 0}</span>
               </button>
               
@@ -709,15 +751,15 @@ export default function SeccionLocalesComerciales() {
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="flex items-center gap-4 text-muted-foreground">
                     <div className="flex items-center gap-1">
-                      <Heart className="h-4 w-4" />
+                      <Heart className={`h-4 w-4 ${usuarioHaDadoLike(productoSeleccionado.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
                       <span className="text-sm">{productoSeleccionado.likes || 0}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Bookmark className="h-4 w-4" />
+                      <Bookmark className={`h-4 w-4 ${usuarioHaDadoFavorito(productoSeleccionado.id) ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'}`} />
                       <span className="text-sm">{productoSeleccionado.favoritos || 0}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-4 w-4 text-gray-400" />
                       <span className="text-sm">{productoSeleccionado.vistas || 0}</span>
                     </div>
                   </div>
@@ -725,25 +767,27 @@ export default function SeccionLocalesComerciales() {
                   <div className="flex items-center gap-2">
                     <Button
                       size="icon"
-                      variant="outline"
+                      variant={usuarioHaDadoLike(productoSeleccionado.id) ? "default" : "outline"}
+                      className={usuarioHaDadoLike(productoSeleccionado.id) ? "bg-red-500 hover:bg-red-600" : ""}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleInteraccion(productoSeleccionado.id, "like");
                       }}
                       data-testid="button-like-producto"
                     >
-                      <Heart className="h-4 w-4" />
+                      <Heart className={`h-4 w-4 ${usuarioHaDadoLike(productoSeleccionado.id) ? 'fill-white text-white' : 'text-gray-400'}`} />
                     </Button>
                     <Button
                       size="icon"
-                      variant="outline"
+                      variant={usuarioHaDadoFavorito(productoSeleccionado.id) ? "default" : "outline"}
+                      className={usuarioHaDadoFavorito(productoSeleccionado.id) ? "bg-yellow-500 hover:bg-yellow-600" : ""}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleInteraccion(productoSeleccionado.id, "favorito");
                       }}
                       data-testid="button-favorito-producto"
                     >
-                      <Bookmark className="h-4 w-4" />
+                      <Bookmark className={`h-4 w-4 ${usuarioHaDadoFavorito(productoSeleccionado.id) ? 'fill-white text-white' : 'text-gray-400'}`} />
                     </Button>
                     <Button
                       size="icon"

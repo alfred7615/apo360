@@ -4111,6 +4111,23 @@ export class DatabaseStorage implements IStorage {
     return items;
   }
 
+  async getMisInteraccionesProductos(usuarioId: string): Promise<Record<string, { like: boolean; favorito: boolean }>> {
+    const interacciones = await db.select().from(interaccionesProductos)
+      .where(eq(interaccionesProductos.usuarioId, usuarioId));
+    
+    const mapa: Record<string, { like: boolean; favorito: boolean }> = {};
+    for (const i of interacciones) {
+      const itemId = i.itemCatalogoId;
+      if (!itemId) continue;
+      if (!mapa[itemId]) {
+        mapa[itemId] = { like: false, favorito: false };
+      }
+      if (i.tipoInteraccion === 'like') mapa[itemId].like = true;
+      if (i.tipoInteraccion === 'favorito') mapa[itemId].favorito = true;
+    }
+    return mapa;
+  }
+
   async incrementarVistasItem(itemId: string): Promise<void> {
     await db.execute(sql`UPDATE items_catalogo SET vistas = vistas + 1 WHERE id = ${itemId}`);
   }
