@@ -222,6 +222,21 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
   const saldoDisponible = parseFloat(saldoUsuario?.saldo || "0");
   const saldoSuficiente = saldoDisponible >= (totalConvertido || resumen?.totalGeneral || 0);
 
+  // Auto-seleccionar el primer método de pago del negocio si el saldo es insuficiente
+  useEffect(() => {
+    if (
+      paso === "pago" && 
+      !cargandoFormasPago &&
+      !saldoSuficiente && 
+      formasPagoNegocio.length > 0 && 
+      !formaPagoSeleccionada &&
+      !usarBilletera
+    ) {
+      // Auto-seleccionar el primer método de pago disponible
+      setFormaPagoSeleccionada(formasPagoNegocio[0]);
+    }
+  }, [paso, cargandoFormasPago, saldoSuficiente, formasPagoNegocio, formaPagoSeleccionada, usarBilletera]);
+
   // Reset state when modal closes
   useEffect(() => {
     if (!abierto) {
