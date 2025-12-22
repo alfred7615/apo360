@@ -24,7 +24,7 @@ import {
   CheckCircle, XCircle, Users, Megaphone, ShoppingCart, Truck, Map,
   History, Navigation, Heart, Share2, ExternalLink, Clock, DollarSign,
   Package2, ClipboardList, MapPinned, Wallet, RefreshCw, Eye, Bookmark, Star,
-  CreditCard, QrCode, Building2
+  CreditCard, QrCode, Building2, FileText
 } from "lucide-react";
 import { CartaDigitalModal } from "@/components/CartaDigitalModal";
 import { FranjaEstadoPedido } from "@/components/BarraEstadoPedido";
@@ -364,33 +364,70 @@ interface TicketFacturacion {
   fechaEmision: string;
 }
 
+interface ProductoFacturado {
+  codigo: string;
+  nombre: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+}
+
+interface DatosFacturacion {
+  fecha: string;
+  totalPedidos: number;
+  totalGeneral: number;
+  productos: ProductoFacturado[];
+  moneda: string;
+}
+
 function SeccionFacturacion({ negocioId }: { negocioId: string | null }) {
   const { toast } = useToast();
-  const [filtroFecha, setFiltroFecha] = useState("hoy");
-  const [ticketSeleccionado, setTicketSeleccionado] = useState<TicketFacturacion | null>(null);
+  const [fechaSeleccionada, setFechaSeleccionada] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
+  const [generandoReporte, setGenerandoReporte] = useState(false);
 
-  const { data: tickets = [], isLoading } = useQuery<TicketFacturacion[]>({
-    queryKey: ["/api/tickets-facturacion", negocioId, filtroFecha],
+  const { data: datosFacturacion, isLoading } = useQuery<DatosFacturacion>({
+    queryKey: ["/api/mi-negocio/facturacion", fechaSeleccionada],
     enabled: !!negocioId,
   });
 
   const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleString('es-PE', {
-      day: '2-digit',
-      month: '2-digit',
+    return new Date(fecha).toLocaleDateString('es-PE', {
+      weekday: 'long',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'long',
+      day: 'numeric'
     });
   };
 
-  const calcularTotales = () => {
-    const total = tickets.reduce((acc, t) => acc + parseFloat(t.total || '0'), 0);
-    const cantidad = tickets.length;
-    return { total, cantidad };
+  const handleGenerarReporte = async () => {
+    setGenerandoReporte(true);
+    try {
+      const response = await fetch('/api/mi-negocio/facturacion/reporte', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ fecha: fechaSeleccionada }),
+      });
+      
+      if (!response.ok) throw new Error('Error al generar reporte');
+      
+      const html = await response.text();
+      const ventana = window.open('', '_blank', 'width=800,height=600');
+      if (ventana) {
+        ventana.document.write(html);
+        ventana.document.close();
+        setTimeout(() => ventana.print(), 500);
+      }
+      
+      toast({ title: "Reporte generado", description: "Se abrió una ventana para imprimir" });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    } finally {
+      setGenerandoReporte(false);
+    }
   };
-
-  const { total: totalVentas, cantidad: cantidadTickets } = calcularTotales();
 
   if (!negocioId) {
     return (
@@ -409,225 +446,150 @@ function SeccionFacturacion({ negocioId }: { negocioId: string | null }) {
         <div>
           <h3 className="font-medium flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-primary" />
-            Registro de Facturación
+            Facturación del Día
           </h3>
           <p className="text-sm text-muted-foreground">
-            Historial de tickets emitidos por compras
+            Resumen de ventas por producto
           </p>
         </div>
-        <Select value={filtroFecha} onValueChange={setFiltroFecha}>
-          <SelectTrigger className="w-[180px]" data-testid="select-filtro-fecha-facturacion">
-            <SelectValue placeholder="Filtrar por fecha" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="hoy">Hoy</SelectItem>
-            <SelectItem value="semana">Esta semana</SelectItem>
-            <SelectItem value="mes">Este mes</SelectItem>
-            <SelectItem value="todos">Todos</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            value={fechaSeleccionada}
+            onChange={(e) => setFechaSeleccionada(e.target.value)}
+            className="w-[180px]"
+            data-testid="input-fecha-facturacion"
+          />
+          <Button
+            variant="default"
+            onClick={handleGenerarReporte}
+            disabled={generandoReporte || !datosFacturacion?.productos.length}
+            data-testid="button-imprimir-reporte"
+          >
+            {generandoReporte ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <FileText className="h-4 w-4 mr-2" />
+            )}
+            Imprimir Reporte
+          </Button>
+        </div>
       </div>
 
       {/* Resumen de ventas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card data-testid="card-total-ventas">
+        <Card data-testid="card-total-ventas-facturacion">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-green-500" />
-              Total Ventas
+              Total del Día
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-600" data-testid="text-total-ventas">
-              S/ {totalVentas.toFixed(2)}
+            <p className="text-2xl font-bold text-green-600" data-testid="text-total-dia">
+              S/ {datosFacturacion?.totalGeneral?.toFixed(2) || '0.00'}
             </p>
             <p className="text-xs text-muted-foreground">
-              {filtroFecha === 'hoy' ? 'Ventas de hoy' : 
-               filtroFecha === 'semana' ? 'Ventas de la semana' : 
-               filtroFecha === 'mes' ? 'Ventas del mes' : 'Total histórico'}
+              {formatearFecha(fechaSeleccionada)}
             </p>
           </CardContent>
         </Card>
-        <Card data-testid="card-cantidad-tickets">
+        <Card data-testid="card-pedidos-completados">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-blue-500" />
-              Tickets Emitidos
+              <ShoppingCart className="h-4 w-4 text-blue-500" />
+              Pedidos Completados
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-blue-600" data-testid="text-cantidad-tickets">
-              {cantidadTickets}
+            <p className="text-2xl font-bold text-blue-600" data-testid="text-total-pedidos">
+              {datosFacturacion?.totalPedidos || 0}
             </p>
-            <p className="text-xs text-muted-foreground">Comprobantes generados</p>
+            <p className="text-xs text-muted-foreground">Pedidos entregados</p>
           </CardContent>
         </Card>
-        <Card data-testid="card-promedio-venta">
+        <Card data-testid="card-productos-vendidos">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Star className="h-4 w-4 text-amber-500" />
-              Promedio
+              <Package className="h-4 w-4 text-amber-500" />
+              Productos Vendidos
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-amber-600" data-testid="text-promedio-venta">
-              S/ {cantidadTickets > 0 ? (totalVentas / cantidadTickets).toFixed(2) : '0.00'}
+            <p className="text-2xl font-bold text-amber-600" data-testid="text-cantidad-productos">
+              {datosFacturacion?.productos?.reduce((sum, p) => sum + p.cantidad, 0) || 0}
             </p>
-            <p className="text-xs text-muted-foreground">Promedio por ticket</p>
+            <p className="text-xs text-muted-foreground">Unidades vendidas</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Lista de tickets */}
+      {/* Tabla de productos vendidos */}
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : tickets.length === 0 ? (
+      ) : !datosFacturacion?.productos?.length ? (
         <Card className="border-dashed">
           <CardContent className="py-8 text-center">
             <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No hay tickets emitidos</p>
+            <p className="text-muted-foreground">No hay ventas registradas este día</p>
             <p className="text-xs text-muted-foreground mt-2">
-              Los tickets se generarán automáticamente cuando los clientes completen sus compras
+              Las ventas aparecerán cuando se completen pedidos
             </p>
           </CardContent>
         </Card>
       ) : (
-        <ScrollArea className="h-[400px]">
-          <div className="space-y-3">
-            {tickets.map((ticket) => (
-              <Card 
-                key={ticket.id} 
-                className="cursor-pointer hover-elevate"
-                onClick={() => setTicketSeleccionado(ticket)}
-                data-testid={`card-ticket-${ticket.id}`}
-              >
-                <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="font-mono text-xs">
-                          {ticket.numeroTicket}
-                        </Badge>
-                        <Badge 
-                          variant={ticket.estado === 'emitido' ? 'default' : 'destructive'}
-                          className="text-xs"
-                        >
-                          {ticket.estado === 'emitido' ? 'Emitido' : 
-                           ticket.estado === 'anulado' ? 'Anulado' : 'Reembolsado'}
-                        </Badge>
-                      </div>
-                      <p className="font-medium">
-                        {ticket.nombreCliente || 'Cliente'}
-                      </p>
-                      <p className="text-sm text-muted-foreground line-clamp-1">
-                        {ticket.descripcionCompra || `${ticket.cantidadItems} productos`}
-                      </p>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {formatearFecha(ticket.fechaEmision)}
-                        </span>
-                        {ticket.nombreEmpleado && (
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {ticket.nombreEmpleado}
-                          </span>
-                        )}
-                        {ticket.metodoPago && (
-                          <span className="flex items-center gap-1">
-                            <CreditCard className="h-3 w-3" />
-                            {ticket.metodoPago}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-primary">
-                        S/ {parseFloat(ticket.total).toFixed(2)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {ticket.cantidadItems} items
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </ScrollArea>
-      )}
-
-      {/* Modal de detalle de ticket */}
-      <Dialog open={!!ticketSeleccionado} onOpenChange={() => setTicketSeleccionado(null)}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5" />
-              Detalle de Ticket
-            </DialogTitle>
-            <DialogDescription>
-              {ticketSeleccionado?.numeroTicket}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {ticketSeleccionado && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <Label className="text-muted-foreground">Fecha y Hora</Label>
-                  <p className="font-medium">{formatearFecha(ticketSeleccionado.fechaEmision)}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Estado</Label>
-                  <Badge variant={ticketSeleccionado.estado === 'emitido' ? 'default' : 'destructive'}>
-                    {ticketSeleccionado.estado}
-                  </Badge>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Cliente</Label>
-                  <p className="font-medium">{ticketSeleccionado.nombreCliente || 'Sin nombre'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Teléfono</Label>
-                  <p className="font-medium">{ticketSeleccionado.telefonoCliente || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Atendido por</Label>
-                  <p className="font-medium">{ticketSeleccionado.nombreEmpleado || 'Titular'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Método de Pago</Label>
-                  <p className="font-medium">{ticketSeleccionado.metodoPago || '-'}</p>
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <Label className="text-muted-foreground">Detalle de Compra</Label>
-                <p className="text-sm mt-1">{ticketSeleccionado.descripcionCompra || 'Sin descripción'}</p>
-              </div>
-
-              <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Subtotal</span>
-                  <span>S/ {parseFloat(ticketSeleccionado.subtotal).toFixed(2)}</span>
-                </div>
-                {ticketSeleccionado.descuento && parseFloat(ticketSeleccionado.descuento) > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Descuento</span>
-                    <span>- S/ {parseFloat(ticketSeleccionado.descuento).toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-lg border-t pt-2">
-                  <span>Total</span>
-                  <span className="text-primary">S/ {parseFloat(ticketSeleccionado.total).toFixed(2)}</span>
-                </div>
-              </div>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Detalle de Ventas por Producto</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                    <th className="text-left py-3 px-4 font-medium">#</th>
+                    <th className="text-left py-3 px-4 font-medium">Código</th>
+                    <th className="text-left py-3 px-4 font-medium">Producto</th>
+                    <th className="text-center py-3 px-4 font-medium">Cantidad</th>
+                    <th className="text-right py-3 px-4 font-medium">P. Unit.</th>
+                    <th className="text-right py-3 px-4 font-medium">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {datosFacturacion.productos.map((producto, idx) => (
+                    <tr 
+                      key={producto.codigo + idx} 
+                      className={idx % 2 === 0 ? 'bg-muted/30' : 'bg-background'}
+                      data-testid={`row-producto-${idx}`}
+                    >
+                      <td className="py-3 px-4 font-medium">{idx + 1}</td>
+                      <td className="py-3 px-4 font-mono text-xs">{producto.codigo}</td>
+                      <td className="py-3 px-4">{producto.nombre}</td>
+                      <td className="py-3 px-4 text-center font-medium">{producto.cantidad}</td>
+                      <td className="py-3 px-4 text-right">S/ {producto.precioUnitario.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right font-medium">S/ {producto.subtotal.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-purple-100 dark:bg-purple-900/30 font-bold">
+                    <td colSpan={3} className="py-3 px-4">TOTAL GENERAL</td>
+                    <td className="py-3 px-4 text-center">
+                      {datosFacturacion.productos.reduce((sum, p) => sum + p.cantidad, 0)}
+                    </td>
+                    <td className="py-3 px-4"></td>
+                    <td className="py-3 px-4 text-right text-primary">
+                      S/ {datosFacturacion.totalGeneral.toFixed(2)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

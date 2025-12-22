@@ -876,6 +876,307 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================
+  // FACTURACIÓN DEL NEGOCIO - Reportes de ventas diarias
+  // ============================================================
+  
+  // Obtener estadísticas de facturación diaria por producto
+  app.get('/api/mi-negocio/facturacion', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { fecha } = req.query;
+      
+      // Definir fecha de inicio y fin del día
+      const fechaConsulta = fecha ? new Date(fecha as string) : new Date();
+      const inicioDelDia = new Date(fechaConsulta);
+      inicioDelDia.setHours(0, 0, 0, 0);
+      const finDelDia = new Date(fechaConsulta);
+      finDelDia.setHours(23, 59, 59, 999);
+      
+      // Obtener todos los pedidos del negocio
+      const todosPedidos = await storage.getPedidosLocal(usuarioId);
+      
+      // Filtrar pedidos del día que están completados/pagados
+      const estadosCompletados = ['entregado', 'confirmado', 'completado', 'recibido_conforme', 'entregado_conforme'];
+      const pedidosDelDia = todosPedidos.filter(p => {
+        const fechaPedido = new Date(p.createdAt);
+        return fechaPedido >= inicioDelDia && 
+               fechaPedido <= finDelDia && 
+               estadosCompletados.includes(p.estado);
+      });
+      
+      // Obtener items de todos los pedidos del día
+      const productosVendidos: Record<string, {
+        codigo: string;
+        nombre: string;
+        cantidad: number;
+        precioUnitario: number;
+        subtotal: number;
+      }> = {};
+      
+      let totalGeneral = 0;
+      let totalPedidos = pedidosDelDia.length;
+      
+      for (const pedido of pedidosDelDia) {
+        const items = await storage.getItemsPedido(pedido.id);
+        
+        for (const item of items) {
+          const key = item.nombreProducto;
+          const precio = parseFloat(item.precioUnitario) || 0;
+          const cantidad = item.cantidad || 1;
+          const subtotal = precio * cantidad;
+          
+          if (productosVendidos[key]) {
+            productosVendidos[key].cantidad += cantidad;
+            productosVendidos[key].subtotal += subtotal;
+          } else {
+            productosVendidos[key] = {
+              codigo: item.itemCatalogoId?.substring(0, 8) || item.productoUsuarioId?.substring(0, 8) || '-',
+              nombre: item.nombreProducto,
+              cantidad: cantidad,
+              precioUnitario: precio,
+              subtotal: subtotal,
+            };
+          }
+          
+          totalGeneral += subtotal;
+        }
+        
+        // Agregar montos adicionales si existen
+        const montoAdicional = parseFloat(pedido.montoAdicional || "0");
+        if (montoAdicional > 0) {
+          totalGeneral += montoAdicional;
+          if (productosVendidos["Adicionales"]) {
+            productosVendidos["Adicionales"].cantidad += 1;
+            productosVendidos["Adicionales"].subtotal += montoAdicional;
+          } else {
+            productosVendidos["Adicionales"] = {
+              codigo: "ADIC",
+              nombre: "Adicionales (pedidos extras)",
+              cantidad: 1,
+              precioUnitario: montoAdicional,
+              subtotal: montoAdicional,
+            };
+          }
+        }
+      }
+      
+      // Convertir a array y ordenar por subtotal descendente
+      const productos = Object.values(productosVendidos).sort((a, b) => b.subtotal - a.subtotal);
+      
+      res.json({
+        fecha: fechaConsulta.toISOString().split('T')[0],
+        totalPedidos,
+        totalGeneral,
+        productos,
+        moneda: "PEN",
+      });
+    } catch (error: any) {
+      console.error("Error al obtener facturación:", error);
+      res.status(500).json({ message: error.message || "Error al obtener facturación" });
+    }
+  });
+  
+  // Generar reporte PDF de facturación diaria
+  app.post('/api/mi-negocio/facturacion/reporte', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { fecha } = req.body;
+      
+      // Obtener datos del negocio
+      const usuario = await storage.getUser(usuarioId);
+      const negocio = await storage.getLocalComercial(usuarioId);
+      const nombreNegocio = negocio?.nombre || usuario?.localNombre || "Mi Negocio";
+      
+      // Definir fecha de inicio y fin del día
+      const fechaConsulta = fecha ? new Date(fecha) : new Date();
+      const inicioDelDia = new Date(fechaConsulta);
+      inicioDelDia.setHours(0, 0, 0, 0);
+      const finDelDia = new Date(fechaConsulta);
+      finDelDia.setHours(23, 59, 59, 999);
+      
+      // Obtener todos los pedidos del negocio
+      const todosPedidos = await storage.getPedidosLocal(usuarioId);
+      
+      // Filtrar pedidos completados del día
+      const estadosCompletados = ['entregado', 'confirmado', 'completado', 'recibido_conforme', 'entregado_conforme'];
+      const pedidosDelDia = todosPedidos.filter(p => {
+        const fechaPedido = new Date(p.createdAt);
+        return fechaPedido >= inicioDelDia && 
+               fechaPedido <= finDelDia && 
+               estadosCompletados.includes(p.estado);
+      });
+      
+      // Agregar items a cada pedido
+      const pedidosConItems = await Promise.all(pedidosDelDia.map(async (pedido) => {
+        const items = await storage.getItemsPedido(pedido.id);
+        return { ...pedido, items };
+      }));
+      
+      // Calcular productos vendidos
+      const productosVendidos: Record<string, {
+        codigo: string;
+        nombre: string;
+        cantidad: number;
+        precioUnitario: number;
+        subtotal: number;
+      }> = {};
+      
+      let totalGeneral = 0;
+      
+      for (const pedido of pedidosConItems) {
+        for (const item of pedido.items) {
+          const key = item.nombreProducto;
+          const precio = parseFloat(item.precioUnitario) || 0;
+          const cantidad = item.cantidad || 1;
+          const subtotal = precio * cantidad;
+          
+          if (productosVendidos[key]) {
+            productosVendidos[key].cantidad += cantidad;
+            productosVendidos[key].subtotal += subtotal;
+          } else {
+            productosVendidos[key] = {
+              codigo: item.itemCatalogoId?.substring(0, 8) || item.productoUsuarioId?.substring(0, 8) || '-',
+              nombre: item.nombreProducto,
+              cantidad: cantidad,
+              precioUnitario: precio,
+              subtotal: subtotal,
+            };
+          }
+          
+          totalGeneral += subtotal;
+        }
+        
+        // Agregar montos adicionales
+        const montoAdicional = parseFloat(pedido.montoAdicional || "0");
+        if (montoAdicional > 0) {
+          totalGeneral += montoAdicional;
+          if (productosVendidos["Adicionales"]) {
+            productosVendidos["Adicionales"].cantidad += 1;
+            productosVendidos["Adicionales"].subtotal += montoAdicional;
+          } else {
+            productosVendidos["Adicionales"] = {
+              codigo: "ADIC",
+              nombre: "Adicionales",
+              cantidad: 1,
+              precioUnitario: montoAdicional,
+              subtotal: montoAdicional,
+            };
+          }
+        }
+      }
+      
+      const productos = Object.values(productosVendidos).sort((a, b) => b.subtotal - a.subtotal);
+      
+      // Generar HTML para impresión
+      const fechaFormateada = fechaConsulta.toLocaleDateString('es-PE', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      
+      let html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte de Facturación - ${nombreNegocio}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 210mm; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #8B5CF6; padding-bottom: 15px; }
+    .header h1 { color: #8B5CF6; font-size: 24px; margin-bottom: 5px; }
+    .header h2 { color: #333; font-size: 18px; margin-bottom: 10px; }
+    .header p { color: #666; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { background: linear-gradient(135deg, #8B5CF6, #EC4899); color: white; padding: 12px 8px; text-align: left; font-size: 12px; }
+    td { padding: 10px 8px; border-bottom: 1px solid #eee; font-size: 12px; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    .total-row { background: #f0e6ff !important; font-weight: bold; }
+    .total-row td { border-top: 2px solid #8B5CF6; padding: 15px 8px; }
+    .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 11px; }
+    .resumen { display: flex; justify-content: space-between; margin-bottom: 20px; }
+    .resumen-item { background: #f0e6ff; padding: 15px; border-radius: 8px; text-align: center; flex: 1; margin: 0 5px; }
+    .resumen-item h3 { color: #8B5CF6; font-size: 24px; }
+    .resumen-item p { color: #666; font-size: 12px; }
+    @media print { body { padding: 10mm; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>${nombreNegocio}</h1>
+    <h2>Reporte de Facturación Diaria</h2>
+    <p>${fechaFormateada}</p>
+  </div>
+  
+  <div class="resumen">
+    <div class="resumen-item">
+      <h3>${pedidosDelDia.length}</h3>
+      <p>Pedidos</p>
+    </div>
+    <div class="resumen-item">
+      <h3>${productos.length}</h3>
+      <p>Productos</p>
+    </div>
+    <div class="resumen-item">
+      <h3>S/ ${totalGeneral.toFixed(2)}</h3>
+      <p>Total del día</p>
+    </div>
+  </div>
+  
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 15%">Código</th>
+        <th style="width: 40%">Producto</th>
+        <th style="width: 15%" class="text-center">Cantidad</th>
+        <th style="width: 15%" class="text-right">P. Unit.</th>
+        <th style="width: 15%" class="text-right">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>`;
+      
+      let numeroFila = 1;
+      for (const producto of productos) {
+        html += `
+      <tr>
+        <td>${numeroFila}.${producto.codigo}</td>
+        <td>${producto.nombre}</td>
+        <td class="text-center">${producto.cantidad}</td>
+        <td class="text-right">S/ ${producto.precioUnitario.toFixed(2)}</td>
+        <td class="text-right">S/ ${producto.subtotal.toFixed(2)}</td>
+      </tr>`;
+        numeroFila++;
+      }
+      
+      html += `
+      <tr class="total-row">
+        <td colspan="2">TOTAL GENERAL</td>
+        <td class="text-center">${productos.reduce((sum, p) => sum + p.cantidad, 0)}</td>
+        <td></td>
+        <td class="text-right">S/ ${totalGeneral.toFixed(2)}</td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <div class="footer">
+    <p>Reporte generado por APO-360 • ${new Date().toLocaleString('es-PE')}</p>
+  </div>
+</body>
+</html>`;
+      
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } catch (error: any) {
+      console.error("Error al generar reporte:", error);
+      res.status(500).json({ message: error.message || "Error al generar reporte" });
+    }
+  });
+
   // Estadísticas de delivery del negocio (usa tabla pedidos de carta digital)
   app.get('/api/mi-negocio/delivery/estadisticas', isAuthenticated, async (req: any, res) => {
     try {
