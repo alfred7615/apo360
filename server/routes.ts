@@ -7571,7 +7571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { catalogoId } = req.params;
       
       // Obtener el catálogo para saber el usuarioId del negocio
-      const catalogo = await storage.getCatalogo(catalogoId);
+      const catalogo = await storage.getCatalogoLocal(catalogoId);
       if (!catalogo) {
         return res.status(404).json({ message: "Catálogo no encontrado" });
       }

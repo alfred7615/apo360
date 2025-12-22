@@ -367,7 +367,8 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
       let longitudEntrega = null;
       let referenciaEntrega = null;
       
-      if (lugarSeleccionadoId) {
+      const tieneUbicacion = lugarSeleccionadoId && lugarSeleccionadoId !== "none";
+      if (tieneUbicacion) {
         const lugar = lugaresUsuario.find(l => l.id === lugarSeleccionadoId);
         if (lugar) {
           direccionEntrega = lugar.direccion || lugar.nombre;
@@ -395,7 +396,7 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           formaPagoId: formaPagoSeleccionada?.id,
           voucherUrl,
           notas: notasPedido,
-          tipoEntrega: lugarSeleccionadoId ? "delivery" : "recoger",
+          tipoEntrega: tieneUbicacion ? "delivery" : "recoger",
           direccionEntrega,
           latitudEntrega,
           longitudEntrega,
@@ -848,14 +849,14 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
                     Ubicación
                   </Label>
                   <Select
-                    value={lugarSeleccionadoId || ""}
-                    onValueChange={(value) => setLugarSeleccionadoId(value || null)}
+                    value={lugarSeleccionadoId || "none"}
+                    onValueChange={(value) => setLugarSeleccionadoId(value === "none" ? null : value)}
                   >
                     <SelectTrigger className="w-full" data-testid="select-ubicacion">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin ubicación</SelectItem>
+                      <SelectItem value="none">Sin ubicación (recoger en local)</SelectItem>
                       {lugaresUsuario.map((lugar) => (
                         <SelectItem key={lugar.id} value={lugar.id}>
                           {lugar.nombre}
@@ -863,7 +864,7 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
                       ))}
                     </SelectContent>
                   </Select>
-                  {lugarSeleccionadoId && (
+                  {lugarSeleccionadoId && lugarSeleccionadoId !== "none" && (
                     <p className="text-xs text-muted-foreground">
                       {lugaresUsuario.find(l => l.id === lugarSeleccionadoId)?.direccion || "GPS guardado"}
                     </p>
