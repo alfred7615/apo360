@@ -841,6 +841,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Actualizar estado de pedido del negocio
+  // Flujo completo: pendiente → aceptado → preparando → listo → llamando_delivery → 
+  // entregado_a_delivery → en_camino → entregado → recibido_conforme
   app.patch('/api/mi-negocio/pedidos/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
@@ -848,21 +850,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verificar que el pedido pertenece al negocio del usuario
       const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
-      const esPropio = pedidos.some(p => p.id === id);
+      const pedidoExistente = pedidos.find(p => p.id === id);
       
-      if (!esPropio) {
+      if (!pedidoExistente) {
         return res.status(403).json({ message: "No tienes permiso para modificar este pedido" });
       }
       
-      const { estado } = req.body;
+      const { estado, notas } = req.body;
       const updateData: any = { estado };
       
-      // Si el estado es entregado/completado, establecer completedAt
-      if (estado === 'entregado' || estado === 'completado') {
+      // Si el estado es entregado/completado/recibido_conforme, establecer completedAt
+      if (['entregado', 'completado', 'recibido_conforme', 'entregado_conforme'].includes(estado)) {
         updateData.completedAt = new Date();
       }
       
       const pedido = await storage.updatePedidoDelivery(id, updateData);
+      
+      // Registrar en historial de estados
+      try {
+        await storage.addHistorialEstadoPedido({
+          pedidoId: id,
+          estadoAnterior: pedidoExistente.estado || 'pendiente',
+          estadoNuevo: estado,
+          cambiadoPor: usuarioId,
+          notas: notas || null,
+        });
+      } catch (e) {
+        // El historial no es crítico, continuar
+      }
+      
       res.json(pedido);
     } catch (error: any) {
       console.error("Error al actualizar pedido:", error);
@@ -901,12 +917,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const pedidos = await storage.getPedidosPorUsuarioNegocio(usuarioId);
       
-      // Filtrar solo entregas activas (no completadas/canceladas)
+      // Filtrar solo entregas activas con estados del flujo completo
+      const estadosActivos = [
+        'pendiente', 'aceptado', 'preparando', 'en_preparacion', 
+        'listo', 'listo_para_envio', 'llamando_delivery', 
+        'entregado_a_delivery', 'en_camino'
+      ];
       const activas = pedidos.filter(p => 
-        ['en_preparacion', 'preparando', 'listo_para_envio', 'en_camino'].includes(p.estado || 'pendiente')
+        estadosActivos.includes(p.estado || 'pendiente')
       );
       
-      res.json(activas);
+      // Enriquecer con coordenadas de la solicitud de delivery si existe
+      const entregasConUbicacion = await Promise.all(activas.map(async (pedido) => {
+        // Buscar la solicitud de delivery asociada al pedido
+        const solicitud = await storage.getSolicitudDeliveryPorPedido(pedido.id);
+        
+        // Usar coordenadas del delivery solo si existen, mantener las del pedido si no
+        const latitudFinal = solicitud?.latitudActual 
+          ? parseFloat(solicitud.latitudActual) 
+          : pedido.latitud;
+        const longitudFinal = solicitud?.longitudActual 
+          ? parseFloat(solicitud.longitudActual) 
+          : pedido.longitud;
+        
+        return {
+          ...pedido,
+          latitud: latitudFinal,
+          longitud: longitudFinal,
+          deliveryInfo: solicitud ? {
+            id: solicitud.id,
+            nombreDelivery: solicitud.nombreDelivery,
+            telefonoDelivery: solicitud.telefonoDelivery,
+            estado: solicitud.estado,
+            latitudActual: solicitud.latitudActual,
+            longitudActual: solicitud.longitudActual,
+          } : null,
+        };
+      }));
+      
+      res.json(entregasConUbicacion);
     } catch (error: any) {
       console.error("Error al obtener entregas activas:", error);
       res.status(500).json({ message: error.message || "Error al obtener entregas activas" });

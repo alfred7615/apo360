@@ -20,7 +20,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { 
   Store, Package, Plus, Edit, Trash2, Save, MapPin, Phone, Globe, 
-  Instagram, Facebook, Image as ImageIcon, Loader2, UtensilsCrossed,
+  Instagram, Facebook, Image as ImageIcon, Loader2, UtensilsCrossed, Utensils,
   CheckCircle, XCircle, Users, Megaphone, ShoppingCart, Truck, Map,
   History, Navigation, Heart, Share2, ExternalLink, Clock, DollarSign,
   Package2, ClipboardList, MapPinned, Wallet, RefreshCw, Eye, Bookmark, Star,
@@ -3053,22 +3053,31 @@ export default function LocalComercialPanel() {
                           <CardContent className="py-4">
                             <div className="flex items-start justify-between flex-wrap gap-3">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-2 mb-2 flex-wrap">
                                   <Badge 
                                     variant={
                                       pedido.estado === 'pendiente' ? 'secondary' :
-                                      pedido.estado === 'en_preparacion' || pedido.estado === 'preparando' ? 'default' :
+                                      ['aceptado', 'preparando', 'en_preparacion'].includes(pedido.estado || '') ? 'default' :
+                                      ['listo', 'listo_para_envio'].includes(pedido.estado || '') ? 'secondary' :
+                                      pedido.estado === 'en_camino' ? 'default' :
                                       'outline'
                                     }
                                     className={
                                       pedido.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                      pedido.estado === 'en_preparacion' || pedido.estado === 'preparando' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                      pedido.estado === 'aceptado' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                                      ['preparando', 'en_preparacion'].includes(pedido.estado || '') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                      ['listo', 'listo_para_envio'].includes(pedido.estado || '') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                      pedido.estado === 'en_camino' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' :
                                       'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                     }
                                   >
                                     {pedido.estado === 'pendiente' ? 'Recibido' :
-                                     pedido.estado === 'en_preparacion' || pedido.estado === 'preparando' ? 'En Preparación' :
-                                     'Entregado'}
+                                     pedido.estado === 'aceptado' ? 'Aceptado' :
+                                     ['preparando', 'en_preparacion'].includes(pedido.estado || '') ? 'Preparando' :
+                                     ['listo', 'listo_para_envio'].includes(pedido.estado || '') ? 'Listo' :
+                                     pedido.estado === 'en_camino' ? 'En Camino' :
+                                     ['entregado', 'completado', 'recibido_conforme'].includes(pedido.estado || '') ? 'Entregado' :
+                                     pedido.estado}
                                   </Badge>
                                   <span className="text-xs text-muted-foreground">
                                     #{pedido.id.slice(-6).toUpperCase()}
@@ -3128,22 +3137,68 @@ export default function LocalComercialPanel() {
                                 </p>
                                 
                                 <div className="flex flex-col gap-1 mt-2">
+                                  {/* FLUJO: pendiente → aceptado → preparando → listo → en_camino → entregado → recibido_conforme */}
                                   {pedido.estado === 'pendiente' && (
                                     <Button
                                       size="sm"
-                                      onClick={() => actualizarPedidoMutation.mutate({ id: pedido.id, estado: 'en_preparacion' })}
+                                      onClick={() => actualizarPedidoMutation.mutate({ id: pedido.id, estado: 'aceptado' })}
                                       disabled={actualizarPedidoMutation.isPending}
-                                      data-testid={`button-atender-pedido-${pedido.id}`}
+                                      data-testid={`button-aceptar-pedido-${pedido.id}`}
                                     >
                                       {actualizarPedidoMutation.isPending ? (
                                         <Loader2 className="h-4 w-4 animate-spin mr-1" />
                                       ) : (
                                         <CheckCircle className="h-4 w-4 mr-1" />
                                       )}
-                                      Atender
+                                      Aceptar Pedido
                                     </Button>
                                   )}
-                                  {(pedido.estado === 'en_preparacion' || pedido.estado === 'preparando') && (
+                                  {pedido.estado === 'aceptado' && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => actualizarPedidoMutation.mutate({ id: pedido.id, estado: 'preparando' })}
+                                      disabled={actualizarPedidoMutation.isPending}
+                                      data-testid={`button-preparar-pedido-${pedido.id}`}
+                                    >
+                                      {actualizarPedidoMutation.isPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                      ) : (
+                                        <Utensils className="h-4 w-4 mr-1" />
+                                      )}
+                                      Iniciar Preparación
+                                    </Button>
+                                  )}
+                                  {(pedido.estado === 'preparando' || pedido.estado === 'en_preparacion') && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => actualizarPedidoMutation.mutate({ id: pedido.id, estado: 'listo' })}
+                                      disabled={actualizarPedidoMutation.isPending}
+                                      data-testid={`button-listo-pedido-${pedido.id}`}
+                                    >
+                                      {actualizarPedidoMutation.isPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                      ) : (
+                                        <Package2 className="h-4 w-4 mr-1" />
+                                      )}
+                                      Marcar Listo
+                                    </Button>
+                                  )}
+                                  {(pedido.estado === 'listo' || pedido.estado === 'listo_para_envio') && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => actualizarPedidoMutation.mutate({ id: pedido.id, estado: 'en_camino' })}
+                                      disabled={actualizarPedidoMutation.isPending}
+                                      data-testid={`button-enviar-pedido-${pedido.id}`}
+                                    >
+                                      {actualizarPedidoMutation.isPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                      ) : (
+                                        <Truck className="h-4 w-4 mr-1" />
+                                      )}
+                                      Entregar a Delivery
+                                    </Button>
+                                  )}
+                                  {pedido.estado === 'en_camino' && (
                                     <Button
                                       size="sm"
                                       variant="default"
@@ -3154,12 +3209,12 @@ export default function LocalComercialPanel() {
                                       {actualizarPedidoMutation.isPending ? (
                                         <Loader2 className="h-4 w-4 animate-spin mr-1" />
                                       ) : (
-                                        <Truck className="h-4 w-4 mr-1" />
+                                        <CheckCircle className="h-4 w-4 mr-1" />
                                       )}
-                                      Marcar Entregado
+                                      Confirmar Entrega
                                     </Button>
                                   )}
-                                  {(pedido.estado === 'entregado' || pedido.estado === 'completado') && (
+                                  {(pedido.estado === 'entregado' || pedido.estado === 'completado' || pedido.estado === 'recibido_conforme') && (
                                     <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200">
                                       <CheckCircle className="h-3 w-3 mr-1" />
                                       Completado
