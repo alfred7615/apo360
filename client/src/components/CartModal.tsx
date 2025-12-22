@@ -656,7 +656,9 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
                   toast({
                     variant: "destructive",
                     title: "Saldo insuficiente",
-                    description: "Recarga tu billetera o selecciona otra forma de pago del negocio",
+                    description: formasPagoNegocio.length > 0 
+                      ? "Recarga tu billetera o selecciona otra forma de pago del negocio"
+                      : "Este negocio solo acepta Billetera APO-360. Recarga tu saldo para continuar.",
                   });
                 }
               }}
@@ -682,11 +684,27 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
                 {!saldoSuficiente && (
                   <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
                     <AlertCircle className="h-3 w-3" />
-                    Saldo insuficiente. Usa las formas de pago del negocio.
+                    {formasPagoNegocio.length > 0 
+                      ? "Saldo insuficiente. Usa las formas de pago del negocio."
+                      : "Saldo insuficiente. Este negocio solo acepta Billetera APO-360. Recarga tu saldo."}
                   </div>
                 )}
               </CardContent>
             </Card>
+
+            {/* Mensaje cuando el negocio no tiene formas de pago configuradas */}
+            {formasPagoNegocio.length === 0 && (
+              <div className="p-4 border rounded-lg bg-muted/30 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Store className="h-4 w-4" />
+                  <span>Este negocio no ha configurado métodos de pago adicionales</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Solo puedes pagar con tu Billetera APO-360. Si no tienes saldo suficiente, 
+                  ve a tu perfil y recarga tu billetera para continuar con la compra.
+                </p>
+              </div>
+            )}
 
             {/* Formas de pago del negocio */}
             {formasPagoNegocio.length > 0 && (
@@ -897,7 +915,11 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
         <Button
           className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           onClick={handleConfirmarCompra}
-          disabled={(!formaPagoSeleccionada && !usarBilletera) || procesando}
+          disabled={
+            procesando || 
+            (!formaPagoSeleccionada && !usarBilletera) ||
+            (formasPagoNegocio.length === 0 && !saldoSuficiente)
+          }
           data-testid="button-confirmar-compra"
         >
           {procesando ? (
@@ -905,7 +927,9 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           ) : (
             <CreditCard className="h-4 w-4 mr-2" />
           )}
-          Confirmar Compra
+          {formasPagoNegocio.length === 0 && !saldoSuficiente 
+            ? "Recarga tu billetera" 
+            : "Confirmar Compra"}
         </Button>
       </div>
     </>
