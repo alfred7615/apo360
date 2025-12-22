@@ -8736,6 +8736,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener pedidos delegados al usuario actual (donde él es el pagador)
+  app.get('/api/mis-pedidos/delegados', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      
+      // Buscar pedidos donde el usuario es el pagador delegado
+      const pedidosDelegados = await storage.getPedidosDelegadosAlUsuario(usuarioId);
+      
+      // Enriquecer con nombre del local y del solicitante
+      const pedidosEnriquecidos = await Promise.all(pedidosDelegados.map(async (pedido) => {
+        let nombreLocal = null;
+        let nombreSolicitante = null;
+        
+        if (pedido.localComercialId) {
+          const local = await storage.getUser(pedido.localComercialId);
+          const negocio = await storage.getDatosNegocio(pedido.localComercialId);
+          nombreLocal = negocio?.nombreComercial || local?.nombreCompleto || local?.firstName || "Local";
+        }
+        
+        if (pedido.usuarioId) {
+          const solicitante = await storage.getUser(pedido.usuarioId);
+          nombreSolicitante = solicitante?.nombreCompleto || solicitante?.nombre || solicitante?.firstName || "Usuario";
+        }
+        
+        return { ...pedido, nombreLocal, nombreSolicitante };
+      }));
+      
+      res.json(pedidosEnriquecidos);
+    } catch (error: any) {
+      console.error("Error al obtener pedidos delegados:", error);
+      res.status(500).json({ message: error.message || "Error al obtener pedidos delegados" });
+    }
+  });
+
   // Confirmar recepción del pedido (cliente confirma que recibió el pedido)
   app.patch('/api/mis-pedidos/:id/confirmar', isAuthenticated, async (req: any, res) => {
     try {

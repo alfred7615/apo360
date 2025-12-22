@@ -4340,6 +4340,16 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(pedidos.createdAt));
   }
 
+  async getPedidosDelegadosAlUsuario(usuarioPagadorId: string): Promise<Pedido[]> {
+    return await db.select().from(pedidos)
+      .where(and(
+        eq(pedidos.usuarioPagadorId, usuarioPagadorId),
+        eq(pedidos.pagoDelegado, true),
+        eq(pedidos.estadoPago, 'pendiente')
+      ))
+      .orderBy(desc(pedidos.createdAt));
+  }
+
   async getPedidosLocal(localComercialId: string, estado?: string): Promise<Pedido[]> {
     if (estado) {
       return await db.select().from(pedidos)

@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Check, Clock, ChefHat, Package, Truck, CheckCircle2, X, MapPin } from "lucide-react";
+import { Check, Clock, ChefHat, Package, Truck, CheckCircle2, X, MapPin, CreditCard, Users } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,6 +14,10 @@ interface Pedido {
   tipoEntrega?: string;
   localComercialId?: string;
   nombreLocal?: string;
+  nombreSolicitante?: string;
+  total?: string;
+  pagoDelegado?: boolean;
+  usuarioPagadorId?: string;
   createdAt: string;
 }
 
@@ -32,6 +36,7 @@ export default function BarraEstadoPedido() {
   const { toast } = useToast();
   const [showAgradecimiento, setShowAgradecimiento] = useState(false);
   const [pedidoCompletado, setPedidoCompletado] = useState<Pedido | null>(null);
+  const [showDetallesDelegado, setShowDetallesDelegado] = useState(false);
 
   // Obtener pedidos activos del usuario (no confirmados ni cancelados)
   const { data: pedidosActivos = [] } = useQuery<Pedido[]>({
@@ -40,7 +45,15 @@ export default function BarraEstadoPedido() {
     refetchInterval: 10000, // Refrescar cada 10 segundos
   });
 
+  // Obtener pedidos delegados al usuario (donde él debe pagar)
+  const { data: pedidosDelegados = [] } = useQuery<Pedido[]>({
+    queryKey: ["/api/mis-pedidos/delegados"],
+    enabled: isAuthenticated,
+    refetchInterval: 10000,
+  });
+
   const pedidoActivo = pedidosActivos.length > 0 ? pedidosActivos[0] : null;
+  const pedidoDelegadoPendiente = pedidosDelegados.length > 0 ? pedidosDelegados[0] : null;
 
   // Mutación para confirmar recepción (cliente confirma que recibió el pedido)
   const confirmarRecepcionMutation = useMutation({
@@ -73,15 +86,15 @@ export default function BarraEstadoPedido() {
     setPedidoCompletado(null);
   };
 
-  // No mostrar si no hay pedido activo o no está autenticado
-  if (!isAuthenticated || !pedidoActivo) {
+  // No mostrar si no hay pedido activo ni pedidos delegados
+  if (!isAuthenticated || (!pedidoActivo && !pedidoDelegadoPendiente)) {
     return null;
   }
 
-  const estadoActual = pedidoActivo.estado || "pendiente";
+  const estadoActual = pedidoActivo?.estado || "pendiente";
   const indiceEstado = ESTADOS_CLIENTE.findIndex(e => e.key === estadoActual);
   // Asumimos delivery por defecto si no está especificado, o si es "recoger" o "local"
-  const esParaRecoger = pedidoActivo.tipoEntrega === "recoger" || pedidoActivo.tipoEntrega === "local";
+  const esParaRecoger = pedidoActivo?.tipoEntrega === "recoger" || pedidoActivo?.tipoEntrega === "local";
 
   // Determinar el texto del botón de acción para el cliente
   const getBotonAccion = () => {
@@ -123,8 +136,36 @@ export default function BarraEstadoPedido() {
 
   return (
     <>
+      {/* Barra de pago delegado pendiente */}
+      {pedidoDelegadoPendiente && (
+        <div 
+          className="w-full h-6 bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-between px-3 text-white text-[10px] font-medium shadow-sm sticky top-12 z-40"
+          data-testid="barra-pago-delegado"
+        >
+          <div className="flex items-center gap-2 flex-1">
+            <CreditCard className="h-3.5 w-3.5 animate-pulse" />
+            <span className="font-semibold">SOLICITUD DE PAGO</span>
+            <span className="hidden sm:inline text-white/90">
+              • {pedidoDelegadoPendiente.nombreSolicitante || "Un usuario"} te pide pagar S/ {pedidoDelegadoPendiente.total || "0.00"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="h-4 px-2 text-[9px] font-bold bg-white text-orange-600 hover:bg-white/90"
+              onClick={() => setShowDetallesDelegado(true)}
+              data-testid="button-ver-pago-delegado"
+            >
+              VER DETALLES
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Barra de estado del pedido propio */}
+      {pedidoActivo && (
       <div 
-        className="w-full h-5 bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-between px-2 text-white text-[10px] font-medium shadow-sm sticky top-12 z-40"
+        className={`w-full h-5 bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-between px-2 text-white text-[10px] font-medium shadow-sm sticky ${pedidoDelegadoPendiente ? 'top-[60px]' : 'top-12'} z-40`}
         data-testid="barra-estado-pedido"
       >
         {/* Estados del pedido - visualización compacta */}
@@ -180,6 +221,7 @@ export default function BarraEstadoPedido() {
           )}
         </div>
       </div>
+      )}
 
       {/* Modal de agradecimiento */}
       <Dialog open={showAgradecimiento} onOpenChange={setShowAgradecimiento}>
@@ -202,6 +244,72 @@ export default function BarraEstadoPedido() {
               data-testid="button-aceptar-agradecimiento"
             >
               ACEPTAR
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de detalles de pago delegado */}
+      <Dialog open={showDetallesDelegado} onOpenChange={setShowDetallesDelegado}>
+        <DialogContent className="sm:max-w-md" data-testid="modal-detalles-delegado">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-orange-500" />
+              Solicitud de Pago
+            </DialogTitle>
+            <DialogDescription>
+              {pedidoDelegadoPendiente?.nombreSolicitante || "Un usuario"} te ha delegado el pago de este pedido
+            </DialogDescription>
+          </DialogHeader>
+          
+          {pedidoDelegadoPendiente && (
+            <div className="space-y-4 py-4">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Solicitante:</span>
+                  <span className="font-medium">{pedidoDelegadoPendiente.nombreSolicitante}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Negocio:</span>
+                  <span className="font-medium">{pedidoDelegadoPendiente.nombreLocal || "N/A"}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Tipo de entrega:</span>
+                  <span className="font-medium capitalize">{pedidoDelegadoPendiente.tipoEntrega || "delivery"}</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold mt-2 pt-2 border-t">
+                  <span>Total a pagar:</span>
+                  <span className="text-orange-600">S/ {pedidoDelegadoPendiente.total || "0.00"}</span>
+                </div>
+              </div>
+              
+              <p className="text-xs text-muted-foreground text-center">
+                Al aceptar, el pago será procesado desde tu billetera o método de pago configurado
+              </p>
+            </div>
+          )}
+          
+          <DialogFooter className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setShowDetallesDelegado(false)}
+              data-testid="button-cerrar-delegado"
+            >
+              Cerrar
+            </Button>
+            <Button 
+              className="bg-gradient-to-r from-orange-500 to-amber-500 text-white"
+              onClick={() => {
+                toast({
+                  title: "Próximamente",
+                  description: "La funcionalidad de pagar pedidos delegados estará disponible pronto",
+                });
+                setShowDetallesDelegado(false);
+              }}
+              data-testid="button-pagar-delegado"
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              Pagar Ahora
             </Button>
           </DialogFooter>
         </DialogContent>
