@@ -3755,6 +3755,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         formaPagoId,
         voucherUrl,
         notas,
+        pedidoAdicional,
+        usuarioPagadorId,
+        pagoDelegado,
         tipoEntrega,
         direccionEntrega,
         latitudEntrega,
@@ -3775,6 +3778,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Crear el pedido
+      // Nota: Se mantiene estado "pendiente" para compatibilidad con sistema existente
+      // Los campos pedidoAdicional y pagoDelegado se usan para lógica adicional
       const pedido = await storage.createPedido({
         usuarioId: userId,
         catalogoId,
@@ -3789,8 +3794,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referenciaEntrega,
         estado: "pendiente",
         estadoPago: "pendiente",
-        metodoPago: metodoPago || "efectivo",
+        metodoPago: pagoDelegado ? "delegado" : (metodoPago || "efectivo"),
         notasCliente: notas,
+        pedidoAdicional: pedidoAdicional || null,
+        usuarioPagadorId: usuarioPagadorId || null,
+        pagoDelegado: !!pagoDelegado,
+        fechaDelegacion: pagoDelegado ? new Date() : null,
       });
 
       // Crear items del pedido

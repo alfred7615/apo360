@@ -13,7 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { 
   Trash2, Minus, Plus, ShoppingBag, Store, ArrowRight, Loader2, 
   CreditCard, Wallet, Upload, Check, Phone, Building2, ArrowLeft,
-  CheckCircle2, AlertCircle, Receipt, MapPin, Copy, CheckCheck, Camera, ImagePlus
+  CheckCircle2, AlertCircle, Receipt, MapPin, Copy, CheckCheck, Camera, ImagePlus,
+  Users, Search, X
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -133,7 +134,15 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
   const [voucherPreview, setVoucherPreview] = useState<string | null>(null);
   const [notasPedido, setNotasPedido] = useState("");
+  const [pedidoAdicional, setPedidoAdicional] = useState("");
   const [procesando, setProcesando] = useState(false);
+  
+  // Estado para delegar pago a otro usuario
+  const [modalBuscarUsuario, setModalBuscarUsuario] = useState(false);
+  const [busquedaUsuario, setBusquedaUsuario] = useState("");
+  const [resultadosUsuarios, setResultadosUsuarios] = useState<any[]>([]);
+  const [buscandoUsuarios, setBuscandoUsuarios] = useState(false);
+  const [usuarioPagadorSeleccionado, setUsuarioPagadorSeleccionado] = useState<any | null>(null);
   
   // Ticket state
   const [mostrarTicket, setMostrarTicket] = useState(false);
@@ -397,12 +406,46 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
     return `APO-${año}${mes}${dia}-${random}`;
   };
 
+  // Buscar usuarios para delegar pago
+  const buscarUsuarios = async (termino: string) => {
+    if (termino.length < 2) {
+      setResultadosUsuarios([]);
+      return;
+    }
+    
+    setBuscandoUsuarios(true);
+    try {
+      const res = await fetch(`/api/buscar-usuarios?q=${encodeURIComponent(termino)}`);
+      if (res.ok) {
+        const usuarios = await res.json();
+        setResultadosUsuarios(usuarios);
+      }
+    } catch (error) {
+      console.error("Error buscando usuarios:", error);
+    } finally {
+      setBuscandoUsuarios(false);
+    }
+  };
+
+  // Delegar pago a otro usuario
+  const delegarPagoAUsuario = (usuario: any) => {
+    setUsuarioPagadorSeleccionado(usuario);
+    setModalBuscarUsuario(false);
+    setBusquedaUsuario("");
+    setResultadosUsuarios([]);
+    toast({
+      title: "Usuario seleccionado",
+      description: `${usuario.nombre || usuario.email} recibirá la solicitud de pago`,
+    });
+  };
+
   const handleConfirmarCompra = async () => {
-    if (!formaPagoSeleccionada && !usarBilletera) {
+    // Permitir si se delega el pago a otro usuario
+    if (!formaPagoSeleccionada && !usarBilletera && !usuarioPagadorSeleccionado) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Selecciona una forma de pago",
+        description: "Selecciona una forma de pago o delega a otro usuario",
       });
       return;
     }
@@ -462,6 +505,9 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           formaPagoId: formaPagoSeleccionada?.id,
           voucherUrl,
           notas: notasPedido,
+          pedidoAdicional: pedidoAdicional.trim() || null,
+          usuarioPagadorId: usuarioPagadorSeleccionado?.id || null,
+          pagoDelegado: !!usuarioPagadorSeleccionado,
           tipoEntrega: tieneUbicacion ? "delivery" : "recoger",
           direccionEntrega,
           latitudEntrega,
@@ -962,6 +1008,29 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
               </div>
             )}
 
+            {/* Campo de pedido adicional con estilo rosa oscuro */}
+            <div className="space-y-2 pt-2">
+              <Label className="flex items-center gap-2" style={{ color: "#9b2d5a" }}>
+                <ShoppingBag className="h-4 w-4" />
+                Pedido adicional (opcional)
+              </Label>
+              <Textarea
+                value={pedidoAdicional}
+                onChange={(e) => setPedidoAdicional(e.target.value)}
+                placeholder="Ej: 1 porción de papa, pan al ajo, bebidas..."
+                className="resize-none border-pink-300 focus:border-pink-500"
+                style={{ color: "#9b2d5a" }}
+                rows={2}
+                data-testid="textarea-pedido-adicional"
+              />
+              {pedidoAdicional.trim() && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  El negocio asignará un monto adicional a estos productos antes de completar el pedido
+                </p>
+              )}
+            </div>
+
             {/* Notas del pedido y ubicación */}
             <div className="space-y-3 pt-2">
               <div className="flex items-start gap-3">
@@ -1019,6 +1088,41 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
       </div>
 
       <div className="border-t bg-muted/30 p-4 space-y-3">
+        {/* Usuario pagador seleccionado */}
+        {usuarioPagadorSeleccionado && (
+          <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-purple-600" />
+              <div>
+                <p className="text-sm font-medium">Pago delegado a:</p>
+                <p className="text-xs text-muted-foreground">
+                  {usuarioPagadorSeleccionado.nombre || usuarioPagadorSeleccionado.email}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setUsuarioPagadorSeleccionado(null)}
+              data-testid="btn-quitar-usuario-pagador"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Botón Paga Otro Usuario */}
+        <Button
+          variant="outline"
+          className="w-full border-purple-300 text-purple-600 hover:bg-purple-50"
+          onClick={() => setModalBuscarUsuario(true)}
+          data-testid="button-paga-otro-usuario"
+        >
+          <Users className="h-4 w-4 mr-2" />
+          {usuarioPagadorSeleccionado ? "Cambiar usuario pagador" : "Paga Otro Usuario"}
+        </Button>
+
         <Button
           variant="outline"
           className="w-full"
@@ -1034,10 +1138,10 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           onClick={handleConfirmarCompra}
           disabled={
             procesando || 
-            (!formaPagoSeleccionada && !usarBilletera) ||
-            (formasPagoNegocio.length === 0 && !saldoSuficiente) ||
-            // Voucher obligatorio cuando no es billetera
-            !!(formaPagoSeleccionada && !usarBilletera && !voucherFile)
+            (!formaPagoSeleccionada && !usarBilletera && !usuarioPagadorSeleccionado) ||
+            (formasPagoNegocio.length === 0 && !saldoSuficiente && !usuarioPagadorSeleccionado) ||
+            // Voucher obligatorio cuando no es billetera (excepto si se delega el pago)
+            !!(formaPagoSeleccionada && !usarBilletera && !voucherFile && !usuarioPagadorSeleccionado)
           }
           data-testid="button-confirmar-compra"
         >
@@ -1046,14 +1150,97 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           ) : (
             <CreditCard className="h-4 w-4 mr-2" />
           )}
-          {formasPagoNegocio.length === 0 && !saldoSuficiente 
+          {formasPagoNegocio.length === 0 && !saldoSuficiente && !usuarioPagadorSeleccionado
             ? "Recarga tu billetera" 
-            : formaPagoSeleccionada && !usarBilletera && !voucherFile
+            : formaPagoSeleccionada && !usarBilletera && !voucherFile && !usuarioPagadorSeleccionado
               ? "Sube el comprobante"
-              : "Confirmar Compra"}
+              : usuarioPagadorSeleccionado
+                ? "Enviar solicitud de pago"
+                : "Confirmar Compra"}
         </Button>
       </div>
     </>
+  );
+
+  const renderBuscadorUsuarios = () => (
+    <Dialog open={modalBuscarUsuario} onOpenChange={setModalBuscarUsuario}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-purple-600" />
+            Buscar usuario para pagar
+          </DialogTitle>
+          <DialogDescription>
+            Busca por nombre, apellido o email para derivar el pago
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={busquedaUsuario}
+              onChange={(e) => {
+                setBusquedaUsuario(e.target.value);
+                buscarUsuarios(e.target.value);
+              }}
+              placeholder="Nombre, apellido o email..."
+              className="pl-10"
+              data-testid="input-buscar-usuario"
+            />
+          </div>
+          
+          <ScrollArea className="h-[250px] rounded-md border">
+            {buscandoUsuarios ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+              </div>
+            ) : resultadosUsuarios.length > 0 ? (
+              <div className="p-2 space-y-2">
+                {resultadosUsuarios.map((usuario) => (
+                  <div
+                    key={usuario.id}
+                    className="flex items-center gap-3 p-3 rounded-lg hover-elevate cursor-pointer border"
+                    onClick={() => delegarPagoAUsuario(usuario)}
+                    data-testid={`usuario-resultado-${usuario.id}`}
+                  >
+                    {usuario.profileImageUrl ? (
+                      <img
+                        src={usuario.profileImageUrl}
+                        alt={usuario.nombre || "Usuario"}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                        <Users className="h-5 w-5 text-purple-600" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">
+                        {usuario.nombre || usuario.alias || "Usuario"}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {usuario.email}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : busquedaUsuario.length >= 2 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <Users className="h-8 w-8 mb-2" />
+                <p className="text-sm">No se encontraron usuarios</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <Search className="h-8 w-8 mb-2" />
+                <p className="text-sm">Escribe al menos 2 caracteres</p>
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 
   const renderConfirmacion = () => (
@@ -1163,6 +1350,8 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
         onClose={() => setMostrarTicket(false)}
         datos={datosTicket}
       />
+      
+      {renderBuscadorUsuarios()}
     </Dialog>
   );
 }

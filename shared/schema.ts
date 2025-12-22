@@ -1909,6 +1909,14 @@ export const pedidos = pgTable("pedidos", {
   // Notas y comunicación
   notasCliente: text("notas_cliente"),
   notasLocal: text("notas_local"),
+  // Pedidos adicionales (texto libre del cliente, ej: "1 porción de papa, pan al ajo")
+  pedidoAdicional: text("pedido_adicional"),
+  montoAdicional: decimal("monto_adicional", { precision: 10, scale: 2 }).default("0"),
+  estadoMontoAdicional: varchar("estado_monto_adicional", { length: 50 }).default("pendiente"), // 'pendiente', 'confirmado', 'rechazado'
+  // Pago delegado a otro usuario
+  usuarioPagadorId: varchar("usuario_pagador_id").references(() => usuarios.id),
+  pagoDelegado: boolean("pago_delegado").default(false),
+  fechaDelegacion: timestamp("fecha_delegacion"),
   // Tiempos
   tiempoEstimadoPreparacion: integer("tiempo_estimado_preparacion"), // minutos
   horaEstimadaEntrega: timestamp("hora_estimada_entrega"),

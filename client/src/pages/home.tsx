@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import FranjaEmergencia from "@/components/FranjaEmergencia";
 import CarruselPublicidad from "@/components/CarruselPublicidad";
+import FranjaCartasDigitales from "@/components/FranjaCartasDigitales";
 import GaleriaServiciosLocales from "@/components/GaleriaServiciosLocales";
 import ModuloAudio from "@/components/ModuloAudio";
 import CartillasBeneficios from "@/components/CartillasBeneficios";
@@ -313,6 +314,9 @@ export default function Home() {
         </div>
         <CarruselPublicidad tipo="logos_servicios" />
       </section>
+
+      {/* Franja de Cartas Digitales */}
+      <FranjaCartasDigitales />
 
       {/* Alertas recientes */}
       {emergenciasRecientes.length > 0 && (
