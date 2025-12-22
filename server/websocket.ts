@@ -493,3 +493,48 @@ export async function notificarSuperAdmins(notificacion: {
     console.error('❌ Error enviando notificación a admins:', error);
   }
 }
+
+/**
+ * Envía una notificación a un usuario específico
+ */
+export function notificarUsuario(usuarioId: string, notificacion: {
+  tipo: 'pago_delegado' | 'pedido_aceptado' | 'pedido_listo' | 'pedido_en_camino' | 'general';
+  titulo: string;
+  mensaje: string;
+  pedidoId?: string;
+  monto?: string;
+  solicitanteNombre?: string;
+  nombreLocal?: string;
+  metadata?: any;
+}) {
+  const wss = globalWss;
+  if (!wss) {
+    console.log('⚠️ WebSocket no inicializado para notificaciones');
+    return false;
+  }
+
+  try {
+    const messageStr = JSON.stringify({
+      type: 'user_notification',
+      ...notificacion,
+      timestamp: new Date().toISOString(),
+    });
+
+    let sent = 0;
+    wss.clients.forEach((client: ExtendedWebSocket) => {
+      if (
+        client.readyState === WebSocket.OPEN &&
+        client.usuarioId === usuarioId
+      ) {
+        client.send(messageStr);
+        sent++;
+      }
+    });
+
+    console.log(`🔔 Notificación enviada a usuario ${usuarioId}: ${notificacion.tipo} (${sent} conexiones)`);
+    return sent > 0;
+  } catch (error) {
+    console.error('❌ Error enviando notificación a usuario:', error);
+    return false;
+  }
+}

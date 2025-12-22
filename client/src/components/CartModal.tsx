@@ -447,8 +447,8 @@ export default function CartModal({ abierto, onClose, pasoInicial = "carrito" }:
   };
 
   const handleConfirmarCompra = async () => {
-    // Siempre se requiere forma de pago (incluso con pago delegado, el pagador debe completar el pago)
-    if (!formaPagoSeleccionada && !usarBilletera) {
+    // Si hay pago delegado, NO se requiere forma de pago (el pagador la seleccionará)
+    if (!usuarioPagadorSeleccionado && !formaPagoSeleccionada && !usarBilletera) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -1141,28 +1141,35 @@ export default function CartModal({ abierto, onClose, pasoInicial = "carrito" }:
         </Button>
         
         <Button
-          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+          className={`w-full ${usuarioPagadorSeleccionado 
+            ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600" 
+            : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"}`}
           onClick={handleConfirmarCompra}
           disabled={
             procesando || 
-            (!formaPagoSeleccionada && !usarBilletera) ||
-            (formasPagoNegocio.length === 0 && !saldoSuficiente) ||
-            // Voucher obligatorio cuando no es billetera
-            !!(formaPagoSeleccionada && !usarBilletera && !voucherFile)
+            // Si hay pago delegado, solo necesita seleccionar ubicación (si aplica)
+            (!usuarioPagadorSeleccionado && (
+              (!formaPagoSeleccionada && !usarBilletera) ||
+              (formasPagoNegocio.length === 0 && !saldoSuficiente) ||
+              // Voucher obligatorio cuando no es billetera
+              !!(formaPagoSeleccionada && !usarBilletera && !voucherFile)
+            ))
           }
           data-testid="button-confirmar-compra"
         >
           {procesando ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : usuarioPagadorSeleccionado ? (
+            <Users className="h-4 w-4 mr-2" />
           ) : (
             <CreditCard className="h-4 w-4 mr-2" />
           )}
-          {formasPagoNegocio.length === 0 && !saldoSuficiente
-            ? "Recarga tu billetera" 
-            : formaPagoSeleccionada && !usarBilletera && !voucherFile
-              ? "Sube el comprobante"
-              : usuarioPagadorSeleccionado
-                ? "Enviar solicitud de pago"
+          {usuarioPagadorSeleccionado
+            ? "PASAR EL SERVICIO"
+            : formasPagoNegocio.length === 0 && !saldoSuficiente
+              ? "Recarga tu billetera" 
+              : formaPagoSeleccionada && !usarBilletera && !voucherFile
+                ? "Sube el comprobante"
                 : "Confirmar Compra"}
         </Button>
       </div>

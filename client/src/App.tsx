@@ -31,6 +31,7 @@ import CartaDigital from "@/pages/carta-digital";
 import Delivery from "@/pages/delivery";
 import NotFound from "@/pages/not-found";
 import NotificacionesAdmin from "@/components/NotificacionesAdmin";
+import NotificacionesPagoDelegado from "@/components/NotificacionesPagoDelegado";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -101,6 +102,9 @@ function App() {
               <AppContent />
               <Toaster />
               <NotificacionesAdmin />
+              <NotificacionesPagoDelegado onAbrirFormularioPago={(pedidoId) => {
+                window.location.href = `/mi-panel?tab=pedidos&pedidoId=${pedidoId}`;
+              }} />
             </CartProvider>
           </AudioControllerProvider>
         </ViewModeProvider>

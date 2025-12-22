@@ -46,7 +46,7 @@ import {
 } from "@shared/schema";
 import { paises, departamentosPeru, distritosPorDepartamento, obtenerDepartamentos, obtenerDistritos, buscarDepartamentos, buscarDistritos } from "@shared/ubicaciones-peru";
 import { registerAdminRoutes } from "./routes-admin";
-import { notificarSuperAdmins } from "./websocket";
+import { notificarSuperAdmins, notificarUsuario } from "./websocket";
 import { obtenerReporteCartera, generarPDFReporte, generarBackupCartera, generarBackupSistema, generarAmbosBackups, listarBackupsCartera, listarBackupsSistema, listarTodosBackups, obtenerRutaBackup } from "./services/reportesService";
 import { registrarActividad, obtenerRegistrosAuditoria, obtenerEstadisticasAuditoria, extraerInfoUsuario } from "./services/auditoriaService";
 import * as cron from "node-cron";
@@ -4156,6 +4156,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (e) {
         // Notificación no crítica
+      }
+
+      // Si es pago delegado, notificar al usuario pagador
+      if (pagoDelegado && usuarioPagadorId) {
+        try {
+          const solicitante = await storage.getUser(userId);
+          const solicitanteNombre = `${solicitante?.firstName || ''} ${solicitante?.lastName || ''}`.trim() || solicitante?.email || 'Un usuario';
+          
+          // Obtener nombre del local comercial
+          let nombreLocal = "Negocio";
+          if (localComercialId) {
+            const local = await storage.getLogoServicio(localComercialId);
+            if (local) nombreLocal = local.nombre || "Negocio";
+          }
+          
+          notificarUsuario(usuarioPagadorId, {
+            tipo: 'pago_delegado',
+            titulo: 'Solicitud de Pago',
+            mensaje: `${solicitanteNombre} te pide pagar su pedido`,
+            pedidoId: pedido.id,
+            monto: total || subtotalCalculado.toFixed(2),
+            solicitanteNombre,
+            nombreLocal,
+          });
+          
+          console.log(`📲 Notificación de pago delegado enviada a usuario ${usuarioPagadorId}`);
+        } catch (e) {
+          console.error("Error notificando pago delegado:", e);
+          // Notificación no crítica, el usuario verá el pedido en su panel de todos modos
+        }
       }
 
       res.json({ 
@@ -8812,6 +8842,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error al confirmar recepción:", error);
       res.status(500).json({ message: error.message || "Error al confirmar recepción" });
+    }
+  });
+
+  // Procesar pago de pedido delegado (el pagador completa el pago)
+  app.post('/api/mis-pedidos/:id/pagar-delegado', isAuthenticated, async (req: any, res) => {
+    try {
+      const usuarioId = req.user.claims.sub;
+      const { id } = req.params;
+      const { metodoPago, voucherUrl } = req.body;
+      
+      const pedido = await storage.getPedido(id);
+      if (!pedido) {
+        return res.status(404).json({ message: "Pedido no encontrado" });
+      }
+      
+      // Verificar que el usuario es el pagador delegado
+      if (pedido.usuarioPagadorId !== usuarioId) {
+        return res.status(403).json({ message: "No eres el pagador delegado de este pedido" });
+      }
+      
+      // Verificar que el pago aún está pendiente
+      if (pedido.estadoPago !== 'pendiente') {
+        return res.status(400).json({ message: "Este pedido ya fue pagado" });
+      }
+      
+      // Validar método de pago
+      if (!metodoPago || !['billetera', 'yape', 'plin'].includes(metodoPago)) {
+        return res.status(400).json({ message: "Método de pago no válido" });
+      }
+      
+      // Para Yape/Plin, requerir voucher
+      if (['yape', 'plin'].includes(metodoPago) && !voucherUrl) {
+        return res.status(400).json({ message: "Debes adjuntar el comprobante de pago" });
+      }
+      
+      // Procesar pago con billetera si se especificó
+      if (metodoPago === 'billetera') {
+        const saldo = await storage.getSaldoUsuario(usuarioId);
+        const totalPedido = parseFloat(pedido.total || '0');
+        const saldoActual = parseFloat(saldo?.saldo || '0');
+        
+        if (saldoActual < totalPedido) {
+          return res.status(400).json({ message: "Saldo insuficiente en billetera" });
+        }
+        
+        // Descontar saldo
+        await storage.actualizarSaldo(usuarioId, -totalPedido, 'pago_pedido_delegado', `Pago de pedido delegado #${pedido.numeroPedido || id}`);
+      }
+      
+      // Actualizar pedido con información de pago
+      const pedidoActualizado = await storage.updatePedido(id, {
+        estadoPago: 'pagado',
+        metodoPago: metodoPago || pedido.metodoPago,
+        fechaPago: new Date(),
+        notasCliente: voucherUrl 
+          ? `${pedido.notasCliente || ""}\n\n[Voucher pagador: ${voucherUrl}]`.trim()
+          : pedido.notasCliente,
+      });
+      
+      // Registrar en historial
+      await storage.addHistorialEstadoPedido({
+        pedidoId: id,
+        estadoAnterior: 'pago_pendiente',
+        estadoNuevo: 'pagado',
+        descripcion: 'Pagador delegado completó el pago',
+        usuarioId: usuarioId,
+        tipoUsuario: 'pagador',
+      });
+      
+      // Notificar al solicitante original que su pedido fue pagado
+      if (pedido.usuarioId) {
+        notificarUsuario(pedido.usuarioId, {
+          tipo: 'general',
+          titulo: 'Pago Completado',
+          mensaje: 'Tu pedido ha sido pagado correctamente',
+          pedidoId: id,
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        pedido: pedidoActualizado,
+        message: "Pago procesado exitosamente" 
+      });
+    } catch (error: any) {
+      console.error("Error al procesar pago delegado:", error);
+      res.status(500).json({ message: error.message || "Error al procesar el pago" });
     }
   });
 

@@ -3,7 +3,9 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Check, Clock, ChefHat, Package, Truck, CheckCircle2, X, MapPin, CreditCard, Users } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Check, Clock, ChefHat, Package, Truck, CheckCircle2, X, MapPin, CreditCard, Users, Wallet, Camera, ImagePlus, Loader2, Upload } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,12 +33,23 @@ const ESTADOS_CLIENTE = [
   { key: "confirmado", label: "COMPLETADO", icon: CheckCircle2 },
 ];
 
+interface SaldoUsuario {
+  saldo: string;
+  moneda: string;
+}
+
 export default function BarraEstadoPedido() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [showAgradecimiento, setShowAgradecimiento] = useState(false);
   const [pedidoCompletado, setPedidoCompletado] = useState<Pedido | null>(null);
   const [showDetallesDelegado, setShowDetallesDelegado] = useState(false);
+  
+  // Estados para el formulario de pago delegado
+  const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState<"billetera" | "yape" | null>(null);
+  const [voucherFile, setVoucherFile] = useState<File | null>(null);
+  const [voucherPreview, setVoucherPreview] = useState<string | null>(null);
+  const [procesandoPago, setProcesandoPago] = useState(false);
 
   // Obtener pedidos activos del usuario (no confirmados ni cancelados)
   const { data: pedidosActivos = [] } = useQuery<Pedido[]>({
@@ -54,6 +67,87 @@ export default function BarraEstadoPedido() {
 
   const pedidoActivo = pedidosActivos.length > 0 ? pedidosActivos[0] : null;
   const pedidoDelegadoPendiente = pedidosDelegados.length > 0 ? pedidosDelegados[0] : null;
+
+  // Obtener saldo del usuario
+  const { data: saldoData } = useQuery<SaldoUsuario>({
+    queryKey: ["/api/saldos/mi-saldo"],
+    enabled: isAuthenticated,
+  });
+  
+  const saldoDisponible = parseFloat(saldoData?.saldo || "0");
+  const totalPedido = parseFloat(pedidoDelegadoPendiente?.total || "0");
+  const saldoSuficiente = saldoDisponible >= totalPedido;
+
+  // Mutación para procesar pago delegado
+  const pagarDelegadoMutation = useMutation({
+    mutationFn: async ({ pedidoId, metodoPago, voucherUrl }: { pedidoId: string; metodoPago: string; voucherUrl?: string }) => {
+      return apiRequest("POST", `/api/mis-pedidos/${pedidoId}/pagar-delegado`, { metodoPago, voucherUrl });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-pedidos/delegados"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/saldos/mi-saldo"] });
+      toast({
+        title: "Pago Exitoso",
+        description: "El pago ha sido procesado correctamente",
+      });
+      setShowDetallesDelegado(false);
+      setMetodoPagoSeleccionado(null);
+      setVoucherFile(null);
+      setVoucherPreview(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo procesar el pago",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleVoucherChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVoucherFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setVoucherPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePagarDelegado = async () => {
+    if (!pedidoDelegadoPendiente || !metodoPagoSeleccionado) return;
+    
+    setProcesandoPago(true);
+    try {
+      let voucherUrl = null;
+      
+      // Subir voucher si es pago Yape
+      if (voucherFile && metodoPagoSeleccionado === "yape") {
+        const formData = new FormData();
+        formData.append("archivo", voucherFile);
+        
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          voucherUrl = uploadData.url;
+        }
+      }
+      
+      await pagarDelegadoMutation.mutateAsync({
+        pedidoId: pedidoDelegadoPendiente.id,
+        metodoPago: metodoPagoSeleccionado,
+        voucherUrl,
+      });
+    } finally {
+      setProcesandoPago(false);
+    }
+  };
 
   // Mutación para confirmar recepción (cliente confirma que recibió el pedido)
   const confirmarRecepcionMutation = useMutation({
@@ -250,8 +344,15 @@ export default function BarraEstadoPedido() {
       </Dialog>
 
       {/* Modal de detalles de pago delegado */}
-      <Dialog open={showDetallesDelegado} onOpenChange={setShowDetallesDelegado}>
-        <DialogContent className="sm:max-w-md" data-testid="modal-detalles-delegado">
+      <Dialog open={showDetallesDelegado} onOpenChange={(open) => {
+        setShowDetallesDelegado(open);
+        if (!open) {
+          setMetodoPagoSeleccionado(null);
+          setVoucherFile(null);
+          setVoucherPreview(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" data-testid="modal-detalles-delegado">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-orange-500" />
@@ -263,8 +364,9 @@ export default function BarraEstadoPedido() {
           </DialogHeader>
           
           {pedidoDelegadoPendiente && (
-            <div className="space-y-4 py-4">
-              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+            <div className="space-y-4 py-2">
+              {/* Resumen del pedido */}
+              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Solicitante:</span>
                   <span className="font-medium">{pedidoDelegadoPendiente.nombreSolicitante}</span>
@@ -273,23 +375,129 @@ export default function BarraEstadoPedido() {
                   <span className="text-muted-foreground">Negocio:</span>
                   <span className="font-medium">{pedidoDelegadoPendiente.nombreLocal || "N/A"}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tipo de entrega:</span>
-                  <span className="font-medium capitalize">{pedidoDelegadoPendiente.tipoEntrega || "delivery"}</span>
-                </div>
                 <div className="flex justify-between text-lg font-bold mt-2 pt-2 border-t">
                   <span>Total a pagar:</span>
                   <span className="text-orange-600">S/ {pedidoDelegadoPendiente.total || "0.00"}</span>
                 </div>
               </div>
               
-              <p className="text-xs text-muted-foreground text-center">
-                Al aceptar, el pago será procesado desde tu billetera o método de pago configurado
-              </p>
+              {/* Selección de método de pago */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Selecciona forma de pago</Label>
+                
+                {/* Billetera APO-360 */}
+                <Card 
+                  className={`cursor-pointer transition-all ${!saldoSuficiente ? 'opacity-60' : ''} ${metodoPagoSeleccionado === 'billetera' ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-950' : 'hover-elevate'}`}
+                  onClick={() => saldoSuficiente && setMetodoPagoSeleccionado('billetera')}
+                  data-testid="card-pago-billetera-delegado"
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
+                        <Wallet className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">Billetera APO-360</p>
+                        <p className="text-xs text-muted-foreground">
+                          Saldo: <span className={saldoSuficiente ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                            S/ {saldoDisponible.toFixed(2)}
+                          </span>
+                        </p>
+                      </div>
+                      {metodoPagoSeleccionado === 'billetera' && saldoSuficiente && (
+                        <Check className="h-5 w-5 text-purple-600" />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pago con Yape */}
+                <Card 
+                  className={`cursor-pointer transition-all ${metodoPagoSeleccionado === 'yape' ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-950' : 'hover-elevate'}`}
+                  onClick={() => setMetodoPagoSeleccionado('yape')}
+                  data-testid="card-pago-yape-delegado"
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                        <CreditCard className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">Yape / Plin</p>
+                        <p className="text-xs text-muted-foreground">Paga y sube tu voucher</p>
+                      </div>
+                      {metodoPagoSeleccionado === 'yape' && (
+                        <Check className="h-5 w-5 text-purple-600" />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {/* Subir voucher si es pago Yape */}
+              {metodoPagoSeleccionado === 'yape' && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Adjuntar comprobante de pago
+                  </Label>
+                  {!voucherPreview ? (
+                    <div className="flex gap-2">
+                      <label className="flex-1 cursor-pointer">
+                        <div className="border-2 border-dashed rounded-lg p-4 text-center hover:bg-muted/50 transition-colors">
+                          <Camera className="h-6 w-6 mx-auto text-muted-foreground mb-1" />
+                          <p className="text-xs text-muted-foreground">Tomar foto</p>
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={handleVoucherChange}
+                          data-testid="input-voucher-camara-delegado"
+                        />
+                      </label>
+                      <label className="flex-1 cursor-pointer">
+                        <div className="border-2 border-dashed rounded-lg p-4 text-center hover:bg-muted/50 transition-colors">
+                          <ImagePlus className="h-6 w-6 mx-auto text-muted-foreground mb-1" />
+                          <p className="text-xs text-muted-foreground">Subir archivo</p>
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleVoucherChange}
+                          data-testid="input-voucher-archivo-delegado"
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <img 
+                        src={voucherPreview} 
+                        alt="Voucher" 
+                        className="w-full h-32 object-cover rounded-lg border"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6"
+                        onClick={() => {
+                          setVoucherFile(null);
+                          setVoucherPreview(null);
+                        }}
+                        data-testid="btn-eliminar-voucher-delegado"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
           
-          <DialogFooter className="flex gap-2">
+          <DialogFooter className="flex gap-2 pt-2">
             <Button 
               variant="outline"
               onClick={() => setShowDetallesDelegado(false)}
@@ -299,17 +507,25 @@ export default function BarraEstadoPedido() {
             </Button>
             <Button 
               className="bg-gradient-to-r from-orange-500 to-amber-500 text-white"
-              onClick={() => {
-                toast({
-                  title: "Próximamente",
-                  description: "La funcionalidad de pagar pedidos delegados estará disponible pronto",
-                });
-                setShowDetallesDelegado(false);
-              }}
+              onClick={handlePagarDelegado}
+              disabled={
+                procesandoPago || 
+                !metodoPagoSeleccionado ||
+                (metodoPagoSeleccionado === 'billetera' && !saldoSuficiente) ||
+                (metodoPagoSeleccionado === 'yape' && !voucherFile)
+              }
               data-testid="button-pagar-delegado"
             >
-              <CreditCard className="h-4 w-4 mr-2" />
-              Pagar Ahora
+              {procesandoPago ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <CreditCard className="h-4 w-4 mr-2" />
+              )}
+              {metodoPagoSeleccionado === 'yape' && !voucherFile
+                ? "Sube el comprobante"
+                : metodoPagoSeleccionado === 'billetera' && !saldoSuficiente
+                  ? "Saldo insuficiente"
+                  : "Pagar Ahora"}
             </Button>
           </DialogFooter>
         </DialogContent>
