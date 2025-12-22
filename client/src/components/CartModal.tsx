@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { 
   Trash2, Minus, Plus, ShoppingBag, Store, ArrowRight, Loader2, 
   CreditCard, Wallet, Upload, Check, Phone, Building2, ArrowLeft,
-  CheckCircle2, AlertCircle, Receipt, MapPin, Copy, CheckCheck
+  CheckCircle2, AlertCircle, Receipt, MapPin, Copy, CheckCheck, Camera, ImagePlus
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -862,44 +862,87 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
               </>
             )}
 
-            {/* Subir voucher para Yape/Plin */}
-            {formaPagoSeleccionada && (formaPagoSeleccionada.tipo === "yape" || formaPagoSeleccionada.tipo === "plin") && (
-              <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                <Label className="flex items-center gap-2">
+            {/* Subir voucher - OBLIGATORIO cuando no es billetera */}
+            {formaPagoSeleccionada && !usarBilletera && (
+              <div className="space-y-3 p-4 border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-lg bg-purple-50/50 dark:bg-purple-950/30">
+                <Label className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-semibold">
                   <Upload className="h-4 w-4" />
-                  Adjuntar comprobante (voucher)
+                  Adjuntar comprobante de pago (obligatorio)
                 </Label>
-                <div className="flex items-center gap-3">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleVoucherChange}
-                    className="flex-1"
-                    data-testid="input-voucher"
-                  />
-                </div>
-                {voucherPreview && (
+                
+                {!voucherPreview ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Opción 1: Tomar foto con cámara */}
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleVoucherChange}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        data-testid="input-voucher-camara"
+                      />
+                      <Button
+                        variant="outline"
+                        className="w-full h-20 flex flex-col gap-2 border-purple-300 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-950"
+                        type="button"
+                      >
+                        <Camera className="h-6 w-6 text-purple-600" />
+                        <span className="text-xs">Tomar foto</span>
+                      </Button>
+                    </div>
+                    
+                    {/* Opción 2: Seleccionar archivo */}
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleVoucherChange}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        data-testid="input-voucher-archivo"
+                      />
+                      <Button
+                        variant="outline"
+                        className="w-full h-20 flex flex-col gap-2 border-purple-300 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-950"
+                        type="button"
+                      >
+                        <ImagePlus className="h-6 w-6 text-purple-600" />
+                        <span className="text-xs">Subir imagen</span>
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
                   <div className="relative">
                     <img 
                       src={voucherPreview} 
                       alt="Voucher" 
-                      className="w-full max-h-40 object-contain rounded-md border"
+                      className="w-full max-h-48 object-contain rounded-md border-2 border-green-500"
                     />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 bg-background/80"
-                      onClick={() => {
-                        setVoucherFile(null);
-                        setVoucherPreview(null);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    <div className="absolute top-2 right-2 flex gap-1">
+                      <Badge className="bg-green-500 text-white">
+                        <Check className="h-3 w-3 mr-1" />
+                        Imagen cargada
+                      </Badge>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          setVoucherFile(null);
+                          setVoucherPreview(null);
+                        }}
+                        data-testid="btn-eliminar-voucher"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Sube una captura del pago realizado por {formaPagoSeleccionada.tipo === "yape" ? "Yape" : "Plin"}
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  {formaPagoSeleccionada.tipo === "yape" || formaPagoSeleccionada.tipo === "plin"
+                    ? `Sube una captura del pago realizado por ${formaPagoSeleccionada.tipo === "yape" ? "Yape" : "Plin"}`
+                    : "Sube una foto del comprobante de transferencia o depósito"}
                 </p>
               </div>
             )}
@@ -977,7 +1020,9 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           disabled={
             procesando || 
             (!formaPagoSeleccionada && !usarBilletera) ||
-            (formasPagoNegocio.length === 0 && !saldoSuficiente)
+            (formasPagoNegocio.length === 0 && !saldoSuficiente) ||
+            // Voucher obligatorio cuando no es billetera
+            !!(formaPagoSeleccionada && !usarBilletera && !voucherFile)
           }
           data-testid="button-confirmar-compra"
         >
@@ -988,7 +1033,9 @@ export default function CartModal({ abierto, onClose }: CartModalProps) {
           )}
           {formasPagoNegocio.length === 0 && !saldoSuficiente 
             ? "Recarga tu billetera" 
-            : "Confirmar Compra"}
+            : formaPagoSeleccionada && !usarBilletera && !voucherFile
+              ? "Sube el comprobante"
+              : "Confirmar Compra"}
         </Button>
       </div>
     </>

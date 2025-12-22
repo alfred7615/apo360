@@ -3635,7 +3635,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/lugares-usuario', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const data = insertLugarUsuarioSchema.parse(req.body);
+      // Validar sin usuarioId, ya que lo agregamos desde la sesión
+      const { usuarioId: _, ...bodyData } = req.body;
+      const data = insertLugarUsuarioSchema.omit({ usuarioId: true }).parse(bodyData);
       const lugar = await storage.createLugarUsuario({
         ...data,
         usuarioId: userId,
