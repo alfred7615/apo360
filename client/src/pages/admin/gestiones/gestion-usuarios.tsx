@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { 
   Users, UserCog, Search, Plus, Edit, Trash2, Shield, User, 
   Star, MoreVertical, Ban, AlertTriangle, Eye, Check, 
-  Car, Store, Filter, RefreshCw, Gift
+  Car, Store, Filter, RefreshCw, Gift, Key, Loader2
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { UsuarioEditModal } from "@/components/admin/usuario-edit-modal";
@@ -152,6 +152,32 @@ export default function GestionUsuariosScreen() {
       duracionMeses: parseInt(duracionCortesia),
       motivo: motivoCortesia.trim(),
     });
+  };
+
+  const resetearContrasenaMutation = useMutation({
+    mutationFn: async (usuarioId: string) => {
+      const res = await apiRequest("POST", `/api/admin/usuarios/${usuarioId}/resetear-contrasena`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Contraseña reseteada",
+        description: data.message || "El usuario deberá crear una nueva contraseña al iniciar sesión.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al resetear contraseña",
+        description: error.message || "No se pudo resetear la contraseña",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleResetearContrasena = (user: UsuarioConRoles) => {
+    if (confirm(`¿Estás seguro de resetear la contraseña de ${user.firstName || user.alias || user.email}? El usuario deberá crear una nueva contraseña al iniciar sesión.`)) {
+      resetearContrasenaMutation.mutate(user.id);
+    }
   };
 
   const filteredUsuarios = (usuarios as UsuarioConRoles[]).filter((u) => {
@@ -344,6 +370,20 @@ export default function GestionUsuariosScreen() {
                   Reactivar
                 </DropdownMenuItem>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-blue-600"
+                onClick={() => handleResetearContrasena(user)}
+                disabled={resetearContrasenaMutation.isPending}
+                data-testid={`menu-resetear-contrasena-${user.id}`}
+              >
+                {resetearContrasenaMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Key className="h-4 w-4 mr-2" />
+                )}
+                Resetear Contraseña
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

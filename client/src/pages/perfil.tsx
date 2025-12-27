@@ -586,6 +586,173 @@ function VehiculoFoto({ titulo, imagen, onImageChange, testId }: VehiculoFotoPro
   );
 }
 
+function SeccionCambioContrasena() {
+  const { toast } = useToast();
+  const [contrasenaActual, setContrasenaActual] = useState("");
+  const [nuevaContrasena, setNuevaContrasena] = useState("");
+  const [confirmarContrasena, setConfirmarContrasena] = useState("");
+  const [mostrarActual, setMostrarActual] = useState(false);
+  const [mostrarNueva, setMostrarNueva] = useState(false);
+  const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
+
+  const cambiarContrasenaMutation = useMutation({
+    mutationFn: async (data: { contrasenaActual: string; nuevaContrasena: string; confirmarContrasena: string }) => {
+      const response = await apiRequest("POST", "/api/auth/cambiar-contrasena", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Contraseña actualizada", description: "Tu contraseña se ha cambiado correctamente" });
+      setContrasenaActual("");
+      setNuevaContrasena("");
+      setConfirmarContrasena("");
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "No se pudo cambiar la contraseña", variant: "destructive" });
+    },
+  });
+
+  const validarContrasena = () => {
+    if (nuevaContrasena.length < 6) {
+      return "La contraseña debe tener al menos 6 caracteres";
+    }
+    const tieneMayuscula = /[A-Z]/.test(nuevaContrasena);
+    const tieneMinuscula = /[a-z]/.test(nuevaContrasena);
+    const tieneNumero = /[0-9]/.test(nuevaContrasena);
+    if (!tieneMayuscula || !tieneMinuscula || !tieneNumero) {
+      return "Debe contener mayúscula, minúscula y número";
+    }
+    return null;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const error = validarContrasena();
+    if (error) {
+      toast({ title: "Contraseña inválida", description: error, variant: "destructive" });
+      return;
+    }
+    if (nuevaContrasena !== confirmarContrasena) {
+      toast({ title: "Error", description: "Las contraseñas no coinciden", variant: "destructive" });
+      return;
+    }
+    cambiarContrasenaMutation.mutate({ contrasenaActual, nuevaContrasena, confirmarContrasena });
+  };
+
+  const errorValidacion = nuevaContrasena ? validarContrasena() : null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-1">
+          <FileText className="h-3 w-3" />
+          Cambiar Contraseña
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Actualiza tu contraseña de acceso
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="contrasena-actual" className="text-xs">Contraseña Actual</Label>
+            <div className="relative">
+              <Input
+                id="contrasena-actual"
+                type={mostrarActual ? "text" : "password"}
+                value={contrasenaActual}
+                onChange={(e) => setContrasenaActual(e.target.value)}
+                placeholder="Tu contraseña actual"
+                className="h-8 pr-10"
+                data-testid="input-contrasena-actual"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-8 w-8 p-0"
+                onClick={() => setMostrarActual(!mostrarActual)}
+              >
+                {mostrarActual ? "🙈" : "👁"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="nueva-contrasena" className="text-xs">Nueva Contraseña</Label>
+            <div className="relative">
+              <Input
+                id="nueva-contrasena"
+                type={mostrarNueva ? "text" : "password"}
+                value={nuevaContrasena}
+                onChange={(e) => setNuevaContrasena(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                className="h-8 pr-10"
+                data-testid="input-nueva-contrasena"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-8 w-8 p-0"
+                onClick={() => setMostrarNueva(!mostrarNueva)}
+              >
+                {mostrarNueva ? "🙈" : "👁"}
+              </Button>
+            </div>
+            {errorValidacion && (
+              <p className="text-xs text-destructive">{errorValidacion}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Debe contener: mayúscula, minúscula y número
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="confirmar-contrasena" className="text-xs">Confirmar Contraseña</Label>
+            <div className="relative">
+              <Input
+                id="confirmar-contrasena"
+                type={mostrarConfirmar ? "text" : "password"}
+                value={confirmarContrasena}
+                onChange={(e) => setConfirmarContrasena(e.target.value)}
+                placeholder="Repite la nueva contraseña"
+                className="h-8 pr-10"
+                data-testid="input-confirmar-contrasena"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-8 w-8 p-0"
+                onClick={() => setMostrarConfirmar(!mostrarConfirmar)}
+              >
+                {mostrarConfirmar ? "🙈" : "👁"}
+              </Button>
+            </div>
+            {confirmarContrasena && nuevaContrasena !== confirmarContrasena && (
+              <p className="text-xs text-destructive">Las contraseñas no coinciden</p>
+            )}
+          </div>
+
+          <Button
+            type="submit"
+            disabled={cambiarContrasenaMutation.isPending || !contrasenaActual || !nuevaContrasena || !confirmarContrasena}
+            className="w-full"
+            data-testid="button-cambiar-contrasena"
+          >
+            {cambiarContrasenaMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Cambiar Contraseña
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function PerfilPage() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -970,6 +1137,16 @@ export default function PerfilPage() {
                     >
                       <MapPin className="h-3 w-3 mr-1" />
                       Lugares
+                    </Button>
+                    <Button
+                      variant={activeTab === "seguridad" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveTab("seguridad")}
+                      className="text-xs h-8"
+                      data-testid="tab-perfil-seguridad"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Seguridad
                     </Button>
                   </div>
 
@@ -1930,6 +2107,10 @@ export default function PerfilPage() {
                     </Button>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="seguridad" className="mt-4 space-y-4">
+                <SeccionCambioContrasena />
               </TabsContent>
                 </Tabs>
               </CardContent>

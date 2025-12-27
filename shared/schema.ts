@@ -106,6 +106,7 @@ export const usuarios = pgTable("users", {
   fotoDomicilio: varchar("foto_domicilio"),
   
   passwordHash: varchar("password_hash"),
+  requiereCambioContrasena: boolean("requiere_cambio_contrasena").default(false),
   
   motivoSuspension: text("motivo_suspension"),
   fechaSuspension: timestamp("fecha_suspension"),

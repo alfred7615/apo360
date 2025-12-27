@@ -2197,6 +2197,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cambiar contraseña del usuario autenticado
+  app.post('/api/auth/cambiar-contrasena', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { contrasenaActual, nuevaContrasena, confirmarContrasena } = req.body;
+      
+      // Validar que las contraseñas coincidan
+      if (nuevaContrasena !== confirmarContrasena) {
+        return res.status(400).json({ message: "Las contraseñas no coinciden" });
+      }
+      
+      // Validar requisitos de la nueva contraseña
+      if (!nuevaContrasena || nuevaContrasena.length < 6) {
+        return res.status(400).json({ message: "La contraseña debe tener al menos 6 caracteres" });
+      }
+      
+      const tieneMayuscula = /[A-Z]/.test(nuevaContrasena);
+      const tieneMinuscula = /[a-z]/.test(nuevaContrasena);
+      const tieneNumero = /[0-9]/.test(nuevaContrasena);
+      
+      if (!tieneMayuscula || !tieneMinuscula || !tieneNumero) {
+        return res.status(400).json({ 
+          message: "La contraseña debe contener al menos una mayúscula, una minúscula y un número" 
+        });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Si tiene contraseña actual, OBLIGATORIAMENTE verificarla
+      if (user.passwordHash) {
+        if (!contrasenaActual) {
+          return res.status(400).json({ message: "Debes ingresar tu contraseña actual" });
+        }
+        
+        const cryptoModule = await import('crypto');
+        const hashActual = cryptoModule.createHash('sha256').update(contrasenaActual).digest('hex');
+        
+        if (user.passwordHash !== hashActual) {
+          return res.status(401).json({ message: "La contraseña actual es incorrecta" });
+        }
+      }
+      
+      // Crear hash de la nueva contraseña
+      const cryptoModule = await import('crypto');
+      const nuevoHash = cryptoModule.createHash('sha256').update(nuevaContrasena).digest('hex');
+      
+      // Actualizar contraseña
+      await storage.updateUser(userId, { 
+        passwordHash: nuevoHash,
+        requiereCambioContrasena: false 
+      });
+      
+      res.json({ message: "Contraseña actualizada correctamente" });
+    } catch (error: any) {
+      console.error("Error al cambiar contraseña:", error);
+      res.status(500).json({ message: error.message || "Error al cambiar contraseña" });
+    }
+  });
+
+  // Admin: Resetear contraseña de un usuario (el usuario deberá crear una nueva al ingresar)
+  app.post('/api/admin/usuarios/:id/resetear-contrasena', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Eliminar contraseña y marcar que requiere cambio
+      await storage.updateUser(id, { 
+        passwordHash: null,
+        requiereCambioContrasena: true 
+      });
+      
+      res.json({ 
+        message: `Contraseña reseteada. ${user.firstName || user.alias || 'El usuario'} deberá crear una nueva contraseña al iniciar sesión.` 
+      });
+    } catch (error: any) {
+      console.error("Error al resetear contraseña:", error);
+      res.status(500).json({ message: error.message || "Error al resetear contraseña" });
+    }
+  });
+
   // Ruta para subir foto de perfil (separada porque tiene middleware de upload)
   app.post('/api/usuarios/:id/foto', isAuthenticated, createUploadMiddleware('perfiles', 'imagen'), async (req: any, res) => {
     try {
