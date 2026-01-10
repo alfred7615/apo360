@@ -95,12 +95,13 @@ type Publicidad = {
   twitter: string | null;
   youtube: string | null;
   linkedin: string | null;
+  ciudadId: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 };
 
 const formSchema = insertPublicidadSchema
-  .omit({ id: true, fechaInicio: true, fechaFin: true, fechaCaducidad: true, orden: true, latitud: true, longitud: true })
+  .omit({ id: true, fechaInicio: true, fechaFin: true, fechaCaducidad: true, orden: true, latitud: true, longitud: true, ciudadId: true })
   .extend({
     fechaInicio: z.string().optional(),
     fechaFin: z.string().optional(),
@@ -108,6 +109,7 @@ const formSchema = insertPublicidadSchema
     orden: z.preprocess((v) => v === "" || v === null || v === undefined ? 0 : Number(v), z.number().min(0)),
     latitud: z.preprocess((v) => v === "" || v === null || v === undefined ? undefined : Number(v), z.number().optional()),
     longitud: z.preprocess((v) => v === "" || v === null || v === undefined ? undefined : Number(v), z.number().optional()),
+    ciudadId: z.string().nullable().optional(),
   });
 
 type FormData = z.infer<typeof formSchema>;
@@ -135,8 +137,8 @@ export default function PublicidadSection() {
   const [editingPublicidad, setEditingPublicidad] = useState<Publicidad | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState<string>('carrusel_logos');
-  const [filtroPaisId, setFiltroPaisId] = useState<string | null>(null);
-  const [filtroCiudadId, setFiltroCiudadId] = useState<string | null>(null);
+  const [filtroPaisId, setFiltroPaisId] = useState<string | null>("peru");
+  const [filtroCiudadId, setFiltroCiudadId] = useState<string | null>("tacna");
 
   const { data: paises = [] } = useQuery<Pais[]>({
     queryKey: ["/api/paises"],
@@ -479,6 +481,7 @@ export default function PublicidadSection() {
       twitter: "",
       youtube: "",
       linkedin: "",
+      ciudadId: null,
     },
   });
 
@@ -575,7 +578,11 @@ export default function PublicidadSection() {
     if (editingPublicidad) {
       updateMutation.mutate({ id: editingPublicidad.id, data });
     } else {
-      createMutation.mutate(data);
+      const dataConCiudad: FormData = {
+        ...data,
+        ciudadId: filtroCiudadId || null,
+      };
+      createMutation.mutate(dataConCiudad);
     }
   };
 
@@ -614,6 +621,7 @@ export default function PublicidadSection() {
       twitter: publicidad.twitter || "",
       youtube: publicidad.youtube || "",
       linkedin: publicidad.linkedin || "",
+      ciudadId: publicidad.ciudadId || null,
     });
     setIsDialogOpen(true);
   };
@@ -1324,9 +1332,10 @@ export default function PublicidadSection() {
           {["carrusel_logos", "carrusel_principal", "logos_servicios", "popup_emergencia", "encuestas_apoyo"].map(tipo => {
             const publicidadesDelTipo = publicidades.filter(p => {
               if (p.tipo !== tipo) return false;
-              if (filtroPaisId && (p as any).paisId !== filtroPaisId) return false;
-              if (filtroCiudadId && (p as any).ciudadId !== filtroCiudadId) return false;
-              return true;
+              const coincideCiudad = filtroCiudadId === null 
+                ? p.ciudadId === null 
+                : p.ciudadId === filtroCiudadId;
+              return coincideCiudad;
             });
             return (
             <TabsContent key={tipo} value={tipo} className="mt-4">
