@@ -261,6 +261,30 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   if (tipo === "carrusel_principal") {
     const publicidadActual = publicidadesActivas[indiceActual];
 
+    const handleClickAnterior = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      irAnterior();
+    };
+
+    const handleDoubleClickAnterior = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      irAlInicio();
+    };
+
+    const handleClickSiguiente = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      irSiguiente();
+    };
+
+    const handleDoubleClickSiguiente = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      irAlFinal();
+    };
+
     return (
       <>
         <div
@@ -274,13 +298,15 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
         >
           {/* Botón navegación izquierda */}
           <button
-            onClick={irAnterior}
-            onDoubleClick={irAlInicio}
-            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 active:bg-black/80 text-white rounded-full p-3 sm:p-4 shadow-xl transition-all duration-200 hover:scale-110 active:scale-95 backdrop-blur-sm"
+            type="button"
+            onClick={handleClickAnterior}
+            onDoubleClick={handleDoubleClickAnterior}
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 active:bg-black/90 text-white rounded-lg shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 backdrop-blur-sm flex items-center justify-center"
+            style={{ width: "40px", height: "40px" }}
             aria-label="Imagen anterior"
             data-testid="btn-carousel-prev"
           >
-            <ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8" />
+            <ChevronLeft className="h-7 w-7" />
           </button>
 
           {/* Imagen principal */}
@@ -298,22 +324,26 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
 
           {/* Botón navegación derecha */}
           <button
-            onClick={irSiguiente}
-            onDoubleClick={irAlFinal}
-            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 active:bg-black/80 text-white rounded-full p-3 sm:p-4 shadow-xl transition-all duration-200 hover:scale-110 active:scale-95 backdrop-blur-sm"
+            type="button"
+            onClick={handleClickSiguiente}
+            onDoubleClick={handleDoubleClickSiguiente}
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 active:bg-black/90 text-white rounded-lg shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 backdrop-blur-sm flex items-center justify-center"
+            style={{ width: "40px", height: "40px" }}
             aria-label="Imagen siguiente"
             data-testid="btn-carousel-next"
           >
-            <ChevronRight className="h-6 w-6 sm:h-8 sm:w-8" />
+            <ChevronRight className="h-7 w-7" />
           </button>
 
           {/* Indicadores de posición */}
           {publicidadesActivas.length > 1 && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-30">
               {publicidadesActivas.map((_, idx) => (
                 <button
                   key={idx}
-                  onClick={() => {
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     pausarYReanudarAutoplay();
                     setIndiceActual(idx);
                   }}
