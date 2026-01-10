@@ -223,7 +223,7 @@ import {
   type InsertTicketFacturacion,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql, gte, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, gte, inArray, or, isNull } from "drizzle-orm";
 
 // Interfaz del storage
 export interface IStorage {
@@ -249,14 +249,14 @@ export interface IStorage {
   updateUser(id: string, data: Partial<InsertUsuario>): Promise<Usuario | undefined>;
   
   // Operaciones de publicidad
-  getPublicidades(tipo?: string): Promise<Publicidad[]>;
+  getPublicidades(tipo?: string, ciudadId?: string): Promise<Publicidad[]>;
   getPublicidadesByUsuario(usuarioId: string): Promise<Publicidad[]>;
   createPublicidad(publicidad: PublicidadInsert): Promise<Publicidad>;
   updatePublicidad(id: string, data: Partial<PublicidadInsert>): Promise<Publicidad | undefined>;
   deletePublicidad(id: string): Promise<void>;
   
   // Operaciones de servicios
-  getServicios(): Promise<Servicio[]>;
+  getServicios(ciudadId?: string): Promise<Servicio[]>;
   getServicio(id: string): Promise<Servicio | undefined>;
   createServicio(servicio: ServicioInsert): Promise<Servicio>;
   updateServicio(id: string, data: Partial<ServicioInsert>): Promise<Servicio | undefined>;
@@ -296,7 +296,7 @@ export interface IStorage {
   deleteLugarUsuario(id: string): Promise<void>;
   
   // Operaciones de taxi
-  getViajesTaxi(usuarioId?: string): Promise<ViajeTaxi[]>;
+  getViajesTaxi(usuarioId?: string, ciudadId?: string): Promise<ViajeTaxi[]>;
   getViajesConductor(conductorId: string): Promise<ViajeTaxi[]>;
   createViajeTaxi(viaje: ViajeTaxiInsert): Promise<ViajeTaxi>;
   updateViajeTaxi(id: string, data: Partial<ViajeTaxiInsert>): Promise<ViajeTaxi | undefined>;
@@ -351,15 +351,15 @@ export interface IStorage {
   upsertConfiguracionSaldo(data: InsertConfiguracionSaldo): Promise<ConfiguracionSaldo>;
   
   // Operaciones de encuestas
-  getEncuestas(): Promise<Encuesta[]>;
+  getEncuestas(ciudadId?: string): Promise<Encuesta[]>;
   getEncuesta(id: string): Promise<Encuesta | undefined>;
   createEncuesta(data: InsertEncuesta): Promise<Encuesta>;
   updateEncuesta(id: string, data: Partial<InsertEncuesta>): Promise<Encuesta | undefined>;
   deleteEncuesta(id: string): Promise<void>;
   
   // Operaciones de popups publicitarios
-  getPopups(): Promise<PopupPublicitario[]>;
-  getPopupsActivos(): Promise<PopupPublicitario[]>;
+  getPopups(ciudadId?: string): Promise<PopupPublicitario[]>;
+  getPopupsActivos(ciudadId?: string): Promise<PopupPublicitario[]>;
   getPopup(id: string): Promise<PopupPublicitario | undefined>;
   createPopup(data: InsertPopupPublicitario): Promise<PopupPublicitario>;
   updatePopup(id: string, data: Partial<InsertPopupPublicitario>): Promise<PopupPublicitario | undefined>;
@@ -655,10 +655,20 @@ export class DatabaseStorage implements IStorage {
   // PUBLICIDAD
   // ============================================================
   
-  async getPublicidades(tipo?: string): Promise<Publicidad[]> {
+  async getPublicidades(tipo?: string, ciudadId?: string): Promise<Publicidad[]> {
+    const condiciones = [];
+    
     if (tipo) {
+      condiciones.push(eq(publicidad.tipo, tipo));
+    }
+    
+    if (ciudadId) {
+      condiciones.push(or(eq(publicidad.ciudadId, ciudadId), isNull(publicidad.ciudadId)));
+    }
+    
+    if (condiciones.length > 0) {
       return await db.select().from(publicidad)
-        .where(eq(publicidad.tipo, tipo))
+        .where(and(...condiciones))
         .orderBy(publicidad.orden);
     }
     return await db.select().from(publicidad).orderBy(publicidad.orden);
@@ -954,7 +964,12 @@ export class DatabaseStorage implements IStorage {
   // SERVICIOS
   // ============================================================
   
-  async getServicios(): Promise<Servicio[]> {
+  async getServicios(ciudadId?: string): Promise<Servicio[]> {
+    if (ciudadId) {
+      return await db.select().from(servicios)
+        .where(or(eq(servicios.ciudadId, ciudadId), isNull(servicios.ciudadId)))
+        .orderBy(servicios.nombreServicio);
+    }
     return await db.select().from(servicios).orderBy(servicios.nombreServicio);
   }
 
@@ -1459,16 +1474,23 @@ export class DatabaseStorage implements IStorage {
   // TAXI
   // ============================================================
   
-  async getViajesTaxi(usuarioId?: string): Promise<ViajeTaxi[]> {
+  async getViajesTaxi(usuarioId?: string, ciudadId?: string): Promise<ViajeTaxi[]> {
+    let condicionCiudad = ciudadId 
+      ? sql`(${viajesTaxi.ciudadId} = ${ciudadId} OR ${viajesTaxi.ciudadId} IS NULL)`
+      : sql`1=1`;
+      
     if (usuarioId) {
       return await db.select()
         .from(viajesTaxi)
         .where(
-          sql`${viajesTaxi.pasajeroId} = ${usuarioId} OR ${viajesTaxi.conductorId} = ${usuarioId}`
+          sql`(${viajesTaxi.pasajeroId} = ${usuarioId} OR ${viajesTaxi.conductorId} = ${usuarioId}) AND ${condicionCiudad}`
         )
         .orderBy(desc(viajesTaxi.createdAt));
     }
-    return await db.select().from(viajesTaxi).orderBy(desc(viajesTaxi.createdAt));
+    return await db.select()
+      .from(viajesTaxi)
+      .where(condicionCiudad)
+      .orderBy(desc(viajesTaxi.createdAt));
   }
 
   async getViajesConductor(conductorId: string): Promise<ViajeTaxi[]> {
@@ -1499,11 +1521,21 @@ export class DatabaseStorage implements IStorage {
   // DELIVERY
   // ============================================================
   
-  async getPedidosDelivery(usuarioId?: string): Promise<PedidoDelivery[]> {
+  async getPedidosDelivery(usuarioId?: string, ciudadId?: string): Promise<PedidoDelivery[]> {
+    const condiciones = [];
+    
     if (usuarioId) {
+      condiciones.push(eq(pedidosDelivery.usuarioId, usuarioId));
+    }
+    
+    if (ciudadId) {
+      condiciones.push(or(eq(pedidosDelivery.ciudadId, ciudadId), isNull(pedidosDelivery.ciudadId)));
+    }
+    
+    if (condiciones.length > 0) {
       return await db.select()
         .from(pedidosDelivery)
-        .where(eq(pedidosDelivery.usuarioId, usuarioId))
+        .where(and(...condiciones))
         .orderBy(desc(pedidosDelivery.createdAt));
     }
     return await db.select().from(pedidosDelivery).orderBy(desc(pedidosDelivery.createdAt));
@@ -1793,7 +1825,12 @@ export class DatabaseStorage implements IStorage {
   // ENCUESTAS
   // ============================================================
 
-  async getEncuestas(): Promise<any[]> {
+  async getEncuestas(ciudadId?: string): Promise<any[]> {
+    if (ciudadId) {
+      return await db.select().from(encuestas)
+        .where(or(eq(encuestas.ciudadId, ciudadId), isNull(encuestas.ciudadId)))
+        .orderBy(desc(encuestas.createdAt));
+    }
     return await db.select().from(encuestas).orderBy(desc(encuestas.createdAt));
   }
 
@@ -1827,7 +1864,13 @@ export class DatabaseStorage implements IStorage {
   // POPUPS PUBLICITARIOS
   // ============================================================
 
-  async getPopups(): Promise<any[]> {
+  async getPopups(ciudadId?: string): Promise<any[]> {
+    if (ciudadId) {
+      return await db.select()
+        .from(popupsPublicitarios)
+        .where(or(eq(popupsPublicitarios.ciudadId, ciudadId), isNull(popupsPublicitarios.ciudadId)))
+        .orderBy(popupsPublicitarios.orden);
+    }
     return await db.select()
       .from(popupsPublicitarios)
       .orderBy(popupsPublicitarios.orden);
@@ -1859,11 +1902,17 @@ export class DatabaseStorage implements IStorage {
     await db.delete(popupsPublicitarios).where(eq(popupsPublicitarios.id, id));
   }
 
-  async getPopupsActivos(): Promise<PopupPublicitario[]> {
+  async getPopupsActivos(ciudadId?: string): Promise<PopupPublicitario[]> {
     const ahora = new Date();
+    const condiciones = [eq(popupsPublicitarios.estado, 'activo')];
+    
+    if (ciudadId) {
+      condiciones.push(or(eq(popupsPublicitarios.ciudadId, ciudadId), isNull(popupsPublicitarios.ciudadId))!);
+    }
+    
     const popups = await db.select()
       .from(popupsPublicitarios)
-      .where(eq(popupsPublicitarios.estado, 'activo'))
+      .where(and(...condiciones))
       .orderBy(desc(popupsPublicitarios.createdAt));
     
     return popups.filter(p => {
@@ -3241,10 +3290,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Tasas de cambio locales (Cambistas)
-  async getTasasCambioLocales(activo?: boolean): Promise<TasaCambioLocal[]> {
+  async getTasasCambioLocales(activo?: boolean, ciudadId?: string): Promise<TasaCambioLocal[]> {
+    const condiciones = [];
+    
     if (activo !== undefined) {
+      condiciones.push(eq(tasasCambioLocales.activo, activo));
+    }
+    
+    if (ciudadId) {
+      condiciones.push(or(eq(tasasCambioLocales.ciudadId, ciudadId), isNull(tasasCambioLocales.ciudadId)));
+    }
+    
+    if (condiciones.length > 0) {
       return await db.select().from(tasasCambioLocales)
-        .where(eq(tasasCambioLocales.activo, activo))
+        .where(and(...condiciones))
         .orderBy(desc(tasasCambioLocales.updatedAt));
     }
     return await db.select().from(tasasCambioLocales)

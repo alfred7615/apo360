@@ -2555,10 +2555,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // RUTAS DE PUBLICIDAD
   // ============================================================
 
-  app.get('/api/publicidad', async (req, res) => {
+  app.get('/api/publicidad', async (req: any, res) => {
     try {
       const tipo = req.query.tipo as string | undefined;
-      const publicidades = await storage.getPublicidades(tipo);
+      const ciudadId = req.query.ciudadId as string | undefined;
+      
+      let ciudadIdFinal = ciudadId;
+      if (!ciudadIdFinal && req.user?.claims?.sub) {
+        const usuario = await storage.getUser(req.user.claims.sub);
+        if (usuario?.ciudadIdActual) {
+          ciudadIdFinal = usuario.ciudadIdActual;
+        }
+      }
+      
+      const publicidades = await storage.getPublicidades(tipo, ciudadIdFinal);
       res.json(publicidades);
     } catch (error) {
       console.error("Error al obtener publicidad:", error);
@@ -3788,9 +3798,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // RUTAS DE SERVICIOS
   // ============================================================
 
-  app.get('/api/servicios', async (req, res) => {
+  app.get('/api/servicios', async (req: any, res) => {
     try {
-      const servicios = await storage.getServicios();
+      const ciudadId = req.query.ciudadId as string | undefined;
+      
+      let ciudadIdFinal = ciudadId;
+      if (!ciudadIdFinal && req.user?.claims?.sub) {
+        const usuario = await storage.getUser(req.user.claims.sub);
+        if (usuario?.ciudadIdActual) {
+          ciudadIdFinal = usuario.ciudadIdActual;
+        }
+      }
+      
+      const servicios = await storage.getServicios(ciudadIdFinal);
       res.json(servicios);
     } catch (error) {
       console.error("Error al obtener servicios:", error);
@@ -4563,7 +4583,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/taxi/viajes', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const viajes = await storage.getViajesTaxi(userId);
+      const ciudadId = req.query.ciudadId as string | undefined;
+      
+      let ciudadIdFinal = ciudadId;
+      if (!ciudadIdFinal) {
+        const usuario = await storage.getUser(userId);
+        if (usuario?.ciudadIdActual) {
+          ciudadIdFinal = usuario.ciudadIdActual;
+        }
+      }
+      
+      const viajes = await storage.getViajesTaxi(userId, ciudadIdFinal);
       res.json(viajes);
     } catch (error) {
       console.error("Error al obtener viajes:", error);
@@ -4636,7 +4666,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/delivery/pedidos', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const pedidos = await storage.getPedidosDelivery(userId);
+      const ciudadId = req.query.ciudadId as string | undefined;
+      
+      let ciudadIdFinal = ciudadId;
+      if (!ciudadIdFinal) {
+        const usuario = await storage.getUser(userId);
+        if (usuario?.ciudadIdActual) {
+          ciudadIdFinal = usuario.ciudadIdActual;
+        }
+      }
+      
+      const pedidos = await storage.getPedidosDelivery(userId, ciudadIdFinal);
       res.json(pedidos);
     } catch (error) {
       console.error("Error al obtener pedidos:", error);
@@ -5043,9 +5083,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Obtener todas las tasas de cambio locales (público)
-  app.get('/api/monedas/tasas-locales', async (req, res) => {
+  app.get('/api/monedas/tasas-locales', async (req: any, res) => {
     try {
-      const tasas = await storage.getTasasCambioLocales(true);
+      const ciudadId = req.query.ciudadId as string | undefined;
+      
+      let ciudadIdFinal = ciudadId;
+      if (!ciudadIdFinal && req.user?.claims?.sub) {
+        const usuario = await storage.getUser(req.user.claims.sub);
+        if (usuario?.ciudadIdActual) {
+          ciudadIdFinal = usuario.ciudadIdActual;
+        }
+      }
+      
+      const tasas = await storage.getTasasCambioLocales(true, ciudadIdFinal);
       res.json(tasas);
     } catch (error) {
       console.error("Error al obtener tasas locales:", error);
@@ -5912,9 +5962,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ENCUESTAS
   // ============================================================
 
-  app.get('/api/encuestas', async (req, res) => {
+  app.get('/api/encuestas', async (req: any, res) => {
     try {
-      const encuestas = await storage.getEncuestas();
+      const ciudadId = req.query.ciudadId as string | undefined;
+      
+      let ciudadIdFinal = ciudadId;
+      if (!ciudadIdFinal && req.user?.claims?.sub) {
+        const usuario = await storage.getUser(req.user.claims.sub);
+        if (usuario?.ciudadIdActual) {
+          ciudadIdFinal = usuario.ciudadIdActual;
+        }
+      }
+      
+      const encuestas = await storage.getEncuestas(ciudadIdFinal);
       res.json(encuestas);
     } catch (error) {
       console.error("Error al obtener encuestas:", error);
@@ -5922,9 +5982,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/encuestas/activas', async (req, res) => {
+  app.get('/api/encuestas/activas', async (req: any, res) => {
     try {
-      const encuestas = await storage.getEncuestas();
+      const ciudadId = req.query.ciudadId as string | undefined;
+      
+      let ciudadIdFinal = ciudadId;
+      if (!ciudadIdFinal && req.user?.claims?.sub) {
+        const usuario = await storage.getUser(req.user.claims.sub);
+        if (usuario?.ciudadIdActual) {
+          ciudadIdFinal = usuario.ciudadIdActual;
+        }
+      }
+      
+      const encuestas = await storage.getEncuestas(ciudadIdFinal);
       const ahora = new Date();
       const activas = encuestas.filter(e => {
         if (e.estado !== 'activa') return false;
