@@ -4152,10 +4152,51 @@ export class DatabaseStorage implements IStorage {
     return item;
   }
 
-  async getItemsDestacados(limite = 10): Promise<ItemCatalogo[]> {
+  async getItemsDestacados(
+    limite = 10,
+    filtros?: { paisId?: string; ciudadId?: string; busqueda?: string; orden?: string }
+  ): Promise<ItemCatalogo[]> {
+    const condiciones: any[] = [
+      eq(itemsCatalogo.destacado, true),
+      eq(itemsCatalogo.disponible, true)
+    ];
+
+    if (filtros?.busqueda) {
+      condiciones.push(
+        or(
+          sql`${itemsCatalogo.nombre} ILIKE ${'%' + filtros.busqueda + '%'}`,
+          sql`${itemsCatalogo.descripcion} ILIKE ${'%' + filtros.busqueda + '%'}`
+        )
+      );
+    }
+
+    let ordenamiento;
+    switch (filtros?.orden) {
+      case 'antiguo':
+        ordenamiento = asc(itemsCatalogo.createdAt);
+        break;
+      case 'masLikes':
+        ordenamiento = desc(itemsCatalogo.likes);
+        break;
+      case 'masCompartidos':
+        ordenamiento = desc(itemsCatalogo.compartidos);
+        break;
+      case 'masFavoritos':
+        ordenamiento = desc(itemsCatalogo.favoritos);
+        break;
+      case 'masVistas':
+        ordenamiento = desc(itemsCatalogo.vistas);
+        break;
+      case 'reciente':
+        ordenamiento = desc(itemsCatalogo.createdAt);
+        break;
+      default:
+        ordenamiento = desc(itemsCatalogo.likes);
+    }
+
     return await db.select().from(itemsCatalogo)
-      .where(and(eq(itemsCatalogo.destacado, true), eq(itemsCatalogo.disponible, true)))
-      .orderBy(desc(itemsCatalogo.likes))
+      .where(and(...condiciones))
+      .orderBy(ordenamiento)
       .limit(limite);
   }
 
@@ -4262,25 +4303,89 @@ export class DatabaseStorage implements IStorage {
     await db.execute(sql`UPDATE items_catalogo SET vistas = vistas + 1 WHERE id = ${itemId}`);
   }
 
-  async getItemsRecientes(limite = 12): Promise<ItemCatalogo[]> {
+  async getItemsRecientes(
+    limite = 12,
+    filtros?: { paisId?: string; ciudadId?: string; busqueda?: string; orden?: string }
+  ): Promise<ItemCatalogo[]> {
+    const condiciones: any[] = [
+      eq(itemsCatalogo.disponible, true)
+    ];
+
+    if (filtros?.busqueda) {
+      condiciones.push(
+        or(
+          sql`${itemsCatalogo.nombre} ILIKE ${'%' + filtros.busqueda + '%'}`,
+          sql`${itemsCatalogo.descripcion} ILIKE ${'%' + filtros.busqueda + '%'}`
+        )
+      );
+    }
+
+    let ordenamiento;
+    switch (filtros?.orden) {
+      case 'antiguo':
+        ordenamiento = asc(itemsCatalogo.createdAt);
+        break;
+      case 'masLikes':
+        ordenamiento = desc(itemsCatalogo.likes);
+        break;
+      case 'masCompartidos':
+        ordenamiento = desc(itemsCatalogo.compartidos);
+        break;
+      case 'masFavoritos':
+        ordenamiento = desc(itemsCatalogo.favoritos);
+        break;
+      case 'masVistas':
+        ordenamiento = desc(itemsCatalogo.vistas);
+        break;
+      case 'reciente':
+      default:
+        ordenamiento = desc(itemsCatalogo.createdAt);
+    }
+
     return await db.select().from(itemsCatalogo)
-      .where(eq(itemsCatalogo.disponible, true))
-      .orderBy(desc(itemsCatalogo.createdAt))
+      .where(and(...condiciones))
+      .orderBy(ordenamiento)
       .limit(limite);
   }
 
-  async getCatalogosLocalesConItems(): Promise<Array<CatalogoLocal & { items: ItemCatalogo[] }>> {
+  async getCatalogosLocalesConItems(
+    filtros?: { paisId?: string; ciudadId?: string; busqueda?: string; orden?: string }
+  ): Promise<Array<CatalogoLocal & { items: ItemCatalogo[]; totalItems: number }>> {
+    const condicionesCatalogo: any[] = [eq(catalogosLocales.activo, true)];
+
+    if (filtros?.busqueda) {
+      condicionesCatalogo.push(
+        or(
+          sql`${catalogosLocales.nombre} ILIKE ${'%' + filtros.busqueda + '%'}`,
+          sql`${catalogosLocales.descripcion} ILIKE ${'%' + filtros.busqueda + '%'}`
+        )
+      );
+    }
+
+    let ordenamiento;
+    switch (filtros?.orden) {
+      case 'antiguo':
+        ordenamiento = asc(catalogosLocales.createdAt);
+        break;
+      default:
+        ordenamiento = desc(catalogosLocales.createdAt);
+    }
+
     const catalogos = await db.select().from(catalogosLocales)
-      .where(eq(catalogosLocales.activo, true))
-      .orderBy(desc(catalogosLocales.createdAt));
+      .where(and(...condicionesCatalogo))
+      .orderBy(ordenamiento);
     
-    const result: Array<CatalogoLocal & { items: ItemCatalogo[] }> = [];
+    const result: Array<CatalogoLocal & { items: ItemCatalogo[]; totalItems: number }> = [];
     for (const catalogo of catalogos) {
       const items = await db.select().from(itemsCatalogo)
         .where(and(eq(itemsCatalogo.catalogoId, catalogo.id), eq(itemsCatalogo.disponible, true)))
         .orderBy(desc(itemsCatalogo.createdAt))
         .limit(6);
-      result.push({ ...catalogo, items });
+      
+      const [countResult] = await db.select({ count: sql<number>`count(*)` }).from(itemsCatalogo)
+        .where(and(eq(itemsCatalogo.catalogoId, catalogo.id), eq(itemsCatalogo.disponible, true)));
+      
+      result.push({ ...catalogo, items, totalItems: Number(countResult?.count || 0) });
     }
     return result;
   }

@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
+import { useGeoFilter } from "@/contexts/GeoFilterContext";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ export default function SeccionLocalesComerciales() {
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   const { abrirCarrito } = useCart();
+  const { filtros, queryParams } = useGeoFilter();
   const [productoSeleccionado, setProductoSeleccionado] = useState<ItemCatalogo | null>(null);
   const [catalogoSeleccionado, setCatalogoSeleccionado] = useState<CatalogoConItems | null>(null);
   const [preciosSeleccionados, setPreciosSeleccionados] = useState<number[]>([]);
@@ -46,15 +48,45 @@ export default function SeccionLocalesComerciales() {
   const [modalPrecio, setModalPrecio] = useState<{ abierto: boolean; item: ItemCatalogo | null; accion: 'carrito' | 'comprar' }>({ abierto: false, item: null, accion: 'carrito' });
 
   const { data: itemsDestacados = [], isLoading: cargandoDestacados } = useQuery<ItemCatalogo[]>({
-    queryKey: ["/api/items-destacados"],
+    queryKey: ["/api/items-destacados", filtros],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filtros.paisId) params.set("paisId", filtros.paisId);
+      if (filtros.ciudadId) params.set("ciudadId", filtros.ciudadId);
+      if (filtros.busqueda) params.set("busqueda", filtros.busqueda);
+      if (filtros.ordenamiento) params.set("orden", filtros.ordenamiento);
+      const res = await fetch(`/api/items-destacados?${params.toString()}`);
+      if (!res.ok) throw new Error("Error fetching items destacados");
+      return res.json();
+    },
   });
 
   const { data: itemsRecientes = [], isLoading: cargandoRecientes } = useQuery<ItemCatalogo[]>({
-    queryKey: ["/api/items-recientes"],
+    queryKey: ["/api/items-recientes", filtros],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filtros.paisId) params.set("paisId", filtros.paisId);
+      if (filtros.ciudadId) params.set("ciudadId", filtros.ciudadId);
+      if (filtros.busqueda) params.set("busqueda", filtros.busqueda);
+      if (filtros.ordenamiento) params.set("orden", filtros.ordenamiento);
+      const res = await fetch(`/api/items-recientes?${params.toString()}`);
+      if (!res.ok) throw new Error("Error fetching items recientes");
+      return res.json();
+    },
   });
 
   const { data: catalogosConItems = [], isLoading: cargandoCatalogos } = useQuery<CatalogoConItems[]>({
-    queryKey: ["/api/catalogos-con-items"],
+    queryKey: ["/api/catalogos-con-items", filtros],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filtros.paisId) params.set("paisId", filtros.paisId);
+      if (filtros.ciudadId) params.set("ciudadId", filtros.ciudadId);
+      if (filtros.busqueda) params.set("busqueda", filtros.busqueda);
+      if (filtros.ordenamiento) params.set("orden", filtros.ordenamiento);
+      const res = await fetch(`/api/catalogos-con-items?${params.toString()}`);
+      if (!res.ok) throw new Error("Error fetching catalogos");
+      return res.json();
+    },
   });
 
   const { data: favoritosUsuario = [] } = useQuery<any[]>({

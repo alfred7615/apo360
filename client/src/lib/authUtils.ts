@@ -13,6 +13,8 @@ export interface AuthUser {
   imagenPerfil?: string;
   primerNombre?: string;
   apellido?: string;
+  paisIdActual?: string | null;
+  ciudadIdActual?: string | null;
 }
 
 export function isUnauthorizedError(error: Error): boolean {

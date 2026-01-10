@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { AudioControllerProvider } from "@/contexts/AudioControllerContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { GeoFilterProvider } from "@/contexts/GeoFilterContext";
 import Encabezado from "@/components/Encabezado";
 import BarraEstadoPedido from "@/components/BarraEstadoPedido";
 import BotonPanico from "@/components/BotonPanico";
@@ -99,12 +100,14 @@ function App() {
         <ViewModeProvider>
           <AudioControllerProvider>
             <CartProvider>
-              <AppContent />
-              <Toaster />
-              <NotificacionesAdmin />
-              <NotificacionesPagoDelegado onAbrirFormularioPago={(pedidoId) => {
-                window.location.href = `/mi-panel?tab=pedidos&pedidoId=${pedidoId}`;
-              }} />
+              <GeoFilterProvider>
+                <AppContent />
+                <Toaster />
+                <NotificacionesAdmin />
+                <NotificacionesPagoDelegado onAbrirFormularioPago={(pedidoId) => {
+                  window.location.href = `/mi-panel?tab=pedidos&pedidoId=${pedidoId}`;
+                }} />
+              </GeoFilterProvider>
             </CartProvider>
           </AudioControllerProvider>
         </ViewModeProvider>

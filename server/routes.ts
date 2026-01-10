@@ -8219,7 +8219,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/items-destacados', async (req, res) => {
     try {
       const limite = parseInt(req.query.limite as string) || 10;
-      const items = await storage.getItemsDestacados(limite);
+      const filtros = {
+        paisId: req.query.paisId as string | undefined,
+        ciudadId: req.query.ciudadId as string | undefined,
+        busqueda: req.query.busqueda as string | undefined,
+        orden: req.query.orden as string | undefined,
+      };
+      const items = await storage.getItemsDestacados(limite, filtros);
       res.json(items);
     } catch (error: any) {
       console.error("Error al obtener items destacados:", error);
@@ -8243,7 +8249,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/items-recientes', async (req, res) => {
     try {
       const limite = parseInt(req.query.limite as string) || 12;
-      const items = await storage.getItemsRecientes(limite);
+      const filtros = {
+        paisId: req.query.paisId as string | undefined,
+        ciudadId: req.query.ciudadId as string | undefined,
+        busqueda: req.query.busqueda as string | undefined,
+        orden: req.query.orden as string | undefined,
+      };
+      const items = await storage.getItemsRecientes(limite, filtros);
       res.json(items);
     } catch (error: any) {
       console.error("Error al obtener items recientes:", error);
@@ -8254,7 +8266,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Catálogos con items para vista pública (público)
   app.get('/api/catalogos-con-items', async (req, res) => {
     try {
-      const catalogos = await storage.getCatalogosLocalesConItems();
+      const filtros = {
+        paisId: req.query.paisId as string | undefined,
+        ciudadId: req.query.ciudadId as string | undefined,
+        busqueda: req.query.busqueda as string | undefined,
+        orden: req.query.orden as string | undefined,
+      };
+      const catalogos = await storage.getCatalogosLocalesConItems(filtros);
       res.json(catalogos);
     } catch (error: any) {
       console.error("Error al obtener catálogos con items:", error);

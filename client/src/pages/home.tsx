@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
+import GeoFilterBar from "@/components/GeoFilterBar";
 import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X, Megaphone, UsersRound, Bus, Coins, Construction, Share2, Shield, Radio, Accessibility, CircleDot, Store, Clock, Star } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -305,6 +306,15 @@ export default function Home() {
       {/* Carrusel principal */}
       <section className="container mx-auto px-4 py-8">
         <CarruselPublicidad tipo="carrusel_principal" />
+      </section>
+
+      {/* Barra de Filtros Geográficos */}
+      <section className="container mx-auto px-4 py-4">
+        <GeoFilterBar 
+          mostrarBusqueda={true}
+          mostrarOrdenamiento={true}
+          placeholderBusqueda="Buscar productos, locales o catálogos..."
+        />
       </section>
 
       {/* Logos de servicios destacados */}
