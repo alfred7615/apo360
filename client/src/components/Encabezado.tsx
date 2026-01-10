@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, User, Music, LogOut, Bell, Shield, Volume2, Star, Wallet, Plus, ArrowRight, X, Clock, DollarSign, ShoppingCart } from "lucide-react";
+import { Menu, User, Music, LogOut, Bell, Shield, Volume2, Star, Wallet, Plus, ArrowRight, X, Clock, DollarSign, ShoppingCart, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +19,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useQuery } from "@tanstack/react-query";
 import SelectorAudio from "./SelectorAudio";
 import CartModal from "./CartModal";
+import SelectorUbicacionHeader from "./SelectorUbicacionHeader";
 
 export default function Encabezado() {
   const [location, setLocation] = useLocation();
@@ -121,6 +123,8 @@ export default function Encabezado() {
                 </Button>
               </Link>
             ))}
+            {/* Selector de ubicación - Desktop */}
+            <SelectorUbicacionHeader variante="desktop" />
           </nav>
 
           {/* Acciones derecha */}
@@ -253,7 +257,7 @@ export default function Encabezado() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-64">
                   <div className="flex flex-col gap-1 px-2 py-1.5">
                     <p className="text-sm font-medium" data-testid="text-user-name">
                       {user?.primerNombre || user?.nombre} {user?.apellido || ''}
@@ -262,6 +266,13 @@ export default function Encabezado() {
                       {user?.email}
                     </p>
                   </div>
+                  
+                  {/* Selector de ubicación - Móvil (dentro del menú de usuario) */}
+                  <div className="md:hidden px-2 py-2">
+                    <SelectorUbicacionHeader variante="mobile" />
+                  </div>
+                  <DropdownMenuSeparator className="md:hidden" />
+                  
                   <DropdownMenuItem asChild>
                     <Link href="/perfil" className="cursor-pointer" data-testid="link-profile">
                       <User className="mr-2 h-4 w-4" />

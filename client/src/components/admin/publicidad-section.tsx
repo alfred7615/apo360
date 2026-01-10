@@ -22,6 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +35,35 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPublicidadSchema, type RadioOnline, type ListaMp3 } from "@shared/schema";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Pause, Play, ImageIcon, Facebook, Instagram, Twitter, Youtube, Linkedin, MapPin, ExternalLink, Calendar, Info, Upload, Radio, Music, Volume2, Star, StopCircle, Loader2, Edit, FileAudio, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Pause, Play, ImageIcon, Facebook, Instagram, Twitter, Youtube, Linkedin, MapPin, ExternalLink, Calendar, Info, Upload, Radio, Music, Volume2, Star, StopCircle, Loader2, Edit, FileAudio, X, Globe } from "lucide-react";
+
+interface Pais {
+  id: string;
+  nombre: string;
+  codigo: string;
+  activo: boolean;
+}
+
+interface Ciudad {
+  id: string;
+  paisId: string;
+  nombre: string;
+  codigoPostal: string | null;
+  activo: boolean;
+}
+
+const CODIGOS_PAISES: Record<string, string> = {
+  "peru": "PE",
+  "perú": "PE",
+  "chile": "CL",
+  "argentina": "AR",
+  "bolivia": "BO",
+};
+
+const obtenerCodigo = (nombrePais: string): string => {
+  const nombre = nombrePais.toLowerCase();
+  return CODIGOS_PAISES[nombre] || "GL";
+};
 import { SiTiktok, SiWhatsapp } from "react-icons/si";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -102,6 +135,22 @@ export default function PublicidadSection() {
   const [editingPublicidad, setEditingPublicidad] = useState<Publicidad | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState<string>('carrusel_logos');
+  const [filtroPaisId, setFiltroPaisId] = useState<string | null>(null);
+  const [filtroCiudadId, setFiltroCiudadId] = useState<string | null>(null);
+
+  const { data: paises = [] } = useQuery<Pais[]>({
+    queryKey: ["/api/paises"],
+  });
+
+  const { data: ciudades = [] } = useQuery<Ciudad[]>({
+    queryKey: ["/api/ciudades"],
+  });
+
+  const ciudadesFiltradas = filtroPaisId 
+    ? ciudades.filter(c => c.paisId === filtroPaisId && c.activo)
+    : ciudades.filter(c => c.activo);
+
+  const paisSeleccionado = paises.find(p => p.id === filtroPaisId);
 
   const { data: publicidades = [], isLoading } = useQuery<Publicidad[]>({
     queryKey: ["/api/publicidad"],
@@ -1122,6 +1171,104 @@ export default function PublicidadSection() {
       </CardHeader>
 
       <CardContent>
+        {/* Filtro de País/Ciudad */}
+        <div className="mb-4 p-3 bg-muted/30 rounded-lg flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Globe className="h-4 w-4" />
+            <span>Filtrar por ubicación:</span>
+          </div>
+          
+          {/* Selector de País con banderas */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 gap-2"
+                data-testid="button-filtro-pais-admin"
+              >
+                <Globe className="h-4 w-4" />
+                <span className="text-xs font-bold">
+                  {paisSeleccionado ? obtenerCodigo(paisSeleccionado.nombre) : "GL"}
+                </span>
+                <span className="text-xs">
+                  {paisSeleccionado?.nombre || "Todos los países"}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="start">
+              <div className="flex flex-wrap gap-1.5 max-w-[250px]">
+                <Button
+                  variant={!filtroPaisId ? "default" : "ghost"}
+                  size="sm"
+                  className="h-8 px-2 gap-1"
+                  onClick={() => {
+                    setFiltroPaisId(null);
+                    setFiltroCiudadId(null);
+                  }}
+                  title="Todos los países"
+                  data-testid="button-pais-todos-admin"
+                >
+                  <Globe className="h-4 w-4" /> <span className="text-xs">Todos</span>
+                </Button>
+                {paises.filter(p => p.activo).map((pais) => (
+                  <Button
+                    key={pais.id}
+                    variant={filtroPaisId === pais.id ? "default" : "ghost"}
+                    size="sm"
+                    className="h-8 px-2 gap-1"
+                    onClick={() => {
+                      setFiltroPaisId(pais.id);
+                      setFiltroCiudadId(null);
+                    }}
+                    title={pais.nombre}
+                    data-testid={`button-pais-${pais.id}-admin`}
+                  >
+                    <span className="text-xs font-bold">{obtenerCodigo(pais.nombre)}</span> <span className="text-xs">{pais.nombre}</span>
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Selector de Ciudad */}
+          {filtroPaisId && (
+            <Select
+              value={filtroCiudadId || "todas"}
+              onValueChange={(value) => setFiltroCiudadId(value === "todas" ? null : value)}
+            >
+              <SelectTrigger className="h-9 w-[180px]" data-testid="select-ciudad-admin">
+                <MapPin className="h-4 w-4 mr-2 shrink-0" />
+                <SelectValue placeholder="Todas las ciudades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas las ciudades</SelectItem>
+                {ciudadesFiltradas.map((ciudad) => (
+                  <SelectItem key={ciudad.id} value={ciudad.id}>
+                    {ciudad.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {(filtroPaisId || filtroCiudadId) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs text-muted-foreground"
+              onClick={() => {
+                setFiltroPaisId(null);
+                setFiltroCiudadId(null);
+              }}
+              data-testid="button-limpiar-filtros-admin"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Limpiar
+            </Button>
+          )}
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="flex flex-wrap h-auto gap-2 p-2 bg-muted/30 rounded-lg w-full">
             <TabsTrigger 
@@ -1175,7 +1322,12 @@ export default function PublicidadSection() {
           </TabsList>
 
           {["carrusel_logos", "carrusel_principal", "logos_servicios", "popup_emergencia", "encuestas_apoyo"].map(tipo => {
-            const publicidadesDelTipo = publicidades.filter(p => p.tipo === tipo);
+            const publicidadesDelTipo = publicidades.filter(p => {
+              if (p.tipo !== tipo) return false;
+              if (filtroPaisId && (p as any).paisId !== filtroPaisId) return false;
+              if (filtroCiudadId && (p as any).ciudadId !== filtroCiudadId) return false;
+              return true;
+            });
             return (
             <TabsContent key={tipo} value={tipo} className="mt-4">
               {publicidadesDelTipo.length === 0 ? (
