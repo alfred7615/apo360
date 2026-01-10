@@ -27,7 +27,8 @@ import {
   LogOut,
   User as UserIcon,
   Menu,
-  Shield
+  Shield,
+  Globe
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -68,6 +69,7 @@ import GestionBusesScreen from "@/pages/admin/gestiones/gestion-buses";
 import GestionMonedaScreen from "@/pages/admin/gestiones/gestion-moneda";
 import GestionConfiguracionScreen from "@/pages/admin/gestiones/gestion-configuracion";
 import GestionCategoriasRolScreen from "@/pages/admin/gestiones/gestion-categorias-rol";
+import GestionCiudadesScreen from "@/pages/admin/gestiones/gestion-ciudades";
 
 type AdminScreen = 
   | "dashboard" 
@@ -87,7 +89,8 @@ type AdminScreen =
   | "gestion-buses"
   | "gestion-moneda"
   | "gestion-configuracion"
-  | "gestion-categorias-rol";
+  | "gestion-categorias-rol"
+  | "gestion-ciudades";
 
 const mainMenuItems = [
   { id: "dashboard" as AdminScreen, title: "Dashboard", icon: LayoutDashboard },
@@ -110,6 +113,7 @@ const gestionesMenuItems = [
   { id: "gestion-buses" as AdminScreen, title: "Buses", icon: Bus },
   { id: "gestion-moneda" as AdminScreen, title: "Moneda", icon: Coins },
   { id: "gestion-categorias-rol" as AdminScreen, title: "Categorías Roles", icon: Shield },
+  { id: "gestion-ciudades" as AdminScreen, title: "Ciudades", icon: Globe },
   { id: "gestion-configuracion" as AdminScreen, title: "Configuración", icon: Settings },
 ];
 
@@ -131,6 +135,7 @@ const screenComponents: Record<AdminScreen, React.ComponentType> = {
   "gestion-buses": GestionBusesScreen,
   "gestion-moneda": GestionMonedaScreen,
   "gestion-categorias-rol": GestionCategoriasRolScreen,
+  "gestion-ciudades": GestionCiudadesScreen,
   "gestion-configuracion": GestionConfiguracionScreen,
 };
 
