@@ -260,35 +260,50 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
 
   if (tipo === "carrusel_principal") {
     const publicidadActual = publicidadesActivas[indiceActual];
+    const totalImagenes = publicidadesActivas.length;
 
-    const handleClickAnterior = (e: React.MouseEvent) => {
+    const navegarAnterior = (e: React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
-      irAnterior();
+      if (totalImagenes <= 1) return;
+      pausarYReanudarAutoplay();
+      setIndiceActual((prev) => (prev - 1 + totalImagenes) % totalImagenes);
     };
 
-    const handleDoubleClickAnterior = (e: React.MouseEvent) => {
+    const navegarSiguiente = (e: React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
-      irAlInicio();
+      if (totalImagenes <= 1) return;
+      pausarYReanudarAutoplay();
+      setIndiceActual((prev) => (prev + 1) % totalImagenes);
     };
 
-    const handleClickSiguiente = (e: React.MouseEvent) => {
+    const navegarAlInicio = (e: React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
-      irSiguiente();
+      pausarYReanudarAutoplay();
+      setIndiceActual(0);
     };
 
-    const handleDoubleClickSiguiente = (e: React.MouseEvent) => {
+    const navegarAlFinal = (e: React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
-      irAlFinal();
+      pausarYReanudarAutoplay();
+      setIndiceActual(Math.max(totalImagenes - 1, 0));
+    };
+
+    const abrirVisualizadorImagen = (e: React.MouseEvent) => {
+      // Solo abrir si el clic fue en la imagen, no en los botones
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'IMG') {
+        abrirVisualizador(publicidadActual);
+      }
     };
 
     return (
       <>
         <div
-          className="relative w-screen overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center"
+          className="relative w-screen bg-gray-200 dark:bg-gray-700"
           style={{ 
             height: "350px",
             marginLeft: "calc(-50vw + 50%)",
@@ -296,48 +311,64 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
           }}
           data-testid="carousel-principal"
         >
-          {/* Botón navegación izquierda */}
-          <button
-            type="button"
-            onClick={handleClickAnterior}
-            onDoubleClick={handleDoubleClickAnterior}
-            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 active:bg-black/90 text-white rounded-lg shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 backdrop-blur-sm flex items-center justify-center"
-            style={{ width: "40px", height: "40px" }}
-            aria-label="Imagen anterior"
-            data-testid="btn-carousel-prev"
-          >
-            <ChevronLeft className="h-7 w-7" />
-          </button>
-
-          {/* Imagen principal */}
+          {/* Contenedor de imagen centrado */}
           <div 
-            className="relative h-full w-full flex items-center justify-center cursor-pointer"
-            onClick={() => abrirVisualizador(publicidadActual)}
+            className="absolute inset-0 flex items-center justify-center cursor-pointer"
+            onClick={abrirVisualizadorImagen}
           >
             <img
-              src={publicidadActual.imagenUrl || undefined}
-              alt={publicidadActual.titulo || "Publicidad"}
-              className="h-full w-auto max-w-full object-contain transition-opacity duration-500 hover:opacity-95"
+              src={publicidadActual?.imagenUrl || undefined}
+              alt={publicidadActual?.titulo || "Publicidad"}
+              className="h-full w-auto max-w-full object-contain"
               data-testid="img-carousel-principal"
             />
           </div>
 
-          {/* Botón navegación derecha */}
-          <button
-            type="button"
-            onClick={handleClickSiguiente}
-            onDoubleClick={handleDoubleClickSiguiente}
-            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 active:bg-black/90 text-white rounded-lg shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 backdrop-blur-sm flex items-center justify-center"
-            style={{ width: "40px", height: "40px" }}
-            aria-label="Imagen siguiente"
-            data-testid="btn-carousel-next"
-          >
-            <ChevronRight className="h-7 w-7" />
-          </button>
+          {/* Botón navegación izquierda - SOBRE la imagen */}
+          {totalImagenes > 1 && (
+            <button
+              type="button"
+              onClick={navegarAnterior}
+              onDoubleClick={navegarAlInicio}
+              className="absolute z-50 bg-black/70 hover:bg-black/90 text-white rounded-md shadow-2xl transition-all duration-150 flex items-center justify-center cursor-pointer"
+              style={{ 
+                width: "40px", 
+                height: "40px",
+                left: "16px",
+                top: "50%",
+                transform: "translateY(-50%)"
+              }}
+              aria-label="Imagen anterior"
+              data-testid="btn-carousel-prev"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Botón navegación derecha - SOBRE la imagen */}
+          {totalImagenes > 1 && (
+            <button
+              type="button"
+              onClick={navegarSiguiente}
+              onDoubleClick={navegarAlFinal}
+              className="absolute z-50 bg-black/70 hover:bg-black/90 text-white rounded-md shadow-2xl transition-all duration-150 flex items-center justify-center cursor-pointer"
+              style={{ 
+                width: "40px", 
+                height: "40px",
+                right: "16px",
+                top: "50%",
+                transform: "translateY(-50%)"
+              }}
+              aria-label="Imagen siguiente"
+              data-testid="btn-carousel-next"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
 
           {/* Indicadores de posición */}
-          {publicidadesActivas.length > 1 && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+          {totalImagenes > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-50">
               {publicidadesActivas.map((_, idx) => (
                 <button
                   key={idx}
@@ -347,15 +378,22 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
                     pausarYReanudarAutoplay();
                     setIndiceActual(idx);
                   }}
-                  className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
                     idx === indiceActual 
                       ? "bg-white scale-125 shadow-lg" 
-                      : "bg-white/50 hover:bg-white/75"
+                      : "bg-white/50 hover:bg-white/80"
                   }`}
                   aria-label={`Ir a imagen ${idx + 1}`}
                   data-testid={`btn-carousel-dot-${idx}`}
                 />
               ))}
+            </div>
+          )}
+
+          {/* Contador de imágenes */}
+          {totalImagenes > 1 && (
+            <div className="absolute top-3 right-3 bg-black/60 text-white text-sm px-2 py-1 rounded z-50">
+              {indiceActual + 1} / {totalImagenes}
             </div>
           )}
         </div>
