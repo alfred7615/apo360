@@ -8,6 +8,7 @@ export interface Publicidad {
   fechaInicio: Date | string | null;
   fechaFin: Date | string | null;
   fechaCaducidad: Date | string | null;
+  fechaEvento: Date | string | null;
   estado: string | null;
   usuarioId: string | null;
   orden: number | null;

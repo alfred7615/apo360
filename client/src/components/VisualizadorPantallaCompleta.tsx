@@ -14,13 +14,10 @@ import {
   Calendar,
   Share2,
   Printer,
-  ArrowLeft,
   MapPin,
   X,
   Send,
   Trash2,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 import {
   SiFacebook,
@@ -74,7 +71,6 @@ export default function VisualizadorPantallaCompleta({
   const [compartirAbierto, setCompartirAbierto] = useState(false);
   
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
@@ -123,7 +119,6 @@ export default function VisualizadorPantallaCompleta({
 
   const resetZoom = useCallback(() => {
     setZoomLevel(1);
-    setZoomOrigin({ x: 50, y: 50 });
     setPanOffset({ x: 0, y: 0 });
     setInitialPinchDistance(null);
   }, []);
@@ -134,27 +129,12 @@ export default function VisualizadorPantallaCompleta({
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  const getMidpoint = (touch1: React.Touch, touch2: React.Touch) => {
-    return {
-      x: (touch1.clientX + touch2.clientX) / 2,
-      y: (touch1.clientY + touch2.clientY) / 2,
-    };
-  };
-
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       e.preventDefault();
       const distance = getDistance(e.touches[0], e.touches[1]);
       setInitialPinchDistance(distance);
       setInitialZoom(zoomLevel);
-      
-      if (imageContainerRef.current) {
-        const rect = imageContainerRef.current.getBoundingClientRect();
-        const midpoint = getMidpoint(e.touches[0], e.touches[1]);
-        const x = ((midpoint.x - rect.left) / rect.width) * 100;
-        const y = ((midpoint.y - rect.top) / rect.height) * 100;
-        setZoomOrigin({ x, y });
-      }
     } else if (e.touches.length === 1 && zoomLevel > 1) {
       setIsPanning(true);
       setLastPanPoint({ x: e.touches[0].clientX, y: e.touches[0].clientY });
@@ -168,14 +148,6 @@ export default function VisualizadorPantallaCompleta({
       const scale = currentDistance / initialPinchDistance;
       const newZoom = Math.min(Math.max(initialZoom * scale, 1), 5);
       setZoomLevel(newZoom);
-      
-      if (imageContainerRef.current) {
-        const rect = imageContainerRef.current.getBoundingClientRect();
-        const midpoint = getMidpoint(e.touches[0], e.touches[1]);
-        const x = ((midpoint.x - rect.left) / rect.width) * 100;
-        const y = ((midpoint.y - rect.top) / rect.height) * 100;
-        setZoomOrigin({ x, y });
-      }
     } else if (e.touches.length === 1 && isPanning && zoomLevel > 1) {
       const deltaX = e.touches[0].clientX - lastPanPoint.x;
       const deltaY = e.touches[0].clientY - lastPanPoint.y;
@@ -201,23 +173,31 @@ export default function VisualizadorPantallaCompleta({
     }
   }, [zoomLevel, resetZoom]);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageContainerRef.current || zoomLevel === 1) return;
-    
-    const rect = imageContainerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    
-    setZoomOrigin({ x, y });
-  };
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (zoomLevel > 1) {
+      e.preventDefault();
+      setIsPanning(true);
+      setLastPanPoint({ x: e.clientX, y: e.clientY });
+    }
+  }, [zoomLevel]);
 
-  const handleMouseEnter = () => {
-    setZoomLevel(2);
-  };
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isPanning && zoomLevel > 1) {
+      const deltaX = e.clientX - lastPanPoint.x;
+      const deltaY = e.clientY - lastPanPoint.y;
+      
+      setPanOffset(prev => ({
+        x: prev.x + deltaX,
+        y: prev.y + deltaY,
+      }));
+      
+      setLastPanPoint({ x: e.clientX, y: e.clientY });
+    }
+  }, [isPanning, lastPanPoint, zoomLevel]);
 
-  const handleMouseLeave = () => {
-    resetZoom();
-  };
+  const handleMouseUp = useCallback(() => {
+    setIsPanning(false);
+  }, []);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -227,27 +207,15 @@ export default function VisualizadorPantallaCompleta({
     
     if (newZoom <= 1) {
       resetZoom();
-    } else if (imageContainerRef.current) {
-      const rect = imageContainerRef.current.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      setZoomOrigin({ x, y });
     }
   }, [zoomLevel, resetZoom]);
 
-  const handleDoubleTap = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+  const handleDoubleClick = useCallback(() => {
     if (zoomLevel > 1) {
       resetZoom();
     } else {
       setZoomLevel(2.5);
-      if (imageContainerRef.current) {
-        const rect = imageContainerRef.current.getBoundingClientRect();
-        const clientX = 'touches' in e ? e.touches[0]?.clientX || rect.width / 2 : e.clientX;
-        const clientY = 'touches' in e ? e.touches[0]?.clientY || rect.height / 2 : e.clientY;
-        const x = ((clientX - rect.left) / rect.width) * 100;
-        const y = ((clientY - rect.top) / rect.height) * 100;
-        setZoomOrigin({ x, y });
-      }
+      setPanOffset({ x: 0, y: 0 });
     }
   }, [zoomLevel, resetZoom]);
 
@@ -310,7 +278,7 @@ export default function VisualizadorPantallaCompleta({
     },
     onSuccess: () => {
       refetchContadores();
-      toast({ title: "Agendado", description: "El evento se agregó a tu calendario" });
+      toast({ title: "Agendado", description: "El evento se agregó a tu calendario con recordatorio 1 hora antes" });
     },
     onError: () => {
       toast({ title: "Error", description: "Debes iniciar sesión para agendar", variant: "destructive" });
@@ -349,19 +317,156 @@ export default function VisualizadorPantallaCompleta({
     
     imprimirMutation.mutate();
     
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://www.apo360.net`;
+    
     const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(`
+        <!DOCTYPE html>
         <html>
           <head>
-            <title>${publicidad.titulo || "Imagen"}</title>
+            <title>${publicidad.titulo || "Imagen"} - APO-360</title>
             <style>
-              body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-              img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+              @page {
+                size: A4;
+                margin: 15mm;
+              }
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                color: #333;
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+              }
+              .content {
+                flex: 1;
+                padding: 20px;
+              }
+              .image-container {
+                text-align: center;
+                margin-bottom: 30px;
+              }
+              .image-container img {
+                max-width: 100%;
+                max-height: 60vh;
+                object-fit: contain;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+              }
+              .title {
+                font-size: 24px;
+                font-weight: bold;
+                color: #8B5CF6;
+                margin-bottom: 15px;
+                text-align: center;
+              }
+              .description {
+                font-size: 14px;
+                line-height: 1.6;
+                color: #555;
+                text-align: justify;
+                padding: 15px;
+                background: #f9f9f9;
+                border-radius: 8px;
+                margin-bottom: 20px;
+              }
+              .event-date {
+                font-size: 14px;
+                color: #8B5CF6;
+                text-align: center;
+                margin-bottom: 20px;
+                padding: 10px;
+                background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+                color: white;
+                border-radius: 8px;
+              }
+              .footer {
+                background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+                color: white;
+                padding: 20px;
+                margin-top: auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+              }
+              .footer-info {
+                flex: 1;
+              }
+              .footer-info h3 {
+                font-size: 20px;
+                margin-bottom: 10px;
+              }
+              .footer-info p {
+                font-size: 12px;
+                line-height: 1.5;
+                margin-bottom: 5px;
+              }
+              .footer-qr {
+                text-align: center;
+              }
+              .footer-qr img {
+                background: white;
+                padding: 8px;
+                border-radius: 8px;
+              }
+              .footer-qr p {
+                font-size: 10px;
+                margin-top: 5px;
+              }
             </style>
           </head>
           <body>
-            <img src="${publicidad.imagenUrl}" alt="${publicidad.titulo || 'Imagen'}" onload="window.print(); window.close();" />
+            <div class="content">
+              <div class="image-container">
+                <img src="${publicidad.imagenUrl}" alt="${publicidad.titulo || 'Imagen'}" />
+              </div>
+              
+              ${publicidad.titulo ? `<h1 class="title">${publicidad.titulo}</h1>` : ''}
+              
+              ${publicidad.fechaEvento ? `
+                <div class="event-date">
+                  Fecha del Evento: ${new Date(publicidad.fechaEvento).toLocaleDateString('es-PE', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              ` : ''}
+              
+              ${publicidad.descripcion ? `<div class="description">${publicidad.descripcion}</div>` : ''}
+            </div>
+            
+            <div class="footer">
+              <div class="footer-info">
+                <h3>APO-360</h3>
+                <p><strong>Sistema de Seguridad y Apoyo Comunitario</strong></p>
+                <p>Plataforma integral de seguridad ciudadana, servicios de emergencia, taxi, delivery y comercio local para la comunidad de Tacna, Perú.</p>
+                <p style="margin-top: 10px;">
+                  <strong>Contacto:</strong> www.apo360.net<br/>
+                  Tacna, Perú
+                </p>
+              </div>
+              <div class="footer-qr">
+                <img src="${qrCodeUrl}" alt="QR Code" width="100" height="100" />
+                <p>Escanea para visitar<br/>www.apo360.net</p>
+              </div>
+            </div>
+            
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 500);
+              };
+            </script>
           </body>
         </html>
       `);
@@ -376,14 +481,26 @@ export default function VisualizadorPantallaCompleta({
     
     const titulo = encodeURIComponent(publicidad.titulo || "Evento APO-360");
     const descripcion = encodeURIComponent(publicidad.descripcion || "");
-    const fechaInicio = publicidad.fechaInicio 
-      ? new Date(publicidad.fechaInicio).toISOString().replace(/-|:|\.\d{3}/g, "")
-      : new Date().toISOString().replace(/-|:|\.\d{3}/g, "");
-    const fechaFin = publicidad.fechaFin
-      ? new Date(publicidad.fechaFin).toISOString().replace(/-|:|\.\d{3}/g, "")
-      : new Date(Date.now() + 3600000).toISOString().replace(/-|:|\.\d{3}/g, "");
     
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titulo}&details=${descripcion}&dates=${fechaInicio}/${fechaFin}`;
+    let fechaEventoDate: Date;
+    if (publicidad.fechaEvento) {
+      fechaEventoDate = new Date(publicidad.fechaEvento);
+    } else if (publicidad.fechaInicio) {
+      fechaEventoDate = new Date(publicidad.fechaInicio);
+    } else {
+      fechaEventoDate = new Date(Date.now() + 86400000);
+    }
+    
+    const fechaRecordatorio = new Date(fechaEventoDate.getTime() - 3600000);
+    
+    const formatGoogleDate = (date: Date) => {
+      return date.toISOString().replace(/-|:|\.\d{3}/g, "");
+    };
+    
+    const fechaInicio = formatGoogleDate(fechaEventoDate);
+    const fechaFin = formatGoogleDate(new Date(fechaEventoDate.getTime() + 3600000));
+    
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titulo}&details=${descripcion}&dates=${fechaInicio}/${fechaFin}&reminder=60`;
     window.open(googleCalendarUrl, "_blank");
   };
 
@@ -445,89 +562,85 @@ export default function VisualizadorPantallaCompleta({
         </DialogTitle>
         <div className="relative w-full h-full flex flex-col touch-none">
           
-          {/* Header: Botón salir + Título centrado - Responsivo */}
-          <div className="absolute top-0 left-0 right-0 flex items-center gap-2 sm:gap-4 px-2 sm:px-4 py-2 sm:py-3 bg-gradient-to-b from-black/80 to-transparent z-50">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="text-white hover:bg-white/20 rounded-full shrink-0 h-8 w-8 sm:h-10 sm:w-10"
-              data-testid="button-cerrar-visualizador"
-            >
-              <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
-            </Button>
-            
-            {publicidad.titulo && (
+          {/* Botón de salir - MÁS GRANDE y fijo en esquina superior derecha */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-[100] bg-red-600 hover:bg-red-700 text-white rounded-full shadow-2xl transition-all duration-150 flex items-center justify-center"
+            style={{ width: "56px", height: "56px" }}
+            data-testid="button-cerrar-visualizador"
+          >
+            <X className="h-8 w-8" />
+          </button>
+
+          {/* Título centrado en la parte superior */}
+          {publicidad.titulo && (
+            <div className="absolute top-4 left-4 right-20 z-50">
               <h3 
-                className="flex-1 text-white font-semibold text-sm sm:text-base md:text-lg text-center pr-8 sm:pr-10 line-clamp-1" 
+                className="text-white font-semibold text-sm sm:text-base md:text-lg text-center bg-black/60 px-4 py-2 rounded-lg line-clamp-1" 
                 data-testid="titulo-publicidad"
               >
                 {publicidad.titulo}
               </h3>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Controles de zoom para móvil */}
-          <div className="absolute top-14 right-2 sm:right-4 flex flex-col gap-1 z-50 md:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setZoomLevel(prev => Math.min(prev + 0.5, 5))}
-              className="text-white bg-black/50 hover:bg-white/20 rounded-full h-8 w-8"
-              data-testid="button-zoom-in"
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={resetZoom}
-              className="text-white bg-black/50 hover:bg-white/20 rounded-full h-8 w-8"
-              data-testid="button-zoom-out"
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-          </div>
+          {/* Fecha del evento si existe */}
+          {publicidad.fechaEvento && (
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50">
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs sm:text-sm px-4 py-2 rounded-full flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                {new Date(publicidad.fechaEvento).toLocaleDateString('es-PE', { 
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+            </div>
+          )}
 
-          {/* Imagen con zoom - autoajustable a los bordes */}
+          {/* Imagen con zoom - scroll=zoom, arrastrar=pan, doble clic=toggle */}
           <div 
             ref={imageContainerRef}
-            className="absolute inset-0 top-12 sm:top-14 bottom-16 sm:bottom-20 md:bottom-24 flex items-center justify-center overflow-hidden cursor-zoom-in z-10"
+            className={`absolute inset-0 flex items-center justify-center overflow-hidden z-10 ${
+              zoomLevel > 1 ? 'cursor-grab' : 'cursor-zoom-in'
+            } ${isPanning ? 'cursor-grabbing' : ''}`}
+            onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
             onWheel={handleWheel}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            onDoubleClick={handleDoubleTap}
+            onDoubleClick={handleDoubleClick}
           >
             <img
               ref={imageRef}
               src={publicidad.imagenUrl || undefined}
               alt={publicidad.titulo || "Imagen"}
-              className="w-full h-full object-contain transition-transform duration-150 ease-out select-none"
+              className="max-w-full max-h-full object-contain transition-transform duration-150 ease-out select-none"
               style={{ 
                 transform: `scale(${zoomLevel}) translate(${panOffset.x / zoomLevel}px, ${panOffset.y / zoomLevel}px)`,
-                transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%`
               }}
               draggable={false}
               data-testid="img-visualizador-completo"
             />
           </div>
 
-          {/* Panel izquierdo: Redes sociales y ubicación - Responsivo */}
+          {/* Panel izquierdo: Redes sociales y ubicación */}
           {(tieneRedesSociales || tieneUbicacion) && (
-            <div className="absolute left-1 sm:left-2 md:left-4 top-1/2 -translate-y-1/2 flex flex-col gap-1 sm:gap-2 md:gap-3 bg-black/50 rounded-full p-1.5 sm:p-2 md:p-3 z-50">
+            <div className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 bg-black/60 rounded-full p-2 z-50">
               {tieneUbicacion && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={abrirMapa}
-                  className="text-white hover:bg-white/20 rounded-full h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10"
+                  className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                   data-testid="button-ubicacion"
                 >
-                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
+                  <MapPin className="h-5 w-5 text-green-400" />
                 </Button>
               )}
               
@@ -536,10 +649,10 @@ export default function VisualizadorPantallaCompleta({
                   variant="ghost"
                   size="icon"
                   onClick={() => abrirRedSocial(publicidad.facebook!)}
-                  className="text-white hover:bg-white/20 rounded-full h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10"
+                  className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                   data-testid="button-facebook"
                 >
-                  <SiFacebook className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                  <SiFacebook className="h-5 w-5 text-blue-500" />
                 </Button>
               )}
               
@@ -548,10 +661,10 @@ export default function VisualizadorPantallaCompleta({
                   variant="ghost"
                   size="icon"
                   onClick={() => abrirRedSocial(publicidad.instagram!)}
-                  className="text-white hover:bg-white/20 rounded-full h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10"
+                  className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                   data-testid="button-instagram"
                 >
-                  <SiInstagram className="h-4 w-4 sm:h-5 sm:w-5 text-pink-500" />
+                  <SiInstagram className="h-5 w-5 text-pink-500" />
                 </Button>
               )}
               
@@ -560,10 +673,10 @@ export default function VisualizadorPantallaCompleta({
                   variant="ghost"
                   size="icon"
                   onClick={() => abrirRedSocial(`https://wa.me/${publicidad.whatsapp}`)}
-                  className="text-white hover:bg-white/20 rounded-full h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10"
+                  className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                   data-testid="button-whatsapp"
                 >
-                  <SiWhatsapp className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
+                  <SiWhatsapp className="h-5 w-5 text-green-500" />
                 </Button>
               )}
               
@@ -572,10 +685,10 @@ export default function VisualizadorPantallaCompleta({
                   variant="ghost"
                   size="icon"
                   onClick={() => abrirRedSocial(publicidad.tiktok!)}
-                  className="text-white hover:bg-white/20 rounded-full h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10"
+                  className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                   data-testid="button-tiktok"
                 >
-                  <SiTiktok className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <SiTiktok className="h-5 w-5" />
                 </Button>
               )}
               
@@ -584,10 +697,10 @@ export default function VisualizadorPantallaCompleta({
                   variant="ghost"
                   size="icon"
                   onClick={() => abrirRedSocial(publicidad.twitter!)}
-                  className="text-white hover:bg-white/20 rounded-full h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10"
+                  className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                   data-testid="button-twitter"
                 >
-                  <SiX className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <SiX className="h-5 w-5" />
                 </Button>
               )}
               
@@ -596,10 +709,10 @@ export default function VisualizadorPantallaCompleta({
                   variant="ghost"
                   size="icon"
                   onClick={() => abrirRedSocial(publicidad.youtube!)}
-                  className="text-white hover:bg-white/20 rounded-full h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10"
+                  className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                   data-testid="button-youtube"
                 >
-                  <SiYoutube className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
+                  <SiYoutube className="h-5 w-5 text-red-500" />
                 </Button>
               )}
               
@@ -608,138 +721,145 @@ export default function VisualizadorPantallaCompleta({
                   variant="ghost"
                   size="icon"
                   onClick={() => abrirRedSocial(publicidad.linkedin!)}
-                  className="text-white hover:bg-white/20 rounded-full h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10"
+                  className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                   data-testid="button-linkedin"
                 >
-                  <SiLinkedin className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                  <SiLinkedin className="h-5 w-5 text-blue-600" />
                 </Button>
               )}
             </div>
           )}
 
-          {/* Barra inferior: Iconos de interacción - Responsivo */}
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-2 sm:gap-4 md:gap-6 px-2 sm:px-4 py-2 sm:py-3 md:py-4 bg-gradient-to-t from-black/80 to-transparent z-50 flex-wrap">
-            {/* Me gusta - Manito con pulgar arriba */}
-            <div className="flex flex-col items-center">
+          {/* Panel derecho FIJO: Iconos de interacción con contadores al costado (horizontal) */}
+          <div className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 bg-black/60 rounded-2xl p-3 z-50">
+            {/* Me gusta */}
+            <div className="flex items-center gap-2" data-testid="interaction-like">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => likeMutation.mutate()}
-                className={`text-white hover:bg-white/20 rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 ${misInteracciones?.hasLike ? "text-blue-500" : ""}`}
+                className={`text-white hover:bg-white/20 rounded-full h-10 w-10 ${misInteracciones?.hasLike ? "text-blue-500" : ""}`}
                 data-testid="button-like"
               >
-                <ThumbsUp className={`h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 ${misInteracciones?.hasLike ? "fill-blue-500" : ""}`} />
+                <ThumbsUp className={`h-5 w-5 ${misInteracciones?.hasLike ? "fill-blue-500" : ""}`} />
               </Button>
-              {(contadores?.likes ?? 0) > 0 && (
-                <span className="text-white text-[10px] sm:text-xs" data-testid="contador-likes">{contadores?.likes}</span>
-              )}
+              <span className="text-white text-sm min-w-[24px]" data-testid="contador-likes">
+                {contadores?.likes ?? 0}
+              </span>
             </div>
 
-            {/* Favorito - Corazón */}
-            <div className="flex flex-col items-center">
+            {/* Favorito */}
+            <div className="flex items-center gap-2" data-testid="interaction-favorito">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => favoritoMutation.mutate()}
-                className={`text-white hover:bg-white/20 rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 ${misInteracciones?.hasFavorito ? "text-red-500" : ""}`}
+                className={`text-white hover:bg-white/20 rounded-full h-10 w-10 ${misInteracciones?.hasFavorito ? "text-red-500" : ""}`}
                 data-testid="button-favorito"
               >
-                <Heart className={`h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 ${misInteracciones?.hasFavorito ? "fill-red-500" : ""}`} />
+                <Heart className={`h-5 w-5 ${misInteracciones?.hasFavorito ? "fill-red-500" : ""}`} />
               </Button>
-              {(contadores?.favoritos ?? 0) > 0 && (
-                <span className="text-white text-[10px] sm:text-xs" data-testid="contador-favoritos">{contadores?.favoritos}</span>
-              )}
+              <span className="text-white text-sm min-w-[24px]" data-testid="contador-favoritos">
+                {contadores?.favoritos ?? 0}
+              </span>
             </div>
 
             {/* Comentarios */}
-            <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2" data-testid="interaction-comentarios">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setComentariosAbiertos(true)}
-                className="text-white hover:bg-white/20 rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
+                className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                 data-testid="button-comentarios"
               >
-                <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                <MessageCircle className="h-5 w-5" />
               </Button>
-              {(contadores?.comentarios ?? 0) > 0 && (
-                <span className="text-white text-[10px] sm:text-xs" data-testid="contador-comentarios">{contadores?.comentarios}</span>
-              )}
+              <span className="text-white text-sm min-w-[24px]" data-testid="contador-comentarios">
+                {contadores?.comentarios ?? 0}
+              </span>
             </div>
 
-            {/* Agenda */}
-            <div className="flex flex-col items-center">
+            {/* Agenda/Calendario */}
+            <div className="flex items-center gap-2" data-testid="interaction-agenda">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleAgendar}
-                className="text-white hover:bg-white/20 rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
+                className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                 data-testid="button-agenda"
               >
-                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                <Calendar className="h-5 w-5" />
               </Button>
-              {(contadores?.agendados ?? 0) > 0 && (
-                <span className="text-white text-[10px] sm:text-xs" data-testid="contador-agendados">{contadores?.agendados}</span>
-              )}
+              <span className="text-white text-sm min-w-[24px]" data-testid="contador-agendados">
+                {contadores?.agendados ?? 0}
+              </span>
             </div>
 
             {/* Compartir */}
-            <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2" data-testid="interaction-compartir">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setCompartirAbierto(true)}
-                className="text-white hover:bg-white/20 rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
+                className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                 data-testid="button-compartir"
               >
-                <Share2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                <Share2 className="h-5 w-5" />
               </Button>
-              {(contadores?.compartidos ?? 0) > 0 && (
-                <span className="text-white text-[10px] sm:text-xs" data-testid="contador-compartidos">{contadores?.compartidos}</span>
-              )}
+              <span className="text-white text-sm min-w-[24px]" data-testid="contador-compartidos">
+                {contadores?.compartidos ?? 0}
+              </span>
             </div>
 
-            {/* Imprimir - Oculto en móviles muy pequeños */}
-            <div className="flex flex-col items-center hidden sm:flex">
+            {/* Imprimir */}
+            <div className="flex items-center gap-2" data-testid="interaction-imprimir">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleImprimir}
-                className="text-white hover:bg-white/20 rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
+                className="text-white hover:bg-white/20 rounded-full h-10 w-10"
                 data-testid="button-imprimir"
               >
-                <Printer className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                <Printer className="h-5 w-5" />
               </Button>
-              {(contadores?.impresiones ?? 0) > 0 && (
-                <span className="text-white text-[10px] sm:text-xs" data-testid="contador-impresiones">{contadores?.impresiones}</span>
-              )}
+              <span className="text-white text-sm min-w-[24px]" data-testid="contador-impresiones">
+                {contadores?.impresiones ?? 0}
+              </span>
             </div>
           </div>
 
-          {/* Descripción (si existe) - Responsivo */}
+          {/* Descripción en la parte inferior */}
           {publicidad.descripcion && (
-            <div className="absolute bottom-16 sm:bottom-20 md:bottom-24 left-2 right-2 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto bg-black/70 px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg max-w-lg text-center z-40">
-              <p className="text-gray-300 text-xs sm:text-sm line-clamp-2" data-testid="descripcion-publicidad">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 px-6 py-3 rounded-lg max-w-2xl text-center z-40 mx-4">
+              <p className="text-gray-300 text-sm line-clamp-3" data-testid="descripcion-publicidad">
                 {publicidad.descripcion}
               </p>
             </div>
           )}
+
+          {/* Indicador de zoom */}
+          {zoomLevel > 1 && (
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-black/70 text-white text-sm px-3 py-1 rounded-full z-50">
+              Zoom: {Math.round(zoomLevel * 100)}% | Doble clic para restablecer
+            </div>
+          )}
         </div>
 
-        {/* Modal de comentarios - Responsivo */}
+        {/* Modal de comentarios */}
         <Dialog open={comentariosAbiertos} onOpenChange={setComentariosAbiertos}>
           <DialogContent className="w-[95vw] max-w-md max-h-[85vh] overflow-y-auto mx-auto" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle className="text-base sm:text-lg">Comentarios</DialogTitle>
             </DialogHeader>
             
-            <ScrollArea className="h-48 sm:h-64 pr-2 sm:pr-4">
+            <ScrollArea className="h-64 pr-4">
               {comentarios?.length === 0 && (
-                <p className="text-muted-foreground text-center py-6 sm:py-8 text-sm">No hay comentarios aún</p>
+                <p className="text-muted-foreground text-center py-8 text-sm">No hay comentarios aún</p>
               )}
               {comentarios?.map((comentario) => (
-                <div key={comentario.id} className="flex gap-2 sm:gap-3 mb-3 sm:mb-4" data-testid={`comentario-${comentario.id}`}>
-                  <Avatar className="h-6 w-6 sm:h-8 sm:w-8 shrink-0">
+                <div key={comentario.id} className="flex gap-3 mb-4" data-testid={`comentario-${comentario.id}`}>
+                  <Avatar className="h-8 w-8 shrink-0">
                     <AvatarImage src={comentario.profile_image_url} />
                     <AvatarFallback className="text-xs">
                       {comentario.first_name?.[0]}{comentario.last_name?.[0]}
@@ -747,21 +867,21 @@ export default function VisualizadorPantallaCompleta({
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-xs sm:text-sm truncate">
+                      <span className="font-medium text-sm truncate">
                         {comentario.first_name} {comentario.last_name}
                       </span>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-5 w-5 sm:h-6 sm:w-6 shrink-0"
+                        className="h-6 w-6 shrink-0"
                         onClick={() => eliminarComentarioMutation.mutate(comentario.id)}
                         data-testid={`button-eliminar-comentario-${comentario.id}`}
                       >
                         <Trash2 className="h-3 w-3 text-muted-foreground" />
                       </Button>
                     </div>
-                    <p className="text-xs sm:text-sm text-muted-foreground break-words">{comentario.contenido}</p>
-                    <span className="text-[10px] sm:text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground break-words">{comentario.contenido}</p>
+                    <span className="text-xs text-muted-foreground">
                       {new Date(comentario.created_at).toLocaleDateString()}
                     </span>
                   </div>
@@ -769,12 +889,12 @@ export default function VisualizadorPantallaCompleta({
               ))}
             </ScrollArea>
             
-            <div className="flex gap-2 mt-3 sm:mt-4">
+            <div className="flex gap-2 mt-4">
               <Textarea
                 placeholder="Escribe un comentario..."
                 value={nuevoComentario}
                 onChange={(e) => setNuevoComentario(e.target.value)}
-                className="flex-1 text-sm min-h-[60px] sm:min-h-[80px]"
+                className="flex-1 text-sm min-h-[80px]"
                 data-testid="input-comentario"
               />
               <Button
@@ -790,52 +910,52 @@ export default function VisualizadorPantallaCompleta({
           </DialogContent>
         </Dialog>
 
-        {/* Modal de compartir - Responsivo */}
+        {/* Modal de compartir */}
         <Dialog open={compartirAbierto} onOpenChange={setCompartirAbierto}>
           <DialogContent className="w-[90vw] max-w-xs mx-auto" aria-describedby={undefined}>
             <DialogHeader>
-              <DialogTitle className="text-base sm:text-lg">Compartir en</DialogTitle>
+              <DialogTitle className="text-lg">Compartir en</DialogTitle>
             </DialogHeader>
             
-            <div className="grid grid-cols-4 gap-2 sm:gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <Button
                 variant="ghost"
-                className="flex flex-col items-center gap-1 h-auto py-2 sm:py-3"
+                className="flex flex-col items-center gap-1 h-auto py-3"
                 onClick={() => handleCompartir("facebook")}
                 data-testid="compartir-facebook"
               >
-                <SiFacebook className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-                <span className="text-[10px] sm:text-xs">Facebook</span>
+                <SiFacebook className="h-8 w-8 text-blue-600" />
+                <span className="text-xs">Facebook</span>
               </Button>
               
               <Button
                 variant="ghost"
-                className="flex flex-col items-center gap-1 h-auto py-2 sm:py-3"
+                className="flex flex-col items-center gap-1 h-auto py-3"
                 onClick={() => handleCompartir("twitter")}
                 data-testid="compartir-twitter"
               >
-                <SiX className="h-6 w-6 sm:h-8 sm:w-8" />
-                <span className="text-[10px] sm:text-xs">X</span>
+                <SiX className="h-8 w-8" />
+                <span className="text-xs">X</span>
               </Button>
               
               <Button
                 variant="ghost"
-                className="flex flex-col items-center gap-1 h-auto py-2 sm:py-3"
+                className="flex flex-col items-center gap-1 h-auto py-3"
                 onClick={() => handleCompartir("whatsapp")}
                 data-testid="compartir-whatsapp"
               >
-                <SiWhatsapp className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
-                <span className="text-[10px] sm:text-xs">WhatsApp</span>
+                <SiWhatsapp className="h-8 w-8 text-green-500" />
+                <span className="text-xs">WhatsApp</span>
               </Button>
               
               <Button
                 variant="ghost"
-                className="flex flex-col items-center gap-1 h-auto py-2 sm:py-3"
+                className="flex flex-col items-center gap-1 h-auto py-3"
                 onClick={() => handleCompartir("linkedin")}
                 data-testid="compartir-linkedin"
               >
-                <SiLinkedin className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-                <span className="text-[10px] sm:text-xs">LinkedIn</span>
+                <SiLinkedin className="h-8 w-8 text-blue-600" />
+                <span className="text-xs">LinkedIn</span>
               </Button>
             </div>
           </DialogContent>

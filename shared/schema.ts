@@ -414,6 +414,7 @@ export const publicidad = pgTable("publicidad", {
   fechaInicio: timestamp("fecha_inicio"),
   fechaFin: timestamp("fecha_fin"),
   fechaCaducidad: timestamp("fecha_caducidad"),
+  fechaEvento: timestamp("fecha_evento"), // Fecha del evento para calendario con notificación 1 hora antes
   estado: varchar("estado").default("activo"), // "activo", "pausado", "finalizado"
   usuarioId: varchar("usuario_id"),
   orden: integer("orden"),

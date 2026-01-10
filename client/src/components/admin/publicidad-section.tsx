@@ -82,6 +82,7 @@ type Publicidad = {
   fechaInicio: Date | null;
   fechaFin: Date | null;
   fechaCaducidad: Date | null;
+  fechaEvento: Date | null;
   estado: string | null;
   usuarioId: string | null;
   orden: number | null;
@@ -101,11 +102,12 @@ type Publicidad = {
 };
 
 const formSchema = insertPublicidadSchema
-  .omit({ id: true, fechaInicio: true, fechaFin: true, fechaCaducidad: true, orden: true, latitud: true, longitud: true, ciudadId: true })
+  .omit({ id: true, fechaInicio: true, fechaFin: true, fechaCaducidad: true, fechaEvento: true, orden: true, latitud: true, longitud: true, ciudadId: true })
   .extend({
     fechaInicio: z.string().optional(),
     fechaFin: z.string().optional(),
     fechaCaducidad: z.string().optional(),
+    fechaEvento: z.string().optional(),
     orden: z.preprocess((v) => v === "" || v === null || v === undefined ? 0 : Number(v), z.number().min(0)),
     latitud: z.preprocess((v) => v === "" || v === null || v === undefined ? undefined : Number(v), z.number().optional()),
     longitud: z.preprocess((v) => v === "" || v === null || v === undefined ? undefined : Number(v), z.number().optional()),
@@ -126,6 +128,7 @@ const convertFormDataToApi = (data: FormData) => {
     fechaInicio: convertirFecha(data.fechaInicio),
     fechaFin: convertirFecha(data.fechaFin),
     fechaCaducidad: convertirFecha(data.fechaCaducidad),
+    fechaEvento: convertirFecha(data.fechaEvento),
   };
 };
 
@@ -469,6 +472,7 @@ export default function PublicidadSection() {
       fechaInicio: "",
       fechaFin: "",
       fechaCaducidad: "",
+      fechaEvento: "",
       estado: "activo",
       orden: 0,
       latitud: undefined,
@@ -609,6 +613,7 @@ export default function PublicidadSection() {
       fechaInicio: formatDateToInput(publicidad.fechaInicio),
       fechaFin: formatDateToInput(publicidad.fechaFin),
       fechaCaducidad: formatDateToInput(publicidad.fechaCaducidad),
+      fechaEvento: formatDateToInput(publicidad.fechaEvento),
       estado: (publicidad.estado || "activo") as any,
       orden: publicidad.orden || 0,
       latitud: publicidad.latitud !== null ? publicidad.latitud : undefined,
@@ -973,6 +978,23 @@ export default function PublicidadSection() {
                               />
                               <p className="text-xs text-muted-foreground">
                                 Fecha de vencimiento definitivo (se marcará como caducada)
+                              </p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="fechaEvento" className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-purple-600" />
+                                Fecha del Evento (para Calendario)
+                              </Label>
+                              <Input
+                                id="fechaEvento"
+                                type="datetime-local"
+                                value={form.watch("fechaEvento") || ""}
+                                onChange={(e) => form.setValue("fechaEvento", e.target.value)}
+                                data-testid="input-fecha-evento"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Fecha y hora del evento. Los usuarios recibirán notificación 1 hora antes cuando lo agenden en su calendario
                               </p>
                             </div>
                           </div>
