@@ -57,7 +57,10 @@ export default function Home() {
     enabled: !!user,
   });
 
-  if (isLoading || !user) {
+  // Estado para modal de registro requerido
+  const [modalRegistroRequerido, setModalRegistroRequerido] = useState(false);
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -68,8 +71,11 @@ export default function Home() {
     );
   }
 
+  // Verificar si es visitante (no logueado)
+  const esVisitante = !user;
+
   // Prioridad: ALIAS → NOMBRE (solo primer nombre, sin apellidos) → EMAIL
-  const nombreMostrar = user.alias || user.nombre || user.email || 'Usuario';
+  const nombreMostrar = user?.alias || user?.nombre || user?.email || 'Visitante';
   
   const contadorAgenda = 2;
   const contadorFamilia = alertasFamilia.length;
@@ -84,7 +90,8 @@ export default function Home() {
 
       {/* Bienvenida - Altura fija 170px con botones de alerta */}
       <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white relative" style={{ height: '170px', paddingBottom: '70px' }}>
-        {/* Botones de Alertas - Escritorio: horizontal superior derecha */}
+        {/* Botones de Alertas - Escritorio: horizontal superior derecha - Solo para usuarios logueados */}
+        {!esVisitante && (
         <div className="hidden lg:flex absolute top-4 right-4 gap-2">
           <div className="relative">
             <Button
@@ -149,8 +156,10 @@ export default function Home() {
             )}
           </div>
         </div>
+        )}
 
-        {/* Botones de Alertas - Tablet/Móvil: solo mostrar si contador > 0 */}
+        {/* Botones de Alertas - Tablet/Móvil: solo mostrar si contador > 0 - Solo para usuarios logueados */}
+        {!esVisitante && (
         <div className="lg:hidden absolute top-4 right-4 flex gap-2">
           {contadorAgenda > 0 && (
             <div className="relative">
@@ -203,18 +212,43 @@ export default function Home() {
             </div>
           )}
         </div>
+        )}
 
+        {/* Contenido de bienvenida - Diferente para visitantes vs usuarios logueados */}
         <div className="container mx-auto px-4 h-full flex items-center justify-start pt-4">
           <div className="text-left">
-            <h1 className="text-3xl md:text-4xl font-bold mb-1" data-testid="text-welcome">
-              ¡Hola, {nombreMostrar}!
-            </h1>
-            <p className="text-white/95 text-xl font-medium">
-              Tu comunidad está segura
-            </p>
-            <p className="text-white/80 text-lg">
-              Juntos somos invencibles
-            </p>
+            {esVisitante ? (
+              <>
+                <h1 className="text-3xl md:text-4xl font-bold mb-1" data-testid="text-welcome-visitor">
+                  ¡Bienvenido a APO-360!
+                </h1>
+                <p className="text-white/95 text-xl font-medium">
+                  Tu plataforma de seguridad y servicios comunitarios
+                </p>
+                <p className="text-white/80 text-base mt-2">
+                  Regístrate para acceder al Botón de Pánico, Chat Comunitario, Compra/Venta y más
+                </p>
+                <Button
+                  onClick={() => setLocation("/iniciar-sesion")}
+                  className="mt-3 bg-white text-purple-600 hover:bg-white/90 font-semibold"
+                  data-testid="button-registro-cta"
+                >
+                  Iniciar Sesión / Registrarse
+                </Button>
+              </>
+            ) : (
+              <>
+                <h1 className="text-3xl md:text-4xl font-bold mb-1" data-testid="text-welcome">
+                  ¡Hola, {nombreMostrar}!
+                </h1>
+                <p className="text-white/95 text-xl font-medium">
+                  Tu comunidad está segura
+                </p>
+                <p className="text-white/80 text-lg">
+                  Juntos somos invencibles
+                </p>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -224,7 +258,7 @@ export default function Home() {
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
           {/* Chat */}
           <div 
-            onClick={() => setLocation("/chat")}
+            onClick={() => esVisitante ? setModalRegistroRequerido(true) : setLocation("/chat")}
             className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
             style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-chat"
@@ -237,7 +271,7 @@ export default function Home() {
 
           {/* Taxi */}
           <div 
-            onClick={() => setModalTaxi(true)}
+            onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalTaxi(true)}
             className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
             style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-taxi"
@@ -250,7 +284,7 @@ export default function Home() {
 
           {/* Delivery */}
           <div 
-            onClick={() => setModalDelivery(true)}
+            onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalDelivery(true)}
             className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
             style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-delivery"
@@ -263,7 +297,7 @@ export default function Home() {
 
           {/* Buses */}
           <div 
-            onClick={() => setModalBuses(true)}
+            onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalBuses(true)}
             className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
             style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-buses"
@@ -274,7 +308,7 @@ export default function Home() {
             <h3 className="font-semibold text-sm">Buses</h3>
           </div>
 
-          {/* Moneda */}
+          {/* Moneda - Este es público */}
           <div 
             onClick={() => setModalMoneda(true)}
             className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
@@ -289,7 +323,7 @@ export default function Home() {
 
           {/* Avisos */}
           <div 
-            onClick={() => setModalAvisos(true)}
+            onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalAvisos(true)}
             className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
             style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
             data-testid="card-quick-avisos"
@@ -874,6 +908,72 @@ export default function Home() {
           </DialogHeader>
           <div className="p-5">
             <CalculadoraCambio sinCard />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Registro Requerido - Para visitantes */}
+      <Dialog open={modalRegistroRequerido} onOpenChange={setModalRegistroRequerido}>
+        <DialogContent className="max-w-md" data-testid="modal-registro-requerido">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 justify-center text-xl">
+              <Shield className="h-6 w-6 text-purple-600" />
+              Registro Requerido
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Únete a nuestra comunidad para acceder a todas las funcionalidades
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-center py-6">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-600 text-white mx-auto mb-4">
+              <Users className="h-12 w-12" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">¡Bienvenido a APO-360!</h3>
+            <p className="text-muted-foreground mb-4">
+              Para acceder a esta funcionalidad necesitas estar registrado. Con tu cuenta podrás disfrutar de:
+            </p>
+            <ul className="text-left text-sm text-muted-foreground space-y-2 mb-6 px-4">
+              <li className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                Botón de Pánico para emergencias
+              </li>
+              <li className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-green-500" />
+                Chat Comunitario
+              </li>
+              <li className="flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4 text-blue-500" />
+                Compra y venta de productos
+              </li>
+              <li className="flex items-center gap-2">
+                <Car className="h-4 w-4 text-yellow-500" />
+                Servicio de Taxi y Delivery
+              </li>
+              <li className="flex items-center gap-2">
+                <Heart className="h-4 w-4 text-pink-500" />
+                Guardar favoritos y más
+              </li>
+            </ul>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Button 
+              onClick={() => {
+                setModalRegistroRequerido(false);
+                setLocation("/iniciar-sesion");
+              }}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              data-testid="button-ir-registro"
+            >
+              Iniciar Sesión / Registrarse
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setModalRegistroRequerido(false)} 
+              className="w-full"
+              data-testid="button-cerrar-modal-registro"
+            >
+              Continuar como visitante
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

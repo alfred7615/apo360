@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +106,7 @@ const MONEDAS = [
 
 export function CartaDigitalModal({ open, onOpenChange, catalogo, datosNegocio }: CartaDigitalModalProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [monedaSeleccionada, setMonedaSeleccionada] = useState("PEN");
   const [selecciones, setSelecciones] = useState<Record<string, SeleccionPrecio[]>>({});
 
@@ -213,6 +215,14 @@ export function CartaDigitalModal({ open, onOpenChange, catalogo, datosNegocio }
 
   const agregarAlCarrito = async () => {
     if (!catalogo) return;
+    
+    if (!user) {
+      toast({
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión para agregar productos al carrito",
+      });
+      return;
+    }
     
     try {
       for (const [itemId, itemSels] of Object.entries(selecciones)) {
