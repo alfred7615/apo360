@@ -6,6 +6,7 @@ import VisualizadorPantallaCompleta from "./VisualizadorPantallaCompleta";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useGeoFilter } from "@/contexts/GeoFilterContext";
 import "@/styles/carrusel-infinito.css";
 
 interface CarruselPublicidadProps {
@@ -33,6 +34,7 @@ function tieneContenidoAdicional(pub: Publicidad): boolean {
 }
 
 export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
+  const { filtros, ciudades } = useGeoFilter();
   const [indiceActual, setIndiceActual] = useState(0);
   const [visualizadorAbierto, setVisualizadorAbierto] = useState(false);
   const [publicidadSeleccionada, setPublicidadSeleccionada] = useState<Publicidad | null>(null);
@@ -48,8 +50,22 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
     queryKey: ["/api/publicidad"],
   });
 
+  const ciudadesDelPais = filtros.paisId 
+    ? ciudades.filter(c => c.paisId === filtros.paisId).map(c => c.id)
+    : [];
+
   const publicidadesActivas = filtrarPublicidadesActivas(
-    publicidades.filter(p => p.tipo === tipo)
+    publicidades.filter(p => {
+      if (p.tipo !== tipo) return false;
+      const pubCiudadId = (p as any).ciudadId;
+      
+      if (filtros.ciudadId) {
+        if (pubCiudadId && pubCiudadId !== filtros.ciudadId) return false;
+      } else if (filtros.paisId && ciudadesDelPais.length > 0) {
+        if (pubCiudadId && !ciudadesDelPais.includes(pubCiudadId)) return false;
+      }
+      return true;
+    })
   );
 
   useEffect(() => {

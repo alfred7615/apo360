@@ -49,11 +49,9 @@ export default function SeccionLocalesComerciales() {
   const [modalPrecio, setModalPrecio] = useState<{ abierto: boolean; item: ItemCatalogo | null; accion: 'carrito' | 'comprar' }>({ abierto: false, item: null, accion: 'carrito' });
 
   const { data: itemsDestacados = [], isLoading: cargandoDestacados } = useQuery<ItemCatalogo[]>({
-    queryKey: ["/api/items-destacados", filtros],
+    queryKey: ["/api/items-destacados", filtros.busqueda, filtros.ordenamiento],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (filtros.paisId) params.set("paisId", filtros.paisId);
-      if (filtros.ciudadId) params.set("ciudadId", filtros.ciudadId);
       if (filtros.busqueda) params.set("busqueda", filtros.busqueda);
       if (filtros.ordenamiento) params.set("orden", filtros.ordenamiento);
       const res = await fetch(`/api/items-destacados?${params.toString()}`);
@@ -63,11 +61,9 @@ export default function SeccionLocalesComerciales() {
   });
 
   const { data: itemsRecientes = [], isLoading: cargandoRecientes } = useQuery<ItemCatalogo[]>({
-    queryKey: ["/api/items-recientes", filtros],
+    queryKey: ["/api/items-recientes", filtros.busqueda, filtros.ordenamiento],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (filtros.paisId) params.set("paisId", filtros.paisId);
-      if (filtros.ciudadId) params.set("ciudadId", filtros.ciudadId);
       if (filtros.busqueda) params.set("busqueda", filtros.busqueda);
       if (filtros.ordenamiento) params.set("orden", filtros.ordenamiento);
       const res = await fetch(`/api/items-recientes?${params.toString()}`);
@@ -77,11 +73,9 @@ export default function SeccionLocalesComerciales() {
   });
 
   const { data: catalogosConItems = [], isLoading: cargandoCatalogos } = useQuery<CatalogoConItems[]>({
-    queryKey: ["/api/catalogos-con-items", filtros],
+    queryKey: ["/api/catalogos-con-items", filtros.busqueda, filtros.ordenamiento],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (filtros.paisId) params.set("paisId", filtros.paisId);
-      if (filtros.ciudadId) params.set("ciudadId", filtros.ciudadId);
       if (filtros.busqueda) params.set("busqueda", filtros.busqueda);
       if (filtros.ordenamiento) params.set("orden", filtros.ordenamiento);
       const res = await fetch(`/api/catalogos-con-items?${params.toString()}`);

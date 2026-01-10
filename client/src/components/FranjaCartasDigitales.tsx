@@ -28,11 +28,9 @@ export default function FranjaCartasDigitales() {
   const trackRef = useRef<HTMLDivElement>(null);
 
   const { data: catalogos = [] } = useQuery<CatalogoConItems[]>({
-    queryKey: ["/api/catalogos-con-items", filtros],
+    queryKey: ["/api/catalogos-con-items", filtros.busqueda, filtros.ordenamiento],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (filtros.paisId) params.set("paisId", filtros.paisId);
-      if (filtros.ciudadId) params.set("ciudadId", filtros.ciudadId);
       if (filtros.busqueda) params.set("busqueda", filtros.busqueda);
       if (filtros.ordenamiento) params.set("orden", filtros.ordenamiento);
       const res = await fetch(`/api/catalogos-con-items?${params.toString()}`);
