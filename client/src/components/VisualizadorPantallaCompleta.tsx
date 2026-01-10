@@ -728,7 +728,7 @@ export default function VisualizadorPantallaCompleta({
 
         {/* Modal de comentarios - Responsivo */}
         <Dialog open={comentariosAbiertos} onOpenChange={setComentariosAbiertos}>
-          <DialogContent className="w-[95vw] max-w-md mx-auto" aria-describedby={undefined}>
+          <DialogContent className="w-[95vw] max-w-md max-h-[85vh] overflow-y-auto mx-auto" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle className="text-base sm:text-lg">Comentarios</DialogTitle>
             </DialogHeader>

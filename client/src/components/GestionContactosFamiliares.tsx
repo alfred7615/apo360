@@ -440,7 +440,7 @@ export default function GestionContactosFamiliares() {
       </Card>
 
       <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
-        <DialogContent className="sm:max-w-md" data-testid="dialog-contacto">
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto" data-testid="dialog-contacto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />

@@ -641,7 +641,7 @@ export default function SeccionLocalesComerciales() {
       </div>
 
       <Dialog open={!!productoSeleccionado} onOpenChange={() => setProductoSeleccionado(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           {productoSeleccionado && (
             <>
               <DialogHeader>
@@ -907,7 +907,7 @@ export default function SeccionLocalesComerciales() {
       </Dialog>
 
       <Dialog open={modalPrecio.abierto} onOpenChange={(open) => !open && setModalPrecio({ abierto: false, item: null, accion: 'carrito' })}>
-        <DialogContent className="sm:max-w-md" data-testid="modal-seleccion-precio">
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto" data-testid="modal-seleccion-precio">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />

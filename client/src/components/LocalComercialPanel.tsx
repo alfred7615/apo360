@@ -3645,7 +3645,7 @@ export default function LocalComercialPanel() {
 
         {/* Modal selector de logos del carrusel */}
         <Dialog open={showLogoSelector} onOpenChange={setShowLogoSelector}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Seleccionar Logo del Carrusel</DialogTitle>
               <DialogDescription>
@@ -3711,7 +3711,7 @@ export default function LocalComercialPanel() {
 
         {/* Modal sugerir logo propio */}
         <Dialog open={showSugerirLogoModal} onOpenChange={setShowSugerirLogoModal}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Sugerir Nuevo Logo</DialogTitle>
               <DialogDescription>
@@ -3784,7 +3784,7 @@ export default function LocalComercialPanel() {
 
         {/* Modal popup del negocio */}
         <Dialog open={showNegocioPopup} onOpenChange={setShowNegocioPopup}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 {negocioForm.logoUrl && (
@@ -3875,7 +3875,7 @@ export default function LocalComercialPanel() {
             setPersonalForm({ funcion: "", permisos: [], notas: "" });
           }
         }}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingPersonal ? "Editar Personal" : "Agregar Personal"}</DialogTitle>
               <DialogDescription>
@@ -4190,7 +4190,7 @@ export default function LocalComercialPanel() {
 
         {/* Modal Solicitar Delivery */}
         <Dialog open={showSolicitarDeliveryModal} onOpenChange={setShowSolicitarDeliveryModal}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Truck className="h-5 w-5 text-primary" />
@@ -4403,7 +4403,7 @@ export default function LocalComercialPanel() {
             setCategoriaForm({ codigo: "", nombre: "", descripcion: "", icono: "", categoriaPadreId: null, etiquetaPrecio1: "Personal", etiquetaPrecio2: "Mediana", etiquetaPrecio3: "Familiar", etiquetaPrecio4: "Extra", habilitarPrecio1: true, habilitarPrecio2: true, habilitarPrecio3: true, habilitarPrecio4: true });
           }
         }}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingCategoria ? "Editar" : "Nueva"} Categoría</DialogTitle>
               <DialogDescription>
@@ -4602,7 +4602,7 @@ export default function LocalComercialPanel() {
             setItemLocalForm({ nombre: "", descripcion: "", codigo: "", precio1: "", precio2: "", precio3: "", precio4: "", categoriaId: null, imagenUrl: "", ingredientes: "", tiempoPreparacion: "", disponible: true, destacado: false });
           }
         }}>
-          <DialogContent className="max-w-xl">
+          <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingItemLocal ? "Editar" : "Nuevo"} Producto</DialogTitle>
               <DialogDescription>

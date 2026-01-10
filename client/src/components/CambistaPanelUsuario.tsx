@@ -359,7 +359,7 @@ export default function CambistaPanelUsuario() {
       </div>
 
       <Dialog open={showNuevaTasaModal} onOpenChange={setShowNuevaTasaModal}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[450px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Coins className="h-5 w-5 text-yellow-500" />
