@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Info, MapPin, Calendar, Link2, ExternalLink } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Info, MapPin, Calendar, Link2, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { filtrarPublicidadesActivas, type Publicidad, getGoogleMapsUrl } from "@/lib/publicidadUtils";
 import VisualizadorPantallaCompleta from "./VisualizadorPantallaCompleta";
@@ -40,11 +40,13 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   const [publicidadSeleccionada, setPublicidadSeleccionada] = useState<Publicidad | null>(null);
   const [modalInfoAbierto, setModalInfoAbierto] = useState(false);
   const [pausaAutoScroll, setPausaAutoScroll] = useState(false);
+  const [pausaNavegacionManual, setPausaNavegacionManual] = useState(false);
   const [arrastreInicio, setArrastreInicio] = useState<number | null>(null);
   const [posicionScroll, setPosicionScroll] = useState(0);
   const [seMovio, setSeMovio] = useState(false);
   const contenedorRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const timeoutNavegacionRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: publicidades = [] } = useQuery<Publicidad[]>({
     queryKey: ["/api/publicidad"],
@@ -69,14 +71,44 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
   );
 
   useEffect(() => {
-    if (tipo !== "carrusel_principal" || publicidadesActivas.length === 0) return;
+    if (tipo !== "carrusel_principal" || publicidadesActivas.length === 0 || pausaNavegacionManual) return;
 
     const intervalo = setInterval(() => {
       setIndiceActual((prev) => (prev + 1) % publicidadesActivas.length);
     }, 5000);
 
     return () => clearInterval(intervalo);
-  }, [publicidadesActivas.length, tipo]);
+  }, [publicidadesActivas.length, tipo, pausaNavegacionManual]);
+
+  const pausarYReanudarAutoplay = useCallback(() => {
+    setPausaNavegacionManual(true);
+    if (timeoutNavegacionRef.current) {
+      clearTimeout(timeoutNavegacionRef.current);
+    }
+    timeoutNavegacionRef.current = setTimeout(() => {
+      setPausaNavegacionManual(false);
+    }, 5000);
+  }, []);
+
+  const irAnterior = useCallback(() => {
+    pausarYReanudarAutoplay();
+    setIndiceActual((prev) => (prev - 1 + publicidadesActivas.length) % publicidadesActivas.length);
+  }, [publicidadesActivas.length, pausarYReanudarAutoplay]);
+
+  const irSiguiente = useCallback(() => {
+    pausarYReanudarAutoplay();
+    setIndiceActual((prev) => (prev + 1) % publicidadesActivas.length);
+  }, [publicidadesActivas.length, pausarYReanudarAutoplay]);
+
+  const irAlInicio = useCallback(() => {
+    pausarYReanudarAutoplay();
+    setIndiceActual(0);
+  }, [pausarYReanudarAutoplay]);
+
+  const irAlFinal = useCallback(() => {
+    pausarYReanudarAutoplay();
+    setIndiceActual(publicidadesActivas.length - 1);
+  }, [publicidadesActivas.length, pausarYReanudarAutoplay]);
 
   useEffect(() => {
     setIndiceActual((prev) => {
@@ -234,12 +266,24 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
         <div
           className="relative w-screen overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center"
           style={{ 
-            height: "clamp(200px, 40vw, 400px)",
+            height: "350px",
             marginLeft: "calc(-50vw + 50%)",
             marginRight: "calc(-50vw + 50%)"
           }}
           data-testid="carousel-principal"
         >
+          {/* Botón navegación izquierda */}
+          <button
+            onClick={irAnterior}
+            onDoubleClick={irAlInicio}
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 active:bg-black/80 text-white rounded-full p-3 sm:p-4 shadow-xl transition-all duration-200 hover:scale-110 active:scale-95 backdrop-blur-sm"
+            aria-label="Imagen anterior"
+            data-testid="btn-carousel-prev"
+          >
+            <ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8" />
+          </button>
+
+          {/* Imagen principal */}
           <div 
             className="relative h-full w-full flex items-center justify-center cursor-pointer"
             onClick={() => abrirVisualizador(publicidadActual)}
@@ -251,6 +295,39 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
               data-testid="img-carousel-principal"
             />
           </div>
+
+          {/* Botón navegación derecha */}
+          <button
+            onClick={irSiguiente}
+            onDoubleClick={irAlFinal}
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 active:bg-black/80 text-white rounded-full p-3 sm:p-4 shadow-xl transition-all duration-200 hover:scale-110 active:scale-95 backdrop-blur-sm"
+            aria-label="Imagen siguiente"
+            data-testid="btn-carousel-next"
+          >
+            <ChevronRight className="h-6 w-6 sm:h-8 sm:w-8" />
+          </button>
+
+          {/* Indicadores de posición */}
+          {publicidadesActivas.length > 1 && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+              {publicidadesActivas.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    pausarYReanudarAutoplay();
+                    setIndiceActual(idx);
+                  }}
+                  className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+                    idx === indiceActual 
+                      ? "bg-white scale-125 shadow-lg" 
+                      : "bg-white/50 hover:bg-white/75"
+                  }`}
+                  aria-label={`Ir a imagen ${idx + 1}`}
+                  data-testid={`btn-carousel-dot-${idx}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <VisualizadorPantallaCompleta
