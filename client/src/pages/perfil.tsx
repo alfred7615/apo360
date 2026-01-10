@@ -827,6 +827,22 @@ export default function PerfilPage() {
 
   const opcionesSectores = sectores.map((s: Sector) => s.nombre);
 
+  // Queries para países y ciudades (sistema multi-ciudad)
+  const { data: paisesDisponibles = [], isLoading: loadingPaises, isError: errorPaises } = useQuery<Array<{ id: string; nombre: string; bandera: string | null; activo: boolean | null }>>({
+    queryKey: ["/api/paises"],
+  });
+
+  const { data: ciudadesDelPais = [], isLoading: loadingCiudades, isError: errorCiudades } = useQuery<Array<{ id: string; nombre: string; paisId: string }>>({
+    queryKey: ["/api/ciudades", formData.paisIdActual],
+    queryFn: async () => {
+      if (!formData.paisIdActual) return [];
+      const response = await fetch(`/api/ciudades?paisId=${encodeURIComponent(formData.paisIdActual)}`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!formData.paisIdActual,
+  });
+
   useEffect(() => {
     if (perfil) {
       setFormData(perfil);
@@ -1254,6 +1270,72 @@ export default function PerfilPage() {
               </TabsContent>
 
               <TabsContent value="ubicacion" className="mt-4 space-y-4">
+                {/* Selector de Ciudad Activa */}
+                <Card className="border-primary/50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Map className="h-4 w-4 text-primary" />
+                      Ciudad Activa
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Selecciona tu ubicación actual para ver contenido relevante de tu zona
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="paisActivo" className="text-xs">País</Label>
+                      {errorPaises ? (
+                        <div className="text-xs text-destructive">Error al cargar países</div>
+                      ) : (
+                        <Select
+                          value={formData.paisIdActual || ""}
+                          onValueChange={(value) => {
+                            handleInputChange("paisIdActual", value);
+                            handleInputChange("ciudadIdActual", "");
+                          }}
+                          disabled={loadingPaises}
+                          data-testid="select-pais-activo"
+                        >
+                          <SelectTrigger className="h-8" data-testid="select-pais-activo-trigger">
+                            <SelectValue placeholder={loadingPaises ? "Cargando..." : "Selecciona país"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {paisesDisponibles.map((pais) => (
+                              <SelectItem key={pais.id} value={pais.id}>
+                                {pais.bandera} {pais.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="ciudadActiva" className="text-xs">Ciudad</Label>
+                      {errorCiudades && formData.paisIdActual ? (
+                        <div className="text-xs text-destructive">Error al cargar ciudades</div>
+                      ) : (
+                        <Select
+                          value={formData.ciudadIdActual || ""}
+                          onValueChange={(value) => handleInputChange("ciudadIdActual", value)}
+                          disabled={!formData.paisIdActual || loadingCiudades}
+                          data-testid="select-ciudad-activa"
+                        >
+                          <SelectTrigger className="h-8" data-testid="select-ciudad-activa-trigger">
+                            <SelectValue placeholder={loadingCiudades ? "Cargando..." : (formData.paisIdActual ? "Selecciona ciudad" : "Primero selecciona país")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ciudadesDelPais.map((ciudad) => (
+                              <SelectItem key={ciudad.id} value={ciudad.id}>
+                                {ciudad.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-1">

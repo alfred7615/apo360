@@ -89,7 +89,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CRUD de países (solo super_admin)
   app.post('/api/admin/paises', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
-      const nuevoPais = await storage.createPais(req.body);
+      const { insertPaisSchema } = await import("@shared/schema");
+      const validacion = insertPaisSchema.safeParse(req.body);
+      if (!validacion.success) {
+        return res.status(400).json({ message: "Datos inválidos", errors: validacion.error.errors });
+      }
+      const nuevoPais = await storage.createPais(validacion.data);
       res.json(nuevoPais);
     } catch (error: any) {
       console.error("Error al crear país:", error);
@@ -100,7 +105,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/admin/paises/:id', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const paisActualizado = await storage.updatePais(id, req.body);
+      const { insertPaisSchema } = await import("@shared/schema");
+      const validacion = insertPaisSchema.partial().safeParse(req.body);
+      if (!validacion.success) {
+        return res.status(400).json({ message: "Datos inválidos", errors: validacion.error.errors });
+      }
+      const paisActualizado = await storage.updatePais(id, validacion.data);
       if (!paisActualizado) {
         return res.status(404).json({ message: "País no encontrado" });
       }
@@ -125,7 +135,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CRUD de ciudades (solo super_admin)
   app.post('/api/admin/ciudades', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
-      const nuevaCiudad = await storage.createCiudad(req.body);
+      const { insertCiudadSchema } = await import("@shared/schema");
+      const validacion = insertCiudadSchema.safeParse(req.body);
+      if (!validacion.success) {
+        return res.status(400).json({ message: "Datos inválidos", errors: validacion.error.errors });
+      }
+      const nuevaCiudad = await storage.createCiudad(validacion.data);
       res.json(nuevaCiudad);
     } catch (error: any) {
       console.error("Error al crear ciudad:", error);
@@ -136,7 +151,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/admin/ciudades/:id', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const ciudadActualizada = await storage.updateCiudad(id, req.body);
+      const { insertCiudadSchema } = await import("@shared/schema");
+      const validacion = insertCiudadSchema.partial().safeParse(req.body);
+      if (!validacion.success) {
+        return res.status(400).json({ message: "Datos inválidos", errors: validacion.error.errors });
+      }
+      const ciudadActualizada = await storage.updateCiudad(id, validacion.data);
       if (!ciudadActualizada) {
         return res.status(404).json({ message: "Ciudad no encontrada" });
       }
