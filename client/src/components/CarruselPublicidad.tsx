@@ -311,91 +311,93 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
           }}
           data-testid="carousel-principal"
         >
-          {/* Contenedor de imagen centrado */}
-          <div 
-            className="absolute inset-0 flex items-center justify-center cursor-pointer"
-            onClick={abrirVisualizadorImagen}
-          >
-            <img
-              src={publicidadActual?.imagenUrl || undefined}
-              alt={publicidadActual?.titulo || "Publicidad"}
-              className="h-full w-auto max-w-full object-contain"
-              data-testid="img-carousel-principal"
-            />
-          </div>
-
-          {/* Botón navegación izquierda - SOBRE la imagen */}
-          {totalImagenes > 1 && (
-            <button
-              type="button"
-              onClick={navegarAnterior}
-              onDoubleClick={navegarAlInicio}
-              className="absolute z-50 bg-black/70 hover:bg-black/90 text-white rounded-md shadow-2xl transition-all duration-150 flex items-center justify-center cursor-pointer"
-              style={{ 
-                width: "40px", 
-                height: "40px",
-                left: "16px",
-                top: "50%",
-                transform: "translateY(-50%)"
-              }}
-              aria-label="Imagen anterior"
-              data-testid="btn-carousel-prev"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-          )}
-
-          {/* Botón navegación derecha - SOBRE la imagen */}
-          {totalImagenes > 1 && (
-            <button
-              type="button"
-              onClick={navegarSiguiente}
-              onDoubleClick={navegarAlFinal}
-              className="absolute z-50 bg-black/70 hover:bg-black/90 text-white rounded-md shadow-2xl transition-all duration-150 flex items-center justify-center cursor-pointer"
-              style={{ 
-                width: "40px", 
-                height: "40px",
-                right: "16px",
-                top: "50%",
-                transform: "translateY(-50%)"
-              }}
-              aria-label="Imagen siguiente"
-              data-testid="btn-carousel-next"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          )}
-
-          {/* Indicadores de posición */}
-          {totalImagenes > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-50">
-              {publicidadesActivas.map((_, idx) => (
+          {/* Contenedor centrado con imagen y controles */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            {/* Wrapper de la imagen con botones posicionados relativos a la imagen */}
+            <div className="relative h-full max-w-full flex items-center justify-center">
+              {/* Imagen */}
+              <img
+                src={publicidadActual?.imagenUrl || undefined}
+                alt={publicidadActual?.titulo || "Publicidad"}
+                className="h-full w-auto max-w-full object-contain cursor-pointer"
+                onClick={() => abrirVisualizador(publicidadActual)}
+                data-testid="img-carousel-principal"
+              />
+              
+              {/* Botón navegación izquierda - DENTRO de la imagen */}
+              {totalImagenes > 1 && (
                 <button
-                  key={idx}
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    pausarYReanudarAutoplay();
-                    setIndiceActual(idx);
+                  onClick={navegarAnterior}
+                  onDoubleClick={navegarAlInicio}
+                  className="absolute z-50 bg-black/70 hover:bg-black/90 text-white rounded-md shadow-2xl transition-all duration-150 flex items-center justify-center cursor-pointer"
+                  style={{ 
+                    width: "40px", 
+                    height: "40px",
+                    left: "8px",
+                    top: "50%",
+                    transform: "translateY(-50%)"
                   }}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    idx === indiceActual 
-                      ? "bg-white scale-125 shadow-lg" 
-                      : "bg-white/50 hover:bg-white/80"
-                  }`}
-                  aria-label={`Ir a imagen ${idx + 1}`}
-                  data-testid={`btn-carousel-dot-${idx}`}
-                />
-              ))}
-            </div>
-          )}
+                  aria-label="Imagen anterior"
+                  data-testid="btn-carousel-prev"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+              )}
 
-          {/* Contador de imágenes */}
-          {totalImagenes > 1 && (
-            <div className="absolute top-3 right-3 bg-black/60 text-white text-sm px-2 py-1 rounded z-50">
-              {indiceActual + 1} / {totalImagenes}
+              {/* Botón navegación derecha - DENTRO de la imagen */}
+              {totalImagenes > 1 && (
+                <button
+                  type="button"
+                  onClick={navegarSiguiente}
+                  onDoubleClick={navegarAlFinal}
+                  className="absolute z-50 bg-black/70 hover:bg-black/90 text-white rounded-md shadow-2xl transition-all duration-150 flex items-center justify-center cursor-pointer"
+                  style={{ 
+                    width: "40px", 
+                    height: "40px",
+                    right: "8px",
+                    top: "50%",
+                    transform: "translateY(-50%)"
+                  }}
+                  aria-label="Imagen siguiente"
+                  data-testid="btn-carousel-next"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              )}
+
+              {/* Indicadores de posición - DENTRO de la imagen */}
+              {totalImagenes > 1 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-50">
+                  {publicidadesActivas.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        pausarYReanudarAutoplay();
+                        setIndiceActual(idx);
+                      }}
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                        idx === indiceActual 
+                          ? "bg-white scale-125 shadow-lg" 
+                          : "bg-white/50 hover:bg-white/80"
+                      }`}
+                      aria-label={`Ir a imagen ${idx + 1}`}
+                      data-testid={`btn-carousel-dot-${idx}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Contador de imágenes - DENTRO de la imagen */}
+              {totalImagenes > 1 && (
+                <div className="absolute top-3 right-3 bg-black/60 text-white text-sm px-2 py-1 rounded z-50">
+                  {indiceActual + 1} / {totalImagenes}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         <VisualizadorPantallaCompleta
