@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useGeoFilter } from "@/contexts/GeoFilterContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Search, MapPin, Globe, X, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Search, MapPin, X, ArrowUpDown } from "lucide-react";
 
 interface GeoFilterBarProps {
   mostrarBusqueda?: boolean;
@@ -19,10 +23,33 @@ interface GeoFilterBarProps {
   className?: string;
 }
 
+const BANDERAS_PAISES: Record<string, string> = {
+  "peru": "🇵🇪",
+  "perú": "🇵🇪",
+  "chile": "🇨🇱",
+  "argentina": "🇦🇷",
+  "bolivia": "🇧🇴",
+  "colombia": "🇨🇴",
+  "ecuador": "🇪🇨",
+  "brasil": "🇧🇷",
+  "mexico": "🇲🇽",
+  "méxico": "🇲🇽",
+  "venezuela": "🇻🇪",
+  "uruguay": "🇺🇾",
+  "paraguay": "🇵🇾",
+  "estados unidos": "🇺🇸",
+  "españa": "🇪🇸",
+};
+
+const obtenerBandera = (nombrePais: string): string => {
+  const nombre = nombrePais.toLowerCase();
+  return BANDERAS_PAISES[nombre] || "🌍";
+};
+
 export default function GeoFilterBar({
   mostrarBusqueda = true,
   mostrarOrdenamiento = true,
-  placeholderBusqueda = "Buscar por nombre de local o producto...",
+  placeholderBusqueda = "Buscar...",
   className = "",
 }: GeoFilterBarProps) {
   const {
@@ -31,17 +58,15 @@ export default function GeoFilterBar({
     setCiudadId,
     setBusqueda,
     setOrdenamiento,
-    limpiarFiltros,
     paises,
     ciudadesFiltradas,
     cargandoPaises,
     cargandoCiudades,
     paisSeleccionado,
-    ciudadSeleccionada,
-    tieneFilrosActivos,
   } = useGeoFilter();
 
   const [busquedaLocal, setBusquedaLocal] = useState(filtros.busqueda);
+  const [popoverPaisAbierto, setPopoverPaisAbierto] = useState(false);
 
   useEffect(() => {
     setBusquedaLocal(filtros.busqueda);
@@ -55,91 +80,31 @@ export default function GeoFilterBar({
   }, [busquedaLocal, setBusqueda]);
 
   const opcionesOrdenamiento = [
-    { valor: "reciente", etiqueta: "Más recientes" },
-    { valor: "antiguo", etiqueta: "Más antiguos" },
-    { valor: "masLikes", etiqueta: "Más me gusta" },
-    { valor: "masCompartidos", etiqueta: "Más compartidos" },
-    { valor: "masFavoritos", etiqueta: "Más favoritos" },
-    { valor: "masVistas", etiqueta: "Más vistos" },
+    { valor: "reciente", etiqueta: "Recientes", icono: "🕐" },
+    { valor: "antiguo", etiqueta: "Antiguos", icono: "📅" },
+    { valor: "masLikes", etiqueta: "Más likes", icono: "❤️" },
+    { valor: "masCompartidos", etiqueta: "Compartidos", icono: "🔗" },
+    { valor: "masFavoritos", etiqueta: "Favoritos", icono: "⭐" },
+    { valor: "masVistas", etiqueta: "Más vistos", icono: "👁️" },
   ];
 
+  const ordenActual = opcionesOrdenamiento.find(o => o.valor === filtros.ordenamiento);
+  const paisesActivos = paises.filter(p => p.activo);
+
   return (
-    <div className={`bg-card border rounded-lg p-4 shadow-sm ${className}`} data-testid="geo-filter-bar">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex items-center gap-2 flex-1">
-            <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
-            <Select
-              value={filtros.paisId || "todos"}
-              onValueChange={(value) => setPaisId(value === "todos" ? null : value)}
-              disabled={cargandoPaises}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-pais">
-                <SelectValue placeholder="Todos los países" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los países</SelectItem>
-                {paises.filter(p => p.activo).map((pais) => (
-                  <SelectItem key={pais.id} value={pais.id}>
-                    {pais.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center gap-2 flex-1">
-            <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-            <Select
-              value={filtros.ciudadId || "todas"}
-              onValueChange={(value) => setCiudadId(value === "todas" ? null : value)}
-              disabled={cargandoCiudades || !filtros.paisId}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-ciudad">
-                <SelectValue placeholder={filtros.paisId ? "Todas las ciudades" : "Selecciona un país"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas las ciudades</SelectItem>
-                {ciudadesFiltradas.map((ciudad) => (
-                  <SelectItem key={ciudad.id} value={ciudad.id}>
-                    {ciudad.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {mostrarOrdenamiento && (
-            <div className="flex items-center gap-2 flex-1">
-              <ArrowUpDown className="h-4 w-4 text-muted-foreground shrink-0" />
-              <Select
-                value={filtros.ordenamiento}
-                onValueChange={(value) => setOrdenamiento(value as any)}
-              >
-                <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-ordenamiento">
-                  <SelectValue placeholder="Ordenar por" />
-                </SelectTrigger>
-                <SelectContent>
-                  {opcionesOrdenamiento.map((opcion) => (
-                    <SelectItem key={opcion.valor} value={opcion.valor}>
-                      {opcion.etiqueta}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </div>
-
+    <div className={`${className}`} data-testid="geo-filter-bar">
+      {/* Layout Desktop/Tablet - Una sola línea */}
+      <div className="hidden sm:flex items-center gap-2 w-full">
+        {/* Búsqueda - 50% del ancho */}
         {mostrarBusqueda && (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="relative flex-1 max-w-[50%]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder={placeholderBusqueda}
               value={busquedaLocal}
               onChange={(e) => setBusquedaLocal(e.target.value)}
-              className="pl-10 pr-10"
+              className="pl-8 pr-8 h-9 text-sm"
               data-testid="input-busqueda"
             />
             {busquedaLocal && (
@@ -148,52 +113,248 @@ export default function GeoFilterBar({
                   setBusquedaLocal("");
                   setBusqueda("");
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 data-testid="button-limpiar-busqueda"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
         )}
 
-        {tieneFilrosActivos && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-muted-foreground">Filtros activos:</span>
-            {paisSeleccionado && (
-              <Badge variant="secondary" className="gap-1">
-                <Globe className="h-3 w-3" />
-                {paisSeleccionado.nombre}
-              </Badge>
-            )}
-            {ciudadSeleccionada && (
-              <Badge variant="secondary" className="gap-1">
-                <MapPin className="h-3 w-3" />
-                {ciudadSeleccionada.nombre}
-              </Badge>
-            )}
-            {filtros.busqueda && (
-              <Badge variant="secondary" className="gap-1">
-                <Search className="h-3 w-3" />
-                "{filtros.busqueda}"
-              </Badge>
-            )}
-            {filtros.ordenamiento !== "reciente" && (
-              <Badge variant="secondary" className="gap-1">
-                <ArrowUpDown className="h-3 w-3" />
-                {opcionesOrdenamiento.find(o => o.valor === filtros.ordenamiento)?.etiqueta}
-              </Badge>
-            )}
+        {/* Selector de País con Banderas */}
+        <Popover open={popoverPaisAbierto} onOpenChange={setPopoverPaisAbierto}>
+          <PopoverTrigger asChild>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={limpiarFiltros}
-              className="h-6 px-2 text-xs"
-              data-testid="button-limpiar-filtros"
+              className="h-9 px-2 gap-1 min-w-fit"
+              disabled={cargandoPaises}
+              data-testid="button-pais"
             >
-              <X className="h-3 w-3 mr-1" />
-              Limpiar todo
+              <span className="text-lg leading-none">
+                {paisSeleccionado ? obtenerBandera(paisSeleccionado.nombre) : "🌍"}
+              </span>
+              <span className="text-xs hidden md:inline">
+                {paisSeleccionado?.nombre || "País"}
+              </span>
             </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2" align="start">
+            <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+              <Button
+                variant={!filtros.paisId ? "default" : "ghost"}
+                size="sm"
+                className="h-8 px-2 text-lg"
+                onClick={() => {
+                  setPaisId(null);
+                  setPopoverPaisAbierto(false);
+                }}
+                title="Todos los países"
+              >
+                🌍
+              </Button>
+              {paisesActivos.map((pais) => (
+                <Button
+                  key={pais.id}
+                  variant={filtros.paisId === pais.id ? "default" : "ghost"}
+                  size="sm"
+                  className="h-8 px-2 text-lg"
+                  onClick={() => {
+                    setPaisId(pais.id);
+                    setPopoverPaisAbierto(false);
+                  }}
+                  title={pais.nombre}
+                >
+                  {obtenerBandera(pais.nombre)}
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Selector de Ciudad */}
+        <Select
+          value={filtros.ciudadId || "todas"}
+          onValueChange={(value) => setCiudadId(value === "todas" ? null : value)}
+          disabled={cargandoCiudades || !filtros.paisId}
+        >
+          <SelectTrigger className="h-9 w-auto min-w-[100px] max-w-[140px] text-xs" data-testid="select-ciudad">
+            <MapPin className="h-3.5 w-3.5 mr-1 shrink-0" />
+            <SelectValue placeholder="Ciudad" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todas</SelectItem>
+            {ciudadesFiltradas.map((ciudad) => (
+              <SelectItem key={ciudad.id} value={ciudad.id}>
+                {ciudad.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Selector de Ordenamiento */}
+        {mostrarOrdenamiento && (
+          <Select
+            value={filtros.ordenamiento}
+            onValueChange={(value) => setOrdenamiento(value as any)}
+          >
+            <SelectTrigger className="h-9 w-auto min-w-[100px] max-w-[130px] text-xs" data-testid="select-ordenamiento">
+              <ArrowUpDown className="h-3.5 w-3.5 mr-1 shrink-0" />
+              <SelectValue placeholder="Ordenar" />
+            </SelectTrigger>
+            <SelectContent>
+              {opcionesOrdenamiento.map((opcion) => (
+                <SelectItem key={opcion.valor} value={opcion.valor}>
+                  <span className="flex items-center gap-1.5">
+                    <span>{opcion.icono}</span>
+                    <span>{opcion.etiqueta}</span>
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
+      {/* Layout Móvil - Una sola línea con iconos */}
+      <div className="flex sm:hidden items-center gap-1.5 w-full">
+        {/* Botón País (icono bandera) */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              disabled={cargandoPaises}
+              data-testid="button-pais-mobile"
+            >
+              <span className="text-lg">
+                {paisSeleccionado ? obtenerBandera(paisSeleccionado.nombre) : "🌍"}
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2" align="start">
+            <div className="flex flex-wrap gap-1.5 max-w-[180px]">
+              <Button
+                variant={!filtros.paisId ? "default" : "ghost"}
+                size="sm"
+                className="h-9 w-9 p-0 text-lg"
+                onClick={() => setPaisId(null)}
+                title="Todos"
+              >
+                🌍
+              </Button>
+              {paisesActivos.map((pais) => (
+                <Button
+                  key={pais.id}
+                  variant={filtros.paisId === pais.id ? "default" : "ghost"}
+                  size="sm"
+                  className="h-9 w-9 p-0 text-lg"
+                  onClick={() => setPaisId(pais.id)}
+                  title={pais.nombre}
+                >
+                  {obtenerBandera(pais.nombre)}
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Botón Ciudad (icono) */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              disabled={cargandoCiudades || !filtros.paisId}
+              data-testid="button-ciudad-mobile"
+            >
+              <MapPin className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2" align="start">
+            <div className="flex flex-col gap-1 max-h-[200px] overflow-y-auto">
+              <Button
+                variant={!filtros.ciudadId ? "default" : "ghost"}
+                size="sm"
+                className="h-8 justify-start text-xs"
+                onClick={() => setCiudadId(null)}
+              >
+                Todas las ciudades
+              </Button>
+              {ciudadesFiltradas.map((ciudad) => (
+                <Button
+                  key={ciudad.id}
+                  variant={filtros.ciudadId === ciudad.id ? "default" : "ghost"}
+                  size="sm"
+                  className="h-8 justify-start text-xs"
+                  onClick={() => setCiudadId(ciudad.id)}
+                >
+                  {ciudad.nombre}
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Botón Ordenamiento (icono) */}
+        {mostrarOrdenamiento && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                data-testid="button-orden-mobile"
+              >
+                <span className="text-sm">{ordenActual?.icono || "🕐"}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="start">
+              <div className="flex flex-col gap-1">
+                {opcionesOrdenamiento.map((opcion) => (
+                  <Button
+                    key={opcion.valor}
+                    variant={filtros.ordenamiento === opcion.valor ? "default" : "ghost"}
+                    size="sm"
+                    className="h-8 justify-start text-xs gap-2"
+                    onClick={() => setOrdenamiento(opcion.valor as any)}
+                  >
+                    <span>{opcion.icono}</span>
+                    <span>{opcion.etiqueta}</span>
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+
+        {/* Búsqueda - Ocupa el resto del espacio */}
+        {mostrarBusqueda && (
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder={placeholderBusqueda}
+              value={busquedaLocal}
+              onChange={(e) => setBusquedaLocal(e.target.value)}
+              className="pl-7 pr-7 h-9 text-xs"
+              data-testid="input-busqueda-mobile"
+            />
+            {busquedaLocal && (
+              <button
+                onClick={() => {
+                  setBusquedaLocal("");
+                  setBusqueda("");
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                data-testid="button-limpiar-busqueda-mobile"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
         )}
       </div>
