@@ -300,6 +300,10 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
       }
     };
 
+    // Obtener la URL de la imagen actual
+    const imagenActualUrl = publicidadActual?.imagenUrl || "";
+    const imagenActualId = publicidadActual?.id || indiceActual;
+
     return (
       <>
         <div
@@ -315,11 +319,12 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
           <div className="absolute inset-0 flex items-center justify-center">
             {/* Wrapper de la imagen con botones posicionados relativos a la imagen */}
             <div className="relative h-full max-w-full flex items-center justify-center">
-              {/* Imagen */}
+              {/* Imagen - key fuerza re-render al cambiar */}
               <img
-                src={publicidadActual?.imagenUrl || undefined}
+                key={`img-${imagenActualId}-${indiceActual}`}
+                src={imagenActualUrl}
                 alt={publicidadActual?.titulo || "Publicidad"}
-                className="h-full w-auto max-w-full object-contain cursor-pointer"
+                className="h-full w-auto max-w-full object-contain cursor-pointer transition-opacity duration-300"
                 onClick={() => abrirVisualizador(publicidadActual)}
                 data-testid="img-carousel-principal"
               />
@@ -364,30 +369,6 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
                 >
                   <ChevronRight className="h-6 w-6" />
                 </button>
-              )}
-
-              {/* Indicadores de posición - DENTRO de la imagen */}
-              {totalImagenes > 1 && (
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-50">
-                  {publicidadesActivas.map((_, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        pausarYReanudarAutoplay();
-                        setIndiceActual(idx);
-                      }}
-                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                        idx === indiceActual 
-                          ? "bg-white scale-125 shadow-lg" 
-                          : "bg-white/50 hover:bg-white/80"
-                      }`}
-                      aria-label={`Ir a imagen ${idx + 1}`}
-                      data-testid={`btn-carousel-dot-${idx}`}
-                    />
-                  ))}
-                </div>
               )}
 
               {/* Contador de imágenes - DENTRO de la imagen */}
