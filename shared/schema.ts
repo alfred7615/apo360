@@ -1695,6 +1695,9 @@ export const catalogosLocales = pgTable("catalogos_locales", {
   telefono: varchar("telefono", { length: 20 }),
   whatsapp: varchar("whatsapp", { length: 20 }),
   horario: varchar("horario", { length: 200 }),
+  // Ubicación geográfica (para filtros por país/ciudad)
+  paisId: varchar("pais_id").references(() => paises.id),
+  ciudadId: varchar("ciudad_id").references(() => ciudades.id),
   // Redes Sociales (Figma Frame 35)
   facebook: varchar("facebook"),
   instagram: varchar("instagram"),
@@ -1759,6 +1762,9 @@ export const itemsCatalogo = pgTable("items_catalogo", {
   codigo: varchar("codigo", { length: 10 }), // "1.01", "1.02", "2.01" - subcódigo del producto
   nombre: varchar("nombre", { length: 200 }).notNull(),
   descripcion: text("descripcion"),
+  // Ubicación geográfica (heredada del catálogo al momento de crear)
+  paisId: varchar("pais_id").references(() => paises.id),
+  ciudadId: varchar("ciudad_id").references(() => ciudades.id),
   // Sistema de 4 precios (Figma Frame 35: Personal, Mediana, Familiar, Extra)
   // Solo se mostrarán los precios que tengan valor (flexible)
   precio1: decimal("precio_1", { precision: 10, scale: 2 }), // Personal
