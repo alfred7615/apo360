@@ -71,6 +71,16 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 
 ## Recent Changes (January 2026)
 
+### Home Page Geo-Filtering System
+- **GeoFilterContext**: Global state management for filters (país, ciudad, búsqueda, ordenamiento)
+- **GeoFilterBar Component**: Responsive filter bar with country/city selectors, debounced search input (300ms), and sorting dropdown
+- **Filter Options**: Sort by reciente (newest), antiguo (oldest), masLikes, masCompartidos, masFavoritos, masVistas
+- **Auto-initialization**: Filters automatically set from user's paisIdActual and ciudadIdActual on mount
+- **Active Filter Badges**: Visual indicators of applied filters with clear-all functionality
+- **Backend Integration**: API endpoints accept paisId, ciudadId, busqueda, orden query parameters
+- **Affected Endpoints**: `/api/items-destacados`, `/api/items-recientes`, `/api/catalogos-con-items`
+- **Key Files**: `client/src/contexts/GeoFilterContext.tsx`, `client/src/components/GeoFilterBar.tsx`
+
 ### Multi-City Geographic System
 - **Countries and Cities Tables**: Added `paises` and `ciudades` tables for geographic multi-tenancy
 - **Initial Data**: Perú (Tacna, Moquegua, Puno, Arequipa) and Chile (Arica, Antofagasta)
