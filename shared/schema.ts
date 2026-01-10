@@ -4,6 +4,44 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // ============================================================
+// PAÍSES Y CIUDADES (Multi-tenancy geográfico)
+// ============================================================
+export const paises = pgTable("paises", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  codigoIso: varchar("codigo_iso", { length: 3 }),
+  bandera: varchar("bandera", { length: 10 }), // Emoji o URL
+  activo: boolean("activo").default(true),
+  orden: integer("orden").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPaisSchema = createInsertSchema(paises).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPais = z.infer<typeof insertPaisSchema>;
+export type Pais = typeof paises.$inferSelect;
+
+export const ciudades = pgTable("ciudades", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  paisId: varchar("pais_id").references(() => paises.id).notNull(),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 100 }), // URL amigable: "tacna", "moquegua"
+  departamento: varchar("departamento", { length: 100 }), // Para Perú: departamento
+  region: varchar("region", { length: 100 }), // Para Chile: región
+  latitud: real("latitud"),
+  longitud: real("longitud"),
+  zonaHoraria: varchar("zona_horaria", { length: 50 }),
+  activo: boolean("activo").default(true),
+  orden: integer("orden").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCiudadSchema = createInsertSchema(ciudades).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCiudad = z.infer<typeof insertCiudadSchema>;
+export type Ciudad = typeof ciudades.$inferSelect;
+
+// ============================================================
 // USUARIOS Y ROLES
 // ============================================================
 export const rolesEnum = pgEnum("rol", [
@@ -119,6 +157,10 @@ export const usuarios = pgTable("users", {
   localFoto4: varchar("local_foto_4"),
   localVideo1: varchar("local_video_1"),
   localVideo2: varchar("local_video_2"),
+  
+  // Ubicación activa seleccionada por el usuario (para ver contenido de esa ciudad)
+  paisIdActual: varchar("pais_id_actual"),
+  ciudadIdActual: varchar("ciudad_id_actual"),
 });
 
 export const insertUsuarioSchema = createInsertSchema(usuarios).omit({ id: true, createdAt: true, updatedAt: true });
@@ -168,6 +210,7 @@ export type LugarUsuario = typeof lugaresUsuario.$inferSelect;
 // Categorías de roles (ej: "Comisaría Alto Alianza", "Radio Taxi Sur", "Bomberos Norte")
 export const categoriasRoles = pgTable("categorias_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id"), // Separación por ciudad
   rol: varchar("rol", { length: 50 }).notNull(), // 'policia', 'bombero', 'taxi', etc.
   nombre: varchar("nombre", { length: 200 }).notNull(), // "Comisaría Alto Alianza"
   descripcion: text("descripcion"),
@@ -222,6 +265,7 @@ export type UsuarioRol = typeof usuarioRoles.$inferSelect;
 // Solicitudes de roles (para aprobación del super admin)
 export const solicitudesRoles = pgTable("solicitudes_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id"), // Separación por ciudad
   usuarioId: varchar("usuario_id").references(() => usuarios.id).notNull(),
   rol: varchar("rol", { length: 50 }).notNull(),
   categoriaRolId: varchar("categoria_rol_id").references(() => categoriasRoles.id),
@@ -361,6 +405,7 @@ export const administradores = pgTable("administradores", {
 // ============================================================
 export const publicidad = pgTable("publicidad", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id"), // null = todas las ciudades
   titulo: varchar("titulo"),
   descripcion: text("descripcion"),
   tipo: varchar("tipo"), // "carrusel_logos", "carrusel_principal", "logos_servicios", "popup_emergencia", "encuestas_apoyo"
@@ -529,6 +574,7 @@ export type ArchivoMp3 = typeof archivosMp3.$inferSelect;
 // ============================================================
 export const servicios = pgTable("servicios", {
   id: varchar("id").primaryKey(),
+  ciudadId: varchar("ciudad_id"), // Separación por ciudad
   usuarioId: varchar("usuario_id"),
   categoria: varchar("categoria"),
   nombreServicio: varchar("nombre_servicio"),
@@ -754,6 +800,7 @@ export type NotificacionChat = typeof notificacionesChat.$inferSelect;
 // ============================================================
 export const viajeTaxi = pgTable("viajes_taxi", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id"), // Separación por ciudad
   pasajeroId: varchar("pasajero_id").notNull().references(() => usuarios.id),
   conductorId: varchar("conductor_id").references(() => usuarios.id),
   origenLatitud: real("origen_latitud").notNull(),
@@ -816,6 +863,7 @@ export const configuracionSaldos = pgTable("configuracion_saldos", {
 // ============================================================
 export const encuestas = pgTable("encuestas", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id"), // null = todas las ciudades
   titulo: varchar("titulo").notNull(),
   descripcion: text("descripcion"),
   preguntas: json("preguntas").$type<{ pregunta: string; opciones: string[] }[]>(),
@@ -835,6 +883,7 @@ export const encuestas = pgTable("encuestas", {
 // ============================================================
 export const popupsPublicitarios = pgTable("popups_publicitarios", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id"), // null = todas las ciudades
   titulo: varchar("titulo"),
   descripcion: text("descripcion"),
   imagenUrl: varchar("imagen_url"),
@@ -1072,6 +1121,7 @@ export type CredencialesConductor = typeof credencialesConductor.$inferSelect;
 // ============================================================
 export const eventos = pgTable("eventos", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id"), // Separación por ciudad
   titulo: varchar("titulo", { length: 255 }).notNull(),
   descripcion: text("descripcion"),
   fechaInicio: timestamp("fecha_inicio").notNull(),
@@ -1093,6 +1143,7 @@ export type Evento = typeof eventos.$inferSelect;
 // ============================================================
 export const avisosEmergencia = pgTable("avisos_emergencia", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id"), // Separación por ciudad
   titulo: varchar("titulo", { length: 255 }).notNull(),
   mensaje: text("mensaje").notNull(),
   tipo: varchar("tipo", { length: 50 }).notNull(), // "corte_agua", "corte_luz", "alerta_sanitaria", etc.
@@ -1384,6 +1435,7 @@ export type Moneda = typeof monedas.$inferSelect;
 // ============================================================
 export const tasasCambioLocales = pgTable("tasas_cambio_locales", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id"), // Separación por ciudad
   cambistaId: varchar("cambista_id").notNull().references(() => usuarios.id),
   monedaOrigenCodigo: varchar("moneda_origen_codigo", { length: 10 }).notNull(), // PEN, USD, CLP, ARS, BOB
   monedaDestinoCodigo: varchar("moneda_destino_codigo", { length: 10 }).notNull(),
@@ -2000,6 +2052,7 @@ export type HistorialEstadoPedido = typeof historialEstadosPedido.$inferSelect;
 // ============================================================
 export const solicitudesDelivery = pgTable("solicitudes_delivery", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id"), // Separación por ciudad
   pedidoId: varchar("pedido_id").notNull().references(() => pedidos.id),
   localComercialId: varchar("local_comercial_id").references(() => usuarios.id),
   // Ubicaciones

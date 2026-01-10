@@ -60,6 +60,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/assets', express.static(path.join(publicPath, 'assets')));
 
   // ============================================================
+  // PAÍSES Y CIUDADES (Multi-tenancy geográfico)
+  // ============================================================
+  
+  // Obtener todos los países (público)
+  app.get('/api/paises', async (req, res) => {
+    try {
+      const listaPaises = await storage.getPaises();
+      res.json(listaPaises);
+    } catch (error: any) {
+      console.error("Error al obtener países:", error);
+      res.status(500).json({ message: error.message || "Error al obtener países" });
+    }
+  });
+
+  // Obtener ciudades por país (público)
+  app.get('/api/ciudades', async (req, res) => {
+    try {
+      const { paisId } = req.query;
+      const listaCiudades = await storage.getCiudades(paisId as string | undefined);
+      res.json(listaCiudades);
+    } catch (error: any) {
+      console.error("Error al obtener ciudades:", error);
+      res.status(500).json({ message: error.message || "Error al obtener ciudades" });
+    }
+  });
+
+  // CRUD de países (solo super_admin)
+  app.post('/api/admin/paises', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const nuevoPais = await storage.createPais(req.body);
+      res.json(nuevoPais);
+    } catch (error: any) {
+      console.error("Error al crear país:", error);
+      res.status(500).json({ message: error.message || "Error al crear país" });
+    }
+  });
+
+  app.put('/api/admin/paises/:id', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const paisActualizado = await storage.updatePais(id, req.body);
+      if (!paisActualizado) {
+        return res.status(404).json({ message: "País no encontrado" });
+      }
+      res.json(paisActualizado);
+    } catch (error: any) {
+      console.error("Error al actualizar país:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar país" });
+    }
+  });
+
+  app.delete('/api/admin/paises/:id', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePais(id);
+      res.json({ message: "País eliminado correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar país:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar país" });
+    }
+  });
+
+  // CRUD de ciudades (solo super_admin)
+  app.post('/api/admin/ciudades', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const nuevaCiudad = await storage.createCiudad(req.body);
+      res.json(nuevaCiudad);
+    } catch (error: any) {
+      console.error("Error al crear ciudad:", error);
+      res.status(500).json({ message: error.message || "Error al crear ciudad" });
+    }
+  });
+
+  app.put('/api/admin/ciudades/:id', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const ciudadActualizada = await storage.updateCiudad(id, req.body);
+      if (!ciudadActualizada) {
+        return res.status(404).json({ message: "Ciudad no encontrada" });
+      }
+      res.json(ciudadActualizada);
+    } catch (error: any) {
+      console.error("Error al actualizar ciudad:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar ciudad" });
+    }
+  });
+
+  app.delete('/api/admin/ciudades/:id', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteCiudad(id);
+      res.json({ message: "Ciudad eliminada correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar ciudad:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar ciudad" });
+    }
+  });
+
+  // Endpoint para actualizar ubicación activa del usuario
+  app.put('/api/usuarios/ubicacion-activa', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { paisIdActual, ciudadIdActual } = req.body;
+      
+      const usuarioActualizado = await storage.updateUser(userId, {
+        paisIdActual,
+        ciudadIdActual
+      });
+      
+      res.json(usuarioActualizado);
+    } catch (error: any) {
+      console.error("Error al actualizar ubicación activa:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar ubicación activa" });
+    }
+  });
+
+  // ============================================================
   // RUTAS DE PERFIL DE USUARIO (debe ir ANTES de rutas admin)
   // Las rutas /api/usuarios/me deben registrarse antes de /api/usuarios/:id
   // ============================================================

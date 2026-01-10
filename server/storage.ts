@@ -1,4 +1,6 @@
 import {
+  paises,
+  ciudades,
   usuarios,
   publicidad,
   servicios,
@@ -54,6 +56,10 @@ import {
   itemsCatalogo,
   favoritosProductos,
   interaccionesProductos,
+  type Pais,
+  type InsertPais,
+  type Ciudad,
+  type InsertCiudad,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -221,6 +227,18 @@ import { eq, and, desc, sql, gte, inArray } from "drizzle-orm";
 
 // Interfaz del storage
 export interface IStorage {
+  // Operaciones de países y ciudades
+  getPaises(): Promise<Pais[]>;
+  getPais(id: string): Promise<Pais | undefined>;
+  createPais(pais: InsertPais): Promise<Pais>;
+  updatePais(id: string, data: Partial<InsertPais>): Promise<Pais | undefined>;
+  deletePais(id: string): Promise<void>;
+  getCiudades(paisId?: string): Promise<Ciudad[]>;
+  getCiudad(id: string): Promise<Ciudad | undefined>;
+  createCiudad(ciudad: InsertCiudad): Promise<Ciudad>;
+  updateCiudad(id: string, data: Partial<InsertCiudad>): Promise<Ciudad | undefined>;
+  deleteCiudad(id: string): Promise<void>;
+  
   // Operaciones de usuarios (obligatorias para Replit Auth)
   getUser(id: string): Promise<Usuario | undefined>;
   getUserByEmail(email: string): Promise<Usuario | undefined>;
@@ -519,6 +537,59 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // ============================================================
+  // PAÍSES Y CIUDADES
+  // ============================================================
+  
+  async getPaises(): Promise<Pais[]> {
+    return await db.select().from(paises).orderBy(paises.orden);
+  }
+
+  async getPais(id: string): Promise<Pais | undefined> {
+    const [pais] = await db.select().from(paises).where(eq(paises.id, id));
+    return pais || undefined;
+  }
+
+  async createPais(pais: InsertPais): Promise<Pais> {
+    const [nuevoPais] = await db.insert(paises).values(pais).returning();
+    return nuevoPais;
+  }
+
+  async updatePais(id: string, data: Partial<InsertPais>): Promise<Pais | undefined> {
+    const [updated] = await db.update(paises).set({ ...data, updatedAt: new Date() }).where(eq(paises.id, id)).returning();
+    return updated;
+  }
+
+  async deletePais(id: string): Promise<void> {
+    await db.delete(paises).where(eq(paises.id, id));
+  }
+
+  async getCiudades(paisId?: string): Promise<Ciudad[]> {
+    if (paisId) {
+      return await db.select().from(ciudades).where(eq(ciudades.paisId, paisId)).orderBy(ciudades.orden);
+    }
+    return await db.select().from(ciudades).orderBy(ciudades.orden);
+  }
+
+  async getCiudad(id: string): Promise<Ciudad | undefined> {
+    const [ciudad] = await db.select().from(ciudades).where(eq(ciudades.id, id));
+    return ciudad || undefined;
+  }
+
+  async createCiudad(ciudad: InsertCiudad): Promise<Ciudad> {
+    const [nuevaCiudad] = await db.insert(ciudades).values(ciudad).returning();
+    return nuevaCiudad;
+  }
+
+  async updateCiudad(id: string, data: Partial<InsertCiudad>): Promise<Ciudad | undefined> {
+    const [updated] = await db.update(ciudades).set({ ...data, updatedAt: new Date() }).where(eq(ciudades.id, id)).returning();
+    return updated;
+  }
+
+  async deleteCiudad(id: string): Promise<void> {
+    await db.delete(ciudades).where(eq(ciudades.id, id));
+  }
+
   // ============================================================
   // USUARIOS
   // ============================================================

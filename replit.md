@@ -69,6 +69,35 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 -   **Fonts**: Google Fonts (Inter)
 -   **Google People API**: For Google Contacts import.
 
+## Recent Changes (January 2026)
+
+### Multi-City Geographic System
+- **Countries and Cities Tables**: Added `paises` and `ciudades` tables for geographic multi-tenancy
+- **Initial Data**: Perú (Tacna, Moquegua, Puno, Arequipa) and Chile (Arica, Antofagasta)
+- **User Location Selection**: Users can select active country/city via `paisIdActual` and `ciudadIdActual` fields
+- **City-Separated Content**: The following content types are now separated by city:
+  - Publicidad (sliders, carruseles, banners)
+  - Servicios locales
+  - Eventos calendarizados
+  - Encuestas y popups promocionales
+  - Avisos de emergencia
+  - Tasas de cambio locales (cambistas)
+  - Viajes de taxi
+  - Solicitudes de delivery
+  - Roles y categorías de roles
+- **Global Content**: Radio online, MP3 playlists, chat system, and core wallet configuration remain global
+- **API Endpoints**:
+  - `GET /api/paises` - List all countries (public)
+  - `GET /api/ciudades?paisId=` - List cities by country (public)
+  - `PUT /api/usuarios/ubicacion-activa` - Update user's active location
+  - CRUD for countries/cities (super_admin only): `/api/admin/paises`, `/api/admin/ciudades`
+
+### Password Management System
+- **User Password Change**: `POST /api/auth/cambiar-contrasena` with current password verification
+- **Admin Password Reset**: `POST /api/admin/usuarios/:id/resetear-contrasena` (super_admin only)
+- **Security Tab**: Added to user profile (perfil.tsx) for password management
+- **Schema Update**: Added `requiereCambioContrasena` boolean field to users table
+
 ## Recent Changes (December 2025)
 
 ### Bug Fixes
