@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MapPin, ChevronDown, Globe } from "lucide-react";
+import { MapPin, ChevronDown, Globe, Navigation } from "lucide-react";
 
 const CODIGOS_PAISES: Record<string, string> = {
   "peru": "PE",
@@ -122,19 +122,21 @@ export default function SelectorUbicacionHeader({
     );
   }
 
+  const ciudadMostrar = ciudadSeleccionada?.nombre || "Tacna";
+
   return (
     <Popover open={popoverAbierto} onOpenChange={setPopoverAbierto}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
           size="sm"
-          className={`text-white hover:bg-white/20 gap-1 px-2 h-8 ${className}`}
+          className={`text-white hover:bg-white/20 gap-1.5 px-2 h-8 ${className}`}
           disabled={cargandoPaises}
           data-testid="button-ubicacion-header"
         >
-          <Globe className="h-4 w-4" />
-          <span className="text-xs hidden lg:inline max-w-[80px] truncate">
-            {ciudadSeleccionada?.nombre || paisSeleccionado?.nombre || "Global"}
+          <Navigation className="h-4 w-4 text-green-400" />
+          <span className="text-xs font-medium">
+            {ciudadMostrar}
           </span>
           <ChevronDown className="h-3 w-3 opacity-70" />
         </Button>
