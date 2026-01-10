@@ -300,33 +300,33 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
       }
     };
 
-    // Sistema de crossfade continuo - siempre hay imagen visible
-    const indiceAnterior = (indiceActual - 1 + totalImagenes) % totalImagenes;
-    const publicidadAnterior = publicidadesActivas[indiceAnterior];
+    // Obtener la URL de la imagen actual para el wrapper
+    const imagenActualUrl = publicidadActual?.imagenUrl || "";
 
     return (
       <>
         <div
-          className="relative w-screen overflow-hidden"
+          className="relative w-screen bg-gray-200 dark:bg-gray-700"
           style={{ 
             height: "350px",
             marginLeft: "calc(-50vw + 50%)",
-            marginRight: "calc(-50vw + 50%)",
-            backgroundColor: "#1a1a1a"
+            marginRight: "calc(-50vw + 50%)"
           }}
           data-testid="carousel-principal"
         >
-          {/* Contenedor de imágenes con crossfade */}
+          {/* Contenedor centrado con imagen y controles */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative h-full w-full flex items-center justify-center">
-              {/* Renderizar todas las imágenes en capas con transición de opacidad */}
+            {/* Wrapper de la imagen con botones posicionados relativos a la imagen */}
+            <div className="relative h-full max-w-full flex items-center justify-center">
+              {/* Sistema de crossfade: todas las imágenes superpuestas con transición de opacidad */}
               {publicidadesActivas.map((pub, idx) => (
                 <img
                   key={`carousel-img-${pub.id}`}
                   src={pub.imagenUrl || ""}
                   alt={pub.titulo || "Publicidad"}
-                  className="absolute h-full w-auto max-w-full object-contain cursor-pointer"
+                  className="h-full w-auto max-w-full object-contain cursor-pointer"
                   style={{
+                    position: idx === 0 ? 'relative' : 'absolute',
                     opacity: idx === indiceActual ? 1 : 0,
                     transition: "opacity 0.8s ease-in-out",
                     zIndex: idx === indiceActual ? 10 : 1
