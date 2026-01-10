@@ -4161,6 +4161,14 @@ export class DatabaseStorage implements IStorage {
       eq(itemsCatalogo.disponible, true)
     ];
 
+    // Filtros geográficos
+    if (filtros?.paisId) {
+      condiciones.push(eq(itemsCatalogo.paisId, filtros.paisId));
+    }
+    if (filtros?.ciudadId) {
+      condiciones.push(eq(itemsCatalogo.ciudadId, filtros.ciudadId));
+    }
+
     if (filtros?.busqueda) {
       condiciones.push(
         or(
@@ -4311,6 +4319,14 @@ export class DatabaseStorage implements IStorage {
       eq(itemsCatalogo.disponible, true)
     ];
 
+    // Filtros geográficos
+    if (filtros?.paisId) {
+      condiciones.push(eq(itemsCatalogo.paisId, filtros.paisId));
+    }
+    if (filtros?.ciudadId) {
+      condiciones.push(eq(itemsCatalogo.ciudadId, filtros.ciudadId));
+    }
+
     if (filtros?.busqueda) {
       condiciones.push(
         or(
@@ -4352,6 +4368,14 @@ export class DatabaseStorage implements IStorage {
     filtros?: { paisId?: string; ciudadId?: string; busqueda?: string; orden?: string }
   ): Promise<Array<CatalogoLocal & { items: ItemCatalogo[]; totalItems: number }>> {
     const condicionesCatalogo: any[] = [eq(catalogosLocales.activo, true)];
+
+    // Filtros geográficos
+    if (filtros?.paisId) {
+      condicionesCatalogo.push(eq(catalogosLocales.paisId, filtros.paisId));
+    }
+    if (filtros?.ciudadId) {
+      condicionesCatalogo.push(eq(catalogosLocales.ciudadId, filtros.ciudadId));
+    }
 
     if (filtros?.busqueda) {
       condicionesCatalogo.push(

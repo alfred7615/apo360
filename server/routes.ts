@@ -7835,9 +7835,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Ya tienes un catálogo creado. Usa PUT para actualizarlo." });
       }
       
+      // Obtener ubicación del usuario para asignar automáticamente
+      const usuario = await storage.getUser(usuarioId);
+      const paisId = req.body.paisId || usuario?.paisIdActual || null;
+      const ciudadId = req.body.ciudadId || usuario?.ciudadIdActual || null;
+      
       const catalogo = await storage.createCatalogoLocal({
         ...req.body,
         usuarioId,
+        paisId,
+        ciudadId,
       });
       
       res.status(201).json(catalogo);
@@ -8040,10 +8047,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Heredar ubicación del catálogo padre o del usuario
+      const paisId = req.body.paisId || catalogo.paisId || null;
+      const ciudadId = req.body.ciudadId || catalogo.ciudadId || null;
+      
       // Limpiar precios vacíos
       const datosLimpios = {
         ...req.body,
         catalogoId: catalogo.id,
+        paisId,
+        ciudadId,
         precio: limpiarPrecio(req.body.precio),
         precio1: limpiarPrecio(req.body.precio1),
         precio2: limpiarPrecio(req.body.precio2),
