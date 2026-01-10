@@ -23,6 +23,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Heart, Bookmark, Share2, Eye, Star, Store, ChevronRight, Clock, Package, ShoppingCart, Zap } from "lucide-react";
+import GeoFilterBar from "@/components/GeoFilterBar";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { ItemCatalogo, CatalogoLocal } from "@shared/schema";
 
@@ -521,7 +522,7 @@ export default function SeccionLocalesComerciales() {
   return (
     <section className="py-8" data-testid="seccion-locales-comerciales">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Store className="h-6 w-6 text-primary" />
             <h2 className="text-2xl font-bold">Tiendas Locales</h2>
@@ -529,6 +530,15 @@ export default function SeccionLocalesComerciales() {
           <p className="text-muted-foreground">
             Descubre productos y servicios de negocios de tu comunidad
           </p>
+        </div>
+
+        {/* Barra de Filtros */}
+        <div className="mb-6">
+          <GeoFilterBar 
+            mostrarBusqueda={true}
+            mostrarOrdenamiento={true}
+            placeholderBusqueda="Buscar productos o tiendas..."
+          />
         </div>
 
         {itemsDestacados.length > 0 && (

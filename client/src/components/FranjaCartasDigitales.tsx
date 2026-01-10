@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Store, ChevronLeft, ChevronRight } from "lucide-react";
+import { useGeoFilter } from "@/contexts/GeoFilterContext";
+import GeoFilterBar from "@/components/GeoFilterBar";
 import "@/styles/carrusel-infinito.css";
 
 interface CatalogoConItems {
@@ -17,6 +19,7 @@ interface CatalogoConItems {
 
 export default function FranjaCartasDigitales() {
   const [, setLocation] = useLocation();
+  const { filtros } = useGeoFilter();
   const [pausaAutoScroll, setPausaAutoScroll] = useState(false);
   const [arrastreInicio, setArrastreInicio] = useState<number | null>(null);
   const [posicionScroll, setPosicionScroll] = useState(0);
@@ -25,7 +28,17 @@ export default function FranjaCartasDigitales() {
   const trackRef = useRef<HTMLDivElement>(null);
 
   const { data: catalogos = [] } = useQuery<CatalogoConItems[]>({
-    queryKey: ["/api/catalogos-con-items"],
+    queryKey: ["/api/catalogos-con-items", filtros],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filtros.paisId) params.set("paisId", filtros.paisId);
+      if (filtros.ciudadId) params.set("ciudadId", filtros.ciudadId);
+      if (filtros.busqueda) params.set("busqueda", filtros.busqueda);
+      if (filtros.ordenamiento) params.set("orden", filtros.ordenamiento);
+      const res = await fetch(`/api/catalogos-con-items?${params.toString()}`);
+      if (!res.ok) throw new Error("Error fetching catalogos");
+      return res.json();
+    },
   });
 
   // Filtrar solo catálogos que tienen items (carta digital activa)
@@ -189,9 +202,18 @@ export default function FranjaCartasDigitales() {
         <h2 className="text-xl font-bold text-center" style={{ color: "#9b2d5a" }}>
           Cartas Digitales
         </h2>
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm text-muted-foreground mb-4">
           Explora los menús de negocios locales
         </p>
+        
+        {/* Barra de Filtros */}
+        <div className="mb-4">
+          <GeoFilterBar 
+            mostrarBusqueda={true}
+            mostrarOrdenamiento={true}
+            placeholderBusqueda="Buscar catálogos o menús..."
+          />
+        </div>
       </div>
       
       <div
