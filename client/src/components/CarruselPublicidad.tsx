@@ -300,34 +300,41 @@ export default function CarruselPublicidad({ tipo }: CarruselPublicidadProps) {
       }
     };
 
-    // Obtener la URL de la imagen actual
-    const imagenActualUrl = publicidadActual?.imagenUrl || "";
-    const imagenActualId = publicidadActual?.id || indiceActual;
+    // Sistema de crossfade continuo - siempre hay imagen visible
+    const indiceAnterior = (indiceActual - 1 + totalImagenes) % totalImagenes;
+    const publicidadAnterior = publicidadesActivas[indiceAnterior];
 
     return (
       <>
         <div
-          className="relative w-screen bg-gray-200 dark:bg-gray-700"
+          className="relative w-screen overflow-hidden"
           style={{ 
             height: "350px",
             marginLeft: "calc(-50vw + 50%)",
-            marginRight: "calc(-50vw + 50%)"
+            marginRight: "calc(-50vw + 50%)",
+            backgroundColor: "#1a1a1a"
           }}
           data-testid="carousel-principal"
         >
-          {/* Contenedor centrado con imagen y controles */}
+          {/* Contenedor de imágenes con crossfade */}
           <div className="absolute inset-0 flex items-center justify-center">
-            {/* Wrapper de la imagen con botones posicionados relativos a la imagen */}
-            <div className="relative h-full max-w-full flex items-center justify-center">
-              {/* Imagen - key fuerza re-render al cambiar */}
-              <img
-                key={`img-${imagenActualId}-${indiceActual}`}
-                src={imagenActualUrl}
-                alt={publicidadActual?.titulo || "Publicidad"}
-                className="h-full w-auto max-w-full object-contain cursor-pointer transition-opacity duration-300"
-                onClick={() => abrirVisualizador(publicidadActual)}
-                data-testid="img-carousel-principal"
-              />
+            <div className="relative h-full w-full flex items-center justify-center">
+              {/* Renderizar todas las imágenes en capas con transición de opacidad */}
+              {publicidadesActivas.map((pub, idx) => (
+                <img
+                  key={`carousel-img-${pub.id}`}
+                  src={pub.imagenUrl || ""}
+                  alt={pub.titulo || "Publicidad"}
+                  className="absolute h-full w-auto max-w-full object-contain cursor-pointer"
+                  style={{
+                    opacity: idx === indiceActual ? 1 : 0,
+                    transition: "opacity 0.8s ease-in-out",
+                    zIndex: idx === indiceActual ? 10 : 1
+                  }}
+                  onClick={() => abrirVisualizador(pub)}
+                  data-testid={idx === indiceActual ? "img-carousel-principal" : undefined}
+                />
+              ))}
               
               {/* Botón navegación izquierda - DENTRO de la imagen */}
               {totalImagenes > 1 && (
