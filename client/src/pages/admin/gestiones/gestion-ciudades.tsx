@@ -26,7 +26,9 @@ import {
   Play,
   Pause,
   Ban,
+  Crop,
 } from "lucide-react";
+import { MediaCropEditor, CropConfig as CropConfigType } from "@/components/MediaCropEditor";
 import {
   Dialog,
   DialogContent,
@@ -557,6 +559,12 @@ function CiudadesSection() {
   );
 }
 
+interface CropConfig {
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 interface MediaCiudad {
   id: string;
   ciudadId: string;
@@ -569,6 +577,9 @@ interface MediaCiudad {
   estado: "activo" | "pausado" | "suspendido";
   orden: number | null;
   creadoEn: string | null;
+  cropConfigDesktop: CropConfig | null;
+  cropConfigTablet: CropConfig | null;
+  cropConfigMobile: CropConfig | null;
 }
 
 function MediaCiudadesSection() {
@@ -577,6 +588,8 @@ function MediaCiudadesSection() {
   const [showFormMedia, setShowFormMedia] = useState(false);
   const [mediaEditando, setMediaEditando] = useState<MediaCiudad | null>(null);
   const [subiendo, setSubiendo] = useState(false);
+  const [showCropEditor, setShowCropEditor] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState("");
   const [formMedia, setFormMedia] = useState({
     tipo: "imagen" as "imagen" | "video",
     url: "",
@@ -586,6 +599,9 @@ function MediaCiudadesSection() {
     fechaFin: "",
     estado: "activo" as "activo" | "pausado" | "suspendido",
     orden: 0,
+    cropConfigDesktop: null as CropConfig | null,
+    cropConfigTablet: null as CropConfig | null,
+    cropConfigMobile: null as CropConfig | null,
   });
 
   const { data: paises = [] } = useQuery<Pais[]>({
@@ -648,6 +664,8 @@ function MediaCiudadesSection() {
   const resetForm = () => {
     setShowFormMedia(false);
     setMediaEditando(null);
+    setShowCropEditor(false);
+    setTempImageUrl("");
     setFormMedia({
       tipo: "imagen",
       url: "",
@@ -657,6 +675,9 @@ function MediaCiudadesSection() {
       fechaFin: "",
       estado: "activo",
       orden: 0,
+      cropConfigDesktop: null,
+      cropConfigTablet: null,
+      cropConfigMobile: null,
     });
   };
 
@@ -671,6 +692,9 @@ function MediaCiudadesSection() {
       fechaFin: media.fechaFin ? media.fechaFin.split("T")[0] : "",
       estado: media.estado,
       orden: media.orden ?? 0,
+      cropConfigDesktop: media.cropConfigDesktop,
+      cropConfigTablet: media.cropConfigTablet,
+      cropConfigMobile: media.cropConfigMobile,
     });
     setShowFormMedia(true);
   };
@@ -708,16 +732,54 @@ function MediaCiudadesSection() {
       }
 
       const result = await response.json();
-      setFormMedia({
-        ...formMedia,
-        url: result.url,
-        tipo: result.tipo as "imagen" | "video",
-      });
+      const tipoArchivo = result.tipo as "imagen" | "video";
+      
+      if (tipoArchivo === "imagen") {
+        setTempImageUrl(result.url);
+        setFormMedia({
+          ...formMedia,
+          tipo: tipoArchivo,
+        });
+        setShowCropEditor(true);
+      } else {
+        setFormMedia({
+          ...formMedia,
+          url: result.url,
+          tipo: tipoArchivo,
+          cropConfigDesktop: null,
+          cropConfigTablet: null,
+          cropConfigMobile: null,
+        });
+      }
       toast({ title: "Archivo subido correctamente" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setSubiendo(false);
+    }
+  };
+
+  const handleCropSave = (configs: { desktop: CropConfig; tablet: CropConfig; mobile: CropConfig }) => {
+    setFormMedia({
+      ...formMedia,
+      url: tempImageUrl,
+      cropConfigDesktop: configs.desktop,
+      cropConfigTablet: configs.tablet,
+      cropConfigMobile: configs.mobile,
+    });
+    setShowCropEditor(false);
+    setTempImageUrl("");
+  };
+
+  const handleCropCancel = () => {
+    setShowCropEditor(false);
+    setTempImageUrl("");
+  };
+
+  const handleOpenCropEditor = () => {
+    if (formMedia.url && formMedia.tipo === "imagen") {
+      setTempImageUrl(formMedia.url);
+      setShowCropEditor(true);
     }
   };
 
@@ -834,7 +896,7 @@ function MediaCiudadesSection() {
       )}
 
       <Dialog open={showFormMedia} onOpenChange={setShowFormMedia}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{mediaEditando ? "Editar Media" : "Nuevo Media"}</DialogTitle>
           </DialogHeader>
@@ -846,18 +908,53 @@ function MediaCiudadesSection() {
                   type="file"
                   accept="image/*,video/*"
                   onChange={handleFileUpload}
-                  disabled={subiendo}
+                  disabled={subiendo || showCropEditor}
                   data-testid="input-media-archivo"
                 />
                 {subiendo && <Loader2 className="h-4 w-4 animate-spin" />}
               </div>
-              {formMedia.url && (
-                <div className="mt-2 relative aspect-video bg-muted rounded-lg overflow-hidden">
-                  {formMedia.tipo === "imagen" ? (
-                    <img src={formMedia.url} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <video src={formMedia.url} className="w-full h-full object-cover" controls />
+              {formMedia.url && !showCropEditor && (
+                <div className="mt-2 space-y-2">
+                  <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                    {formMedia.tipo === "imagen" ? (
+                      <img src={formMedia.url} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <video src={formMedia.url} className="w-full h-full object-cover" controls />
+                    )}
+                  </div>
+                  {formMedia.tipo === "imagen" && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleOpenCropEditor}
+                      className="w-full"
+                      data-testid="btn-editar-recorte"
+                    >
+                      <Crop className="h-4 w-4 mr-1" />
+                      Editar Recorte
+                    </Button>
                   )}
+                  {formMedia.cropConfigDesktop && (
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                      <Crop className="h-3 w-3" /> Recorte configurado
+                    </p>
+                  )}
+                </div>
+              )}
+              {showCropEditor && tempImageUrl && (
+                <div className="mt-2">
+                  <MediaCropEditor
+                    imageUrl={tempImageUrl}
+                    tipoMedia={formMedia.tipo}
+                    initialConfigs={{
+                      desktop: formMedia.cropConfigDesktop || undefined,
+                      tablet: formMedia.cropConfigTablet || undefined,
+                      mobile: formMedia.cropConfigMobile || undefined,
+                    }}
+                    onSave={handleCropSave}
+                    onCancel={handleCropCancel}
+                  />
                 </div>
               )}
             </div>
@@ -1542,6 +1639,8 @@ function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: str
   const [showFormMedia, setShowFormMedia] = useState(false);
   const [mediaEditando, setMediaEditando] = useState<MediaCiudad | null>(null);
   const [subiendo, setSubiendo] = useState(false);
+  const [showCropEditor, setShowCropEditor] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState("");
   const [formMedia, setFormMedia] = useState({
     tipo: "imagen" as "imagen" | "video",
     url: "",
@@ -1550,6 +1649,9 @@ function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: str
     fechaFin: "",
     estado: "activo" as "activo" | "pausado" | "suspendido",
     orden: 0,
+    cropConfigDesktop: null as CropConfig | null,
+    cropConfigTablet: null as CropConfig | null,
+    cropConfigMobile: null as CropConfig | null,
   });
 
   const { data: mediaList = [], isLoading } = useQuery<MediaCiudad[]>({
@@ -1601,6 +1703,8 @@ function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: str
   const resetForm = () => {
     setShowFormMedia(false);
     setMediaEditando(null);
+    setShowCropEditor(false);
+    setTempImageUrl("");
     setFormMedia({
       tipo: "imagen",
       url: "",
@@ -1609,6 +1713,9 @@ function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: str
       fechaFin: "",
       estado: "activo",
       orden: 0,
+      cropConfigDesktop: null,
+      cropConfigTablet: null,
+      cropConfigMobile: null,
     });
   };
 
@@ -1641,11 +1748,25 @@ function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: str
       if (!response.ok) throw new Error("Error al subir archivo");
 
       const data = await response.json();
-      setFormMedia({
-        ...formMedia,
-        url: data.url,
-        tipo: isVideo ? "video" : "imagen",
-      });
+      const tipoArchivo = isVideo ? "video" : "imagen";
+      
+      if (tipoArchivo === "imagen") {
+        setTempImageUrl(data.url);
+        setFormMedia({
+          ...formMedia,
+          tipo: tipoArchivo,
+        });
+        setShowCropEditor(true);
+      } else {
+        setFormMedia({
+          ...formMedia,
+          url: data.url,
+          tipo: tipoArchivo,
+          cropConfigDesktop: null,
+          cropConfigTablet: null,
+          cropConfigMobile: null,
+        });
+      }
       toast({ title: "Archivo subido correctamente" });
     } catch (error) {
       toast({ title: "Error al subir archivo", variant: "destructive" });
@@ -1664,6 +1785,9 @@ function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: str
       fechaFin: media.fechaFin ? new Date(media.fechaFin).toISOString().split("T")[0] : "",
       estado: media.estado,
       orden: media.orden ?? 0,
+      cropConfigDesktop: media.cropConfigDesktop,
+      cropConfigTablet: media.cropConfigTablet,
+      cropConfigMobile: media.cropConfigMobile,
     });
     setShowFormMedia(true);
   };
@@ -1677,6 +1801,30 @@ function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: str
       actualizarMediaMutation.mutate({ id: mediaEditando.id, updates: formMedia });
     } else {
       crearMediaMutation.mutate({ ...formMedia, ciudadId });
+    }
+  };
+
+  const handleCropSave = (configs: { desktop: CropConfig; tablet: CropConfig; mobile: CropConfig }) => {
+    setFormMedia({
+      ...formMedia,
+      url: tempImageUrl,
+      cropConfigDesktop: configs.desktop,
+      cropConfigTablet: configs.tablet,
+      cropConfigMobile: configs.mobile,
+    });
+    setShowCropEditor(false);
+    setTempImageUrl("");
+  };
+
+  const handleCropCancel = () => {
+    setShowCropEditor(false);
+    setTempImageUrl("");
+  };
+
+  const handleOpenCropEditor = () => {
+    if (formMedia.url && formMedia.tipo === "imagen") {
+      setTempImageUrl(formMedia.url);
+      setShowCropEditor(true);
     }
   };
 
@@ -1762,7 +1910,7 @@ function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: str
       )}
 
       <Dialog open={showFormMedia} onOpenChange={setShowFormMedia}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{mediaEditando ? "Editar Media" : "Nuevo Media"}</DialogTitle>
           </DialogHeader>
@@ -1774,18 +1922,53 @@ function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: str
                   type="file"
                   accept="image/*,video/*"
                   onChange={handleFileUpload}
-                  disabled={subiendo}
+                  disabled={subiendo || showCropEditor}
                   data-testid="input-media-archivo"
                 />
                 {subiendo && <Loader2 className="h-4 w-4 animate-spin" />}
               </div>
-              {formMedia.url && (
-                <div className="mt-2 relative aspect-video bg-muted rounded-lg overflow-hidden">
-                  {formMedia.tipo === "imagen" ? (
-                    <img src={formMedia.url} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <video src={formMedia.url} className="w-full h-full object-cover" controls />
+              {formMedia.url && !showCropEditor && (
+                <div className="mt-2 space-y-2">
+                  <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                    {formMedia.tipo === "imagen" ? (
+                      <img src={formMedia.url} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <video src={formMedia.url} className="w-full h-full object-cover" controls />
+                    )}
+                  </div>
+                  {formMedia.tipo === "imagen" && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleOpenCropEditor}
+                      className="w-full"
+                      data-testid="btn-editar-recorte"
+                    >
+                      <Crop className="h-4 w-4 mr-1" />
+                      Editar Recorte
+                    </Button>
                   )}
+                  {formMedia.cropConfigDesktop && (
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                      <Crop className="h-3 w-3" /> Recorte configurado
+                    </p>
+                  )}
+                </div>
+              )}
+              {showCropEditor && tempImageUrl && (
+                <div className="mt-2">
+                  <MediaCropEditor
+                    imageUrl={tempImageUrl}
+                    tipoMedia={formMedia.tipo}
+                    initialConfigs={{
+                      desktop: formMedia.cropConfigDesktop || undefined,
+                      tablet: formMedia.cropConfigTablet || undefined,
+                      mobile: formMedia.cropConfigMobile || undefined,
+                    }}
+                    onSave={handleCropSave}
+                    onCancel={handleCropCancel}
+                  />
                 </div>
               )}
             </div>
