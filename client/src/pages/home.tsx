@@ -24,6 +24,12 @@ import { CalculadoraCambio } from "@/components/CalculadoraCambio";
 import { useQuery } from "@tanstack/react-query";
 import type { Emergencia, ContactoFamiliar } from "@shared/schema";
 
+interface CropConfig {
+  zoom: number;
+  offsetX: number;  // Porcentaje del tamaño del media (valor de crop.x de react-easy-crop)
+  offsetY: number;  // Porcentaje del tamaño del media (valor de crop.y de react-easy-crop)
+}
+
 interface MediaCiudad {
   id: string;
   ciudadId: string;
@@ -31,12 +37,107 @@ interface MediaCiudad {
   url: string;
   titulo: string | null;
   orden: number | null;
+  cropConfigDesktop: CropConfig | null;
+  cropConfigTablet: CropConfig | null;
+  cropConfigMobile: CropConfig | null;
+}
+
+// Hook para detectar tamaño de pantalla
+function useScreenSize() {
+  const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+  
+  useEffect(() => {
+    const checkSize = () => {
+      if (window.innerWidth < 768) {
+        setScreenSize('mobile');
+      } else if (window.innerWidth < 1024) {
+        setScreenSize('tablet');
+      } else {
+        setScreenSize('desktop');
+      }
+    };
+    
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+  
+  return screenSize;
+}
+
+// Función para calcular estilos CSS de recorte
+// Replica react-easy-crop: la imagen se posiciona en el centro del contenedor,
+// luego se escala y desplaza según la configuración guardada
+// 
+// react-easy-crop internamente hace:
+//   1. Centra la imagen en el contenedor
+//   2. Aplica translate(crop.x, crop.y) para mover la imagen
+//   3. Aplica scale(zoom) para hacer zoom
+//
+// Los videos no tienen editor de recorte, así que usan estilos por defecto
+function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 'tablet' | 'desktop'): React.CSSProperties {
+  if (!media) return {};
+  
+  // Videos usan estilos por defecto (no tienen editor de recorte)
+  if (media.tipo === 'video') {
+    return {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover' as const,
+      objectPosition: screenSize === 'mobile' ? 'center' : 'right center',
+    };
+  }
+  
+  let cropConfig: CropConfig | null = null;
+  
+  switch (screenSize) {
+    case 'mobile':
+      cropConfig = media.cropConfigMobile;
+      break;
+    case 'tablet':
+      cropConfig = media.cropConfigTablet;
+      break;
+    case 'desktop':
+      cropConfig = media.cropConfigDesktop;
+      break;
+  }
+  
+  // Sin configuración de recorte - usar valores por defecto
+  if (!cropConfig) {
+    return {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover' as const,
+      objectPosition: screenSize === 'mobile' ? 'center' : 'right center',
+    };
+  }
+  
+  const { zoom, offsetX, offsetY } = cropConfig;
+  const scale = zoom || 1;
+  // react-easy-crop usa: translate(-50%, -50%) translate(crop.x%, crop.y%) scale(zoom)
+  // Usamos dos pasos de translate separados para replicar exactamente el comportamiento
+  const translateX = offsetX || 0;
+  const translateY = offsetY || 0;
+  
+  return {
+    position: 'absolute' as const,
+    top: '50%',
+    left: '50%',
+    minWidth: '100%',
+    minHeight: '100%',
+    maxWidth: 'none',
+    objectFit: 'cover' as const,
+    // Replica react-easy-crop exactamente: translate(-50%, -50%) translate(offsetX%, offsetY%) scale(zoom)
+    // CSS aplica transforms de derecha a izquierda, así que el orden escrito es el correcto
+    transform: `translate(-50%, -50%) translate(${translateX}%, ${translateY}%) scale(${scale})`,
+  };
 }
 
 export default function Home() {
   const { toast } = useToast();
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const screenSize = useScreenSize();
   
   const [modalAgenda, setModalAgenda] = useState(false);
   const [modalFamilia, setModalFamilia] = useState(false);
@@ -133,13 +234,13 @@ export default function Home() {
         {/* Fondo: Media de la ciudad o gradiente por defecto */}
         {mediaActual ? (
           <>
-            {/* Media de fondo - Responsivo: centrado en móvil, derecha en PC/tablet */}
-            <div className="absolute inset-0 z-0">
+            {/* Media de fondo - Con recorte personalizado por dispositivo */}
+            <div className="absolute inset-0 z-0 overflow-hidden">
               {mediaActual.tipo === "imagen" ? (
                 <img
                   src={mediaActual.url}
                   alt={mediaActual.titulo || "Bienvenida"}
-                  className="w-full h-full object-cover object-center md:object-right"
+                  style={getCropStyles(mediaActual, screenSize)}
                 />
               ) : (
                 <video
@@ -148,7 +249,7 @@ export default function Home() {
                   muted
                   loop
                   playsInline
-                  className="w-full h-full object-cover object-center md:object-right"
+                  style={getCropStyles(mediaActual, screenSize)}
                 />
               )}
             </div>

@@ -45,10 +45,11 @@ export type Ciudad = typeof ciudades.$inferSelect;
 // MEDIA DE CIUDADES (Imágenes y Videos por Ciudad)
 // ============================================================
 // Tipo para configuración de recorte de imagen
+// Valores de react-easy-crop: offsetX/offsetY son porcentajes del tamaño del media
 export type CropConfig = {
   zoom: number;      // Factor de zoom (1 = sin zoom, >1 = acercado)
-  offsetX: number;   // Desplazamiento horizontal normalizado (-1 a 1)
-  offsetY: number;   // Desplazamiento vertical normalizado (-1 a 1)
+  offsetX: number;   // Desplazamiento horizontal (porcentaje del media, valor de crop.x de react-easy-crop)
+  offsetY: number;   // Desplazamiento vertical (porcentaje del media, valor de crop.y de react-easy-crop)
 };
 
 export const mediaCiudades = pgTable("media_ciudades", {

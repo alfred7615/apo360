@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Cropper from "react-easy-crop";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -16,8 +16,8 @@ import {
 
 export interface CropConfig {
   zoom: number;
-  offsetX: number;
-  offsetY: number;
+  offsetX: number;  // Porcentaje relativo al tamaño del media (valor de crop.x de react-easy-crop)
+  offsetY: number;  // Porcentaje relativo al tamaño del media (valor de crop.y de react-easy-crop)
 }
 
 interface CropConfigs {
@@ -60,15 +60,37 @@ export function MediaCropEditor({
   onCancel,
 }: MediaCropEditorProps) {
   const [activeTab, setActiveTab] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const previousTabRef = useRef<"desktop" | "tablet" | "mobile">(activeTab);
   
-  const [configs, setConfigs] = useState<CropConfigs>({
+  // Inicializar configs desde los valores guardados
+  const getInitialConfigs = (): CropConfigs => ({
     desktop: initialConfigs?.desktop || { ...defaultCropConfig },
     tablet: initialConfigs?.tablet || { ...defaultCropConfig },
     mobile: initialConfigs?.mobile || { ...defaultCropConfig },
   });
+  
+  const [configs, setConfigs] = useState<CropConfigs>(getInitialConfigs);
 
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(configs[activeTab].zoom);
+  // Inicializar crop y zoom desde los valores guardados del tab activo (desktop por defecto)
+  const [crop, setCrop] = useState(() => {
+    const config = initialConfigs?.desktop || defaultCropConfig;
+    return { x: config.offsetX, y: config.offsetY };
+  });
+  const [zoom, setZoom] = useState(() => {
+    const config = initialConfigs?.desktop || defaultCropConfig;
+    return config.zoom;
+  });
+
+  // Sincronizar crop/zoom cuando cambia el tab activo o los configs se actualizan
+  useEffect(() => {
+    // Solo sincronizar cuando el tab ha cambiado
+    if (previousTabRef.current !== activeTab) {
+      const config = configs[activeTab];
+      setCrop({ x: config.offsetX, y: config.offsetY });
+      setZoom(config.zoom);
+      previousTabRef.current = activeTab;
+    }
+  }, [activeTab, configs]);
 
   const onCropChange = useCallback((location: { x: number; y: number }) => {
     setCrop(location);
@@ -76,15 +98,13 @@ export function MediaCropEditor({
 
   const onCropComplete = useCallback(
     (_croppedArea: any, croppedAreaPixels: any) => {
-      const normalizedX = crop.x / 100;
-      const normalizedY = crop.y / 100;
-      
+      // Guardar los valores de crop.x y crop.y directamente (son porcentajes)
       setConfigs((prev) => ({
         ...prev,
         [activeTab]: {
           zoom,
-          offsetX: normalizedX,
-          offsetY: normalizedY,
+          offsetX: crop.x,
+          offsetY: crop.y,
         },
       }));
     },
@@ -103,22 +123,20 @@ export function MediaCropEditor({
   }, [activeTab]);
 
   const handleTabChange = (tab: string) => {
+    const newTab = tab as "desktop" | "tablet" | "mobile";
+    
+    // Guardar estado actual antes de cambiar de tab
     setConfigs((prev) => ({
       ...prev,
       [activeTab]: {
         zoom,
-        offsetX: crop.x / 100,
-        offsetY: crop.y / 100,
+        offsetX: crop.x,
+        offsetY: crop.y,
       },
     }));
-
-    const newTab = tab as "desktop" | "tablet" | "mobile";
+    
+    // Cambiar tab - el useEffect sincronizará crop/zoom
     setActiveTab(newTab);
-    setZoom(configs[newTab].zoom);
-    setCrop({
-      x: configs[newTab].offsetX * 100,
-      y: configs[newTab].offsetY * 100,
-    });
   };
 
   const handleReset = () => {
@@ -135,8 +153,8 @@ export function MediaCropEditor({
       ...configs,
       [activeTab]: {
         zoom,
-        offsetX: crop.x / 100,
-        offsetY: crop.y / 100,
+        offsetX: crop.x,
+        offsetY: crop.y,
       },
     };
     onSave(finalConfigs);
