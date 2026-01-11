@@ -66,25 +66,29 @@ function useScreenSize() {
 }
 
 // Función para calcular estilos CSS de recorte
-// Replica react-easy-crop: la imagen se posiciona en el centro del contenedor,
-// luego se escala y desplaza según la configuración guardada
+// La imagen se posiciona en el LADO DERECHO del contenedor con altura fija de 170px
 // 
-// react-easy-crop internamente hace:
-//   1. Centra la imagen en el contenedor
-//   2. Aplica translate(crop.x, crop.y) para mover la imagen
-//   3. Aplica scale(zoom) para hacer zoom
+// Comportamiento:
+//   1. La imagen se posiciona a la derecha del contenedor
+//   2. Altura fija: 170px, ancho automático para mantener proporción
+//   3. Se aplica el offset y zoom configurados en el editor de recorte
 //
 // Los videos no tienen editor de recorte, así que usan estilos por defecto
 function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 'tablet' | 'desktop'): React.CSSProperties {
   if (!media) return {};
   
   // Videos usan estilos por defecto (no tienen editor de recorte)
+  // Se posicionan a la derecha del contenedor
   if (media.tipo === 'video') {
     return {
-      width: '100%',
+      position: 'absolute' as const,
+      top: 0,
+      right: 0,
       height: '100%',
+      width: 'auto',
+      maxWidth: 'none',
       objectFit: 'cover' as const,
-      objectPosition: screenSize === 'mobile' ? 'center' : 'right center',
+      objectPosition: 'right center',
     };
   }
   
@@ -102,34 +106,37 @@ function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 't
       break;
   }
   
-  // Sin configuración de recorte - usar valores por defecto
+  // Sin configuración de recorte - posicionar a la derecha con valores por defecto
   if (!cropConfig) {
     return {
-      width: '100%',
+      position: 'absolute' as const,
+      top: 0,
+      right: 0,
       height: '100%',
+      width: 'auto',
+      maxWidth: 'none',
       objectFit: 'cover' as const,
-      objectPosition: screenSize === 'mobile' ? 'center' : 'right center',
+      objectPosition: 'right center',
     };
   }
   
   const { zoom, offsetX, offsetY } = cropConfig;
   const scale = zoom || 1;
-  // react-easy-crop usa: translate(-50%, -50%) translate(crop.x%, crop.y%) scale(zoom)
-  // Usamos dos pasos de translate separados para replicar exactamente el comportamiento
   const translateX = offsetX || 0;
   const translateY = offsetY || 0;
   
+  // La imagen se posiciona a la derecha (right: 0) y se centra verticalmente
+  // Los offsets permiten ajustar la posición según lo configurado en el editor
   return {
     position: 'absolute' as const,
     top: '50%',
-    left: '50%',
-    minWidth: '100%',
-    minHeight: '100%',
+    right: 0,
+    height: '170px',  // Altura fija de la sección de bienvenida
+    width: 'auto',
     maxWidth: 'none',
     objectFit: 'cover' as const,
-    // Replica react-easy-crop exactamente: translate(-50%, -50%) translate(offsetX%, offsetY%) scale(zoom)
-    // CSS aplica transforms de derecha a izquierda, así que el orden escrito es el correcto
-    transform: `translate(-50%, -50%) translate(${translateX}%, ${translateY}%) scale(${scale})`,
+    // Centrar verticalmente y aplicar offsets + zoom
+    transform: `translateY(-50%) translate(${translateX}%, ${translateY}%) scale(${scale})`,
   };
 }
 

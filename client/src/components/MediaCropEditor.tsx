@@ -34,16 +34,21 @@ interface MediaCropEditorProps {
   onCancel: () => void;
 }
 
+// Altura fija de la sección de bienvenida: 170px
+// PC: 1500x170 (relación 8.82:1)
+// Tablet/Móvil: ancho automático, altura 170px
+const FIXED_HEIGHT = 170;
+
 const ASPECT_RATIOS = {
-  desktop: 16 / 9,
-  tablet: 4 / 3,
-  mobile: 1 / 1,
+  desktop: 1500 / FIXED_HEIGHT,  // ~8.82:1
+  tablet: 800 / FIXED_HEIGHT,    // ~4.7:1 (ancho estimado para tablet)
+  mobile: 400 / FIXED_HEIGHT,    // ~2.35:1 (ancho estimado para móvil)
 };
 
 const DIMENSION_INFO = {
-  desktop: { width: 1920, height: 1080, label: "PC (16:9)" },
-  tablet: { width: 1024, height: 768, label: "Tablet (4:3)" },
-  mobile: { width: 720, height: 720, label: "Móvil (1:1)" },
+  desktop: { width: 1500, height: FIXED_HEIGHT, label: "PC (1500x170)" },
+  tablet: { width: "auto", height: FIXED_HEIGHT, label: "Tablet (auto x 170)" },
+  mobile: { width: "auto", height: FIXED_HEIGHT, label: "Móvil (auto x 170)" },
 };
 
 const defaultCropConfig: CropConfig = {
@@ -167,15 +172,18 @@ export function MediaCropEditor({
       <div className="bg-muted/50 rounded-lg p-3 flex items-start gap-2">
         <Info className="h-4 w-4 mt-0.5 text-primary shrink-0" />
         <div className="text-sm">
-          <p className="font-medium mb-1">Tamaño recomendado para {tipoMedia === "imagen" ? "imágenes" : "videos"}:</p>
+          <p className="font-medium mb-1">Sección de Bienvenida - Altura fija: 170px</p>
           <ul className="text-muted-foreground space-y-1">
-            <li><Monitor className="h-3 w-3 inline mr-1" /> PC: <strong>1920 x 1080 px</strong> (16:9)</li>
-            <li><Tablet className="h-3 w-3 inline mr-1" /> Tablet: <strong>1024 x 768 px</strong> (4:3)</li>
-            <li><Smartphone className="h-3 w-3 inline mr-1" /> Móvil: <strong>720 x 720 px</strong> (1:1)</li>
+            <li><Monitor className="h-3 w-3 inline mr-1" /> PC: <strong>1500 x 170 px</strong></li>
+            <li><Tablet className="h-3 w-3 inline mr-1" /> Tablet: <strong>Auto x 170 px</strong></li>
+            <li><Smartphone className="h-3 w-3 inline mr-1" /> Móvil: <strong>Auto x 170 px</strong></li>
           </ul>
+          <p className="mt-2 text-xs text-muted-foreground">
+            La imagen se posicionará en el lado derecho del contenedor con overlay púrpura-rosa al 50%.
+          </p>
           {tipoMedia === "video" && (
-            <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
-              Para mejor calidad en videos, créalos con las dimensiones exactas del dispositivo destino.
+            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+              Para videos, use dimensiones horizontales anchas para mejor visualización.
             </p>
           )}
         </div>
@@ -200,7 +208,7 @@ export function MediaCropEditor({
         {["desktop", "tablet", "mobile"].map((tab) => (
           <TabsContent key={tab} value={tab} className="mt-4">
             <div className="text-center text-xs text-muted-foreground mb-2">
-              Vista: {currentDimensions.label} ({currentDimensions.width} x {currentDimensions.height} px)
+              Vista: {currentDimensions.label} ({currentDimensions.width === "auto" ? "ancho auto" : `${currentDimensions.width}px`} x {currentDimensions.height}px)
             </div>
             
             <div className="relative bg-black rounded-lg overflow-hidden" style={{ height: "300px" }}>
