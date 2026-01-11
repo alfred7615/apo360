@@ -834,11 +834,11 @@ function MediaCiudadesSection() {
       )}
 
       <Dialog open={showFormMedia} onOpenChange={setShowFormMedia}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{mediaEditando ? "Editar Media" : "Nuevo Media"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 pb-2">
             <div className="space-y-2">
               <Label>Archivo (imagen o video)</Label>
               <div className="flex items-center gap-2">
