@@ -7,7 +7,7 @@ import { storage } from "./storage";
 import { db } from "./db";
 import { eq, and, ne, sql, desc } from "drizzle-orm";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { createUploadMiddleware, getPublicUrl } from "./uploadConfigByEndpoint";
+import { createUploadMiddleware, createMediaUploadMiddleware, getPublicUrl } from "./uploadConfigByEndpoint";
 import { requireSuperAdmin } from "./authMiddleware";
 import { requireAdmin } from "./middleware/authorization";
 import { 
@@ -175,6 +175,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error al eliminar ciudad:", error);
       res.status(500).json({ message: error.message || "Error al eliminar ciudad" });
+    }
+  });
+
+  // ============================================================
+  // MEDIA DE CIUDADES (Imágenes y Videos por Ciudad)
+  // ============================================================
+
+  // Obtener todos los media de una ciudad (admin)
+  app.get('/api/admin/media-ciudades/:ciudadId', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { ciudadId } = req.params;
+      const media = await storage.getMediaCiudades(ciudadId);
+      res.json(media);
+    } catch (error: any) {
+      console.error("Error al obtener media de ciudad:", error);
+      res.status(500).json({ message: error.message || "Error al obtener media de ciudad" });
+    }
+  });
+
+  // Obtener media activos de una ciudad (público - para la sección de bienvenida)
+  app.get('/api/media-ciudades/:ciudadId/activos', async (req: any, res) => {
+    try {
+      const { ciudadId } = req.params;
+      const media = await storage.getMediaCiudadesActivos(ciudadId);
+      res.json(media);
+    } catch (error: any) {
+      console.error("Error al obtener media activos de ciudad:", error);
+      res.status(500).json({ message: error.message || "Error al obtener media activos de ciudad" });
+    }
+  });
+
+  // Crear nuevo media de ciudad
+  app.post('/api/admin/media-ciudades', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { insertMediaCiudadSchema } = await import("@shared/schema");
+      const validacion = insertMediaCiudadSchema.safeParse(req.body);
+      if (!validacion.success) {
+        return res.status(400).json({ message: "Datos inválidos", errors: validacion.error.errors });
+      }
+      const nuevoMedia = await storage.createMediaCiudad(validacion.data);
+      res.json(nuevoMedia);
+    } catch (error: any) {
+      console.error("Error al crear media de ciudad:", error);
+      res.status(500).json({ message: error.message || "Error al crear media de ciudad" });
+    }
+  });
+
+  // Actualizar media de ciudad
+  app.put('/api/admin/media-ciudades/:id', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { insertMediaCiudadSchema } = await import("@shared/schema");
+      const validacion = insertMediaCiudadSchema.partial().safeParse(req.body);
+      if (!validacion.success) {
+        return res.status(400).json({ message: "Datos inválidos", errors: validacion.error.errors });
+      }
+      const mediaActualizado = await storage.updateMediaCiudad(id, validacion.data);
+      if (!mediaActualizado) {
+        return res.status(404).json({ message: "Media no encontrado" });
+      }
+      res.json(mediaActualizado);
+    } catch (error: any) {
+      console.error("Error al actualizar media de ciudad:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar media de ciudad" });
+    }
+  });
+
+  // Eliminar media de ciudad
+  app.delete('/api/admin/media-ciudades/:id', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteMediaCiudad(id);
+      res.json({ message: "Media eliminado correctamente" });
+    } catch (error: any) {
+      console.error("Error al eliminar media de ciudad:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar media de ciudad" });
     }
   });
 
@@ -1855,6 +1931,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error al subir imagen de servicios:', error);
       res.status(500).json({ message: error.message || 'Error al subir imagen' });
+    }
+  });
+
+  // Upload de media de ciudades (imágenes y videos)
+  app.post('/api/upload/media-ciudades', isAuthenticated, requireSuperAdmin, createMediaUploadMiddleware('ciudades', 'archivo'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se proporcionó ningún archivo' });
+      }
+
+      const url = getPublicUrl(req.file.path);
+      const esVideo = req.file.mimetype.startsWith('video/');
+      res.json({ 
+        url, 
+        path: req.file.path,
+        filename: req.file.filename,
+        size: req.file.size,
+        tipo: esVideo ? 'video' : 'imagen',
+      });
+    } catch (error: any) {
+      console.error('Error al subir media de ciudad:', error);
+      res.status(500).json({ message: error.message || 'Error al subir media' });
     }
   });
 
