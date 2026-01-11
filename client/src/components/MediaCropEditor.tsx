@@ -35,18 +35,18 @@ interface MediaCropEditorProps {
 }
 
 // Altura fija de la sección de bienvenida: 180px
-// PC: 1500x180 (relación 8.33:1)
+// PC: 1080x180 (relación 6:1)
 // Tablet/Móvil: ancho automático, altura 180px
 const FIXED_HEIGHT = 180;
 
 const ASPECT_RATIOS = {
-  desktop: 1500 / FIXED_HEIGHT,  // ~8.33:1
+  desktop: 1080 / FIXED_HEIGHT,  // 6:1
   tablet: 800 / FIXED_HEIGHT,    // ~4.44:1 (ancho estimado para tablet)
   mobile: 400 / FIXED_HEIGHT,    // ~2.22:1 (ancho estimado para móvil)
 };
 
 const DIMENSION_INFO = {
-  desktop: { width: 1500, height: FIXED_HEIGHT, label: "PC (1500x180)" },
+  desktop: { width: 1080, height: FIXED_HEIGHT, label: "PC (1080x180)" },
   tablet: { width: "auto", height: FIXED_HEIGHT, label: "Tablet (auto x 180)" },
   mobile: { width: "auto", height: FIXED_HEIGHT, label: "Móvil (auto x 180)" },
 };
@@ -66,6 +66,13 @@ export function MediaCropEditor({
 }: MediaCropEditorProps) {
   const [activeTab, setActiveTab] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const previousTabRef = useRef<"desktop" | "tablet" | "mobile">(activeTab);
+  
+  // Rastrear qué pestañas tienen recorte aplicado
+  const [appliedTabs, setAppliedTabs] = useState<Record<string, boolean>>({
+    desktop: !!initialConfigs?.desktop,
+    tablet: !!initialConfigs?.tablet,
+    mobile: !!initialConfigs?.mobile,
+  });
   
   // Inicializar configs desde los valores guardados
   const getInitialConfigs = (): CropConfigs => ({
@@ -151,9 +158,31 @@ export function MediaCropEditor({
       ...prev,
       [activeTab]: { ...defaultCropConfig },
     }));
+    setAppliedTabs((prev) => ({
+      ...prev,
+      [activeTab]: false,
+    }));
   };
 
+  // Aplicar recorte solo para la pestaña activa
+  const handleApplyCurrentTab = () => {
+    setConfigs((prev) => ({
+      ...prev,
+      [activeTab]: {
+        zoom,
+        offsetX: crop.x,
+        offsetY: crop.y,
+      },
+    }));
+    setAppliedTabs((prev) => ({
+      ...prev,
+      [activeTab]: true,
+    }));
+  };
+
+  // Guardar todos los cambios y cerrar
   const handleSave = () => {
+    // Asegurar que el tab actual esté guardado
     const finalConfigs: CropConfigs = {
       ...configs,
       [activeTab]: {
@@ -165,6 +194,9 @@ export function MediaCropEditor({
     onSave(finalConfigs);
   };
 
+  // Verificar si todos los tabs tienen recorte aplicado
+  const allTabsApplied = appliedTabs.desktop && appliedTabs.tablet && appliedTabs.mobile;
+
   const currentDimensions = DIMENSION_INFO[activeTab];
 
   return (
@@ -174,7 +206,7 @@ export function MediaCropEditor({
         <div className="text-sm">
           <p className="font-medium mb-1">Sección de Bienvenida - Altura fija: 180px</p>
           <ul className="text-muted-foreground space-y-1">
-            <li><Monitor className="h-3 w-3 inline mr-1" /> PC: <strong>1500 x 180 px</strong></li>
+            <li><Monitor className="h-3 w-3 inline mr-1" /> PC: <strong>1080 x 180 px</strong></li>
             <li><Tablet className="h-3 w-3 inline mr-1" /> Tablet: <strong>Auto x 180 px</strong></li>
             <li><Smartphone className="h-3 w-3 inline mr-1" /> Móvil: <strong>Auto x 180 px</strong></li>
           </ul>
@@ -194,21 +226,31 @@ export function MediaCropEditor({
           <TabsTrigger value="desktop" className="flex items-center gap-1" data-testid="tab-crop-desktop">
             <Monitor className="h-4 w-4" />
             <span className="hidden sm:inline">PC</span>
+            {appliedTabs.desktop && <Check className="h-3 w-3 text-green-500" />}
           </TabsTrigger>
           <TabsTrigger value="tablet" className="flex items-center gap-1" data-testid="tab-crop-tablet">
             <Tablet className="h-4 w-4" />
             <span className="hidden sm:inline">Tablet</span>
+            {appliedTabs.tablet && <Check className="h-3 w-3 text-green-500" />}
           </TabsTrigger>
           <TabsTrigger value="mobile" className="flex items-center gap-1" data-testid="tab-crop-mobile">
             <Smartphone className="h-4 w-4" />
             <span className="hidden sm:inline">Móvil</span>
+            {appliedTabs.mobile && <Check className="h-3 w-3 text-green-500" />}
           </TabsTrigger>
         </TabsList>
 
         {["desktop", "tablet", "mobile"].map((tab) => (
           <TabsContent key={tab} value={tab} className="mt-4">
-            <div className="text-center text-xs text-muted-foreground mb-2">
-              Vista: {currentDimensions.label} ({currentDimensions.width === "auto" ? "ancho auto" : `${currentDimensions.width}px`} x {currentDimensions.height}px)
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-muted-foreground">
+                Vista: {currentDimensions.label} ({currentDimensions.width === "auto" ? "ancho auto" : `${currentDimensions.width}px`} x {currentDimensions.height}px)
+              </div>
+              {appliedTabs[activeTab] && (
+                <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                  <Check className="h-3 w-3" /> Recorte aplicado
+                </span>
+              )}
             </div>
             
             <div className="relative bg-black rounded-lg overflow-hidden" style={{ height: "300px" }}>
@@ -248,6 +290,19 @@ export function MediaCropEditor({
                 </div>
               )}
             </div>
+
+            {/* Botón Aplicar Recorte para esta pestaña */}
+            <div className="flex justify-end mt-3">
+              <Button 
+                onClick={handleApplyCurrentTab}
+                variant={appliedTabs[activeTab] ? "outline" : "default"}
+                size="sm"
+                data-testid={`btn-apply-crop-${tab}`}
+              >
+                <Check className="h-4 w-4 mr-1" />
+                {appliedTabs[activeTab] ? "Recorte Actualizado" : "Aplicar Recorte"}
+              </Button>
+            </div>
           </TabsContent>
         ))}
       </Tabs>
@@ -273,6 +328,25 @@ export function MediaCropEditor({
         </div>
       )}
 
+      {/* Estado de recortes aplicados */}
+      <div className="bg-muted/30 rounded-lg p-3 text-sm">
+        <p className="font-medium mb-2">Estado de recortes:</p>
+        <div className="flex flex-wrap gap-3">
+          <span className={`flex items-center gap-1 ${appliedTabs.desktop ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+            <Monitor className="h-4 w-4" />
+            PC: {appliedTabs.desktop ? "✓ Aplicado" : "Pendiente"}
+          </span>
+          <span className={`flex items-center gap-1 ${appliedTabs.tablet ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+            <Tablet className="h-4 w-4" />
+            Tablet: {appliedTabs.tablet ? "✓ Aplicado" : "Pendiente"}
+          </span>
+          <span className={`flex items-center gap-1 ${appliedTabs.mobile ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+            <Smartphone className="h-4 w-4" />
+            Móvil: {appliedTabs.mobile ? "✓ Aplicado" : "Pendiente"}
+          </span>
+        </div>
+      </div>
+
       <div className="flex flex-wrap gap-2 justify-between">
         <Button variant="outline" size="sm" onClick={handleReset} data-testid="btn-reset-crop">
           <RotateCcw className="h-4 w-4 mr-1" />
@@ -282,12 +356,21 @@ export function MediaCropEditor({
           <Button variant="outline" onClick={onCancel} data-testid="btn-cancel-crop">
             Cancelar
           </Button>
-          <Button onClick={handleSave} data-testid="btn-save-crop">
+          <Button 
+            onClick={handleSave} 
+            disabled={!allTabsApplied}
+            data-testid="btn-save-crop"
+          >
             <Check className="h-4 w-4 mr-1" />
-            Aplicar Recorte
+            Guardar
           </Button>
         </div>
       </div>
+      {!allTabsApplied && (
+        <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+          Debe aplicar el recorte en cada dispositivo (PC, Tablet, Móvil) antes de guardar
+        </p>
+      )}
     </div>
   );
 }

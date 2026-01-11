@@ -67,7 +67,7 @@ function useScreenSize() {
 
 // Función para calcular estilos CSS de recorte
 // Dimensiones por dispositivo:
-//   - PC: 1500px ancho x 180px alto (fijo)
+//   - PC: 1080px ancho x 180px alto (fijo)
 //   - Tablet: ancho automático x 180px alto
 //   - Móvil: ancho automático x 180px alto
 // La imagen siempre se posiciona al LADO DERECHO del contenedor
@@ -81,8 +81,8 @@ function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 't
       top: 0,
       right: 0,
       height: '180px',
-      width: screenSize === 'desktop' ? '1500px' : 'auto',
-      minWidth: screenSize === 'desktop' ? '1500px' : '100%',
+      width: screenSize === 'desktop' ? '1080px' : 'auto',
+      minWidth: screenSize === 'desktop' ? '1080px' : '100%',
       maxWidth: 'none',
       objectFit: 'cover' as const,
       objectPosition: 'right center',
@@ -111,8 +111,8 @@ function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 't
         top: 0,
         right: 0,
         height: '180px',
-        width: '1500px',
-        minWidth: '1500px',
+        width: '1080px',
+        minWidth: '1080px',
         maxWidth: 'none',
         objectFit: 'cover' as const,
         objectPosition: 'right center',
@@ -139,14 +139,14 @@ function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 't
   
   // Estilos con configuración de recorte aplicada
   if (screenSize === 'desktop') {
-    // PC: dimensiones fijas 1500x180
+    // PC: dimensiones fijas 1080x180
     return {
       position: 'absolute' as const,
       top: '50%',
       right: 0,
       height: '180px',
-      width: '1500px',
-      minWidth: '1500px',
+      width: '1080px',
+      minWidth: '1080px',
       maxWidth: 'none',
       objectFit: 'cover' as const,
       transformOrigin: 'right center',
