@@ -206,15 +206,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Función auxiliar para procesar fechas de media (convierte strings a Date o null)
+  const procesarFechasMedia = (body: any) => {
+    const data = { ...body };
+    // Convertir fechaInicio: string vacío -> null, string con fecha -> Date
+    if (data.fechaInicio !== undefined) {
+      data.fechaInicio = data.fechaInicio && data.fechaInicio.trim() !== '' 
+        ? new Date(data.fechaInicio) 
+        : null;
+    }
+    // Convertir fechaFin: string vacío -> null, string con fecha -> Date
+    if (data.fechaFin !== undefined) {
+      data.fechaFin = data.fechaFin && data.fechaFin.trim() !== '' 
+        ? new Date(data.fechaFin) 
+        : null;
+    }
+    return data;
+  };
+
   // Crear nuevo media de ciudad
   app.post('/api/admin/media-ciudades', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
-      const { insertMediaCiudadSchema } = await import("@shared/schema");
-      const validacion = insertMediaCiudadSchema.safeParse(req.body);
-      if (!validacion.success) {
-        return res.status(400).json({ message: "Datos inválidos", errors: validacion.error.errors });
-      }
-      const nuevoMedia = await storage.createMediaCiudad(validacion.data);
+      const dataProcesada = procesarFechasMedia(req.body);
+      const nuevoMedia = await storage.createMediaCiudad(dataProcesada);
       res.json(nuevoMedia);
     } catch (error: any) {
       console.error("Error al crear media de ciudad:", error);
@@ -226,12 +240,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/admin/media-ciudades/:id', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { insertMediaCiudadSchema } = await import("@shared/schema");
-      const validacion = insertMediaCiudadSchema.partial().safeParse(req.body);
-      if (!validacion.success) {
-        return res.status(400).json({ message: "Datos inválidos", errors: validacion.error.errors });
-      }
-      const mediaActualizado = await storage.updateMediaCiudad(id, validacion.data);
+      const dataProcesada = procesarFechasMedia(req.body);
+      const mediaActualizado = await storage.updateMediaCiudad(id, dataProcesada);
       if (!mediaActualizado) {
         return res.status(404).json({ message: "Media no encontrado" });
       }
