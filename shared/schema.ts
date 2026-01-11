@@ -42,6 +42,28 @@ export type InsertCiudad = z.infer<typeof insertCiudadSchema>;
 export type Ciudad = typeof ciudades.$inferSelect;
 
 // ============================================================
+// MEDIA DE CIUDADES (Imágenes y Videos por Ciudad)
+// ============================================================
+export const mediaCiudades = pgTable("media_ciudades", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id").references(() => ciudades.id).notNull(),
+  tipo: varchar("tipo", { length: 20 }).notNull(), // "imagen" | "video"
+  url: varchar("url").notNull(),
+  titulo: varchar("titulo", { length: 200 }),
+  descripcion: text("descripcion"),
+  fechaInicio: timestamp("fecha_inicio"),
+  fechaFin: timestamp("fecha_fin"),
+  estado: varchar("estado", { length: 20 }).default("activo"), // "activo" | "pausado" | "suspendido"
+  orden: integer("orden").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMediaCiudadSchema = createInsertSchema(mediaCiudades).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertMediaCiudad = z.infer<typeof insertMediaCiudadSchema>;
+export type MediaCiudad = typeof mediaCiudades.$inferSelect;
+
+// ============================================================
 // USUARIOS Y ROLES
 // ============================================================
 export const rolesEnum = pgEnum("rol", [
