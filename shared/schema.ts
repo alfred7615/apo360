@@ -44,6 +44,13 @@ export type Ciudad = typeof ciudades.$inferSelect;
 // ============================================================
 // MEDIA DE CIUDADES (Imágenes y Videos por Ciudad)
 // ============================================================
+// Tipo para configuración de recorte de imagen
+export type CropConfig = {
+  zoom: number;      // Factor de zoom (1 = sin zoom, >1 = acercado)
+  offsetX: number;   // Desplazamiento horizontal normalizado (-1 a 1)
+  offsetY: number;   // Desplazamiento vertical normalizado (-1 a 1)
+};
+
 export const mediaCiudades = pgTable("media_ciudades", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   ciudadId: varchar("ciudad_id").references(() => ciudades.id).notNull(),
@@ -55,6 +62,10 @@ export const mediaCiudades = pgTable("media_ciudades", {
   fechaFin: timestamp("fecha_fin"),
   estado: varchar("estado", { length: 20 }).default("activo"), // "activo" | "pausado" | "suspendido"
   orden: integer("orden").default(0),
+  // Configuración de recorte por dispositivo
+  cropConfigDesktop: json("crop_config_desktop").$type<CropConfig>(),  // PC (16:9)
+  cropConfigTablet: json("crop_config_tablet").$type<CropConfig>(),    // Tablet (4:3)
+  cropConfigMobile: json("crop_config_mobile").$type<CropConfig>(),    // Móvil (1:1)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
