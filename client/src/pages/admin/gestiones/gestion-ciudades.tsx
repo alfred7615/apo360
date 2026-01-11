@@ -19,6 +19,13 @@ import {
   Loader2,
   Save,
   X,
+  Image,
+  Video,
+  Upload,
+  Calendar,
+  Play,
+  Pause,
+  Ban,
 } from "lucide-react";
 import {
   Dialog,
@@ -550,16 +557,395 @@ function CiudadesSection() {
   );
 }
 
+interface MediaCiudad {
+  id: string;
+  ciudadId: string;
+  tipo: "imagen" | "video";
+  url: string;
+  titulo: string | null;
+  descripcion: string | null;
+  fechaInicio: string | null;
+  fechaFin: string | null;
+  estado: "activo" | "pausado" | "suspendido";
+  orden: number | null;
+  creadoEn: string | null;
+}
+
+function MediaCiudadesSection() {
+  const { toast } = useToast();
+  const [ciudadSeleccionada, setCiudadSeleccionada] = useState<string>("");
+  const [showFormMedia, setShowFormMedia] = useState(false);
+  const [mediaEditando, setMediaEditando] = useState<MediaCiudad | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [formMedia, setFormMedia] = useState({
+    tipo: "imagen" as "imagen" | "video",
+    url: "",
+    titulo: "",
+    descripcion: "",
+    fechaInicio: "",
+    fechaFin: "",
+    estado: "activo" as "activo" | "pausado" | "suspendido",
+    orden: 0,
+  });
+
+  const { data: paises = [] } = useQuery<Pais[]>({
+    queryKey: ["/api/paises"],
+  });
+
+  const { data: ciudades = [] } = useQuery<Ciudad[]>({
+    queryKey: ["/api/ciudades"],
+  });
+
+  const { data: mediaList = [], isLoading: loadingMedia } = useQuery<MediaCiudad[]>({
+    queryKey: ["/api/admin/media-ciudades", ciudadSeleccionada],
+    enabled: !!ciudadSeleccionada,
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/media-ciudades/${ciudadSeleccionada}`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Error al cargar media");
+      return response.json();
+    },
+  });
+
+  const crearMediaMutation = useMutation({
+    mutationFn: (data: typeof formMedia & { ciudadId: string }) =>
+      apiRequest("POST", "/api/admin/media-ciudades", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/media-ciudades", ciudadSeleccionada] });
+      resetForm();
+      toast({ title: "Media creado", description: "El media se ha agregado correctamente." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const actualizarMediaMutation = useMutation({
+    mutationFn: (data: { id: string; updates: Partial<typeof formMedia> }) =>
+      apiRequest("PUT", `/api/admin/media-ciudades/${data.id}`, data.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/media-ciudades", ciudadSeleccionada] });
+      resetForm();
+      toast({ title: "Media actualizado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const eliminarMediaMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/media-ciudades/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/media-ciudades", ciudadSeleccionada] });
+      toast({ title: "Media eliminado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const resetForm = () => {
+    setShowFormMedia(false);
+    setMediaEditando(null);
+    setFormMedia({
+      tipo: "imagen",
+      url: "",
+      titulo: "",
+      descripcion: "",
+      fechaInicio: "",
+      fechaFin: "",
+      estado: "activo",
+      orden: 0,
+    });
+  };
+
+  const handleEditar = (media: MediaCiudad) => {
+    setMediaEditando(media);
+    setFormMedia({
+      tipo: media.tipo,
+      url: media.url,
+      titulo: media.titulo || "",
+      descripcion: media.descripcion || "",
+      fechaInicio: media.fechaInicio ? media.fechaInicio.split("T")[0] : "",
+      fechaFin: media.fechaFin ? media.fechaFin.split("T")[0] : "",
+      estado: media.estado,
+      orden: media.orden ?? 0,
+    });
+    setShowFormMedia(true);
+  };
+
+  const handleGuardar = () => {
+    if (!formMedia.url.trim()) {
+      toast({ title: "Error", description: "Debe subir un archivo", variant: "destructive" });
+      return;
+    }
+    if (mediaEditando) {
+      actualizarMediaMutation.mutate({ id: mediaEditando.id, updates: formMedia });
+    } else {
+      crearMediaMutation.mutate({ ...formMedia, ciudadId: ciudadSeleccionada });
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("archivo", file);
+
+    setSubiendo(true);
+    try {
+      const response = await fetch("/api/upload/media-ciudades", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error al subir archivo");
+      }
+
+      const result = await response.json();
+      setFormMedia({
+        ...formMedia,
+        url: result.url,
+        tipo: result.tipo as "imagen" | "video",
+      });
+      toast({ title: "Archivo subido correctamente" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  const getEstadoBadge = (estado: string) => {
+    switch (estado) {
+      case "activo":
+        return <Badge className="bg-green-500"><Play className="h-3 w-3 mr-1" /> Activo</Badge>;
+      case "pausado":
+        return <Badge variant="secondary"><Pause className="h-3 w-3 mr-1" /> Pausado</Badge>;
+      case "suspendido":
+        return <Badge variant="destructive"><Ban className="h-3 w-3 mr-1" /> Suspendido</Badge>;
+      default:
+        return <Badge>{estado}</Badge>;
+    }
+  };
+
+  const ciudadActual = ciudades.find(c => c.id === ciudadSeleccionada);
+  const paisCiudad = ciudadActual ? paises.find(p => p.id === ciudadActual.paisId) : null;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Image className="h-5 w-5 text-primary" />
+          Media por Ciudad
+        </h3>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Select value={ciudadSeleccionada} onValueChange={setCiudadSeleccionada}>
+            <SelectTrigger className="w-full sm:w-[280px]" data-testid="select-ciudad-media">
+              <SelectValue placeholder="Seleccionar ciudad..." />
+            </SelectTrigger>
+            <SelectContent>
+              {ciudades.map((ciudad) => {
+                const pais = paises.find(p => p.id === ciudad.paisId);
+                return (
+                  <SelectItem key={ciudad.id} value={ciudad.id}>
+                    {pais?.bandera} {ciudad.nombre}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+          {ciudadSeleccionada && (
+            <Button onClick={() => setShowFormMedia(true)} size="sm" data-testid="btn-nuevo-media">
+              <Plus className="h-4 w-4 mr-1" />
+              Agregar
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {!ciudadSeleccionada ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Selecciona una ciudad para ver y gestionar su media</p>
+          </CardContent>
+        </Card>
+      ) : loadingMedia ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      ) : mediaList.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No hay media para {paisCiudad?.bandera} {ciudadActual?.nombre}</p>
+            <Button onClick={() => setShowFormMedia(true)} className="mt-4" variant="outline" data-testid="btn-agregar-primer-media">
+              <Plus className="h-4 w-4 mr-1" />
+              Agregar primer media
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {mediaList.map((media) => (
+            <Card key={media.id} className={media.estado !== "activo" ? "opacity-70" : ""} data-testid={`card-media-${media.id}`}>
+              <div className="relative aspect-video bg-muted rounded-t-lg overflow-hidden">
+                {media.tipo === "imagen" ? (
+                  <img src={media.url} alt={media.titulo || "Media"} className="w-full h-full object-cover" />
+                ) : (
+                  <video src={media.url} className="w-full h-full object-cover" muted />
+                )}
+                <div className="absolute top-2 left-2">
+                  <Badge variant="outline" className="bg-background/80">
+                    {media.tipo === "imagen" ? <Image className="h-3 w-3 mr-1" /> : <Video className="h-3 w-3 mr-1" />}
+                    {media.tipo}
+                  </Badge>
+                </div>
+              </div>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium truncate">{media.titulo || "Sin título"}</p>
+                  {getEstadoBadge(media.estado)}
+                </div>
+                {(media.fechaInicio || media.fechaFin) && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {media.fechaInicio ? new Date(media.fechaInicio).toLocaleDateString() : "∞"} - {media.fechaFin ? new Date(media.fechaFin).toLocaleDateString() : "∞"}
+                  </p>
+                )}
+                <div className="flex gap-1 pt-2">
+                  <Button variant="ghost" size="sm" onClick={() => handleEditar(media)} data-testid={`btn-editar-media-${media.id}`}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => eliminarMediaMutation.mutate(media.id)} data-testid={`btn-eliminar-media-${media.id}`}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={showFormMedia} onOpenChange={setShowFormMedia}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{mediaEditando ? "Editar Media" : "Nuevo Media"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Archivo (imagen o video)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleFileUpload}
+                  disabled={subiendo}
+                  data-testid="input-media-archivo"
+                />
+                {subiendo && <Loader2 className="h-4 w-4 animate-spin" />}
+              </div>
+              {formMedia.url && (
+                <div className="mt-2 relative aspect-video bg-muted rounded-lg overflow-hidden">
+                  {formMedia.tipo === "imagen" ? (
+                    <img src={formMedia.url} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <video src={formMedia.url} className="w-full h-full object-cover" controls />
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tituloMedia">Título (opcional)</Label>
+              <Input
+                id="tituloMedia"
+                value={formMedia.titulo}
+                onChange={(e) => setFormMedia({ ...formMedia, titulo: e.target.value })}
+                placeholder="Ej: Bienvenida Tacna"
+                data-testid="input-media-titulo"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fechaInicioMedia">Fecha Inicio</Label>
+                <Input
+                  id="fechaInicioMedia"
+                  type="date"
+                  value={formMedia.fechaInicio}
+                  onChange={(e) => setFormMedia({ ...formMedia, fechaInicio: e.target.value })}
+                  data-testid="input-media-fecha-inicio"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fechaFinMedia">Fecha Fin</Label>
+                <Input
+                  id="fechaFinMedia"
+                  type="date"
+                  value={formMedia.fechaFin}
+                  onChange={(e) => setFormMedia({ ...formMedia, fechaFin: e.target.value })}
+                  data-testid="input-media-fecha-fin"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="estadoMedia">Estado</Label>
+                <Select value={formMedia.estado} onValueChange={(value: "activo" | "pausado" | "suspendido") => setFormMedia({ ...formMedia, estado: value })}>
+                  <SelectTrigger data-testid="select-media-estado">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="activo">Activo</SelectItem>
+                    <SelectItem value="pausado">Pausado</SelectItem>
+                    <SelectItem value="suspendido">Suspendido</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ordenMedia">Orden</Label>
+                <Input
+                  id="ordenMedia"
+                  type="number"
+                  value={formMedia.orden}
+                  onChange={(e) => setFormMedia({ ...formMedia, orden: parseInt(e.target.value) || 0 })}
+                  data-testid="input-media-orden"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={resetForm}>
+              <X className="h-4 w-4 mr-1" />
+              Cancelar
+            </Button>
+            <Button onClick={handleGuardar} disabled={crearMediaMutation.isPending || actualizarMediaMutation.isPending || !formMedia.url} data-testid="btn-guardar-media">
+              {(crearMediaMutation.isPending || actualizarMediaMutation.isPending) && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              <Save className="h-4 w-4 mr-1" />
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export default function GestionCiudades() {
   return (
     <div className="p-4 space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Globe className="h-6 w-6 text-primary" />
-          Gestión de Países y Ciudades
+          Gestión de Países, Ciudades y Media
         </h1>
         <p className="text-muted-foreground text-sm">
-          Administra los países y ciudades disponibles en el sistema multi-ciudad
+          Administra los países, ciudades y contenido multimedia del sistema multi-ciudad
         </p>
       </div>
 
@@ -573,12 +959,19 @@ export default function GestionCiudades() {
             <MapPin className="h-4 w-4 mr-1" />
             Ciudades
           </TabsTrigger>
+          <TabsTrigger value="media" data-testid="tab-media">
+            <Image className="h-4 w-4 mr-1" />
+            Media
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="paises" className="mt-4">
           <PaisesSection />
         </TabsContent>
         <TabsContent value="ciudades" className="mt-4">
           <CiudadesSection />
+        </TabsContent>
+        <TabsContent value="media" className="mt-4">
+          <MediaCiudadesSection />
         </TabsContent>
       </Tabs>
     </div>
