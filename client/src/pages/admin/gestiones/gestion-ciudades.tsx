@@ -1740,15 +1740,19 @@ function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: str
     formData.append("archivo", file);
 
     try {
-      const response = await fetch("/api/upload/media-ciudad", {
+      const response = await fetch("/api/upload/media-ciudades", {
         method: "POST",
+        credentials: "include",
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Error al subir archivo");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || "Error al subir archivo");
+      }
 
       const data = await response.json();
-      const tipoArchivo = isVideo ? "video" : "imagen";
+      const tipoArchivo = data.tipo as "imagen" | "video";
       
       if (tipoArchivo === "imagen") {
         setTempImageUrl(data.url);
@@ -1768,8 +1772,8 @@ function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: str
         });
       }
       toast({ title: "Archivo subido correctamente" });
-    } catch (error) {
-      toast({ title: "Error al subir archivo", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Error al subir archivo", variant: "destructive" });
     } finally {
       setSubiendo(false);
     }
