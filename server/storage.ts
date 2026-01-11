@@ -1,6 +1,7 @@
 import {
   paises,
   ciudades,
+  mediaCiudades,
   usuarios,
   publicidad,
   servicios,
@@ -60,6 +61,8 @@ import {
   type InsertPais,
   type Ciudad,
   type InsertCiudad,
+  type MediaCiudad,
+  type InsertMediaCiudad,
   type Usuario,
   type InsertUsuario,
   type Publicidad,
@@ -238,6 +241,14 @@ export interface IStorage {
   createCiudad(ciudad: InsertCiudad): Promise<Ciudad>;
   updateCiudad(id: string, data: Partial<InsertCiudad>): Promise<Ciudad | undefined>;
   deleteCiudad(id: string): Promise<void>;
+  
+  // Operaciones de media de ciudades (imágenes y videos por ciudad)
+  getMediaCiudades(ciudadId: string): Promise<MediaCiudad[]>;
+  getMediaCiudadesActivos(ciudadId: string): Promise<MediaCiudad[]>;
+  getMediaCiudad(id: string): Promise<MediaCiudad | undefined>;
+  createMediaCiudad(data: InsertMediaCiudad): Promise<MediaCiudad>;
+  updateMediaCiudad(id: string, data: Partial<InsertMediaCiudad>): Promise<MediaCiudad | undefined>;
+  deleteMediaCiudad(id: string): Promise<void>;
   
   // Operaciones de usuarios (obligatorias para Replit Auth)
   getUser(id: string): Promise<Usuario | undefined>;
@@ -588,6 +599,56 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCiudad(id: string): Promise<void> {
     await db.delete(ciudades).where(eq(ciudades.id, id));
+  }
+
+  // ============================================================
+  // MEDIA DE CIUDADES (Imágenes y Videos por Ciudad)
+  // ============================================================
+  
+  async getMediaCiudades(ciudadId: string): Promise<MediaCiudad[]> {
+    return await db.select().from(mediaCiudades)
+      .where(eq(mediaCiudades.ciudadId, ciudadId))
+      .orderBy(mediaCiudades.orden);
+  }
+
+  async getMediaCiudadesActivos(ciudadId: string): Promise<MediaCiudad[]> {
+    const ahora = new Date();
+    return await db.select().from(mediaCiudades)
+      .where(and(
+        eq(mediaCiudades.ciudadId, ciudadId),
+        eq(mediaCiudades.estado, "activo"),
+        or(
+          isNull(mediaCiudades.fechaInicio),
+          sql`${mediaCiudades.fechaInicio} <= ${ahora}`
+        ),
+        or(
+          isNull(mediaCiudades.fechaFin),
+          sql`${mediaCiudades.fechaFin} >= ${ahora}`
+        )
+      ))
+      .orderBy(mediaCiudades.orden);
+  }
+
+  async getMediaCiudad(id: string): Promise<MediaCiudad | undefined> {
+    const [media] = await db.select().from(mediaCiudades).where(eq(mediaCiudades.id, id));
+    return media || undefined;
+  }
+
+  async createMediaCiudad(data: InsertMediaCiudad): Promise<MediaCiudad> {
+    const [nuevo] = await db.insert(mediaCiudades).values(data).returning();
+    return nuevo;
+  }
+
+  async updateMediaCiudad(id: string, data: Partial<InsertMediaCiudad>): Promise<MediaCiudad | undefined> {
+    const [updated] = await db.update(mediaCiudades)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(mediaCiudades.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteMediaCiudad(id: string): Promise<void> {
+    await db.delete(mediaCiudades).where(eq(mediaCiudades.id, id));
   }
 
   // ============================================================
