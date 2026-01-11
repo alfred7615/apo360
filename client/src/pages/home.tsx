@@ -67,9 +67,9 @@ function useScreenSize() {
 
 // Función para calcular estilos CSS de recorte
 // Dimensiones por dispositivo:
-//   - PC: 1500px ancho x 170px alto (fijo)
-//   - Tablet: ancho automático x 170px alto
-//   - Móvil: ancho automático x 170px alto
+//   - PC: 1500px ancho x 180px alto (fijo)
+//   - Tablet: ancho automático x 180px alto
+//   - Móvil: ancho automático x 180px alto
 // La imagen siempre se posiciona al LADO DERECHO del contenedor
 function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 'tablet' | 'desktop'): React.CSSProperties {
   if (!media) return {};
@@ -80,7 +80,7 @@ function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 't
       position: 'absolute' as const,
       top: 0,
       right: 0,
-      height: '170px',
+      height: '180px',
       width: screenSize === 'desktop' ? '1500px' : 'auto',
       minWidth: screenSize === 'desktop' ? '1500px' : '100%',
       maxWidth: 'none',
@@ -110,7 +110,7 @@ function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 't
         position: 'absolute' as const,
         top: 0,
         right: 0,
-        height: '170px',
+        height: '180px',
         width: '1500px',
         minWidth: '1500px',
         maxWidth: 'none',
@@ -123,7 +123,7 @@ function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 't
       position: 'absolute' as const,
       top: 0,
       right: 0,
-      height: '170px',
+      height: '180px',
       width: 'auto',
       minWidth: '100%',
       maxWidth: 'none',
@@ -139,12 +139,12 @@ function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 't
   
   // Estilos con configuración de recorte aplicada
   if (screenSize === 'desktop') {
-    // PC: dimensiones fijas 1500x170
+    // PC: dimensiones fijas 1500x180
     return {
       position: 'absolute' as const,
       top: '50%',
       right: 0,
-      height: '170px',
+      height: '180px',
       width: '1500px',
       minWidth: '1500px',
       maxWidth: 'none',
@@ -154,12 +154,12 @@ function getCropStyles(media: MediaCiudad | undefined, screenSize: 'mobile' | 't
     };
   }
   
-  // Tablet y móvil: ancho automático, altura 170px
+  // Tablet y móvil: ancho automático, altura 180px
   return {
     position: 'absolute' as const,
     top: '50%',
     right: 0,
-    height: '170px',
+    height: '180px',
     width: 'auto',
     minWidth: '100%',
     maxWidth: 'none',
@@ -265,8 +265,8 @@ export default function Home() {
       {/* Carrusel de logos publicitarios - Arriba del saludo */}
       <CarruselPublicidad tipo="carrusel_logos" />
 
-      {/* Bienvenida - Altura fija 170px con botones de alerta y media de fondo */}
-      <section className="text-white relative overflow-hidden" style={{ height: '170px', paddingBottom: '70px' }}>
+      {/* Bienvenida - Altura fija 180px con botones de alerta y media de fondo */}
+      <section className="text-white relative overflow-hidden" style={{ height: '180px', paddingBottom: '70px' }}>
         {/* Fondo: Media de la ciudad o gradiente por defecto */}
         {mediaActual ? (
           <>

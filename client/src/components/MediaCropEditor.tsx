@@ -34,21 +34,21 @@ interface MediaCropEditorProps {
   onCancel: () => void;
 }
 
-// Altura fija de la sección de bienvenida: 170px
-// PC: 1500x170 (relación 8.82:1)
-// Tablet/Móvil: ancho automático, altura 170px
-const FIXED_HEIGHT = 170;
+// Altura fija de la sección de bienvenida: 180px
+// PC: 1500x180 (relación 8.33:1)
+// Tablet/Móvil: ancho automático, altura 180px
+const FIXED_HEIGHT = 180;
 
 const ASPECT_RATIOS = {
-  desktop: 1500 / FIXED_HEIGHT,  // ~8.82:1
-  tablet: 800 / FIXED_HEIGHT,    // ~4.7:1 (ancho estimado para tablet)
-  mobile: 400 / FIXED_HEIGHT,    // ~2.35:1 (ancho estimado para móvil)
+  desktop: 1500 / FIXED_HEIGHT,  // ~8.33:1
+  tablet: 800 / FIXED_HEIGHT,    // ~4.44:1 (ancho estimado para tablet)
+  mobile: 400 / FIXED_HEIGHT,    // ~2.22:1 (ancho estimado para móvil)
 };
 
 const DIMENSION_INFO = {
-  desktop: { width: 1500, height: FIXED_HEIGHT, label: "PC (1500x170)" },
-  tablet: { width: "auto", height: FIXED_HEIGHT, label: "Tablet (auto x 170)" },
-  mobile: { width: "auto", height: FIXED_HEIGHT, label: "Móvil (auto x 170)" },
+  desktop: { width: 1500, height: FIXED_HEIGHT, label: "PC (1500x180)" },
+  tablet: { width: "auto", height: FIXED_HEIGHT, label: "Tablet (auto x 180)" },
+  mobile: { width: "auto", height: FIXED_HEIGHT, label: "Móvil (auto x 180)" },
 };
 
 const defaultCropConfig: CropConfig = {
@@ -172,11 +172,11 @@ export function MediaCropEditor({
       <div className="bg-muted/50 rounded-lg p-3 flex items-start gap-2">
         <Info className="h-4 w-4 mt-0.5 text-primary shrink-0" />
         <div className="text-sm">
-          <p className="font-medium mb-1">Sección de Bienvenida - Altura fija: 170px</p>
+          <p className="font-medium mb-1">Sección de Bienvenida - Altura fija: 180px</p>
           <ul className="text-muted-foreground space-y-1">
-            <li><Monitor className="h-3 w-3 inline mr-1" /> PC: <strong>1500 x 170 px</strong></li>
-            <li><Tablet className="h-3 w-3 inline mr-1" /> Tablet: <strong>Auto x 170 px</strong></li>
-            <li><Smartphone className="h-3 w-3 inline mr-1" /> Móvil: <strong>Auto x 170 px</strong></li>
+            <li><Monitor className="h-3 w-3 inline mr-1" /> PC: <strong>1500 x 180 px</strong></li>
+            <li><Tablet className="h-3 w-3 inline mr-1" /> Tablet: <strong>Auto x 180 px</strong></li>
+            <li><Smartphone className="h-3 w-3 inline mr-1" /> Móvil: <strong>Auto x 180 px</strong></li>
           </ul>
           <p className="mt-2 text-xs text-muted-foreground">
             La imagen se posicionará en el lado derecho del contenedor con overlay púrpura-rosa al 50%.
