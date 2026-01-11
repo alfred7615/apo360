@@ -2423,6 +2423,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imagenPerfil: user.profileImageUrl || undefined,
         primerNombre: user.firstName || undefined,
         apellido: user.lastName || undefined,
+        paisIdActual: user.paisIdActual || undefined,
+        ciudadIdActual: user.ciudadIdActual || undefined,
       };
       
       res.json(authUser);
