@@ -937,6 +937,31 @@ function MediaCiudadesSection() {
 }
 
 export default function GestionCiudades() {
+  const [nivelActual, setNivelActual] = useState<"paises" | "ciudades" | "media">("paises");
+  const [paisSeleccionado, setPaisSeleccionado] = useState<Pais | null>(null);
+  const [ciudadSeleccionada, setCiudadSeleccionada] = useState<Ciudad | null>(null);
+
+  const handleSeleccionarPais = (pais: Pais) => {
+    setPaisSeleccionado(pais);
+    setNivelActual("ciudades");
+  };
+
+  const handleSeleccionarCiudad = (ciudad: Ciudad) => {
+    setCiudadSeleccionada(ciudad);
+    setNivelActual("media");
+  };
+
+  const handleVolverAPaises = () => {
+    setNivelActual("paises");
+    setPaisSeleccionado(null);
+    setCiudadSeleccionada(null);
+  };
+
+  const handleVolverACiudades = () => {
+    setNivelActual("ciudades");
+    setCiudadSeleccionada(null);
+  };
+
   return (
     <div className="p-4 space-y-6">
       <div>
@@ -945,35 +970,896 @@ export default function GestionCiudades() {
           Gestión de Países, Ciudades y Media
         </h1>
         <p className="text-muted-foreground text-sm">
-          Administra los países, ciudades y contenido multimedia del sistema multi-ciudad
+          Doble clic en un país para ver sus ciudades, doble clic en una ciudad para gestionar su media
         </p>
       </div>
 
-      <Tabs defaultValue="paises" className="w-full">
-        <TabsList>
-          <TabsTrigger value="paises" data-testid="tab-paises">
-            <Globe className="h-4 w-4 mr-1" />
-            Países
-          </TabsTrigger>
-          <TabsTrigger value="ciudades" data-testid="tab-ciudades">
-            <MapPin className="h-4 w-4 mr-1" />
-            Ciudades
-          </TabsTrigger>
-          <TabsTrigger value="media" data-testid="tab-media">
-            <Image className="h-4 w-4 mr-1" />
-            Media
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="paises" className="mt-4">
-          <PaisesSection />
-        </TabsContent>
-        <TabsContent value="ciudades" className="mt-4">
-          <CiudadesSection />
-        </TabsContent>
-        <TabsContent value="media" className="mt-4">
-          <MediaCiudadesSection />
-        </TabsContent>
-      </Tabs>
+      {/* Breadcrumb de navegación */}
+      <div className="flex items-center gap-2 text-sm">
+        <button 
+          onClick={handleVolverAPaises}
+          className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${nivelActual === "paises" ? "bg-primary text-primary-foreground" : "hover-elevate"}`}
+          data-testid="breadcrumb-paises"
+        >
+          <Globe className="h-4 w-4" />
+          Países
+        </button>
+        {paisSeleccionado && (
+          <>
+            <span className="text-muted-foreground">/</span>
+            <button 
+              onClick={handleVolverACiudades}
+              className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${nivelActual === "ciudades" ? "bg-primary text-primary-foreground" : "hover-elevate"}`}
+              data-testid="breadcrumb-ciudades"
+            >
+              <span className="text-lg mr-1">{paisSeleccionado.bandera}</span>
+              {paisSeleccionado.nombre}
+            </button>
+          </>
+        )}
+        {ciudadSeleccionada && (
+          <>
+            <span className="text-muted-foreground">/</span>
+            <span className="flex items-center gap-1 px-2 py-1 rounded bg-primary text-primary-foreground">
+              <MapPin className="h-4 w-4" />
+              {ciudadSeleccionada.nombre} - Media
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* Contenido según nivel */}
+      {nivelActual === "paises" && (
+        <PaisesSectionConDobleClick onSeleccionar={handleSeleccionarPais} />
+      )}
+      {nivelActual === "ciudades" && paisSeleccionado && (
+        <CiudadesSectionConDobleClick paisId={paisSeleccionado.id} paisNombre={paisSeleccionado.nombre} onSeleccionar={handleSeleccionarCiudad} />
+      )}
+      {nivelActual === "media" && ciudadSeleccionada && (
+        <MediaCiudadesSectionDirecta ciudadId={ciudadSeleccionada.id} ciudadNombre={ciudadSeleccionada.nombre} />
+      )}
+    </div>
+  );
+}
+
+// Componente de países con doble clic
+function PaisesSectionConDobleClick({ onSeleccionar }: { onSeleccionar: (pais: Pais) => void }) {
+  const { toast } = useToast();
+  const [showFormPais, setShowFormPais] = useState(false);
+  const [paisEditando, setPaisEditando] = useState<Pais | null>(null);
+  const [formPais, setFormPais] = useState({
+    nombre: "",
+    codigoIso: "",
+    bandera: "",
+    activo: true,
+    orden: 0,
+  });
+
+  const { data: paises = [], isLoading } = useQuery<Pais[]>({
+    queryKey: ["/api/paises"],
+  });
+
+  const crearPaisMutation = useMutation({
+    mutationFn: (data: typeof formPais) => apiRequest("POST", "/api/admin/paises", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/paises"] });
+      resetForm();
+      toast({ title: "País creado", description: "El país se ha creado correctamente." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const actualizarPaisMutation = useMutation({
+    mutationFn: (data: { id: string; updates: Partial<typeof formPais> }) =>
+      apiRequest("PUT", `/api/admin/paises/${data.id}`, data.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/paises"] });
+      resetForm();
+      toast({ title: "País actualizado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const eliminarPaisMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/paises/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/paises"] });
+      toast({ title: "País eliminado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const resetForm = () => {
+    setShowFormPais(false);
+    setPaisEditando(null);
+    setFormPais({ nombre: "", codigoIso: "", bandera: "", activo: true, orden: 0 });
+  };
+
+  const handleEditar = (e: React.MouseEvent, pais: Pais) => {
+    e.stopPropagation();
+    setPaisEditando(pais);
+    setFormPais({
+      nombre: pais.nombre,
+      codigoIso: pais.codigoIso || "",
+      bandera: pais.bandera || "",
+      activo: pais.activo ?? true,
+      orden: pais.orden ?? 0,
+    });
+    setShowFormPais(true);
+  };
+
+  const handleEliminar = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    eliminarPaisMutation.mutate(id);
+  };
+
+  const handleGuardar = () => {
+    if (!formPais.nombre.trim()) {
+      toast({ title: "Error", description: "El nombre es requerido", variant: "destructive" });
+      return;
+    }
+    if (paisEditando) {
+      actualizarPaisMutation.mutate({ id: paisEditando.id, updates: formPais });
+    } else {
+      crearPaisMutation.mutate(formPais);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Globe className="h-5 w-5 text-primary" />
+          Países Disponibles
+        </h3>
+        <Button onClick={() => setShowFormPais(true)} size="sm" data-testid="btn-nuevo-pais">
+          <Plus className="h-4 w-4 mr-1" />
+          Nuevo País
+        </Button>
+      </div>
+
+      <p className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+        Doble clic en un país para ver sus ciudades
+      </p>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      ) : paises.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No hay países configurados</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {paises.map((pais) => (
+            <Card 
+              key={pais.id} 
+              className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] bg-muted/30 ${!pais.activo ? "opacity-50" : ""}`}
+              onDoubleClick={() => onSeleccionar(pais)}
+              data-testid={`card-pais-${pais.id}`}
+            >
+              <CardContent className="p-6">
+                <div className="flex flex-col items-center text-center gap-3">
+                  <span className="text-5xl">{pais.bandera}</span>
+                  <div>
+                    <p className="font-semibold text-lg">{pais.nombre}</p>
+                    <p className="text-sm text-muted-foreground">{pais.codigoIso}</p>
+                  </div>
+                  <Badge variant={pais.activo ? "default" : "secondary"}>
+                    {pais.activo ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+                <div className="flex justify-center gap-2 mt-4 pt-4 border-t">
+                  <Button variant="ghost" size="sm" onClick={(e) => handleEditar(e, pais)} data-testid={`btn-editar-pais-${pais.id}`}>
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-destructive" onClick={(e) => handleEliminar(e, pais.id)} data-testid={`btn-eliminar-pais-${pais.id}`}>
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Eliminar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={showFormPais} onOpenChange={setShowFormPais}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{paisEditando ? "Editar País" : "Nuevo País"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nombre">Nombre</Label>
+              <Input
+                id="nombre"
+                value={formPais.nombre}
+                onChange={(e) => setFormPais({ ...formPais, nombre: e.target.value })}
+                placeholder="Ej: Perú"
+                data-testid="input-pais-nombre"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="codigoIso">Código ISO</Label>
+                <Input
+                  id="codigoIso"
+                  value={formPais.codigoIso}
+                  onChange={(e) => setFormPais({ ...formPais, codigoIso: e.target.value })}
+                  placeholder="PE"
+                  maxLength={3}
+                  data-testid="input-pais-codigo"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bandera">Bandera (emoji)</Label>
+                <Input
+                  id="bandera"
+                  value={formPais.bandera}
+                  onChange={(e) => setFormPais({ ...formPais, bandera: e.target.value })}
+                  placeholder="🇵🇪"
+                  data-testid="input-pais-bandera"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="orden">Orden</Label>
+                <Input
+                  id="orden"
+                  type="number"
+                  value={formPais.orden}
+                  onChange={(e) => setFormPais({ ...formPais, orden: parseInt(e.target.value) || 0 })}
+                  data-testid="input-pais-orden"
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-6">
+                <Switch
+                  checked={formPais.activo}
+                  onCheckedChange={(checked) => setFormPais({ ...formPais, activo: checked })}
+                  data-testid="switch-pais-activo"
+                />
+                <Label>Activo</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={resetForm}>
+              <X className="h-4 w-4 mr-1" />
+              Cancelar
+            </Button>
+            <Button onClick={handleGuardar} disabled={crearPaisMutation.isPending || actualizarPaisMutation.isPending} data-testid="btn-guardar-pais">
+              {(crearPaisMutation.isPending || actualizarPaisMutation.isPending) && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              <Save className="h-4 w-4 mr-1" />
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// Componente de ciudades con doble clic
+function CiudadesSectionConDobleClick({ paisId, paisNombre, onSeleccionar }: { paisId: string; paisNombre: string; onSeleccionar: (ciudad: Ciudad) => void }) {
+  const { toast } = useToast();
+  const [showFormCiudad, setShowFormCiudad] = useState(false);
+  const [ciudadEditando, setCiudadEditando] = useState<Ciudad | null>(null);
+  const [formCiudad, setFormCiudad] = useState({
+    paisId: paisId,
+    nombre: "",
+    slug: "",
+    departamento: "",
+    region: "",
+    latitud: "",
+    longitud: "",
+    zonaHoraria: "",
+    activo: true,
+    orden: 0,
+  });
+
+  const { data: ciudades = [], isLoading } = useQuery<Ciudad[]>({
+    queryKey: ["/api/ciudades", paisId],
+    queryFn: async () => {
+      const response = await fetch(`/api/ciudades?paisId=${paisId}`);
+      return response.json();
+    },
+  });
+
+  const crearCiudadMutation = useMutation({
+    mutationFn: (data: typeof formCiudad) => apiRequest("POST", "/api/admin/ciudades", {
+      ...data,
+      latitud: data.latitud ? parseFloat(data.latitud) : null,
+      longitud: data.longitud ? parseFloat(data.longitud) : null,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ciudades", paisId] });
+      resetForm();
+      toast({ title: "Ciudad creada" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const actualizarCiudadMutation = useMutation({
+    mutationFn: (data: { id: string; updates: Partial<typeof formCiudad> }) =>
+      apiRequest("PUT", `/api/admin/ciudades/${data.id}`, {
+        ...data.updates,
+        latitud: data.updates.latitud ? parseFloat(data.updates.latitud) : null,
+        longitud: data.updates.longitud ? parseFloat(data.updates.longitud) : null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ciudades", paisId] });
+      resetForm();
+      toast({ title: "Ciudad actualizada" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const eliminarCiudadMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/ciudades/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ciudades", paisId] });
+      toast({ title: "Ciudad eliminada" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const resetForm = () => {
+    setShowFormCiudad(false);
+    setCiudadEditando(null);
+    setFormCiudad({
+      paisId: paisId,
+      nombre: "",
+      slug: "",
+      departamento: "",
+      region: "",
+      latitud: "",
+      longitud: "",
+      zonaHoraria: "",
+      activo: true,
+      orden: 0,
+    });
+  };
+
+  const handleEditar = (e: React.MouseEvent, ciudad: Ciudad) => {
+    e.stopPropagation();
+    setCiudadEditando(ciudad);
+    setFormCiudad({
+      paisId: ciudad.paisId,
+      nombre: ciudad.nombre,
+      slug: ciudad.slug || "",
+      departamento: ciudad.departamento || "",
+      region: ciudad.region || "",
+      latitud: ciudad.latitud?.toString() || "",
+      longitud: ciudad.longitud?.toString() || "",
+      zonaHoraria: ciudad.zonaHoraria || "",
+      activo: ciudad.activo ?? true,
+      orden: ciudad.orden ?? 0,
+    });
+    setShowFormCiudad(true);
+  };
+
+  const handleEliminar = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    eliminarCiudadMutation.mutate(id);
+  };
+
+  const handleGuardar = () => {
+    if (!formCiudad.nombre.trim()) {
+      toast({ title: "Error", description: "El nombre es requerido", variant: "destructive" });
+      return;
+    }
+    if (ciudadEditando) {
+      actualizarCiudadMutation.mutate({ id: ciudadEditando.id, updates: formCiudad });
+    } else {
+      crearCiudadMutation.mutate(formCiudad);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-primary" />
+          Ciudades de {paisNombre}
+        </h3>
+        <Button onClick={() => setShowFormCiudad(true)} size="sm" data-testid="btn-nueva-ciudad">
+          <Plus className="h-4 w-4 mr-1" />
+          Nueva Ciudad
+        </Button>
+      </div>
+
+      <p className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+        Doble clic en una ciudad para gestionar sus imágenes y videos
+      </p>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      ) : ciudades.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No hay ciudades para este país</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {ciudades.map((ciudad) => (
+            <Card 
+              key={ciudad.id} 
+              className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] bg-muted/30 ${!ciudad.activo ? "opacity-50" : ""}`}
+              onDoubleClick={() => onSeleccionar(ciudad)}
+              data-testid={`card-ciudad-${ciudad.id}`}
+            >
+              <CardContent className="p-6">
+                <div className="flex flex-col items-center text-center gap-2">
+                  <MapPin className="h-10 w-10 text-primary" />
+                  <p className="font-semibold text-lg">{ciudad.nombre}</p>
+                  {ciudad.departamento && (
+                    <p className="text-sm text-muted-foreground">{ciudad.departamento}</p>
+                  )}
+                  <Badge variant={ciudad.activo ? "default" : "secondary"}>
+                    {ciudad.activo ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+                <div className="flex justify-center gap-2 mt-4 pt-4 border-t">
+                  <Button variant="ghost" size="sm" onClick={(e) => handleEditar(e, ciudad)} data-testid={`btn-editar-ciudad-${ciudad.id}`}>
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-destructive" onClick={(e) => handleEliminar(e, ciudad.id)} data-testid={`btn-eliminar-ciudad-${ciudad.id}`}>
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Eliminar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={showFormCiudad} onOpenChange={setShowFormCiudad}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{ciudadEditando ? "Editar Ciudad" : "Nueva Ciudad"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nombreCiudad">Nombre</Label>
+              <Input
+                id="nombreCiudad"
+                value={formCiudad.nombre}
+                onChange={(e) => setFormCiudad({ ...formCiudad, nombre: e.target.value })}
+                placeholder="Ej: Tacna"
+                data-testid="input-ciudad-nombre"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="departamento">Departamento</Label>
+                <Input
+                  id="departamento"
+                  value={formCiudad.departamento}
+                  onChange={(e) => setFormCiudad({ ...formCiudad, departamento: e.target.value })}
+                  placeholder="Ej: Tacna"
+                  data-testid="input-ciudad-departamento"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="region">Región</Label>
+                <Input
+                  id="region"
+                  value={formCiudad.region}
+                  onChange={(e) => setFormCiudad({ ...formCiudad, region: e.target.value })}
+                  placeholder="Ej: Sur"
+                  data-testid="input-ciudad-region"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="latitud">Latitud</Label>
+                <Input
+                  id="latitud"
+                  value={formCiudad.latitud}
+                  onChange={(e) => setFormCiudad({ ...formCiudad, latitud: e.target.value })}
+                  placeholder="-18.0066"
+                  data-testid="input-ciudad-latitud"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="longitud">Longitud</Label>
+                <Input
+                  id="longitud"
+                  value={formCiudad.longitud}
+                  onChange={(e) => setFormCiudad({ ...formCiudad, longitud: e.target.value })}
+                  placeholder="-70.2463"
+                  data-testid="input-ciudad-longitud"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ordenCiudad">Orden</Label>
+                <Input
+                  id="ordenCiudad"
+                  type="number"
+                  value={formCiudad.orden}
+                  onChange={(e) => setFormCiudad({ ...formCiudad, orden: parseInt(e.target.value) || 0 })}
+                  data-testid="input-ciudad-orden"
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-6">
+                <Switch
+                  checked={formCiudad.activo}
+                  onCheckedChange={(checked) => setFormCiudad({ ...formCiudad, activo: checked })}
+                  data-testid="switch-ciudad-activo"
+                />
+                <Label>Activo</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={resetForm}>
+              <X className="h-4 w-4 mr-1" />
+              Cancelar
+            </Button>
+            <Button onClick={handleGuardar} disabled={crearCiudadMutation.isPending || actualizarCiudadMutation.isPending} data-testid="btn-guardar-ciudad">
+              {(crearCiudadMutation.isPending || actualizarCiudadMutation.isPending) && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              <Save className="h-4 w-4 mr-1" />
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// Componente de media para una ciudad específica
+function MediaCiudadesSectionDirecta({ ciudadId, ciudadNombre }: { ciudadId: string; ciudadNombre: string }) {
+  const { toast } = useToast();
+  const [showFormMedia, setShowFormMedia] = useState(false);
+  const [mediaEditando, setMediaEditando] = useState<MediaCiudad | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [formMedia, setFormMedia] = useState({
+    tipo: "imagen" as "imagen" | "video",
+    url: "",
+    titulo: "",
+    fechaInicio: "",
+    fechaFin: "",
+    estado: "activo" as "activo" | "pausado" | "suspendido",
+    orden: 0,
+  });
+
+  const { data: mediaList = [], isLoading } = useQuery<MediaCiudad[]>({
+    queryKey: ["/api/admin/media-ciudades", ciudadId],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/media-ciudades/${ciudadId}`, {
+        credentials: "include",
+      });
+      return response.json();
+    },
+  });
+
+  const crearMediaMutation = useMutation({
+    mutationFn: (data: typeof formMedia & { ciudadId: string }) => apiRequest("POST", "/api/admin/media-ciudades", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/media-ciudades", ciudadId] });
+      resetForm();
+      toast({ title: "Media creado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const actualizarMediaMutation = useMutation({
+    mutationFn: (data: { id: string; updates: Partial<typeof formMedia> }) =>
+      apiRequest("PUT", `/api/admin/media-ciudades/${data.id}`, data.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/media-ciudades", ciudadId] });
+      resetForm();
+      toast({ title: "Media actualizado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const eliminarMediaMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/media-ciudades/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/media-ciudades", ciudadId] });
+      toast({ title: "Media eliminado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const resetForm = () => {
+    setShowFormMedia(false);
+    setMediaEditando(null);
+    setFormMedia({
+      tipo: "imagen",
+      url: "",
+      titulo: "",
+      fechaInicio: "",
+      fechaFin: "",
+      estado: "activo",
+      orden: 0,
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isVideo = file.type.startsWith("video/");
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
+    
+    if (file.size > maxSize) {
+      toast({
+        title: "Error",
+        description: `El archivo es muy grande. Máximo ${isVideo ? "100MB" : "25MB"}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubiendo(true);
+    const formData = new FormData();
+    formData.append("archivo", file);
+
+    try {
+      const response = await fetch("/api/upload/media-ciudad", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Error al subir archivo");
+
+      const data = await response.json();
+      setFormMedia({
+        ...formMedia,
+        url: data.url,
+        tipo: isVideo ? "video" : "imagen",
+      });
+      toast({ title: "Archivo subido correctamente" });
+    } catch (error) {
+      toast({ title: "Error al subir archivo", variant: "destructive" });
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  const handleEditar = (media: MediaCiudad) => {
+    setMediaEditando(media);
+    setFormMedia({
+      tipo: media.tipo,
+      url: media.url,
+      titulo: media.titulo || "",
+      fechaInicio: media.fechaInicio ? new Date(media.fechaInicio).toISOString().split("T")[0] : "",
+      fechaFin: media.fechaFin ? new Date(media.fechaFin).toISOString().split("T")[0] : "",
+      estado: media.estado,
+      orden: media.orden ?? 0,
+    });
+    setShowFormMedia(true);
+  };
+
+  const handleGuardar = () => {
+    if (!formMedia.url) {
+      toast({ title: "Error", description: "Debes subir un archivo", variant: "destructive" });
+      return;
+    }
+    if (mediaEditando) {
+      actualizarMediaMutation.mutate({ id: mediaEditando.id, updates: formMedia });
+    } else {
+      crearMediaMutation.mutate({ ...formMedia, ciudadId });
+    }
+  };
+
+  const getEstadoBadge = (estado: string) => {
+    switch (estado) {
+      case "activo":
+        return <Badge className="bg-green-500"><Play className="h-3 w-3 mr-1" />Activo</Badge>;
+      case "pausado":
+        return <Badge variant="secondary"><Pause className="h-3 w-3 mr-1" />Pausado</Badge>;
+      case "suspendido":
+        return <Badge variant="destructive"><Ban className="h-3 w-3 mr-1" />Suspendido</Badge>;
+      default:
+        return <Badge>{estado}</Badge>;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Image className="h-5 w-5 text-primary" />
+          Media de {ciudadNombre}
+        </h3>
+        <Button onClick={() => setShowFormMedia(true)} size="sm" data-testid="btn-nuevo-media">
+          <Upload className="h-4 w-4 mr-1" />
+          Subir Media
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      ) : mediaList.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No hay media para esta ciudad</p>
+            <p className="text-sm">Sube imágenes o videos para mostrar en la sección de bienvenida</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {mediaList.map((media) => (
+            <Card key={media.id} data-testid={`card-media-${media.id}`}>
+              <div className="relative aspect-video bg-muted overflow-hidden rounded-t-lg">
+                {media.tipo === "imagen" ? (
+                  <img src={media.url} alt={media.titulo || "Media"} className="w-full h-full object-cover" />
+                ) : (
+                  <video src={media.url} className="w-full h-full object-cover" />
+                )}
+                <div className="absolute top-2 right-2">
+                  {media.tipo === "video" ? (
+                    <Badge className="bg-purple-600"><Video className="h-3 w-3 mr-1" />Video</Badge>
+                  ) : (
+                    <Badge className="bg-blue-600"><Image className="h-3 w-3 mr-1" />Imagen</Badge>
+                  )}
+                </div>
+              </div>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium truncate">{media.titulo || "Sin título"}</p>
+                  {getEstadoBadge(media.estado)}
+                </div>
+                {(media.fechaInicio || media.fechaFin) && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {media.fechaInicio ? new Date(media.fechaInicio).toLocaleDateString() : "∞"} - {media.fechaFin ? new Date(media.fechaFin).toLocaleDateString() : "∞"}
+                  </p>
+                )}
+                <div className="flex gap-1 pt-2">
+                  <Button variant="ghost" size="sm" onClick={() => handleEditar(media)} data-testid={`btn-editar-media-${media.id}`}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => eliminarMediaMutation.mutate(media.id)} data-testid={`btn-eliminar-media-${media.id}`}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={showFormMedia} onOpenChange={setShowFormMedia}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{mediaEditando ? "Editar Media" : "Nuevo Media"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pb-2">
+            <div className="space-y-2">
+              <Label>Archivo (imagen o video)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleFileUpload}
+                  disabled={subiendo}
+                  data-testid="input-media-archivo"
+                />
+                {subiendo && <Loader2 className="h-4 w-4 animate-spin" />}
+              </div>
+              {formMedia.url && (
+                <div className="mt-2 relative aspect-video bg-muted rounded-lg overflow-hidden">
+                  {formMedia.tipo === "imagen" ? (
+                    <img src={formMedia.url} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <video src={formMedia.url} className="w-full h-full object-cover" controls />
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tituloMedia">Título (opcional)</Label>
+              <Input
+                id="tituloMedia"
+                value={formMedia.titulo}
+                onChange={(e) => setFormMedia({ ...formMedia, titulo: e.target.value })}
+                placeholder="Ej: Bienvenida Tacna"
+                data-testid="input-media-titulo"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fechaInicioMedia">Fecha Inicio</Label>
+                <Input
+                  id="fechaInicioMedia"
+                  type="date"
+                  value={formMedia.fechaInicio}
+                  onChange={(e) => setFormMedia({ ...formMedia, fechaInicio: e.target.value })}
+                  data-testid="input-media-fecha-inicio"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fechaFinMedia">Fecha Fin</Label>
+                <Input
+                  id="fechaFinMedia"
+                  type="date"
+                  value={formMedia.fechaFin}
+                  onChange={(e) => setFormMedia({ ...formMedia, fechaFin: e.target.value })}
+                  data-testid="input-media-fecha-fin"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="estadoMedia">Estado</Label>
+                <Select value={formMedia.estado} onValueChange={(value: "activo" | "pausado" | "suspendido") => setFormMedia({ ...formMedia, estado: value })}>
+                  <SelectTrigger data-testid="select-media-estado">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="activo">Activo</SelectItem>
+                    <SelectItem value="pausado">Pausado</SelectItem>
+                    <SelectItem value="suspendido">Suspendido</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ordenMedia">Orden</Label>
+                <Input
+                  id="ordenMedia"
+                  type="number"
+                  value={formMedia.orden}
+                  onChange={(e) => setFormMedia({ ...formMedia, orden: parseInt(e.target.value) || 0 })}
+                  data-testid="input-media-orden"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={resetForm}>
+              <X className="h-4 w-4 mr-1" />
+              Cancelar
+            </Button>
+            <Button onClick={handleGuardar} disabled={crearMediaMutation.isPending || actualizarMediaMutation.isPending || !formMedia.url} data-testid="btn-guardar-media">
+              {(crearMediaMutation.isPending || actualizarMediaMutation.isPending) && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              <Save className="h-4 w-4 mr-1" />
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
