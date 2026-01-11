@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
@@ -23,6 +23,15 @@ import SeccionLocalesComerciales from "@/components/SeccionLocalesComerciales";
 import { CalculadoraCambio } from "@/components/CalculadoraCambio";
 import { useQuery } from "@tanstack/react-query";
 import type { Emergencia, ContactoFamiliar } from "@shared/schema";
+
+interface MediaCiudad {
+  id: string;
+  ciudadId: string;
+  tipo: "imagen" | "video";
+  url: string;
+  titulo: string | null;
+  orden: number | null;
+}
 
 export default function Home() {
   const { toast } = useToast();
@@ -57,6 +66,37 @@ export default function Home() {
     enabled: !!user,
   });
 
+  // Media de la ciudad activa del usuario para mostrar en la sección de bienvenida
+  const ciudadIdActual = user?.ciudadIdActual;
+  const { data: mediaCiudad = [] } = useQuery<MediaCiudad[]>({
+    queryKey: ["/api/media-ciudades", ciudadIdActual, "activos"],
+    enabled: !!ciudadIdActual,
+    queryFn: async () => {
+      const response = await fetch(`/api/media-ciudades/${ciudadIdActual}/activos`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
+  // Estado para el índice del media actual (para rotación automática si hay múltiples)
+  const [mediaIndex, setMediaIndex] = useState(0);
+  
+  // Resetear índice cuando cambia la lista de media
+  useEffect(() => {
+    setMediaIndex(0);
+  }, [mediaCiudad]);
+
+  // Rotación automática del media cada 8 segundos si hay múltiples
+  useEffect(() => {
+    if (mediaCiudad.length <= 1) return;
+    const interval = setInterval(() => {
+      setMediaIndex((prev) => (prev + 1) % mediaCiudad.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [mediaCiudad.length]);
+
+  const mediaActual = mediaCiudad[mediaIndex];
+
   // Estado para modal de registro requerido
   const [modalRegistroRequerido, setModalRegistroRequerido] = useState(false);
 
@@ -88,11 +128,43 @@ export default function Home() {
       {/* Carrusel de logos publicitarios - Arriba del saludo */}
       <CarruselPublicidad tipo="carrusel_logos" />
 
-      {/* Bienvenida - Altura fija 170px con botones de alerta */}
-      <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white relative" style={{ height: '170px', paddingBottom: '70px' }}>
+      {/* Bienvenida - Altura fija 170px con botones de alerta y media de fondo */}
+      <section className="text-white relative overflow-hidden" style={{ height: '170px', paddingBottom: '70px' }}>
+        {/* Fondo: Media de la ciudad o gradiente por defecto */}
+        {mediaActual ? (
+          <>
+            {/* Media de fondo - Responsivo: centrado en móvil, derecha en PC/tablet */}
+            <div className="absolute inset-0 z-0">
+              {mediaActual.tipo === "imagen" ? (
+                <img
+                  src={mediaActual.url}
+                  alt={mediaActual.titulo || "Bienvenida"}
+                  className="w-full h-full object-cover object-center md:object-right"
+                />
+              ) : (
+                <video
+                  src={mediaActual.url}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover object-center md:object-right"
+                />
+              )}
+            </div>
+            {/* Overlay con gradiente púrpura-rosa al 50% de opacidad */}
+            <div 
+              className="absolute inset-0 z-10 bg-gradient-to-r from-purple-600 to-pink-600" 
+              style={{ opacity: 0.5 }}
+            />
+          </>
+        ) : (
+          /* Gradiente por defecto si no hay media */
+          <div className="absolute inset-0 z-0 bg-gradient-to-r from-purple-600 to-pink-600" />
+        )}
         {/* Botones de Alertas - Escritorio: horizontal superior derecha - Solo para usuarios logueados */}
         {!esVisitante && (
-        <div className="hidden lg:flex absolute top-4 right-4 gap-2">
+        <div className="hidden lg:flex absolute top-4 right-4 gap-2 z-20">
           <div className="relative">
             <Button
               onClick={() => setModalAgenda(true)}
@@ -160,7 +232,7 @@ export default function Home() {
 
         {/* Botones de Alertas - Tablet/Móvil: solo mostrar si contador > 0 - Solo para usuarios logueados */}
         {!esVisitante && (
-        <div className="lg:hidden absolute top-4 right-4 flex gap-2">
+        <div className="lg:hidden absolute top-4 right-4 flex gap-2 z-20">
           {contadorAgenda > 0 && (
             <div className="relative">
               <Button
@@ -215,7 +287,7 @@ export default function Home() {
         )}
 
         {/* Contenido de bienvenida - Diferente para visitantes vs usuarios logueados */}
-        <div className="container mx-auto px-4 h-full flex items-center justify-start pt-4">
+        <div className="container mx-auto px-4 h-full flex items-center justify-start pt-4 relative z-20">
           <div className="text-left">
             {esVisitante ? (
               <>
