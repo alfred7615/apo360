@@ -471,18 +471,15 @@ export default function Home() {
                   >
                     Iniciar Sesión / Registrarse
                   </Button>
-                  {isSupported && (
-                    <Button
-                      onClick={toggleFullscreen}
-                      size="icon"
-                      variant="outline"
-                      className="bg-white/20 border-white/40 text-white hover:bg-white/30"
-                      title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
-                      data-testid="button-fullscreen-toggle"
-                    >
-                      {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-                    </Button>
-                  )}
+                  <Button
+                    onClick={toggleFullscreen}
+                    size="icon"
+                    className="bg-white text-purple-600 hover:bg-white/90 shadow-lg"
+                    title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                    data-testid="button-fullscreen-toggle"
+                  >
+                    {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+                  </Button>
                 </div>
               </>
             ) : (
@@ -493,21 +490,20 @@ export default function Home() {
                 <p className="text-white/95 text-xl font-medium">
                   Tu comunidad está segura
                 </p>
-                <p className="text-white/80 text-lg">
-                  Juntos somos invencibles
-                </p>
-                {isSupported && (
+                <div className="flex items-center gap-3">
+                  <p className="text-white/80 text-lg">
+                    Juntos somos invencibles
+                  </p>
                   <Button
                     onClick={toggleFullscreen}
                     size="icon"
-                    variant="outline"
-                    className="mt-2 bg-white/20 border-white/40 text-white hover:bg-white/30"
+                    className="bg-white text-purple-600 hover:bg-white/90 shadow-lg"
                     title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
                     data-testid="button-fullscreen-toggle-logged"
                   >
                     {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
                   </Button>
-                )}
+                </div>
               </>
             )}
           </div>
