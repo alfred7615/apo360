@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useFullscreen } from "@/hooks/useFullscreen";
 import { useLocation } from "wouter";
-import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X, Megaphone, UsersRound, Bus, Coins, Construction, Share2, Shield, Radio, Accessibility, CircleDot, Store, Clock, Star } from "lucide-react";
+import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X, Megaphone, UsersRound, Bus, Coins, Construction, Share2, Shield, Radio, Accessibility, CircleDot, Store, Clock, Star, Maximize2, Minimize2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -174,6 +175,31 @@ export default function Home() {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const screenSize = useScreenSize();
+  const { isFullscreen, toggleFullscreen, enterFullscreen, isSupported } = useFullscreen();
+  const hasTriggeredFullscreen = useRef(false);
+  
+  // En tablet/móvil: activar pantalla completa automáticamente en la primera interacción
+  useEffect(() => {
+    if (screenSize === 'desktop' || !isSupported || hasTriggeredFullscreen.current) return;
+    
+    const handleFirstInteraction = async () => {
+      if (!hasTriggeredFullscreen.current) {
+        hasTriggeredFullscreen.current = true;
+        await enterFullscreen();
+        // Remover listeners después de la primera interacción
+        document.removeEventListener('touchstart', handleFirstInteraction);
+        document.removeEventListener('click', handleFirstInteraction);
+      }
+    };
+    
+    document.addEventListener('touchstart', handleFirstInteraction, { once: true });
+    document.addEventListener('click', handleFirstInteraction, { once: true });
+    
+    return () => {
+      document.removeEventListener('touchstart', handleFirstInteraction);
+      document.removeEventListener('click', handleFirstInteraction);
+    };
+  }, [screenSize, isSupported, enterFullscreen]);
   
   const [modalAgenda, setModalAgenda] = useState(false);
   const [modalFamilia, setModalFamilia] = useState(false);
@@ -437,13 +463,27 @@ export default function Home() {
                 <p className="text-white/80 text-base mt-2">
                   Regístrate para acceder al Botón de Pánico, Chat Comunitario, Compra/Venta y más
                 </p>
-                <Button
-                  onClick={() => setLocation("/iniciar-sesion")}
-                  className="mt-3 bg-white text-purple-600 hover:bg-white/90 font-semibold"
-                  data-testid="button-registro-cta"
-                >
-                  Iniciar Sesión / Registrarse
-                </Button>
+                <div className="flex items-center gap-2 mt-3">
+                  <Button
+                    onClick={() => setLocation("/iniciar-sesion")}
+                    className="bg-white text-purple-600 hover:bg-white/90 font-semibold"
+                    data-testid="button-registro-cta"
+                  >
+                    Iniciar Sesión / Registrarse
+                  </Button>
+                  {isSupported && (
+                    <Button
+                      onClick={toggleFullscreen}
+                      size="icon"
+                      variant="outline"
+                      className="bg-white/20 border-white/40 text-white hover:bg-white/30"
+                      title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                      data-testid="button-fullscreen-toggle"
+                    >
+                      {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+                    </Button>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -456,6 +496,18 @@ export default function Home() {
                 <p className="text-white/80 text-lg">
                   Juntos somos invencibles
                 </p>
+                {isSupported && (
+                  <Button
+                    onClick={toggleFullscreen}
+                    size="icon"
+                    variant="outline"
+                    className="mt-2 bg-white/20 border-white/40 text-white hover:bg-white/30"
+                    title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                    data-testid="button-fullscreen-toggle-logged"
+                  >
+                    {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+                  </Button>
+                )}
               </>
             )}
           </div>
