@@ -108,6 +108,34 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 - **Security Tab**: Added to user profile (perfil.tsx) for password management
 - **Schema Update**: Added `requiereCambioContrasena` boolean field to users table
 
+### Advanced Chat System Enhancements
+- **Three-Tab Interface**: Grupos (conversations), Contactos (manual contacts), Gmail (synced contacts)
+- **Contactos Tab Features**:
+  - Search contacts by name, phone, or email
+  - "Agregar Contacto" button opens search modal to find registered users
+  - 3-dot menu on each contact: Iniciar chat, Editar contacto, Invitar a registrarse, Eliminar
+  - Favorites marked with star badge
+  - "En APO-360" badge for registered users
+- **Gmail Tab Features**:
+  - Connect/Disconnect Gmail account via Google OAuth + People API
+  - Sync button to import contacts from Gmail
+  - Contacts sorted alphabetically, registered in APO-360 appear first
+  - 3-dot menu: Iniciar chat, Agregar a Contactos, Invitar a registrarse
+  - Last sync timestamp displayed
+- **Backend Endpoints**:
+  - `GET /api/chat/contactos` - User's manual contacts list
+  - `POST /api/chat/contactos` - Add contact
+  - `PATCH /api/chat/contactos/:id` - Edit contact
+  - `DELETE /api/chat/contactos/:id` - Delete contact
+  - `GET /api/chat/buscar-usuarios` - Search users by name/phone/email
+  - `GET /api/chat/gmail/estado` - Gmail connection status
+  - `GET /api/chat/gmail/auth-url` - Get OAuth URL
+  - `POST /api/chat/gmail/sincronizar` - Sync Gmail contacts
+  - `GET /api/chat/gmail/contactos` - Get synced Gmail contacts
+  - `DELETE /api/chat/gmail/desconectar` - Disconnect Gmail
+- **Database Tables**: `contactos_chat`, `tokens_gmail`, `archivos_compartidos_chat`
+- **Key Files**: `client/src/pages/chat.tsx`, `server/routes.ts` (lines 3935-4400)
+
 ## Recent Changes (December 2025)
 
 ### Bug Fixes

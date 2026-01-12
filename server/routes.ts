@@ -5,7 +5,7 @@ import path from "path";
 import crypto from "crypto";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, and, ne, sql, desc } from "drizzle-orm";
+import { eq, and, ne, sql, desc, or, not } from "drizzle-orm";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { createUploadMiddleware, createMediaUploadMiddleware, getPublicUrl } from "./uploadConfigByEndpoint";
 import { requireSuperAdmin } from "./authMiddleware";
@@ -43,6 +43,11 @@ import {
   radiosOnline,
   listasMp3,
   configuracionMonedas,
+  contactosChat,
+  tokensGmail,
+  archivosCompartidosChat,
+  usuarios,
+  gruposChat,
 } from "@shared/schema";
 import { paises, departamentosPeru, distritosPorDepartamento, obtenerDepartamentos, obtenerDistritos, buscarDepartamentos, buscarDistritos } from "@shared/ubicaciones-peru";
 import { registerAdminRoutes } from "./routes-admin";
@@ -3214,12 +3219,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Obtener grupos de chat del usuario autenticado
+  // Obtener grupos de chat del usuario autenticado (ordenados: prioridad primero)
   app.get('/api/chat/mis-grupos', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const grupos = await storage.getGruposPorUsuario(userId);
-      res.json(grupos);
+      
+      // Ordenar grupos: primero los creados por usuarios con rol CHAT, luego por última actividad
+      const gruposOrdenados = [...grupos].sort((a: any, b: any) => {
+        // Grupos prioritarios (creados por rol CHAT) primero
+        if (a.creadoPorRolChat && !b.creadoPorRolChat) return -1;
+        if (!a.creadoPorRolChat && b.creadoPorRolChat) return 1;
+        if (a.esPrioridad && !b.esPrioridad) return -1;
+        if (!a.esPrioridad && b.esPrioridad) return 1;
+        
+        // Dentro de cada categoría, ordenar por última actividad
+        const fechaA = a.ultimoMensajeAt || a.createdAt;
+        const fechaB = b.ultimoMensajeAt || b.createdAt;
+        return new Date(fechaB).getTime() - new Date(fechaA).getTime();
+      });
+      
+      res.json(gruposOrdenados);
     } catch (error) {
       console.error("Error al obtener grupos del usuario:", error);
       res.status(500).json({ message: "Error al obtener tus grupos" });
@@ -3270,10 +3290,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const data = insertGrupoChatSchema.parse(req.body);
+      
+      // Verificar si el creador tiene rol CHAT
+      const creador = await storage.getUser(userId);
+      const rolesUsuario = await storage.getRolesUsuario(userId);
+      const tieneRolChat = rolesUsuario?.some((r: any) => r.rolTipo === 'chat') || false;
+      
       const grupo = await storage.createGrupo({
         ...data,
         creadorId: userId,
         adminGrupoId: userId,
+        creadoPorRolChat: tieneRolChat,
+        esPrioridad: tieneRolChat,
       });
       res.json(grupo);
     } catch (error: any) {
@@ -3901,6 +3929,431 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al crear conversación privada:", error);
       res.status(500).json({ message: "Error al crear conversación privada" });
+    }
+  });
+
+  // ============================================================
+  // CONTACTOS DE CHAT - CRUD completo
+  // ============================================================
+
+  // Obtener contactos de chat del usuario (para la viñeta de Contactos)
+  app.get('/api/chat/contactos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { busqueda } = req.query;
+      
+      const contactos = await db.select().from(contactosChat)
+        .where(eq(contactosChat.usuarioId, userId))
+        .orderBy(contactosChat.nombre);
+      
+      let resultado = contactos;
+      if (busqueda) {
+        const busquedaLower = String(busqueda).toLowerCase();
+        resultado = contactos.filter(c => 
+          c.nombre.toLowerCase().includes(busquedaLower) ||
+          c.email?.toLowerCase().includes(busquedaLower) ||
+          c.telefono?.includes(busquedaLower)
+        );
+      }
+      
+      res.json(resultado);
+    } catch (error) {
+      console.error("Error al obtener contactos de chat:", error);
+      res.status(500).json({ message: "Error al obtener contactos" });
+    }
+  });
+
+  // Buscar usuarios para agregar como contactos
+  app.get('/api/chat/buscar-usuarios', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { q } = req.query;
+      if (!q || String(q).length < 2) {
+        return res.json([]);
+      }
+      
+      const busqueda = String(q).toLowerCase();
+      const todosUsuarios = await db.select({
+        id: usuarios.id,
+        firstName: usuarios.firstName,
+        lastName: usuarios.lastName,
+        email: usuarios.email,
+        phone: usuarios.telefono,
+        profileImageUrl: usuarios.profileImageUrl,
+      }).from(usuarios)
+        .where(
+          and(
+            not(eq(usuarios.id, userId)),
+            or(
+              sql`LOWER(COALESCE(${usuarios.firstName}, '') || ' ' || COALESCE(${usuarios.lastName}, '')) LIKE ${'%' + busqueda + '%'}`,
+              sql`LOWER(${usuarios.email}) LIKE ${'%' + busqueda + '%'}`,
+              sql`${usuarios.telefono} LIKE ${'%' + busqueda + '%'}`
+            )
+          )
+        )
+        .limit(20);
+      
+      res.json(todosUsuarios);
+    } catch (error) {
+      console.error("Error al buscar usuarios:", error);
+      res.status(500).json({ message: "Error al buscar usuarios" });
+    }
+  });
+
+  // Agregar contacto de chat
+  app.post('/api/chat/contactos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { contactoId, nombre, email, telefono, avatarUrl, fuente = 'manual' } = req.body;
+      
+      if (!nombre) {
+        return res.status(400).json({ message: "El nombre es requerido" });
+      }
+      
+      // Verificar si el contacto está registrado en la app
+      let registradoEnApp = false;
+      if (contactoId) {
+        const usuarioContacto = await storage.getUser(contactoId);
+        registradoEnApp = !!usuarioContacto;
+      }
+      
+      const [nuevoContacto] = await db.insert(contactosChat).values({
+        usuarioId: userId,
+        contactoId,
+        nombre,
+        email,
+        telefono,
+        avatarUrl,
+        fuente,
+        registradoEnApp,
+      }).returning();
+      
+      res.json(nuevoContacto);
+    } catch (error: any) {
+      console.error("Error al agregar contacto:", error);
+      if (error.code === '23505') {
+        return res.status(400).json({ message: "Este contacto ya existe en tu lista" });
+      }
+      res.status(500).json({ message: "Error al agregar contacto" });
+    }
+  });
+
+  // Editar contacto de chat
+  app.patch('/api/chat/contactos/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const { nombre, email, telefono, notas, favorito, bloqueado } = req.body;
+      
+      const [contactoActualizado] = await db.update(contactosChat)
+        .set({
+          ...(nombre && { nombre }),
+          ...(email !== undefined && { email }),
+          ...(telefono !== undefined && { telefono }),
+          ...(notas !== undefined && { notas }),
+          ...(favorito !== undefined && { favorito }),
+          ...(bloqueado !== undefined && { bloqueado }),
+          updatedAt: new Date(),
+        })
+        .where(and(eq(contactosChat.id, id), eq(contactosChat.usuarioId, userId)))
+        .returning();
+      
+      if (!contactoActualizado) {
+        return res.status(404).json({ message: "Contacto no encontrado" });
+      }
+      
+      res.json(contactoActualizado);
+    } catch (error) {
+      console.error("Error al actualizar contacto:", error);
+      res.status(500).json({ message: "Error al actualizar contacto" });
+    }
+  });
+
+  // Eliminar contacto de chat
+  app.delete('/api/chat/contactos/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const [contactoEliminado] = await db.delete(contactosChat)
+        .where(and(eq(contactosChat.id, id), eq(contactosChat.usuarioId, userId)))
+        .returning();
+      
+      if (!contactoEliminado) {
+        return res.status(404).json({ message: "Contacto no encontrado" });
+      }
+      
+      res.json({ message: "Contacto eliminado correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar contacto:", error);
+      res.status(500).json({ message: "Error al eliminar contacto" });
+    }
+  });
+
+  // ============================================================
+  // GMAIL SYNC - Google People API
+  // ============================================================
+
+  // Verificar si el usuario tiene Gmail conectado
+  app.get('/api/chat/gmail/estado', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const [tokenInfo] = await db.select().from(tokensGmail)
+        .where(eq(tokensGmail.usuarioId, userId));
+      
+      if (!tokenInfo) {
+        return res.json({ conectado: false });
+      }
+      
+      res.json({
+        conectado: true,
+        emailSincronizado: tokenInfo.emailSincronizado,
+        ultimaSincronizacion: tokenInfo.ultimaSincronizacion,
+        totalContactos: tokenInfo.totalContactosSincronizados,
+      });
+    } catch (error) {
+      console.error("Error al verificar estado Gmail:", error);
+      res.status(500).json({ message: "Error al verificar estado" });
+    }
+  });
+
+  // Obtener URL de autorización de Google People API
+  app.get('/api/chat/gmail/auth-url', isAuthenticated, async (req: any, res) => {
+    try {
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const redirectUri = process.env.GOOGLE_CALLBACK_URL?.replace('/auth/google/callback', '/api/chat/gmail/callback');
+      
+      if (!clientId) {
+        return res.status(500).json({ message: "Google OAuth no está configurado" });
+      }
+      
+      const scope = 'https://www.googleapis.com/auth/contacts.readonly';
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${clientId}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri || '')}` +
+        `&response_type=code` +
+        `&scope=${encodeURIComponent(scope)}` +
+        `&access_type=offline` +
+        `&prompt=consent`;
+      
+      res.json({ authUrl });
+    } catch (error) {
+      console.error("Error al generar URL de auth:", error);
+      res.status(500).json({ message: "Error al generar URL de autorización" });
+    }
+  });
+
+  // Callback de Google OAuth para People API
+  app.get('/api/chat/gmail/callback', isAuthenticated, async (req: any, res) => {
+    try {
+      const { code } = req.query;
+      const userId = req.user.claims.sub;
+      
+      if (!code) {
+        return res.redirect('/chat?error=no_code');
+      }
+      
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      const redirectUri = process.env.GOOGLE_CALLBACK_URL?.replace('/auth/google/callback', '/api/chat/gmail/callback');
+      
+      // Intercambiar código por tokens
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code: String(code),
+          client_id: clientId || '',
+          client_secret: clientSecret || '',
+          redirect_uri: redirectUri || '',
+          grant_type: 'authorization_code',
+        }),
+      });
+      
+      const tokens = await tokenResponse.json();
+      
+      if (!tokens.access_token) {
+        return res.redirect('/chat?error=token_failed');
+      }
+      
+      // Obtener email del usuario de Google
+      const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${tokens.access_token}` },
+      });
+      const userInfo = await userInfoResponse.json();
+      
+      // Guardar tokens
+      await db.insert(tokensGmail).values({
+        usuarioId: userId,
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+        scope: tokens.scope,
+        emailSincronizado: userInfo.email,
+      }).onConflictDoUpdate({
+        target: tokensGmail.usuarioId,
+        set: {
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token || sql`${tokensGmail.refreshToken}`,
+          expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+          emailSincronizado: userInfo.email,
+          updatedAt: new Date(),
+        },
+      });
+      
+      res.redirect('/chat?gmail=connected');
+    } catch (error) {
+      console.error("Error en callback de Gmail:", error);
+      res.redirect('/chat?error=callback_failed');
+    }
+  });
+
+  // Sincronizar contactos de Gmail
+  app.post('/api/chat/gmail/sincronizar', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const [tokenInfo] = await db.select().from(tokensGmail)
+        .where(eq(tokensGmail.usuarioId, userId));
+      
+      if (!tokenInfo) {
+        return res.status(400).json({ message: "Gmail no está conectado" });
+      }
+      
+      // Obtener contactos de Google People API
+      const contactsResponse = await fetch(
+        'https://people.googleapis.com/v1/people/me/connections?' +
+        'personFields=names,emailAddresses,phoneNumbers,photos&pageSize=1000',
+        {
+          headers: { Authorization: `Bearer ${tokenInfo.accessToken}` },
+        }
+      );
+      
+      if (!contactsResponse.ok) {
+        if (contactsResponse.status === 401) {
+          return res.status(401).json({ message: "Token expirado. Vuelve a conectar Gmail" });
+        }
+        throw new Error("Error al obtener contactos de Google");
+      }
+      
+      const contactsData = await contactsResponse.json();
+      const connections = contactsData.connections || [];
+      
+      // Obtener todos los emails de usuarios registrados para comparar
+      const usuariosRegistrados = await db.select({
+        id: usuarios.id,
+        email: usuarios.email,
+      }).from(usuarios);
+      
+      const emailsRegistrados = new Map(
+        usuariosRegistrados.filter(u => u.email).map(u => [u.email!.toLowerCase(), u.id])
+      );
+      
+      const contactosImportados = [];
+      
+      for (const connection of connections) {
+        const nombre = connection.names?.[0]?.displayName || 'Sin nombre';
+        const email = connection.emailAddresses?.[0]?.value;
+        const telefono = connection.phoneNumbers?.[0]?.value;
+        const avatarUrl = connection.photos?.[0]?.url;
+        const googleContactId = connection.resourceName;
+        
+        if (!email && !telefono) continue;
+        
+        const registradoEnApp = email ? emailsRegistrados.has(email.toLowerCase()) : false;
+        const contactoIdEnApp = email ? emailsRegistrados.get(email.toLowerCase()) : undefined;
+        
+        contactosImportados.push({
+          usuarioId: userId,
+          contactoId: contactoIdEnApp,
+          nombre,
+          email,
+          telefono,
+          avatarUrl,
+          fuente: 'gmail',
+          registradoEnApp,
+          googleContactId,
+        });
+      }
+      
+      // Insertar o actualizar contactos
+      for (const contacto of contactosImportados) {
+        await db.insert(contactosChat).values(contacto)
+          .onConflictDoNothing();
+      }
+      
+      // Actualizar estadísticas
+      await db.update(tokensGmail)
+        .set({
+          ultimaSincronizacion: new Date(),
+          totalContactosSincronizados: contactosImportados.length,
+          updatedAt: new Date(),
+        })
+        .where(eq(tokensGmail.usuarioId, userId));
+      
+      res.json({
+        message: "Contactos sincronizados correctamente",
+        totalImportados: contactosImportados.length,
+        registradosEnApp: contactosImportados.filter(c => c.registradoEnApp).length,
+      });
+    } catch (error) {
+      console.error("Error al sincronizar Gmail:", error);
+      res.status(500).json({ message: "Error al sincronizar contactos" });
+    }
+  });
+
+  // Obtener contactos de Gmail sincronizados
+  app.get('/api/chat/gmail/contactos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { busqueda } = req.query;
+      
+      const contactos = await db.select().from(contactosChat)
+        .where(and(
+          eq(contactosChat.usuarioId, userId),
+          eq(contactosChat.fuente, 'gmail')
+        ))
+        .orderBy(
+          sql`${contactosChat.registradoEnApp} DESC`,
+          contactosChat.nombre
+        );
+      
+      let resultado = contactos;
+      if (busqueda) {
+        const busquedaLower = String(busqueda).toLowerCase();
+        resultado = contactos.filter(c => 
+          c.nombre.toLowerCase().includes(busquedaLower) ||
+          c.email?.toLowerCase().includes(busquedaLower) ||
+          c.telefono?.includes(busquedaLower)
+        );
+      }
+      
+      res.json(resultado);
+    } catch (error) {
+      console.error("Error al obtener contactos de Gmail:", error);
+      res.status(500).json({ message: "Error al obtener contactos de Gmail" });
+    }
+  });
+
+  // Desconectar Gmail
+  app.delete('/api/chat/gmail/desconectar', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      await db.delete(tokensGmail).where(eq(tokensGmail.usuarioId, userId));
+      
+      // Eliminar contactos importados de Gmail
+      await db.delete(contactosChat)
+        .where(and(
+          eq(contactosChat.usuarioId, userId),
+          eq(contactosChat.fuente, 'gmail')
+        ));
+      
+      res.json({ message: "Gmail desconectado correctamente" });
+    } catch (error) {
+      console.error("Error al desconectar Gmail:", error);
+      res.status(500).json({ message: "Error al desconectar Gmail" });
     }
   });
 

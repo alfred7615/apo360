@@ -50,6 +50,9 @@ interface GrupoChat {
     createdAt: string;
   };
   mensajesNoLeidos?: number;
+  esPrioridad?: boolean;
+  creadoPorRolChat?: boolean;
+  creadorId?: string;
 }
 
 interface Mensaje {
@@ -92,10 +95,32 @@ interface MiembroGrupo {
 interface Contacto {
   id: string;
   nombre: string;
-  email: string;
+  email?: string;
   telefono?: string;
   avatarUrl?: string;
-  registrado: boolean;
+  registradoEnApp?: boolean;
+  contactoId?: string;
+  fuente?: 'manual' | 'gmail';
+  favorito?: boolean;
+  bloqueado?: boolean;
+}
+
+interface ContactoGmail {
+  id: string;
+  nombre: string;
+  email?: string;
+  telefono?: string;
+  avatarUrl?: string;
+  registradoEnApp: boolean;
+  contactoId?: string;
+  googleContactId?: string;
+}
+
+interface GmailEstado {
+  conectado: boolean;
+  emailSincronizado?: string;
+  ultimaSincronizacion?: string;
+  totalContactos?: number;
 }
 
 interface GrupoSeleccionadoInfo {
@@ -123,6 +148,13 @@ export default function Chat() {
   const [tabBusqueda, setTabBusqueda] = useState<'grupos' | 'contactos' | 'gmail'>('grupos');
   const [grabandoAudio, setGrabandoAudio] = useState(false);
   const [enviandoUbicacion, setEnviandoUbicacion] = useState(false);
+  const [busquedaGmail, setBusquedaGmail] = useState("");
+  const [busquedaAgregarContacto, setBusquedaAgregarContacto] = useState("");
+  const [mostrarModalAgregarContacto, setMostrarModalAgregarContacto] = useState(false);
+  const [mostrarModalEditarContacto, setMostrarModalEditarContacto] = useState(false);
+  const [contactoEditar, setContactoEditar] = useState<Contacto | null>(null);
+  const [mostrarEstadoMensaje, setMostrarEstadoMensaje] = useState<string | null>(null);
+  const [sincronizandoGmail, setSincronizandoGmail] = useState(false);
   const mensajesEndRef = useRef<HTMLDivElement>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
   const inputImagenRef = useRef<HTMLInputElement>(null);
@@ -184,14 +216,49 @@ export default function Chat() {
     enabled: !!grupoSeleccionado && !!user,
   });
 
-  const { data: contactos = [] } = useQuery<Contacto[]>({
-    queryKey: ["/api/contactos"],
+  // Contactos de chat del usuario
+  const { data: contactosChat = [] } = useQuery<Contacto[]>({
+    queryKey: ["/api/chat/contactos"],
     queryFn: async () => {
-      const res = await fetch("/api/contactos");
+      const res = await fetch("/api/chat/contactos");
       if (!res.ok) return [];
       return res.json();
     },
     enabled: !!user,
+  });
+
+  // Estado de Gmail
+  const { data: gmailEstado } = useQuery<GmailEstado>({
+    queryKey: ["/api/chat/gmail/estado"],
+    queryFn: async () => {
+      const res = await fetch("/api/chat/gmail/estado");
+      if (!res.ok) return { conectado: false };
+      return res.json();
+    },
+    enabled: !!user,
+  });
+
+  // Contactos de Gmail sincronizados
+  const { data: contactosGmail = [] } = useQuery<ContactoGmail[]>({
+    queryKey: ["/api/chat/gmail/contactos"],
+    queryFn: async () => {
+      const res = await fetch("/api/chat/gmail/contactos");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user && !!gmailEstado?.conectado,
+  });
+
+  // Buscar usuarios para agregar
+  const { data: usuariosBusqueda = [] } = useQuery<any[]>({
+    queryKey: ["/api/chat/buscar-usuarios", busquedaAgregarContacto],
+    queryFn: async () => {
+      if (busquedaAgregarContacto.length < 2) return [];
+      const res = await fetch(`/api/chat/buscar-usuarios?q=${encodeURIComponent(busquedaAgregarContacto)}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user && busquedaAgregarContacto.length >= 2,
   });
 
   const { isConnected, sendMessage: sendWebSocketMessage } = useWebSocket({
@@ -417,6 +484,142 @@ export default function Chat() {
     },
   });
 
+  // Mutación para agregar contacto de chat
+  const agregarContactoMutation = useMutation({
+    mutationFn: async (datos: { contactoId?: string; nombre: string; email?: string; telefono?: string; avatarUrl?: string }) => {
+      const response = await apiRequest("POST", "/api/chat/contactos", datos);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/contactos"] });
+      setMostrarModalAgregarContacto(false);
+      setBusquedaAgregarContacto("");
+      toast({
+        title: "Contacto agregado",
+        description: "El contacto se agregó a tu lista correctamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo agregar el contacto",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para editar contacto
+  const editarContactoMutation = useMutation({
+    mutationFn: async (datos: { id: string; nombre?: string; email?: string; telefono?: string; notas?: string; favorito?: boolean }) => {
+      const { id, ...rest } = datos;
+      const response = await apiRequest("PATCH", `/api/chat/contactos/${id}`, rest);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/contactos"] });
+      setMostrarModalEditarContacto(false);
+      setContactoEditar(null);
+      toast({
+        title: "Contacto actualizado",
+        description: "Los datos del contacto se actualizaron correctamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo actualizar el contacto",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para eliminar contacto
+  const eliminarContactoMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("DELETE", `/api/chat/contactos/${id}`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/contactos"] });
+      toast({
+        title: "Contacto eliminado",
+        description: "El contacto se eliminó de tu lista",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo eliminar el contacto",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para sincronizar Gmail
+  const sincronizarGmailMutation = useMutation({
+    mutationFn: async () => {
+      setSincronizandoGmail(true);
+      const response = await apiRequest("POST", "/api/chat/gmail/sincronizar");
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      setSincronizandoGmail(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/gmail/estado"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/gmail/contactos"] });
+      toast({
+        title: "Gmail sincronizado",
+        description: `Se importaron ${data.totalImportados} contactos (${data.registradosEnApp} registrados en APO-360)`,
+      });
+    },
+    onError: (error: Error) => {
+      setSincronizandoGmail(false);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo sincronizar Gmail",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para desconectar Gmail
+  const desconectarGmailMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", "/api/chat/gmail/desconectar");
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/gmail/estado"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/gmail/contactos"] });
+      toast({
+        title: "Gmail desconectado",
+        description: "Se eliminaron los contactos importados de Gmail",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo desconectar Gmail",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Función para conectar Gmail
+  const conectarGmail = async () => {
+    try {
+      const res = await fetch('/api/chat/gmail/auth-url');
+      if (!res.ok) throw new Error("Error al obtener URL de autorización");
+      const data = await res.json();
+      window.location.href = data.authUrl;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo iniciar la conexión con Gmail",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     mensajesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensajes]);
@@ -425,9 +628,16 @@ export default function Chat() {
     grupo.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  const contactosFiltrados = contactos.filter((contacto) =>
+  const contactosChatFiltrados = contactosChat.filter((contacto) =>
     contacto.nombre.toLowerCase().includes(busquedaContactos.toLowerCase()) ||
-    contacto.email.toLowerCase().includes(busquedaContactos.toLowerCase())
+    contacto.email?.toLowerCase().includes(busquedaContactos.toLowerCase()) ||
+    contacto.telefono?.includes(busquedaContactos)
+  );
+
+  const contactosGmailFiltrados = contactosGmail.filter((contacto) =>
+    contacto.nombre.toLowerCase().includes(busquedaGmail.toLowerCase()) ||
+    contacto.email?.toLowerCase().includes(busquedaGmail.toLowerCase()) ||
+    contacto.telefono?.includes(busquedaGmail)
   );
 
   const grupoFromList = grupos.find((g) => g.id === grupoSeleccionado);
@@ -445,15 +655,18 @@ export default function Chat() {
     setMostrarPanelInfo(false);
   };
 
-  const seleccionarContacto = (contacto: Contacto) => {
-    if (!contacto.registrado) return;
+  const seleccionarContacto = (contacto: Contacto | ContactoGmail) => {
+    // contactoId es el ID del usuario de APO-360 si está registrado
+    const usuarioId = contacto.contactoId;
+    if (!contacto.registradoEnApp || !usuarioId) return;
+    
     setGrupoInfo({
       id: '',
       nombre: contacto.nombre,
       avatarUrl: contacto.avatarUrl,
       tipo: 'privado',
     });
-    crearConversacionPrivadaMutation.mutate(contacto.id);
+    crearConversacionPrivadaMutation.mutate(usuarioId);
   };
 
   const enviarMensaje = (e: React.FormEvent) => {
@@ -725,127 +938,289 @@ export default function Chat() {
             </ScrollArea>
           </TabsContent>
 
+          {/* Viñeta de Contactos - Lista de contactos agregados manualmente */}
           <TabsContent value="contactos" className="flex-1 m-0 mt-2 data-[state=active]:flex data-[state=active]:flex-col min-h-0 overflow-hidden">
-            <div className="px-4 pb-2 shrink-0">
+            <div className="px-4 pb-2 shrink-0 space-y-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar contactos registrados..."
+                  placeholder="Buscar por nombre, celular o email..."
                   value={busquedaContactos}
                   onChange={(e) => setBusquedaContactos(e.target.value)}
                   className="pl-10"
                   data-testid="input-search-contacts"
                 />
               </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => setMostrarModalAgregarContacto(true)}
+                data-testid="button-add-contact"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Agregar Contacto
+              </Button>
             </div>
             <ScrollArea className="flex-1 h-0">
-              {contactosFiltrados.length === 0 ? (
+              {contactosChatFiltrados.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No hay contactos registrados</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-3"
-                    onClick={() => setMostrarModalInvitar(true)}
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Invitar contacto
-                  </Button>
+                  <p>No hay contactos agregados</p>
+                  <p className="text-sm mt-1">Busca usuarios por nombre, celular o email</p>
                 </div>
               ) : (
                 <div className="px-2">
-                  {contactosFiltrados.map((contacto) => (
-                    <button
+                  {contactosChatFiltrados.map((contacto) => (
+                    <div
                       key={contacto.id}
-                      onClick={() => seleccionarContacto(contacto)}
-                      disabled={!contacto.registrado || crearConversacionPrivadaMutation.isPending}
-                      className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
-                        contacto.registrado 
-                          ? 'hover-elevate active-elevate-2 cursor-pointer' 
-                          : 'opacity-70 cursor-default'
-                      }`}
+                      className="flex items-center gap-3 p-3 rounded-lg transition-all hover-elevate"
                       data-testid={`contact-${contacto.id}`}
                     >
-                      <Avatar className="h-10 w-10 shrink-0">
-                        <AvatarImage src={contacto.avatarUrl} alt={contacto.nombre} />
-                        <AvatarFallback className="bg-muted">
-                          {contacto.nombre.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1 min-w-0 text-left">
-                        <p className="font-medium text-sm truncate">{contacto.nombre}</p>
-                        <p className="text-xs text-muted-foreground truncate">{contacto.email}</p>
-                      </div>
-
-                      {contacto.registrado ? (
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">
-                            <Check className="h-3 w-3 mr-1" />
-                            Registrado
-                          </Badge>
-                          <MessageSquare className="h-4 w-4 text-primary" />
+                      <button
+                        className="flex items-center gap-3 flex-1 min-w-0"
+                        onClick={() => {
+                          if (contacto.contactoId && contacto.registradoEnApp) {
+                            seleccionarContacto(contacto);
+                          }
+                        }}
+                        disabled={!contacto.registradoEnApp}
+                      >
+                        <Avatar className="h-10 w-10 shrink-0">
+                          <AvatarImage src={contacto.avatarUrl} alt={contacto.nombre} />
+                          <AvatarFallback className="bg-muted">
+                            {contacto.nombre.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm truncate">{contacto.nombre}</p>
+                            {contacto.favorito && (
+                              <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/30 px-1">
+                                ★
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {contacto.email || contacto.telefono || 'Sin datos'}
+                          </p>
                         </div>
-                      ) : (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEmailInvitacion(contacto.email);
-                            setMostrarModalInvitar(true);
-                          }}
-                          data-testid={`button-invite-${contacto.id}`}
-                        >
-                          <Mail className="h-3 w-3 mr-1" />
-                          Invitar
-                        </Button>
-                      )}
-                    </button>
+
+                        {contacto.registradoEnApp ? (
+                          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30 shrink-0">
+                            <Check className="h-3 w-3 mr-1" />
+                            En APO-360
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            No registrado
+                          </Badge>
+                        )}
+                      </button>
+
+                      {/* Menú de 3 puntos */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="shrink-0" data-testid={`button-menu-contact-${contacto.id}`}>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {contacto.registradoEnApp && contacto.contactoId && (
+                            <DropdownMenuItem onClick={() => seleccionarContacto(contacto)}>
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              Iniciar chat
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onClick={() => {
+                            setContactoEditar(contacto);
+                            setMostrarModalEditarContacto(true);
+                          }}>
+                            <Users className="h-4 w-4 mr-2" />
+                            Editar contacto
+                          </DropdownMenuItem>
+                          {!contacto.registradoEnApp && (
+                            <DropdownMenuItem onClick={() => {
+                              setEmailInvitacion(contacto.email || '');
+                              setTelefonoInvitacion(contacto.telefono || '');
+                              setMostrarModalInvitar(true);
+                            }}>
+                              <Mail className="h-4 w-4 mr-2" />
+                              Invitar a registrarse
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => eliminarContactoMutation.mutate(contacto.id)}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Eliminar contacto
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   ))}
                 </div>
               )}
             </ScrollArea>
           </TabsContent>
 
-          {/* Pestaña de Gmail/Google Contacts */}
+          {/* Viñeta de Gmail - Contactos sincronizados de Google */}
           <TabsContent value="gmail" className="flex-1 m-0 mt-2 data-[state=active]:flex data-[state=active]:flex-col min-h-0 overflow-hidden">
-            <div className="px-4 pb-2 shrink-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar contactos de Gmail..."
-                  className="pl-10"
-                  data-testid="input-search-gmail"
-                />
-              </div>
-            </div>
-            <ScrollArea className="flex-1 h-0">
-              <div className="p-8 text-center text-muted-foreground">
-                <Globe className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium mb-2">Conecta tu cuenta de Gmail</p>
-                <p className="text-sm mb-4">Importa tus contactos de Google para invitarlos a APO-360</p>
-                <Button 
-                  variant="outline" 
-                  className="mb-3"
-                  onClick={() => {
-                    toast({
-                      title: "Próximamente",
-                      description: "La integración con Google Contacts estará disponible pronto",
-                    });
-                  }}
-                  data-testid="button-connect-gmail"
-                >
-                  <Globe className="h-4 w-4 mr-2" />
-                  Conectar con Google
-                </Button>
-                <p className="text-xs text-muted-foreground mt-4">
-                  Podrás seleccionar múltiples contactos e invitarlos por email o WhatsApp
-                </p>
-              </div>
-            </ScrollArea>
-          </TabsContent>
+            {gmailEstado?.conectado ? (
+              <>
+                <div className="px-4 pb-2 shrink-0 space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar contactos de Gmail..."
+                      value={busquedaGmail}
+                      onChange={(e) => setBusquedaGmail(e.target.value)}
+                      className="pl-10"
+                      data-testid="input-search-gmail"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Conectado: {gmailEstado.emailSincronizado}</span>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => sincronizarGmailMutation.mutate()}
+                        disabled={sincronizandoGmail}
+                        data-testid="button-sync-gmail"
+                      >
+                        {sincronizandoGmail ? 'Sincronizando...' : 'Sincronizar'}
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-destructive"
+                        onClick={() => desconectarGmailMutation.mutate()}
+                        data-testid="button-disconnect-gmail"
+                      >
+                        Desconectar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <ScrollArea className="flex-1 h-0">
+                  {contactosGmailFiltrados.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No hay contactos de Gmail</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-3"
+                        onClick={() => sincronizarGmailMutation.mutate()}
+                        disabled={sincronizandoGmail}
+                      >
+                        Sincronizar contactos
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="px-2">
+                      {contactosGmailFiltrados.map((contacto) => (
+                        <div
+                          key={contacto.id}
+                          className="flex items-center gap-3 p-3 rounded-lg transition-all hover-elevate"
+                          data-testid={`gmail-contact-${contacto.id}`}
+                        >
+                          <Avatar className="h-10 w-10 shrink-0">
+                            <AvatarImage src={contacto.avatarUrl} alt={contacto.nombre} />
+                            <AvatarFallback className="bg-muted">
+                              {contacto.nombre.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="font-medium text-sm truncate">{contacto.nombre}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {contacto.email || contacto.telefono || 'Sin datos'}
+                            </p>
+                          </div>
+
+                          {contacto.registradoEnApp ? (
+                            <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30 shrink-0">
+                              <Check className="h-3 w-3 mr-1" />
+                              En APO-360
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs shrink-0">
+                              No registrado
+                            </Badge>
+                          )}
+
+                          {/* Menú de 3 puntos para Gmail */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="shrink-0" data-testid={`button-menu-gmail-${contacto.id}`}>
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {contacto.registradoEnApp && contacto.contactoId && (
+                                <DropdownMenuItem onClick={() => seleccionarContacto(contacto)}>
+                                  <MessageSquare className="h-4 w-4 mr-2" />
+                                  Iniciar chat
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onClick={() => {
+                                agregarContactoMutation.mutate({
+                                  contactoId: contacto.contactoId,
+                                  nombre: contacto.nombre,
+                                  email: contacto.email,
+                                  telefono: contacto.telefono,
+                                  avatarUrl: contacto.avatarUrl,
+                                });
+                              }}>
+                                <UserPlus className="h-4 w-4 mr-2" />
+                                Agregar a Contactos
+                              </DropdownMenuItem>
+                              {!contacto.registradoEnApp && (
+                                <DropdownMenuItem onClick={() => {
+                                  setEmailInvitacion(contacto.email || '');
+                                  setTelefonoInvitacion(contacto.telefono || '');
+                                  setMostrarModalInvitar(true);
+                                }}>
+                                  <Mail className="h-4 w-4 mr-2" />
+                                  Invitar a registrarse
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </>
+            ) : (
+              <ScrollArea className="flex-1 h-0">
+                <div className="p-8 text-center text-muted-foreground">
+                  <Globe className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p className="font-medium mb-2">Conecta tu cuenta de Gmail</p>
+                  <p className="text-sm mb-4">
+                    Importa tus contactos de Google. Los contactos registrados en APO-360 aparecerán primero.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    className="mb-3"
+                    onClick={conectarGmail}
+                    data-testid="button-connect-gmail"
+                  >
+                    <Globe className="h-4 w-4 mr-2" />
+                    Conectar con Google
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Podrás invitar contactos por email o WhatsApp y agregarlos a tu lista
+                  </p>
+                </div>
+              </ScrollArea>
+            )}</TabsContent>
         </Tabs>
       </div>
 
@@ -1359,6 +1734,204 @@ export default function Chat() {
                 {invitarContactoMutation.isPending ? 'Abriendo...' : 'Abrir WhatsApp'}
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para agregar contacto */}
+      <Dialog open={mostrarModalAgregarContacto} onOpenChange={setMostrarModalAgregarContacto}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Agregar Contacto
+            </DialogTitle>
+            <DialogDescription>
+              Busca un usuario por nombre, celular o email para agregarlo a tus contactos
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre, celular o email..."
+                value={busquedaAgregarContacto}
+                onChange={(e) => setBusquedaAgregarContacto(e.target.value)}
+                className="pl-10"
+                data-testid="input-search-add-contact"
+              />
+            </div>
+
+            <ScrollArea className="h-64">
+              {usuariosBusqueda.length === 0 && busquedaAgregarContacto.length >= 2 ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No se encontraron usuarios</p>
+                </div>
+              ) : busquedaAgregarContacto.length < 2 ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  <p className="text-sm">Escribe al menos 2 caracteres para buscar</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {usuariosBusqueda.map((usuario: any) => (
+                    <div
+                      key={usuario.id}
+                      className="flex items-center gap-3 p-3 rounded-lg border hover-elevate"
+                      data-testid={`search-user-${usuario.id}`}
+                    >
+                      <Avatar className="h-10 w-10 shrink-0">
+                        <AvatarImage src={usuario.profileImageUrl} alt={`${usuario.firstName} ${usuario.lastName}`} />
+                        <AvatarFallback className="bg-muted">
+                          {(usuario.firstName || 'U').substring(0, 1)}
+                          {(usuario.lastName || 'S').substring(0, 1)}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {usuario.firstName} {usuario.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {usuario.email || usuario.phone || 'Sin datos'}
+                        </p>
+                      </div>
+
+                      <Button 
+                        size="sm"
+                        onClick={() => agregarContactoMutation.mutate({
+                          contactoId: usuario.id,
+                          nombre: `${usuario.firstName || ''} ${usuario.lastName || ''}`.trim(),
+                          email: usuario.email,
+                          telefono: usuario.phone,
+                          avatarUrl: usuario.profileImageUrl,
+                        })}
+                        disabled={agregarContactoMutation.isPending}
+                        data-testid={`button-add-user-${usuario.id}`}
+                      >
+                        <UserPlus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setMostrarModalAgregarContacto(false);
+              setBusquedaAgregarContacto("");
+            }}>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para editar contacto */}
+      <Dialog open={mostrarModalEditarContacto} onOpenChange={setMostrarModalEditarContacto}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Editar Contacto
+            </DialogTitle>
+            <DialogDescription>
+              Actualiza la información del contacto
+            </DialogDescription>
+          </DialogHeader>
+
+          {contactoEditar && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={contactoEditar.avatarUrl} alt={contactoEditar.nombre} />
+                  <AvatarFallback className="bg-muted">
+                    {contactoEditar.nombre.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{contactoEditar.nombre}</p>
+                  {contactoEditar.registradoEnApp && (
+                    <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">
+                      <Check className="h-3 w-3 mr-1" />
+                      En APO-360
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Nombre</label>
+                <Input
+                  value={contactoEditar.nombre}
+                  onChange={(e) => setContactoEditar({ ...contactoEditar, nombre: e.target.value })}
+                  data-testid="input-edit-name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email</label>
+                <Input
+                  type="email"
+                  value={contactoEditar.email || ''}
+                  onChange={(e) => setContactoEditar({ ...contactoEditar, email: e.target.value })}
+                  data-testid="input-edit-email"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Teléfono</label>
+                <Input
+                  type="tel"
+                  value={contactoEditar.telefono || ''}
+                  onChange={(e) => setContactoEditar({ ...contactoEditar, telefono: e.target.value })}
+                  data-testid="input-edit-phone"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="favorito"
+                  checked={contactoEditar.favorito || false}
+                  onChange={(e) => setContactoEditar({ ...contactoEditar, favorito: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300"
+                  data-testid="checkbox-favorite"
+                />
+                <label htmlFor="favorito" className="text-sm font-medium">
+                  Marcar como favorito
+                </label>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setMostrarModalEditarContacto(false);
+              setContactoEditar(null);
+            }}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => {
+                if (contactoEditar) {
+                  editarContactoMutation.mutate({
+                    id: contactoEditar.id,
+                    nombre: contactoEditar.nombre,
+                    email: contactoEditar.email,
+                    telefono: contactoEditar.telefono,
+                    favorito: contactoEditar.favorito,
+                  });
+                }
+              }}
+              disabled={editarContactoMutation.isPending}
+              data-testid="button-save-contact"
+            >
+              {editarContactoMutation.isPending ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -663,6 +663,9 @@ export const gruposChat = pgTable("grupos_chat", {
   tarifaGrupo: decimal("tarifa_grupo", { precision: 10, scale: 2 }).default("0"),
   tarifaUsuario: decimal("tarifa_usuario", { precision: 10, scale: 2 }).default("0"),
   esEmergencia: boolean("es_emergencia").default(false),
+  esPrioridad: boolean("es_prioridad").default(false),
+  creadoPorRolChat: boolean("creado_por_rol_chat").default(false),
+  ciudadId: varchar("ciudad_id").references(() => ciudades.id),
   totalMiembros: integer("total_miembros").default(0),
   totalMensajes: integer("total_mensajes").default(0),
   ultimoMensajeAt: timestamp("ultimo_mensaje_at"),
@@ -2260,3 +2263,75 @@ export const ticketsFacturacion = pgTable("tickets_facturacion", {
 export const insertTicketFacturacionSchema = createInsertSchema(ticketsFacturacion).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertTicketFacturacion = z.infer<typeof insertTicketFacturacionSchema>;
 export type TicketFacturacion = typeof ticketsFacturacion.$inferSelect;
+
+// ============================================================
+// CONTACTOS DE CHAT - Contactos agregados manualmente por el usuario
+// ============================================================
+export const contactosChat = pgTable("contactos_chat", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull(),
+  contactoId: varchar("contacto_id"),
+  nombre: varchar("nombre", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  telefono: varchar("telefono", { length: 50 }),
+  avatarUrl: varchar("avatar_url"),
+  fuente: varchar("fuente", { length: 50 }).default("manual"),
+  registradoEnApp: boolean("registrado_en_app").default(false),
+  googleContactId: varchar("google_contact_id"),
+  favorito: boolean("favorito").default(false),
+  bloqueado: boolean("bloqueado").default(false),
+  notas: text("notas"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertContactoChatSchema = createInsertSchema(contactosChat).omit({ id: true, createdAt: true, updatedAt: true, usuarioId: true });
+export type InsertContactoChat = z.infer<typeof insertContactoChatSchema>;
+export type ContactoChat = typeof contactosChat.$inferSelect;
+
+// ============================================================
+// TOKENS DE GMAIL - Almacena tokens OAuth de Google People API
+// ============================================================
+export const tokensGmail = pgTable("tokens_gmail", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().unique(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  tokenType: varchar("token_type", { length: 50 }).default("Bearer"),
+  expiresAt: timestamp("expires_at"),
+  scope: text("scope"),
+  emailSincronizado: varchar("email_sincronizado", { length: 255 }),
+  ultimaSincronizacion: timestamp("ultima_sincronizacion"),
+  totalContactosSincronizados: integer("total_contactos_sincronizados").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTokenGmailSchema = createInsertSchema(tokensGmail).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTokenGmail = z.infer<typeof insertTokenGmailSchema>;
+export type TokenGmail = typeof tokensGmail.$inferSelect;
+
+// ============================================================
+// ARCHIVOS COMPARTIDOS EN CHAT - Historial de archivos compartidos
+// ============================================================
+export const archivosCompartidosChat = pgTable("archivos_compartidos_chat", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  mensajeId: varchar("mensaje_id"),
+  grupoId: varchar("grupo_id"),
+  usuarioId: varchar("usuario_id").notNull(),
+  tipoArchivo: varchar("tipo_archivo", { length: 50 }).notNull(),
+  nombreArchivo: varchar("nombre_archivo", { length: 500 }),
+  archivoUrl: varchar("archivo_url").notNull(),
+  thumbnailUrl: varchar("thumbnail_url"),
+  tamanoBytes: integer("tamano_bytes"),
+  mimeType: varchar("mime_type", { length: 100 }),
+  duracion: integer("duracion"),
+  itemProductoId: varchar("item_producto_id"),
+  catalogoId: varchar("catalogo_id"),
+  descripcion: text("descripcion"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertArchivoCompartidoChatSchema = createInsertSchema(archivosCompartidosChat).omit({ id: true, createdAt: true });
+export type InsertArchivoCompartidoChat = z.infer<typeof insertArchivoCompartidoChatSchema>;
+export type ArchivoCompartidoChat = typeof archivosCompartidosChat.$inferSelect;
