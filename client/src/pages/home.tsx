@@ -3,7 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { useLocation } from "wouter";
-import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X, Megaphone, UsersRound, Bus, Coins, Construction, Share2, Shield, Radio, Accessibility, CircleDot, Store, Clock, Star, Maximize2, Minimize2 } from "lucide-react";
+import { MessageCircle, Car, ShoppingCart, Users, MapPin, Bell, Calendar, Heart, AlertTriangle, X, Megaphone, UsersRound, Bus, Coins, Construction, Share2, Shield, Radio, Accessibility, CircleDot, Store, Clock, Star } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -463,24 +463,13 @@ export default function Home() {
                 <p className="text-white/80 text-base mt-2">
                   Regístrate para acceder al Botón de Pánico, Chat Comunitario, Compra/Venta y más
                 </p>
-                <div className="flex items-center gap-2 mt-3">
-                  <Button
-                    onClick={() => setLocation("/iniciar-sesion")}
-                    className="bg-white text-purple-600 hover:bg-white/90 font-semibold"
-                    data-testid="button-registro-cta"
-                  >
-                    Iniciar Sesión / Registrarse
-                  </Button>
-                  <Button
-                    onClick={toggleFullscreen}
-                    size="icon"
-                    className="bg-white text-purple-600 hover:bg-white/90 shadow-lg"
-                    title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
-                    data-testid="button-fullscreen-toggle"
-                  >
-                    {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => setLocation("/iniciar-sesion")}
+                  className="mt-3 bg-white text-purple-600 hover:bg-white/90 font-semibold"
+                  data-testid="button-registro-cta"
+                >
+                  Iniciar Sesión / Registrarse
+                </Button>
               </>
             ) : (
               <>
@@ -490,20 +479,9 @@ export default function Home() {
                 <p className="text-white/95 text-xl font-medium">
                   Tu comunidad está segura
                 </p>
-                <div className="flex items-center gap-3">
-                  <p className="text-white/80 text-lg">
-                    Juntos somos invencibles
-                  </p>
-                  <Button
-                    onClick={toggleFullscreen}
-                    size="icon"
-                    className="bg-white text-purple-600 hover:bg-white/90 shadow-lg"
-                    title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
-                    data-testid="button-fullscreen-toggle-logged"
-                  >
-                    {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-                  </Button>
-                </div>
+                <p className="text-white/80 text-lg">
+                  Juntos somos invencibles
+                </p>
               </>
             )}
           </div>

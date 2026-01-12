@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, User, Music, LogOut, Bell, Shield, Volume2, Star, Wallet, Plus, ArrowRight, X, Clock, DollarSign, ShoppingCart, MapPin } from "lucide-react";
+import { Menu, User, Music, LogOut, Bell, Shield, Volume2, Star, Wallet, Plus, ArrowRight, X, Clock, DollarSign, ShoppingCart, MapPin, Maximize2, Minimize2 } from "lucide-react";
+import { useFullscreen } from "@/hooks/useFullscreen";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,6 +26,7 @@ export default function Encabezado() {
   const [location, setLocation] = useLocation();
   const { user, isAuthenticated } = useAuth();
   const { carritoAbierto, pasoInicial, abrirCarrito, cerrarCarrito } = useCart();
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [selectorAudioAbierto, setSelectorAudioAbierto] = useState(false);
   const [billeteraAbierta, setBilleteraAbierta] = useState(false);
@@ -244,6 +246,20 @@ export default function Encabezado() {
               </Button>
             )}
 
+            {/* Botón de pantalla completa (usuarios autenticados) */}
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleFullscreen}
+                className="text-white hover:bg-white/20"
+                title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                data-testid="button-fullscreen-header-auth"
+              >
+                {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+              </Button>
+            )}
+
             {/* Menú de usuario */}
             {isAuthenticated ? (
               <DropdownMenu>
@@ -302,15 +318,27 @@ export default function Encabezado() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button
-                variant="secondary"
-                size="sm"
-                asChild
-                className="bg-white/20 text-white hover:bg-white/30"
-                data-testid="button-login"
-              >
-                <Link href="/iniciar-sesion">Iniciar Sesión</Link>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  asChild
+                  className="bg-white/20 text-white hover:bg-white/30"
+                  data-testid="button-login"
+                >
+                  <Link href="/iniciar-sesion">Iniciar Sesión</Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleFullscreen}
+                  className="text-white hover:bg-white/20"
+                  title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                  data-testid="button-fullscreen-header"
+                >
+                  {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+                </Button>
+              </div>
             )}
 
             {/* Menú móvil */}
