@@ -486,93 +486,95 @@ export default function Home() {
             )}
           </div>
         </div>
-      </section>
 
-      {/* Accesos rápidos - 6 escritorio, 4 tablet, 3 celular - Altura 100px, 20px encima del saludo */}
-      <section className="container mx-auto px-4" style={{ marginTop: '-20px' }}>
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-          {/* Chat */}
-          <div 
-            onClick={() => esVisitante ? setModalRegistroRequerido(true) : setLocation("/chat")}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
-            data-testid="card-quick-chat"
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white mb-1">
-              <MessageCircle className="h-7 w-7" />
-            </div>
-            <h3 className="font-semibold text-sm">Chat</h3>
-          </div>
+        {/* Accesos rápidos - 6 escritorio, 4 tablet, 3 celular - ENCIMA de las imágenes */}
+        <div className="absolute bottom-0 left-0 right-0 z-30 transform translate-y-1/2">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+              {/* Chat */}
+              <div 
+                onClick={() => esVisitante ? setModalRegistroRequerido(true) : setLocation("/chat")}
+                className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+                style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
+                data-testid="card-quick-chat"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white mb-1">
+                  <MessageCircle className="h-7 w-7" />
+                </div>
+                <h3 className="font-semibold text-sm">Chat</h3>
+              </div>
 
-          {/* Taxi */}
-          <div 
-            onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalTaxi(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
-            data-testid="card-quick-taxi"
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 text-white mb-1">
-              <Car className="h-7 w-7" />
-            </div>
-            <h3 className="font-semibold text-sm">Taxi</h3>
-          </div>
+              {/* Taxi */}
+              <div 
+                onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalTaxi(true)}
+                className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+                style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
+                data-testid="card-quick-taxi"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 text-white mb-1">
+                  <Car className="h-7 w-7" />
+                </div>
+                <h3 className="font-semibold text-sm">Taxi</h3>
+              </div>
 
-          {/* Delivery */}
-          <div 
-            onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalDelivery(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
-            data-testid="card-quick-delivery"
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white mb-1">
-              <ShoppingCart className="h-7 w-7" />
-            </div>
-            <h3 className="font-semibold text-sm">Delivery</h3>
-          </div>
+              {/* Delivery */}
+              <div 
+                onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalDelivery(true)}
+                className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+                style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
+                data-testid="card-quick-delivery"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white mb-1">
+                  <ShoppingCart className="h-7 w-7" />
+                </div>
+                <h3 className="font-semibold text-sm">Delivery</h3>
+              </div>
 
-          {/* Buses */}
-          <div 
-            onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalBuses(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
-            data-testid="card-quick-buses"
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white mb-1">
-              <Bus className="h-7 w-7" />
-            </div>
-            <h3 className="font-semibold text-sm">Buses</h3>
-          </div>
+              {/* Buses */}
+              <div 
+                onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalBuses(true)}
+                className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+                style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
+                data-testid="card-quick-buses"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white mb-1">
+                  <Bus className="h-7 w-7" />
+                </div>
+                <h3 className="font-semibold text-sm">Buses</h3>
+              </div>
 
-          {/* Moneda - Este es público */}
-          <div 
-            onClick={() => setModalMoneda(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
-            data-testid="card-quick-moneda"
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white mb-1">
-              <Coins className="h-7 w-7" />
-            </div>
-            <h3 className="font-semibold text-sm">Moneda</h3>
-          </div>
+              {/* Moneda - Este es público */}
+              <div 
+                onClick={() => setModalMoneda(true)}
+                className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+                style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
+                data-testid="card-quick-moneda"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white mb-1">
+                  <Coins className="h-7 w-7" />
+                </div>
+                <h3 className="font-semibold text-sm">Moneda</h3>
+              </div>
 
-          {/* Avisos */}
-          <div 
-            onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalAvisos(true)}
-            className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
-            style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
-            data-testid="card-quick-avisos"
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white mb-1">
-              <Megaphone className="h-7 w-7" />
+              {/* Avisos */}
+              <div 
+                onClick={() => esVisitante ? setModalRegistroRequerido(true) : setModalAvisos(true)}
+                className="hover-elevate active-elevate-2 transition-all cursor-pointer rounded-lg text-center flex flex-col items-center justify-center border-2 border-blue-500"
+                style={{ backgroundColor: "rgb(219, 234, 254)", boxShadow: "0 6px 20px rgba(30, 64, 175, 0.5)", height: "100px" }}
+                data-testid="card-quick-avisos"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white mb-1">
+                  <Megaphone className="h-7 w-7" />
+                </div>
+                <h3 className="font-semibold text-sm">Avisos</h3>
+              </div>
             </div>
-            <h3 className="font-semibold text-sm">Avisos</h3>
           </div>
         </div>
       </section>
 
-      {/* Carrusel principal */}
-      <section className="container mx-auto px-4 py-8">
+      {/* Carrusel principal - Con margen superior para compensar los botones de acceso rápido */}
+      <section className="container mx-auto px-4 py-8" style={{ marginTop: '60px' }}>
         <CarruselPublicidad tipo="carrusel_principal" />
       </section>
 
