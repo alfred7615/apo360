@@ -292,11 +292,11 @@ export default function Home() {
       <CarruselPublicidad tipo="carrusel_logos" />
 
       {/* Bienvenida - Altura fija 180px con botones de alerta y media de fondo */}
-      <section className="text-white relative overflow-hidden" style={{ height: '180px', paddingBottom: '70px' }}>
+      <section className="text-white relative" style={{ height: '180px', paddingBottom: '70px' }}>
         {/* Fondo: Media de la ciudad o gradiente por defecto */}
         {mediaActual ? (
           <>
-            {/* Media de fondo - Con recorte personalizado por dispositivo */}
+            {/* Media de fondo - Con recorte personalizado por dispositivo - overflow-hidden aquí para no cortar los botones */}
             <div className="absolute inset-0 z-0 overflow-hidden">
               {mediaActual.tipo === "imagen" ? (
                 <img
