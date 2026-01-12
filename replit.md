@@ -136,6 +136,28 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 - **Database Tables**: `contactos_chat`, `tokens_gmail`, `archivos_compartidos_chat`
 - **Key Files**: `client/src/pages/chat.tsx`, `server/routes.ts` (lines 3935-4400)
 
+### Chat Groups with Authorization System
+- **Schema Extensions**: New fields added to `grupos_chat` table:
+  - `organizacion_nombre` - Organization name for CHAT role groups
+  - `estado_autorizacion` - Authorization status (pendiente, aprobado, rechazado)
+  - `fecha_solicitud` - Authorization request date
+  - `fecha_autorizacion` - Authorization approval/rejection date
+  - `reviewer_id` - Super admin who processed the request
+  - `motivo_rechazo` - Rejection reason (if applicable)
+  - `sincronizado_panico` - Whether group is synced with panic button system
+- **New Table**: `documentos_soporte_grupo` for storing authorization documents (images, PDFs)
+- **Group Menu Features**:
+  - 3-dot menu on each group: Abrir chat, Ver miembros, Salir del grupo
+  - + button in Groups tab header: "Crear grupo" option
+  - "Agregar a grupo" option in contact menus
+- **Backend Endpoints**:
+  - `GET /api/chat/mis-grupos-admin` - Returns groups where user is admin/creator
+  - `POST /api/chat/grupos/:id/agregar-miembro` - Add user to group (requires admin role)
+- **CHAT Role Groups**: Groups created by users with CHAT role require super admin authorization
+  - Must submit supporting documents (organization documents, member lists)
+  - Authorized groups appear first in group list (alphabetically sorted)
+  - Authorized groups sync with panic button system for emergency notifications
+
 ## Recent Changes (December 2025)
 
 ### Bug Fixes

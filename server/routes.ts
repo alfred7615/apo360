@@ -3246,6 +3246,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener grupos donde el usuario es administrador (para agregar contactos)
+  app.get('/api/chat/mis-grupos-admin', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Obtener grupos donde el usuario es admin desde miembros_grupo
+      const result = await db.select({
+        id: gruposChat.id,
+        nombre: gruposChat.nombre,
+        descripcion: gruposChat.descripcion,
+        tipo: gruposChat.tipo,
+        avatarUrl: gruposChat.avatarUrl,
+        creadorId: gruposChat.creadorId,
+        adminGrupoId: gruposChat.adminGrupoId,
+        esPrioridad: gruposChat.esPrioridad,
+        creadoPorRolChat: gruposChat.creadoPorRolChat,
+        rolMiembro: miembrosGrupo.rol,
+      })
+      .from(gruposChat)
+      .innerJoin(miembrosGrupo, eq(miembrosGrupo.grupoId, gruposChat.id))
+      .where(
+        and(
+          eq(miembrosGrupo.usuarioId, userId),
+          eq(miembrosGrupo.estado, 'activo'),
+          or(
+            eq(miembrosGrupo.rol, 'admin'),
+            eq(miembrosGrupo.rol, 'creador'),
+            eq(gruposChat.creadorId, userId),
+            eq(gruposChat.adminGrupoId, userId)
+          )
+        )
+      );
+      
+      // Filtrar grupos que no son privados (para no agregar personas a chats 1-a-1)
+      const gruposAdmin = result.filter((g: any) => g.tipo !== 'privado');
+      
+      res.json(gruposAdmin);
+    } catch (error) {
+      console.error("Error al obtener grupos administrados:", error);
+      res.status(500).json({ message: "Error al obtener tus grupos administrados" });
+    }
+  });
+
   // Obtener grupos de emergencia (policía, bomberos, etc.)
   app.get('/api/chat/grupos-emergencia', async (req, res) => {
     try {

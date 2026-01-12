@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Send, Search, MoreVertical, Users, MessageCircle, Plus, ArrowLeft, WifiOff,
   Paperclip, Image, Mic, MapPin, Phone, Video, UserPlus, Mail, X, Check, 
-  MessageSquare, Globe, ExternalLink, CheckCheck
+  MessageSquare, Globe, ExternalLink, CheckCheck, Edit, Share2, Trash2, LogOut
 } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { Button } from "@/components/ui/button";
@@ -155,6 +155,17 @@ export default function Chat() {
   const [contactoEditar, setContactoEditar] = useState<Contacto | null>(null);
   const [mostrarEstadoMensaje, setMostrarEstadoMensaje] = useState<string | null>(null);
   const [sincronizandoGmail, setSincronizandoGmail] = useState(false);
+  const [mostrarModalAgregarAGrupo, setMostrarModalAgregarAGrupo] = useState(false);
+  const [contactoParaAgregarAGrupo, setContactoParaAgregarAGrupo] = useState<Contacto | ContactoGmail | null>(null);
+  const [mostrarModalCrearGrupo, setMostrarModalCrearGrupo] = useState(false);
+  const [nombreNuevoGrupo, setNombreNuevoGrupo] = useState("");
+  const [descripcionNuevoGrupo, setDescripcionNuevoGrupo] = useState("");
+  const [grupoParaAccion, setGrupoParaAccion] = useState<string | null>(null);
+  const [mostrarConfirmarSalir, setMostrarConfirmarSalir] = useState(false);
+  const [mostrarConfirmarEliminar, setMostrarConfirmarEliminar] = useState(false);
+  const [mostrarModalModificarGrupo, setMostrarModalModificarGrupo] = useState(false);
+  const [nuevoTituloGrupo, setNuevoTituloGrupo] = useState("");
+  const [nuevaDescripcionGrupo, setNuevaDescripcionGrupo] = useState("");
   const mensajesEndRef = useRef<HTMLDivElement>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
   const inputImagenRef = useRef<HTMLInputElement>(null);
@@ -259,6 +270,17 @@ export default function Chat() {
       return res.json();
     },
     enabled: !!user && busquedaAgregarContacto.length >= 2,
+  });
+
+  // Grupos donde el usuario es admin (para agregar contactos a grupos)
+  const { data: gruposAdministrados = [] } = useQuery<GrupoChat[]>({
+    queryKey: ["/api/chat/mis-grupos-admin"],
+    queryFn: async () => {
+      const res = await fetch("/api/chat/mis-grupos-admin");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user && mostrarModalAgregarAGrupo,
   });
 
   const { isConnected, sendMessage: sendWebSocketMessage } = useWebSocket({
@@ -550,6 +572,155 @@ export default function Chat() {
       toast({
         title: "Error",
         description: error.message || "No se pudo eliminar el contacto",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para agregar usuario a grupo
+  const agregarUsuarioAGrupoMutation = useMutation({
+    mutationFn: async (datos: { grupoId: string; usuarioId: string }) => {
+      const response = await apiRequest("POST", `/api/chat/grupos/${datos.grupoId}/miembros`, { usuarioId: datos.usuarioId });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
+      setMostrarModalAgregarAGrupo(false);
+      setContactoParaAgregarAGrupo(null);
+      toast({
+        title: "Usuario agregado",
+        description: "El usuario fue agregado al grupo correctamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo agregar el usuario al grupo",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para crear grupo
+  const crearGrupoMutation = useMutation({
+    mutationFn: async (datos: { nombre: string; descripcion?: string; tipo?: string }) => {
+      const response = await apiRequest("POST", "/api/chat/grupos", datos);
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
+      setMostrarModalCrearGrupo(false);
+      setNombreNuevoGrupo("");
+      setDescripcionNuevoGrupo("");
+      setGrupoSeleccionado(data.id);
+      setGrupoInfo({
+        id: data.id,
+        nombre: data.nombre,
+        tipo: data.tipo || 'grupo',
+        descripcion: data.descripcion,
+      });
+      toast({
+        title: "Grupo creado",
+        description: "El grupo se creó correctamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo crear el grupo",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para salir del grupo
+  const salirDelGrupoMutation = useMutation({
+    mutationFn: async (grupoId: string) => {
+      const response = await apiRequest("DELETE", `/api/chat/grupos/${grupoId}/miembros/${user?.id}`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos-admin"] });
+      if (grupoSeleccionado === grupoParaAccion) {
+        setGrupoSeleccionado(null);
+        setGrupoInfo(null);
+      }
+      setGrupoParaAccion(null);
+      setMostrarConfirmarSalir(false);
+      toast({
+        title: "Has salido del grupo",
+        description: "Ya no recibirás mensajes de este grupo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo salir del grupo",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para modificar título del grupo
+  const modificarTituloGrupoMutation = useMutation({
+    mutationFn: async (datos: { grupoId: string; nombre: string; descripcion?: string }) => {
+      const response = await apiRequest("PATCH", `/api/chat/grupos/${datos.grupoId}`, { 
+        nombre: datos.nombre,
+        descripcion: datos.descripcion 
+      });
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
+      if (grupoInfo && grupoInfo.id === data.id) {
+        setGrupoInfo({
+          ...grupoInfo,
+          nombre: data.nombre,
+          descripcion: data.descripcion,
+        });
+      }
+      setMostrarModalModificarGrupo(false);
+      setNuevoTituloGrupo("");
+      setNuevaDescripcionGrupo("");
+      toast({
+        title: "Grupo actualizado",
+        description: "El nombre del grupo fue actualizado",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo modificar el grupo",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para eliminar grupo
+  const eliminarGrupoMutation = useMutation({
+    mutationFn: async (grupoId: string) => {
+      const response = await apiRequest("DELETE", `/api/chat/grupos/${grupoId}`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/mis-grupos-admin"] });
+      if (grupoSeleccionado === grupoParaAccion) {
+        setGrupoSeleccionado(null);
+        setGrupoInfo(null);
+      }
+      setGrupoParaAccion(null);
+      setMostrarConfirmarEliminar(false);
+      toast({
+        title: "Grupo eliminado",
+        description: "El grupo fue eliminado correctamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo eliminar el grupo",
         variant: "destructive",
       });
     },
@@ -871,6 +1042,23 @@ export default function Chat() {
           </TabsList>
 
           <TabsContent value="grupos" className="flex-1 m-0 mt-2 data-[state=active]:flex data-[state=active]:flex-col min-h-0 overflow-hidden">
+            {/* Header con botón crear grupo */}
+            <div className="px-4 pb-2 flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Conversaciones</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" data-testid="button-groups-menu">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setMostrarModalCrearGrupo(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crear grupo
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <ScrollArea className="flex-1 h-0">
               {cargandoGrupos ? (
                 <div className="p-4 space-y-3">
@@ -888,50 +1076,145 @@ export default function Chat() {
                 <div className="p-8 text-center text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>No hay conversaciones</p>
-                  <p className="text-sm mt-1">Únete a un grupo para comenzar</p>
+                  <p className="text-sm mt-1">Crea un grupo para comenzar</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3"
+                    onClick={() => setMostrarModalCrearGrupo(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crear grupo
+                  </Button>
                 </div>
               ) : (
                 <div className="p-2">
                   {gruposFiltrados.map((grupo) => (
-                    <button
+                    <div
                       key={grupo.id}
-                      onClick={() => seleccionarGrupo(grupo)}
-                      className={`w-full flex items-start gap-3 p-3 rounded-lg transition-all hover-elevate active-elevate-2 ${
+                      className={`flex items-start gap-3 p-3 rounded-lg transition-all hover-elevate ${
                         grupoSeleccionado === grupo.id ? 'bg-accent' : ''
                       }`}
-                      data-testid={`button-conversation-${grupo.id}`}
+                      data-testid={`conversation-${grupo.id}`}
                     >
-                      <Avatar className="h-12 w-12 shrink-0">
-                        <AvatarImage src={grupo.avatarUrl} alt={grupo.nombre} />
-                        <AvatarFallback className="bg-gradient-to-br from-purple-600 to-pink-600 text-white">
-                          {grupo.nombre.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      <button
+                        onClick={() => seleccionarGrupo(grupo)}
+                        className="flex items-start gap-3 flex-1 min-w-0 text-left"
+                        data-testid={`button-conversation-${grupo.id}`}
+                      >
+                        <Avatar className="h-12 w-12 shrink-0">
+                          <AvatarImage src={grupo.avatarUrl} alt={grupo.nombre} />
+                          <AvatarFallback className="bg-gradient-to-br from-purple-600 to-pink-600 text-white">
+                            {grupo.nombre.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            {grupo.esPrioridad && (
+                              <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/30 px-1">
+                                ORG
+                              </Badge>
+                            )}
+                            <p className="font-semibold text-sm truncate">{grupo.nombre}</p>
+                            {grupo.ultimoMensaje && (
+                              <span className="text-xs text-muted-foreground shrink-0 ml-auto">
+                                {new Date(grupo.ultimoMensaje.createdAt).toLocaleTimeString('es-PE', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs text-muted-foreground truncate">
+                              {grupo.ultimoMensaje?.contenido || 'Sin mensajes'}
+                            </p>
+                            {grupo.mensajesNoLeidos && grupo.mensajesNoLeidos > 0 && (
+                              <Badge variant="default" className="shrink-0 h-5 min-w-5 px-1.5 text-xs">
+                                {grupo.mensajesNoLeidos}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </button>
                       
-                      <div className="flex-1 min-w-0 text-left">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <p className="font-semibold text-sm truncate">{grupo.nombre}</p>
-                          {grupo.ultimoMensaje && (
-                            <span className="text-xs text-muted-foreground shrink-0">
-                              {new Date(grupo.ultimoMensaje.createdAt).toLocaleTimeString('es-PE', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
+                      {/* Menú de 3 puntos del grupo */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" data-testid={`button-menu-group-${grupo.id}`}>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => seleccionarGrupo(grupo)}>
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Abrir chat
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setGrupoSeleccionado(grupo.id);
+                            setGrupoInfo({
+                              id: grupo.id,
+                              nombre: grupo.nombre,
+                              avatarUrl: grupo.avatarUrl,
+                              tipo: grupo.tipo,
+                              descripcion: grupo.descripcion,
+                            });
+                            setMostrarPanelInfo(true);
+                          }}>
+                            <Users className="h-4 w-4 mr-2" />
+                            Ver miembros
+                          </DropdownMenuItem>
+                          {/* Solo mostrar opciones de admin si el usuario es creador/admin */}
+                          {gruposAdministrados?.some((g: any) => g.id === grupo.id) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => {
+                                setGrupoParaAccion(grupo.id);
+                                setNuevoTituloGrupo(grupo.nombre);
+                                setNuevaDescripcionGrupo(grupo.descripcion || "");
+                                setMostrarModalModificarGrupo(true);
+                              }}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Modificar título
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                const enlace = `${window.location.origin}/chat/grupo/${grupo.id}`;
+                                navigator.clipboard.writeText(enlace);
+                                toast({
+                                  title: "Enlace copiado",
+                                  description: "El enlace del grupo fue copiado al portapapeles",
+                                });
+                              }}>
+                                <Share2 className="h-4 w-4 mr-2" />
+                                Compartir
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => {
+                                  setGrupoParaAccion(grupo.id);
+                                  setMostrarConfirmarEliminar(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Eliminar grupo
+                              </DropdownMenuItem>
+                            </>
                           )}
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs text-muted-foreground truncate">
-                            {grupo.ultimoMensaje?.contenido || 'Sin mensajes'}
-                          </p>
-                          {grupo.mensajesNoLeidos && grupo.mensajesNoLeidos > 0 && (
-                            <Badge variant="default" className="shrink-0 h-5 min-w-5 px-1.5 text-xs">
-                              {grupo.mensajesNoLeidos}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </button>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => {
+                              setGrupoParaAccion(grupo.id);
+                              setMostrarConfirmarSalir(true);
+                            }}
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            Salir del grupo
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1040,6 +1323,15 @@ export default function Chat() {
                             <Users className="h-4 w-4 mr-2" />
                             Editar contacto
                           </DropdownMenuItem>
+                          {contacto.registradoEnApp && contacto.contactoId && (
+                            <DropdownMenuItem onClick={() => {
+                              setContactoParaAgregarAGrupo(contacto);
+                              setMostrarModalAgregarAGrupo(true);
+                            }}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Agregar a grupo
+                            </DropdownMenuItem>
+                          )}
                           {!contacto.registradoEnApp && (
                             <DropdownMenuItem onClick={() => {
                               setEmailInvitacion(contacto.email || '');
@@ -1180,6 +1472,15 @@ export default function Chat() {
                                 <UserPlus className="h-4 w-4 mr-2" />
                                 Agregar a Contactos
                               </DropdownMenuItem>
+                              {contacto.registradoEnApp && contacto.contactoId && (
+                                <DropdownMenuItem onClick={() => {
+                                  setContactoParaAgregarAGrupo(contacto);
+                                  setMostrarModalAgregarAGrupo(true);
+                                }}>
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Agregar a grupo
+                                </DropdownMenuItem>
+                              )}
                               {!contacto.registradoEnApp && (
                                 <DropdownMenuItem onClick={() => {
                                   setEmailInvitacion(contacto.email || '');
@@ -1931,6 +2232,283 @@ export default function Chat() {
               data-testid="button-save-contact"
             >
               {editarContactoMutation.isPending ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para agregar contacto a grupo */}
+      <Dialog open={mostrarModalAgregarAGrupo} onOpenChange={setMostrarModalAgregarAGrupo}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Agregar a Grupo
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona un grupo donde agregar a {contactoParaAgregarAGrupo?.nombre}
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-64">
+            {gruposAdministrados.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground">
+                <Users className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">No tienes grupos donde seas administrador</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3"
+                  onClick={() => {
+                    setMostrarModalAgregarAGrupo(false);
+                    setMostrarModalCrearGrupo(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear un grupo
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2 p-2">
+                {gruposAdministrados.map((grupo) => (
+                  <button
+                    key={grupo.id}
+                    className="flex items-center gap-3 p-3 rounded-lg w-full hover-elevate text-left"
+                    onClick={() => {
+                      if (contactoParaAgregarAGrupo?.contactoId) {
+                        agregarUsuarioAGrupoMutation.mutate({
+                          grupoId: grupo.id,
+                          usuarioId: contactoParaAgregarAGrupo.contactoId,
+                        });
+                      }
+                    }}
+                    disabled={agregarUsuarioAGrupoMutation.isPending}
+                    data-testid={`button-add-to-group-${grupo.id}`}
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={grupo.avatarUrl} alt={grupo.nombre} />
+                      <AvatarFallback className="bg-gradient-to-br from-purple-600 to-pink-600 text-white">
+                        {grupo.nombre.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{grupo.nombre}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {grupo.tipo === 'privado' ? 'Chat privado' : `Grupo`}
+                      </p>
+                    </div>
+                    {grupo.esPrioridad && (
+                      <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/30">
+                        Organización
+                      </Badge>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setMostrarModalAgregarAGrupo(false);
+              setContactoParaAgregarAGrupo(null);
+            }}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para crear grupo */}
+      <Dialog open={mostrarModalCrearGrupo} onOpenChange={setMostrarModalCrearGrupo}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Crear Nuevo Grupo
+            </DialogTitle>
+            <DialogDescription>
+              Crea un grupo para chatear con múltiples personas
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nombre del grupo *</label>
+              <Input
+                placeholder="Ej: Amigos, Trabajo, Familia..."
+                value={nombreNuevoGrupo}
+                onChange={(e) => setNombreNuevoGrupo(e.target.value)}
+                data-testid="input-group-name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Descripción (opcional)</label>
+              <Input
+                placeholder="Describe el propósito del grupo..."
+                value={descripcionNuevoGrupo}
+                onChange={(e) => setDescripcionNuevoGrupo(e.target.value)}
+                data-testid="input-group-description"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setMostrarModalCrearGrupo(false);
+              setNombreNuevoGrupo("");
+              setDescripcionNuevoGrupo("");
+            }}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => {
+                if (nombreNuevoGrupo.trim()) {
+                  crearGrupoMutation.mutate({
+                    nombre: nombreNuevoGrupo.trim(),
+                    descripcion: descripcionNuevoGrupo.trim() || undefined,
+                    tipo: 'grupo',
+                  });
+                }
+              }}
+              disabled={!nombreNuevoGrupo.trim() || crearGrupoMutation.isPending}
+              data-testid="button-create-group"
+            >
+              {crearGrupoMutation.isPending ? 'Creando...' : 'Crear grupo'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmación para salir del grupo */}
+      <Dialog open={mostrarConfirmarSalir} onOpenChange={setMostrarConfirmarSalir}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <LogOut className="h-5 w-5" />
+              Salir del grupo
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas salir de este grupo? Ya no recibirás mensajes nuevos.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setMostrarConfirmarSalir(false);
+              setGrupoParaAccion(null);
+            }}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                if (grupoParaAccion) {
+                  salirDelGrupoMutation.mutate(grupoParaAccion);
+                }
+              }}
+              disabled={salirDelGrupoMutation.isPending}
+              data-testid="button-confirm-leave-group"
+            >
+              {salirDelGrupoMutation.isPending ? 'Saliendo...' : 'Sí, salir del grupo'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmación para eliminar grupo */}
+      <Dialog open={mostrarConfirmarEliminar} onOpenChange={setMostrarConfirmarEliminar}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Eliminar grupo
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar este grupo? Esta acción no se puede deshacer y se eliminarán todos los mensajes.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setMostrarConfirmarEliminar(false);
+              setGrupoParaAccion(null);
+            }}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                if (grupoParaAccion) {
+                  eliminarGrupoMutation.mutate(grupoParaAccion);
+                }
+              }}
+              disabled={eliminarGrupoMutation.isPending}
+              data-testid="button-confirm-delete-group"
+            >
+              {eliminarGrupoMutation.isPending ? 'Eliminando...' : 'Sí, eliminar grupo'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para modificar título del grupo */}
+      <Dialog open={mostrarModalModificarGrupo} onOpenChange={setMostrarModalModificarGrupo}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5" />
+              Modificar grupo
+            </DialogTitle>
+            <DialogDescription>
+              Actualiza el nombre y descripción del grupo
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nombre del grupo *</label>
+              <Input
+                placeholder="Nombre del grupo"
+                value={nuevoTituloGrupo}
+                onChange={(e) => setNuevoTituloGrupo(e.target.value)}
+                data-testid="input-edit-group-name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Descripción (opcional)</label>
+              <Input
+                placeholder="Descripción del grupo"
+                value={nuevaDescripcionGrupo}
+                onChange={(e) => setNuevaDescripcionGrupo(e.target.value)}
+                data-testid="input-edit-group-description"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setMostrarModalModificarGrupo(false);
+              setGrupoParaAccion(null);
+              setNuevoTituloGrupo("");
+              setNuevaDescripcionGrupo("");
+            }}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => {
+                if (grupoParaAccion && nuevoTituloGrupo.trim()) {
+                  modificarTituloGrupoMutation.mutate({
+                    grupoId: grupoParaAccion,
+                    nombre: nuevoTituloGrupo.trim(),
+                    descripcion: nuevaDescripcionGrupo.trim() || undefined,
+                  });
+                }
+              }}
+              disabled={!nuevoTituloGrupo.trim() || modificarTituloGrupoMutation.isPending}
+              data-testid="button-save-group-changes"
+            >
+              {modificarTituloGrupoMutation.isPending ? 'Guardando...' : 'Guardar cambios'}
             </Button>
           </DialogFooter>
         </DialogContent>

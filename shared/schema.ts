@@ -671,6 +671,13 @@ export const gruposChat = pgTable("grupos_chat", {
   ultimoMensajeAt: timestamp("ultimo_mensaje_at"),
   motivoSuspension: text("motivo_suspension"),
   fechaSuspension: timestamp("fecha_suspension"),
+  organizacionNombre: varchar("organizacion_nombre", { length: 255 }),
+  estadoAutorizacion: varchar("estado_autorizacion", { length: 30 }).default("sin_solicitud"),
+  fechaSolicitud: timestamp("fecha_solicitud"),
+  fechaAutorizacion: timestamp("fecha_autorizacion"),
+  reviewerId: varchar("reviewer_id").references(() => usuarios.id),
+  motivoRechazo: text("motivo_rechazo"),
+  sincronizadoPanico: boolean("sincronizado_panico").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -678,6 +685,25 @@ export const gruposChat = pgTable("grupos_chat", {
 export const insertGrupoChatSchema = createInsertSchema(gruposChat).omit({ id: true, createdAt: true, updatedAt: true });
 export type GrupoChatInsert = z.infer<typeof insertGrupoChatSchema>;
 export type GrupoChat = typeof gruposChat.$inferSelect;
+
+// ============================================================
+// DOCUMENTOS SOPORTE GRUPOS CHAT (para autorización rol CHAT)
+// ============================================================
+export const documentosSoporteGrupo = pgTable("documentos_soporte_grupo", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  grupoId: varchar("grupo_id").notNull().references(() => gruposChat.id),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  nombreArchivo: varchar("nombre_archivo", { length: 255 }).notNull(),
+  tipoArchivo: varchar("tipo_archivo", { length: 100 }).notNull(),
+  urlArchivo: varchar("url_archivo").notNull(),
+  tamanio: integer("tamanio"),
+  descripcion: text("descripcion"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertDocumentoSoporteGrupoSchema = createInsertSchema(documentosSoporteGrupo).omit({ id: true, createdAt: true });
+export type InsertDocumentoSoporteGrupo = z.infer<typeof insertDocumentoSoporteGrupoSchema>;
+export type DocumentoSoporteGrupo = typeof documentosSoporteGrupo.$inferSelect;
 
 // ============================================================
 // MIEMBROS DE GRUPOS
