@@ -3979,6 +3979,182 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // ADMIN: CHAT MONITOR (Monitoreo de grupos CHAT en tiempo real)
+  // ============================================================
+
+  // Obtener grupos CHAT para el monitor (ordenados por pánico y actividad)
+  app.get('/api/admin/chat-monitor', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const limite = parseInt(req.query.limite as string) || 24;
+      const grupos = await storage.getGruposChatMonitor(limite);
+      
+      // Enriquecer con información del creador y estadísticas
+      const gruposEnriquecidos = await Promise.all(
+        grupos.map(async (g) => {
+          const creador = await storage.getUser(g.creadorId);
+          const miembros = await storage.getMiembrosGrupo(g.id);
+          return {
+            ...g,
+            creador: creador ? {
+              id: creador.id,
+              nombre: `${creador.firstName || ''} ${creador.lastName || ''}`.trim(),
+              email: creador.email
+            } : null,
+            totalMiembrosActivos: miembros.filter(m => m.estado === 'activo').length
+          };
+        })
+      );
+
+      res.json(gruposEnriquecidos);
+    } catch (error) {
+      console.error("Error al obtener grupos para monitor:", error);
+      res.status(500).json({ message: "Error al obtener grupos del monitor" });
+    }
+  });
+
+  // Obtener historial de mensajes de un grupo para el monitor
+  app.get('/api/admin/chat-monitor/:grupoId/historial', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { grupoId } = req.params;
+      const limite = parseInt(req.query.limite as string) || 50;
+      
+      const mensajesGrupo = await storage.getMensajes(grupoId, limite);
+      
+      // Enriquecer con información del remitente
+      const mensajesEnriquecidos = await Promise.all(
+        mensajesGrupo.map(async (m) => {
+          const remitente = await storage.getUser(m.remitenteId);
+          return {
+            ...m,
+            remitente: remitente ? {
+              id: remitente.id,
+              nombre: `${remitente.firstName || ''} ${remitente.lastName || ''}`.trim(),
+              avatar: remitente.profilePicture
+            } : null
+          };
+        })
+      );
+
+      res.json(mensajesEnriquecidos);
+    } catch (error) {
+      console.error("Error al obtener historial del grupo:", error);
+      res.status(500).json({ message: "Error al obtener historial" });
+    }
+  });
+
+  // Enviar mensaje desde el monitor (como super admin)
+  app.post('/api/admin/chat-monitor/:grupoId/mensaje', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { grupoId } = req.params;
+      const adminId = req.user.claims.sub;
+      const { contenido, tipo = 'texto' } = req.body;
+
+      if (!contenido) {
+        return res.status(400).json({ message: "Contenido del mensaje requerido" });
+      }
+
+      const mensaje = await storage.createMensaje({
+        grupoId,
+        remitenteId: adminId,
+        contenido: `[SUPER ADMIN] ${contenido}`,
+        tipo
+      });
+
+      // Notificar por WebSocket a todos los miembros del grupo
+      const { notificarGrupoChat } = await import('./websocket');
+      if (notificarGrupoChat) {
+        notificarGrupoChat(grupoId, 'nuevo_mensaje', mensaje);
+      }
+
+      res.json(mensaje);
+    } catch (error) {
+      console.error("Error al enviar mensaje del monitor:", error);
+      res.status(500).json({ message: "Error al enviar mensaje" });
+    }
+  });
+
+  // Obtener servicios de emergencia
+  app.get('/api/admin/servicios-emergencia', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const ciudadId = req.query.ciudadId as string;
+      const servicios = await storage.getServiciosEmergencia(ciudadId);
+      res.json(servicios);
+    } catch (error) {
+      console.error("Error al obtener servicios de emergencia:", error);
+      res.status(500).json({ message: "Error al obtener servicios" });
+    }
+  });
+
+  // Registrar acción de emergencia desde el monitor
+  app.post('/api/admin/chat-monitor/:grupoId/accion-emergencia', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { grupoId } = req.params;
+      const adminId = req.user.claims.sub;
+      const { servicioId, tipoAccion, destinatario, telefono, notas, alertaId } = req.body;
+
+      if (!tipoAccion) {
+        return res.status(400).json({ message: "Tipo de acción requerido" });
+      }
+
+      const accion = await storage.registrarAccionEmergenciaMonitor({
+        grupoId,
+        alertaId,
+        adminId,
+        servicioId,
+        tipoAccion,
+        destinatario,
+        telefono,
+        notas,
+        resultado: 'en_proceso'
+      });
+
+      // Notificar por WebSocket
+      const { notificarSuperAdmins } = await import('./websocket');
+      notificarSuperAdmins('accion_emergencia_registrada', {
+        accion,
+        grupoId,
+        adminId
+      });
+
+      res.json(accion);
+    } catch (error) {
+      console.error("Error al registrar acción de emergencia:", error);
+      res.status(500).json({ message: "Error al registrar acción" });
+    }
+  });
+
+  // Obtener acciones de emergencia de un grupo
+  app.get('/api/admin/chat-monitor/:grupoId/acciones', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { grupoId } = req.params;
+      const limite = parseInt(req.query.limite as string) || 50;
+      const acciones = await storage.getAccionesEmergenciaGrupo(grupoId, limite);
+      res.json(acciones);
+    } catch (error) {
+      console.error("Error al obtener acciones del grupo:", error);
+      res.status(500).json({ message: "Error al obtener acciones" });
+    }
+  });
+
+  // Actualizar resultado de acción de emergencia
+  app.patch('/api/admin/chat-monitor/acciones/:id/resultado', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { resultado } = req.body;
+
+      if (!resultado) {
+        return res.status(400).json({ message: "Resultado requerido" });
+      }
+
+      const accion = await storage.actualizarResultadoAccion(id, resultado);
+      res.json(accion);
+    } catch (error) {
+      console.error("Error al actualizar resultado:", error);
+      res.status(500).json({ message: "Error al actualizar resultado" });
+    }
+  });
+
+  // ============================================================
   // ADMIN: SOLICITUDES CHAT
   // ============================================================
 

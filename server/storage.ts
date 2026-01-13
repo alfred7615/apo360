@@ -58,6 +58,8 @@ import {
   favoritosProductos,
   interaccionesProductos,
   documentosSoporteGrupo,
+  serviciosEmergencia,
+  accionesEmergenciaMonitor,
   type Pais,
   type InsertPais,
   type Ciudad,
@@ -5171,6 +5173,158 @@ export class DatabaseStorage implements IStorage {
       .where(eq(ticketsFacturacion.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  // ============================================================
+  // CHAT MONITOR - Monitoreo de grupos CHAT para super admin
+  // ============================================================
+  
+  async getGruposChatMonitor(limite: number = 24): Promise<GrupoChat[]> {
+    // Obtener grupos CHAT aprobados, ordenados por último pánico y actividad
+    return await db
+      .select()
+      .from(gruposChat)
+      .where(and(
+        eq(gruposChat.creadoPorRolChat, true),
+        eq(gruposChat.estadoAutorizacion, 'aprobado'),
+        eq(gruposChat.estado, 'activo')
+      ))
+      .orderBy(
+        desc(gruposChat.ultimoPanicoAt),
+        desc(gruposChat.prioridadMonitor),
+        desc(gruposChat.ultimoMensajeAt)
+      )
+      .limit(limite);
+  }
+
+  async actualizarUltimoPanicoGrupo(grupoId: string): Promise<void> {
+    await db
+      .update(gruposChat)
+      .set({ 
+        ultimoPanicoAt: new Date(),
+        prioridadMonitor: sql`COALESCE(${gruposChat.prioridadMonitor}, 0) + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(gruposChat.id, grupoId));
+  }
+
+  // ============================================================
+  // SERVICIOS DE EMERGENCIA
+  // ============================================================
+  
+  async getServiciosEmergencia(ciudadId?: string): Promise<any[]> {
+    if (ciudadId) {
+      return await db
+        .select()
+        .from(serviciosEmergencia)
+        .where(and(
+          eq(serviciosEmergencia.ciudadId, ciudadId),
+          eq(serviciosEmergencia.activo, true)
+        ))
+        .orderBy(serviciosEmergencia.orden);
+    }
+    return await db
+      .select()
+      .from(serviciosEmergencia)
+      .where(eq(serviciosEmergencia.activo, true))
+      .orderBy(serviciosEmergencia.orden);
+  }
+
+  async getServicioEmergencia(id: string): Promise<any> {
+    const [servicio] = await db
+      .select()
+      .from(serviciosEmergencia)
+      .where(eq(serviciosEmergencia.id, id));
+    return servicio;
+  }
+
+  async createServicioEmergencia(data: any): Promise<any> {
+    const [servicio] = await db
+      .insert(serviciosEmergencia)
+      .values(data)
+      .returning();
+    return servicio;
+  }
+
+  async updateServicioEmergencia(id: string, data: any): Promise<any> {
+    const [servicio] = await db
+      .update(serviciosEmergencia)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(serviciosEmergencia.id, id))
+      .returning();
+    return servicio;
+  }
+
+  async deleteServicioEmergencia(id: string): Promise<void> {
+    await db
+      .update(serviciosEmergencia)
+      .set({ activo: false, updatedAt: new Date() })
+      .where(eq(serviciosEmergencia.id, id));
+  }
+
+  // ============================================================
+  // ACCIONES DE EMERGENCIA DEL MONITOR
+  // ============================================================
+  
+  async registrarAccionEmergenciaMonitor(data: {
+    grupoId: string;
+    alertaId?: string;
+    adminId: string;
+    servicioId?: string;
+    tipoAccion: string;
+    destinatario?: string;
+    telefono?: string;
+    notas?: string;
+    resultado?: string;
+  }): Promise<any> {
+    const [accion] = await db
+      .insert(accionesEmergenciaMonitor)
+      .values(data)
+      .returning();
+    return accion;
+  }
+
+  async getAccionesEmergenciaGrupo(grupoId: string, limite: number = 50): Promise<any[]> {
+    return await db
+      .select()
+      .from(accionesEmergenciaMonitor)
+      .where(eq(accionesEmergenciaMonitor.grupoId, grupoId))
+      .orderBy(desc(accionesEmergenciaMonitor.createdAt))
+      .limit(limite);
+  }
+
+  async getAccionesEmergenciaRecientes(limite: number = 100): Promise<any[]> {
+    return await db
+      .select()
+      .from(accionesEmergenciaMonitor)
+      .orderBy(desc(accionesEmergenciaMonitor.createdAt))
+      .limit(limite);
+  }
+
+  async actualizarResultadoAccion(id: string, resultado: string): Promise<any> {
+    const [accion] = await db
+      .update(accionesEmergenciaMonitor)
+      .set({ resultado })
+      .where(eq(accionesEmergenciaMonitor.id, id))
+      .returning();
+    return accion;
+  }
+
+  // Obtener últimos mensajes de múltiples grupos para el monitor
+  async getMensajesMultiplesGrupos(grupoIds: string[], limitePorGrupo: number = 10): Promise<Map<string, Mensaje[]>> {
+    const resultado = new Map<string, Mensaje[]>();
+    
+    for (const grupoId of grupoIds) {
+      const msgs = await db
+        .select()
+        .from(mensajes)
+        .where(eq(mensajes.grupoId, grupoId))
+        .orderBy(desc(mensajes.createdAt))
+        .limit(limitePorGrupo);
+      resultado.set(grupoId, msgs.reverse());
+    }
+    
+    return resultado;
   }
 }
 

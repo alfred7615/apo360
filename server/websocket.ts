@@ -622,3 +622,82 @@ export function notificarUsuario(usuarioId: string, notificacion: {
     return false;
   }
 }
+
+/**
+ * Notifica a un grupo de chat (todos los miembros conectados)
+ * Usado para el Chat Monitor del super admin
+ */
+export async function notificarGrupoChat(grupoId: string, tipo: string, data: any) {
+  const wss = globalWss;
+  if (!wss) {
+    console.log('⚠️ WebSocket no inicializado para notificación de grupo');
+    return 0;
+  }
+
+  try {
+    const miembros = await storage.getMiembrosGrupo(grupoId);
+    const miembrosIds = new Set(miembros.map((m: any) => m.usuarioId));
+    
+    const messageStr = JSON.stringify({
+      type: tipo,
+      grupoId,
+      data,
+      timestamp: new Date().toISOString(),
+    });
+
+    let sent = 0;
+    wss.clients.forEach((client: ExtendedWebSocket) => {
+      if (
+        client.readyState === WebSocket.OPEN &&
+        client.usuarioId &&
+        miembrosIds.has(client.usuarioId)
+      ) {
+        client.send(messageStr);
+        sent++;
+      }
+    });
+
+    console.log(`📢 Notificación de grupo ${grupoId}: ${tipo} (${sent} conexiones)`);
+    return sent;
+  } catch (error) {
+    console.error('❌ Error notificando grupo chat:', error);
+    return 0;
+  }
+}
+
+/**
+ * Envía actualizaciones del Chat Monitor a super admins conectados
+ */
+export function notificarChatMonitor(evento: string, data: any) {
+  const wss = globalWss;
+  if (!wss) {
+    console.log('⚠️ WebSocket no inicializado para chat monitor');
+    return 0;
+  }
+
+  try {
+    const messageStr = JSON.stringify({
+      type: 'chat_monitor_update',
+      evento,
+      data,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Enviar a todos los super admins conectados
+    // (se asume que los super admins tienen conexiones marcadas)
+    let sent = 0;
+    wss.clients.forEach((client: ExtendedWebSocket) => {
+      if (client.readyState === WebSocket.OPEN) {
+        // Por ahora enviamos a todos - en frontend se filtrará por rol
+        client.send(messageStr);
+        sent++;
+      }
+    });
+
+    console.log(`📊 Chat Monitor update: ${evento} (${sent} conexiones)`);
+    return sent;
+  } catch (error) {
+    console.error('❌ Error enviando actualización de monitor:', error);
+    return 0;
+  }
+}
