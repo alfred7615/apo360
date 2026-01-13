@@ -2550,3 +2550,102 @@ export const notificacionesAlerta = pgTable("notificaciones_alerta", {
 export const insertNotificacionAlertaSchema = createInsertSchema(notificacionesAlerta).omit({ id: true, createdAt: true });
 export type InsertNotificacionAlerta = z.infer<typeof insertNotificacionAlertaSchema>;
 export type NotificacionAlerta = typeof notificacionesAlerta.$inferSelect;
+
+// ============================================================
+// CONFIGURACIÓN DE GRUPOS CHAT (precios y settings globales)
+// ============================================================
+export const configuracionGruposChat = pgTable("configuracion_grupos_chat", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  precioMensual: decimal("precio_mensual", { precision: 10, scale: 2 }).default("5.00").notNull(),
+  moneda: varchar("moneda", { length: 10 }).default("PEN"),
+  diasGraciaAntesSuspension: integer("dias_gracia_antes_suspension").default(7),
+  activo: boolean("activo").default(true),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedBy: varchar("updated_by").references(() => usuarios.id),
+});
+
+export const insertConfiguracionGruposChatSchema = createInsertSchema(configuracionGruposChat).omit({ id: true, updatedAt: true });
+export type InsertConfiguracionGruposChat = z.infer<typeof insertConfiguracionGruposChatSchema>;
+export type ConfiguracionGruposChat = typeof configuracionGruposChat.$inferSelect;
+
+// ============================================================
+// SOLICITUDES DE GRUPOS CHAT (usuarios con rol CHAT solicitan crear grupos)
+// ============================================================
+export const solicitudesGruposChat = pgTable("solicitudes_grupos_chat", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  solicitanteId: varchar("solicitante_id").notNull().references(() => usuarios.id),
+  nombreOrganizacion: varchar("nombre_organizacion", { length: 255 }).notNull(),
+  descripcion: text("descripcion"),
+  avatarUrl: varchar("avatar_url"),
+  // Documentos de soporte (actas, cartas, etc.)
+  documentosSoporte: json("documentos_soporte").$type<{nombre: string, url: string, tipo: string}[]>(),
+  // Estado de la solicitud
+  estado: varchar("estado", { length: 30 }).default("pendiente"), // 'pendiente', 'aprobado', 'rechazado'
+  motivoRechazo: text("motivo_rechazo"),
+  // Aprobación
+  revisadoPor: varchar("revisado_por").references(() => usuarios.id),
+  fechaRevision: timestamp("fecha_revision"),
+  // Grupo creado (si fue aprobado)
+  grupoCreado: varchar("grupo_creado").references(() => gruposChat.id),
+  // Ciudad
+  ciudadId: varchar("ciudad_id").references(() => ciudades.id),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSolicitudGrupoChatSchema = createInsertSchema(solicitudesGruposChat).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSolicitudGrupoChat = z.infer<typeof insertSolicitudGrupoChatSchema>;
+export type SolicitudGrupoChat = typeof solicitudesGruposChat.$inferSelect;
+
+// ============================================================
+// MEMBRESÍAS DE GRUPOS CHAT (cortesías para servicio de grupos)
+// ============================================================
+export const membresiasGruposChat = pgTable("membresias_grupos_chat", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  grupoId: varchar("grupo_id").references(() => gruposChat.id), // NULL = aplica a todos los grupos del usuario
+  // Periodo de membresía
+  fechaInicio: timestamp("fecha_inicio").notNull().defaultNow(),
+  fechaFin: timestamp("fecha_fin").notNull(),
+  // Estado
+  estado: varchar("estado", { length: 20 }).default("activa"), // 'activa', 'expirada', 'cancelada'
+  // Tipo de membresía
+  esCortesia: boolean("es_cortesia").default(false),
+  motivoCortesia: text("motivo_cortesia"),
+  // Quién asignó
+  asignadoPor: varchar("asignado_por").references(() => usuarios.id),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMembresiaGrupoChatSchema = createInsertSchema(membresiasGruposChat).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertMembresiaGrupoChat = z.infer<typeof insertMembresiaGrupoChatSchema>;
+export type MembresiaGrupoChat = typeof membresiasGruposChat.$inferSelect;
+
+// ============================================================
+// HISTORIAL DE COBROS DE GRUPOS CHAT
+// ============================================================
+export const historialCobrosGruposChat = pgTable("historial_cobros_grupos_chat", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  grupoId: varchar("grupo_id").notNull().references(() => gruposChat.id),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  monto: decimal("monto", { precision: 10, scale: 2 }).notNull(),
+  moneda: varchar("moneda", { length: 10 }).default("PEN"),
+  // Estado del cobro
+  estado: varchar("estado", { length: 30 }).default("exitoso"), // 'exitoso', 'fallido', 'pendiente'
+  motivoFallo: text("motivo_fallo"),
+  // Saldo antes y después
+  saldoAntes: decimal("saldo_antes", { precision: 10, scale: 2 }),
+  saldoDespues: decimal("saldo_despues", { precision: 10, scale: 2 }),
+  // Periodo cobrado
+  periodoInicio: timestamp("periodo_inicio"),
+  periodoFin: timestamp("periodo_fin"),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertHistorialCobroGrupoChatSchema = createInsertSchema(historialCobrosGruposChat).omit({ id: true, createdAt: true });
+export type InsertHistorialCobroGrupoChat = z.infer<typeof insertHistorialCobroGrupoChatSchema>;
+export type HistorialCobroGrupoChat = typeof historialCobrosGruposChat.$inferSelect;
