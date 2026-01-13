@@ -170,6 +170,23 @@ export default function Chat() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
   const inputImagenRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      mediaRecorderRef.current = null;
+      audioChunksRef.current = [];
+    };
+  }, []);
 
   useEffect(() => {
     if (!cargandoAuth && !user) {
@@ -979,20 +996,116 @@ export default function Chat() {
     e.target.value = '';
   };
 
-  const iniciarGrabacionAudio = () => {
-    setGrabandoAudio(true);
-    toast({
-      title: "Grabando audio",
-      description: "Mantén presionado para grabar...",
-    });
+  const limpiarRecursosAudio = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    mediaRecorderRef.current = null;
+    audioChunksRef.current = [];
+  };
+
+  const iniciarGrabacionAudio = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast({
+        title: "Micrófono no disponible",
+        description: "Tu navegador no soporta grabación de audio",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    limpiarRecursosAudio();
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onerror = () => {
+        limpiarRecursosAudio();
+        setGrabandoAudio(false);
+        toast({
+          title: "Error de grabación",
+          description: "Ocurrió un error al grabar el audio",
+          variant: "destructive",
+        });
+      };
+
+      mediaRecorder.onstop = async () => {
+        const chunks = [...audioChunksRef.current];
+        const grupoId = grupoSeleccionado;
+        
+        limpiarRecursosAudio();
+        
+        if (chunks.length === 0 || !grupoId) {
+          return;
+        }
+
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append('archivo', audioBlob, `audio_${Date.now()}.webm`);
+
+        try {
+          const res = await fetch('/api/chat/upload', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
+          });
+
+          if (!res.ok) throw new Error('Error al subir audio');
+
+          const { url } = await res.json();
+          
+          enviarMensajeMutation.mutate({
+            grupoId: grupoId,
+            contenido: "Mensaje de voz",
+            tipo: "audio",
+            archivoUrl: url,
+          });
+
+          toast({
+            title: "Audio enviado",
+            description: "Tu mensaje de voz ha sido enviado",
+          });
+        } catch (error) {
+          toast({
+            title: "Error al enviar audio",
+            description: "No se pudo enviar el mensaje de voz",
+            variant: "destructive",
+          });
+        }
+      };
+
+      mediaRecorder.start();
+      setGrabandoAudio(true);
+      toast({
+        title: "Grabando audio",
+        description: "Mantén presionado para grabar...",
+      });
+    } catch (error) {
+      limpiarRecursosAudio();
+      toast({
+        title: "Error de acceso",
+        description: "No se pudo acceder al micrófono",
+        variant: "destructive",
+      });
+    }
   };
 
   const detenerGrabacionAudio = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
     setGrabandoAudio(false);
-    toast({
-      title: "Audio enviado",
-      description: "Tu mensaje de voz ha sido enviado",
-    });
   };
 
   if (cargandoAuth || !user) {
@@ -1709,8 +1822,20 @@ export default function Chat() {
                                 </a>
                               ) : mensaje.tipo === 'audio' && mensaje.archivoUrl ? (
                                 <audio controls className="max-w-full">
+                                  <source src={mensaje.archivoUrl} type="audio/webm" />
                                   <source src={mensaje.archivoUrl} type="audio/mpeg" />
+                                  Tu navegador no soporta audio.
                                 </audio>
+                              ) : mensaje.tipo === 'archivo' && mensaje.archivoUrl ? (
+                                <a 
+                                  href={mensaje.archivoUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 hover:underline"
+                                >
+                                  <Paperclip className="h-5 w-5" />
+                                  <span className="text-sm">{mensaje.contenido}</span>
+                                </a>
                               ) : (
                                 <p className="text-sm whitespace-pre-wrap break-words">{mensaje.contenido}</p>
                               )}
