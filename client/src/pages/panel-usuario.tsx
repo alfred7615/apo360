@@ -20,7 +20,7 @@ import {
   User, Camera, AlertCircle, Wallet, DollarSign,
   Clock, Check, X, ArrowRight, Upload, Image as ImageIcon, ZoomIn, Copy, Building, Phone,
   History, TrendingUp, TrendingDown, Megaphone, UtensilsCrossed, Wrench, FileText, Coins, ThumbsUp, Shield,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, MessageSquare, Users, Send
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -133,6 +133,16 @@ export default function PanelUsuarioPage() {
   const [showSolicitarRolModal, setShowSolicitarRolModal] = useState(false);
   const [rolSeleccionado, setRolSeleccionado] = useState<RolDisponible | null>(null);
   const [comentarioSolicitud, setComentarioSolicitud] = useState("");
+  
+  // Estados para modal de solicitud de grupo de chat
+  const [showSolicitudGrupoChatModal, setShowSolicitudGrupoChatModal] = useState(false);
+  const [solicitudGrupoChatForm, setSolicitudGrupoChatForm] = useState({
+    nombreOrganizacion: "",
+    descripcion: "",
+    tipoOrganizacion: "",
+    documentoSoporte: ""
+  });
+  const [subiendoDocumentoSoporte, setSubiendoDocumentoSoporte] = useState(false);
 
   // Detectar si viene con parámetro de recarga para abrir el modal automáticamente
   useEffect(() => {
@@ -248,6 +258,39 @@ export default function PanelUsuarioPage() {
   );
 
   const tieneRolCambista = misRoles.some(r => r.rol === "cambista") || user?.rol === "cambista";
+
+  const tieneRolChat = misRoles.some(r => r.rol === "chat");
+
+  // Consultas para grupos de chat autorizados
+  const { data: solicitudesGruposChat = [], isLoading: loadingSolicitudesGruposChat } = useQuery<any[]>({
+    queryKey: ["/api/mis-solicitudes-grupos-chat"],
+    enabled: isAuthenticated && tieneRolChat,
+  });
+
+  const { data: misGruposAutorizados = [], isLoading: loadingGruposAutorizados } = useQuery<any[]>({
+    queryKey: ["/api/mis-grupos-autorizados"],
+    enabled: isAuthenticated && tieneRolChat,
+  });
+
+  // Mutación para crear solicitud de grupo de chat
+  const crearSolicitudGrupoChatMutation = useMutation({
+    mutationFn: (data: { nombreOrganizacion: string; descripcion: string; tipoOrganizacion: string; documentoSoporte?: string }) => 
+      apiRequest("POST", "/api/solicitudes-grupos-chat", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mis-solicitudes-grupos-chat"] });
+      setShowSolicitudGrupoChatModal(false);
+      setSolicitudGrupoChatForm({
+        nombreOrganizacion: "",
+        descripcion: "",
+        tipoOrganizacion: "",
+        documentoSoporte: ""
+      });
+      toast({ title: "Solicitud enviada", description: "Tu solicitud de grupo de chat ha sido enviada para revisión por el administrador." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error al enviar solicitud", description: error.message, variant: "destructive" });
+    },
+  });
 
   const solicitarRolMutation = useMutation({
     mutationFn: (data: { rol: string; comentarios?: string }) => 
@@ -686,6 +729,17 @@ export default function PanelUsuarioPage() {
               >
                 <Coins className="h-4 w-4" />
                 <span className="text-xs sm:text-sm">Cambista</span>
+              </Button>
+            )}
+            {tieneRolChat && (
+              <Button
+                variant={activeTab === "rol-chat" ? "default" : "outline"}
+                onClick={() => setActiveTab("rol-chat")}
+                className="flex items-center justify-center gap-2 h-auto py-3 col-span-2 sm:col-span-1"
+                data-testid="tab-rol-chat"
+              >
+                <Megaphone className="h-4 w-4" />
+                <span className="text-xs sm:text-sm">Rol Chat</span>
               </Button>
             )}
             {/* Pestañas dinámicas para otros roles asignados */}
@@ -1693,6 +1747,138 @@ export default function PanelUsuarioPage() {
           </TabsContent>
         )}
 
+        {/* Panel de Rol Chat - Grupos Organizacionales */}
+        {tieneRolChat && (
+          <TabsContent value="rol-chat" className="mt-0">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5 text-primary" />
+                      Grupos de Chat Organizacionales
+                    </CardTitle>
+                    <CardDescription>Gestiona tus grupos de chat autorizados para organizaciones</CardDescription>
+                  </div>
+                  <Button 
+                    onClick={() => setShowSolicitudGrupoChatModal(true)}
+                    className="flex items-center gap-2"
+                    data-testid="btn-crear-grupo-chat"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Solicitar Grupo
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Mis Grupos Autorizados */}
+                <div>
+                  <h3 className="font-medium mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Mis Grupos Autorizados
+                  </h3>
+                  {loadingGruposAutorizados ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : misGruposAutorizados.length === 0 ? (
+                    <div className="text-center py-6 bg-muted/30 rounded-lg">
+                      <MessageSquare className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-muted-foreground text-sm">No tienes grupos autorizados aún</p>
+                      <p className="text-muted-foreground text-xs mt-1">Solicita un nuevo grupo para tu organización</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {misGruposAutorizados.map((grupo: any) => (
+                        <Card key={grupo.id} className="hover-elevate" data-testid={`card-grupo-${grupo.id}`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                              <Avatar className="h-12 w-12">
+                                <AvatarImage src={grupo.avatarUrl} alt={grupo.nombre} />
+                                <AvatarFallback className="bg-primary/10 text-primary">
+                                  {grupo.nombre?.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium truncate">{grupo.nombre}</h4>
+                                <p className="text-xs text-muted-foreground line-clamp-2">{grupo.descripcion}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    <Users className="h-3 w-3 mr-1" />
+                                    {grupo.totalMiembros || 0} miembros
+                                  </Badge>
+                                  <Badge variant={grupo.estado === 'activo' ? 'default' : 'secondary'} className="text-xs">
+                                    {grupo.estado}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <Link href="/chat">
+                                <Button size="icon" variant="ghost" data-testid={`btn-ir-chat-${grupo.id}`}>
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Mis Solicitudes */}
+                <div>
+                  <h3 className="font-medium mb-3 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Mis Solicitudes de Grupo
+                  </h3>
+                  {loadingSolicitudesGruposChat ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : solicitudesGruposChat.length === 0 ? (
+                    <div className="text-center py-6 bg-muted/30 rounded-lg">
+                      <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-muted-foreground text-sm">No tienes solicitudes pendientes</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {solicitudesGruposChat.map((solicitud: any) => (
+                        <Card key={solicitud.id} className="hover-elevate" data-testid={`card-solicitud-${solicitud.id}`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium">{solicitud.nombreOrganizacion}</h4>
+                                <p className="text-xs text-muted-foreground line-clamp-1">{solicitud.descripcion}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Enviada: {format(new Date(solicitud.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
+                                </p>
+                              </div>
+                              <Badge variant={
+                                solicitud.estado === 'aprobado' ? 'default' :
+                                solicitud.estado === 'rechazado' ? 'destructive' : 'secondary'
+                              }>
+                                {solicitud.estado === 'pendiente' && <Clock className="h-3 w-3 mr-1" />}
+                                {solicitud.estado === 'aprobado' && <Check className="h-3 w-3 mr-1" />}
+                                {solicitud.estado === 'rechazado' && <X className="h-3 w-3 mr-1" />}
+                                {solicitud.estado}
+                              </Badge>
+                            </div>
+                            {solicitud.estado === 'rechazado' && solicitud.motivoRechazo && (
+                              <div className="mt-2 p-2 bg-destructive/10 rounded text-xs text-destructive">
+                                Motivo: {solicitud.motivoRechazo}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
         {/* Contenido dinámico para otros roles asignados */}
         {misRoles
           .filter(r => !['local', 'local_comercial', 'cambista', 'usuario', 'conductor'].includes(r.rol))
@@ -2539,6 +2725,135 @@ export default function PanelUsuarioPage() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Solicitud de Grupo de Chat */}
+      <Dialog open={showSolicitudGrupoChatModal} onOpenChange={setShowSolicitudGrupoChatModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              Solicitar Grupo de Chat
+            </DialogTitle>
+            <DialogDescription>
+              Completa el formulario para solicitar un grupo de chat para tu organización. 
+              La solicitud será revisada por un administrador.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="nombreOrganizacion">Nombre de la Organización *</Label>
+              <Input
+                id="nombreOrganizacion"
+                placeholder="Ej: Junta Vecinal San Pedro"
+                value={solicitudGrupoChatForm.nombreOrganizacion}
+                onChange={(e) => setSolicitudGrupoChatForm(prev => ({...prev, nombreOrganizacion: e.target.value}))}
+                data-testid="input-nombre-organizacion"
+              />
+            </div>
+            <div>
+              <Label htmlFor="tipoOrganizacion">Tipo de Organización *</Label>
+              <Select
+                value={solicitudGrupoChatForm.tipoOrganizacion}
+                onValueChange={(val) => setSolicitudGrupoChatForm(prev => ({...prev, tipoOrganizacion: val}))}
+              >
+                <SelectTrigger id="tipoOrganizacion" data-testid="select-tipo-organizacion">
+                  <SelectValue placeholder="Selecciona el tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="junta_vecinal">Junta Vecinal</SelectItem>
+                  <SelectItem value="asociacion">Asociación</SelectItem>
+                  <SelectItem value="institucion">Institución</SelectItem>
+                  <SelectItem value="empresa">Empresa</SelectItem>
+                  <SelectItem value="ong">ONG</SelectItem>
+                  <SelectItem value="otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="descripcionGrupo">Descripción del Grupo *</Label>
+              <Textarea
+                id="descripcionGrupo"
+                placeholder="Describe brevemente el propósito del grupo..."
+                rows={3}
+                value={solicitudGrupoChatForm.descripcion}
+                onChange={(e) => setSolicitudGrupoChatForm(prev => ({...prev, descripcion: e.target.value}))}
+                data-testid="input-descripcion-grupo"
+              />
+            </div>
+            <div>
+              <Label htmlFor="documentoSoporte">Documento de Soporte (opcional)</Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Puedes adjuntar actas, cartas u otros documentos que respalden tu solicitud
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  id="documentoSoporte"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  disabled={subiendoDocumentoSoporte}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    
+                    setSubiendoDocumentoSoporte(true);
+                    try {
+                      const formData = new FormData();
+                      formData.append("file", file);
+                      const response = await fetch("/api/upload", {
+                        method: "POST",
+                        body: formData
+                      });
+                      if (!response.ok) throw new Error("Error al subir archivo");
+                      const data = await response.json();
+                      setSolicitudGrupoChatForm(prev => ({...prev, documentoSoporte: data.url}));
+                      toast({ title: "Documento subido", description: "El archivo se ha subido correctamente" });
+                    } catch (error: any) {
+                      toast({ title: "Error al subir documento", description: error.message, variant: "destructive" });
+                    } finally {
+                      setSubiendoDocumentoSoporte(false);
+                    }
+                  }}
+                  data-testid="input-documento-soporte"
+                />
+                {subiendoDocumentoSoporte && <Loader2 className="h-5 w-5 animate-spin" />}
+              </div>
+              {solicitudGrupoChatForm.documentoSoporte && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
+                  <Check className="h-4 w-4" />
+                  Documento adjuntado
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSolicitudGrupoChatModal(false)}
+              data-testid="btn-cancelar-solicitud-grupo"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => {
+                if (!solicitudGrupoChatForm.nombreOrganizacion || !solicitudGrupoChatForm.tipoOrganizacion || !solicitudGrupoChatForm.descripcion) {
+                  toast({ title: "Campos incompletos", description: "Por favor completa todos los campos requeridos", variant: "destructive" });
+                  return;
+                }
+                crearSolicitudGrupoChatMutation.mutate(solicitudGrupoChatForm);
+              }}
+              disabled={crearSolicitudGrupoChatMutation.isPending}
+              data-testid="btn-enviar-solicitud-grupo"
+            >
+              {crearSolicitudGrupoChatMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Enviar Solicitud
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

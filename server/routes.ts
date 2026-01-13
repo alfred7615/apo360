@@ -4467,6 +4467,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // USUARIO: Endpoints para gestión de grupos de chat
+  // ============================================================
+
+  // Obtener mis solicitudes de grupos de chat
+  app.get('/api/mis-solicitudes-grupos-chat', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const solicitudes = await db.select()
+        .from(solicitudesGruposChat)
+        .where(eq(solicitudesGruposChat.solicitanteId, userId))
+        .orderBy(desc(solicitudesGruposChat.createdAt));
+      
+      res.json(solicitudes);
+    } catch (error) {
+      console.error("Error al obtener mis solicitudes de grupos:", error);
+      res.status(500).json({ message: "Error al obtener solicitudes" });
+    }
+  });
+
+  // Obtener mis grupos autorizados (grupos donde soy creador/admin con creadoPorRolChat=true)
+  app.get('/api/mis-grupos-autorizados', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Grupos donde soy creador y están autorizados
+      const gruposCreados = await db.select()
+        .from(gruposChat)
+        .where(and(
+          eq(gruposChat.creadorId, userId),
+          eq(gruposChat.creadoPorRolChat, true),
+          eq(gruposChat.estadoAutorizacion, 'aprobado')
+        ))
+        .orderBy(desc(gruposChat.createdAt));
+      
+      // Enriquecer con estadísticas
+      const gruposEnriquecidos = await Promise.all(
+        gruposCreados.map(async (g: any) => {
+          const miembros = await storage.getMiembrosGrupo(g.id);
+          return {
+            ...g,
+            totalMiembros: miembros.filter((m: any) => m.estado === 'activo').length
+          };
+        })
+      );
+      
+      res.json(gruposEnriquecidos);
+    } catch (error) {
+      console.error("Error al obtener mis grupos autorizados:", error);
+      res.status(500).json({ message: "Error al obtener grupos" });
+    }
+  });
+
+  // ============================================================
   // ADMIN: CHAT MONITOR (Monitoreo de grupos CHAT en tiempo real)
   // Solo grupos autorizados por Super Admin (creadoPorRolChat=true)
   // ============================================================
