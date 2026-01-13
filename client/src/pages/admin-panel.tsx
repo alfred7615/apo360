@@ -70,6 +70,7 @@ import GestionMonedaScreen from "@/pages/admin/gestiones/gestion-moneda";
 import GestionConfiguracionScreen from "@/pages/admin/gestiones/gestion-configuracion";
 import GestionCategoriasRolScreen from "@/pages/admin/gestiones/gestion-categorias-rol";
 import GestionCiudadesScreen from "@/pages/admin/gestiones/gestion-ciudades";
+import GestionGruposChatScreen from "@/pages/admin/gestiones/gestion-grupos-chat";
 
 type AdminScreen = 
   | "dashboard" 
@@ -90,7 +91,8 @@ type AdminScreen =
   | "gestion-moneda"
   | "gestion-configuracion"
   | "gestion-categorias-rol"
-  | "gestion-ciudades";
+  | "gestion-ciudades"
+  | "gestion-grupos-chat";
 
 const mainMenuItems = [
   { id: "dashboard" as AdminScreen, title: "Dashboard", icon: LayoutDashboard },
@@ -114,6 +116,7 @@ const gestionesMenuItems = [
   { id: "gestion-moneda" as AdminScreen, title: "Moneda", icon: Coins },
   { id: "gestion-categorias-rol" as AdminScreen, title: "Categorías Roles", icon: Shield },
   { id: "gestion-ciudades" as AdminScreen, title: "Ciudades", icon: Globe },
+  { id: "gestion-grupos-chat" as AdminScreen, title: "Grupos Chat", icon: MessageSquare },
   { id: "gestion-configuracion" as AdminScreen, title: "Configuración", icon: Settings },
 ];
 
@@ -136,6 +139,7 @@ const screenComponents: Record<AdminScreen, React.ComponentType> = {
   "gestion-moneda": GestionMonedaScreen,
   "gestion-categorias-rol": GestionCategoriasRolScreen,
   "gestion-ciudades": GestionCiudadesScreen,
+  "gestion-grupos-chat": GestionGruposChatScreen,
   "gestion-configuracion": GestionConfiguracionScreen,
 };
 

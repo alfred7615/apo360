@@ -274,8 +274,17 @@ export default function PanelUsuarioPage() {
 
   // Mutación para crear solicitud de grupo de chat
   const crearSolicitudGrupoChatMutation = useMutation({
-    mutationFn: (data: { nombreOrganizacion: string; descripcion: string; tipoOrganizacion: string; documentoSoporte?: string }) => 
-      apiRequest("POST", "/api/solicitudes-grupos-chat", data),
+    mutationFn: (data: { nombreOrganizacion: string; descripcion: string; tipoOrganizacion: string; documentoSoporte?: string }) => {
+      const payload: any = {
+        nombreOrganizacion: data.nombreOrganizacion,
+        descripcion: data.descripcion,
+        tipoOrganizacion: data.tipoOrganizacion
+      };
+      if (data.documentoSoporte) {
+        payload.documentosSoporte = [{ nombre: "Documento de soporte", url: data.documentoSoporte, tipo: "documento" }];
+      }
+      return apiRequest("POST", "/api/solicitudes-grupos-chat", payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mis-solicitudes-grupos-chat"] });
       setShowSolicitudGrupoChatModal(false);

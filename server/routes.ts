@@ -4521,6 +4521,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
+  // ADMIN: Gestión de Grupos de Chat (Super Admin)
+  // ============================================================
+
+  // Obtener todos los grupos autorizados (para admin)
+  app.get('/api/admin/grupos-autorizados', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const grupos = await db.select()
+        .from(gruposChat)
+        .where(and(
+          eq(gruposChat.creadoPorRolChat, true),
+          eq(gruposChat.estadoAutorizacion, 'aprobado')
+        ))
+        .orderBy(desc(gruposChat.createdAt));
+      
+      const gruposEnriquecidos = await Promise.all(
+        grupos.map(async (g: any) => {
+          const creador = await storage.getUser(g.creadorId);
+          const miembros = await storage.getMiembrosGrupo(g.id);
+          return {
+            ...g,
+            creador: creador ? {
+              id: creador.id,
+              nombre: `${creador.firstName || ''} ${creador.lastName || ''}`.trim(),
+              email: creador.email
+            } : null,
+            totalMiembrosActivos: miembros.filter((m: any) => m.estado === 'activo').length
+          };
+        })
+      );
+      
+      res.json(gruposEnriquecidos);
+    } catch (error) {
+      console.error("Error al obtener grupos autorizados:", error);
+      res.status(500).json({ message: "Error al obtener grupos" });
+    }
+  });
+
+  // Obtener configuración de cobros de grupos chat
+  app.get('/api/admin/configuracion-cobros/:clave', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { clave } = req.params;
+      
+      if (clave !== 'cobro_mensual_grupos_chat') {
+        return res.status(400).json({ message: "Clave de configuración no válida" });
+      }
+      
+      const config = await db.select()
+        .from(configuracionGruposChat)
+        .limit(1);
+      
+      if (config.length === 0) {
+        res.json({
+          id: null,
+          claveCobro: clave,
+          montoMensual: 5.00,
+          descripcion: 'Cobro mensual predeterminado para grupos de chat',
+          activo: true
+        });
+      } else {
+        res.json({
+          id: config[0].id,
+          claveCobro: clave,
+          montoMensual: parseFloat(config[0].precioMensual || "5.00"),
+          descripcion: 'Cobro mensual para grupos de chat',
+          activo: config[0].activo
+        });
+      }
+    } catch (error) {
+      console.error("Error al obtener configuración:", error);
+      res.status(500).json({ message: "Error al obtener configuración" });
+    }
+  });
+
+  // Actualizar monto de cobro mensual
+  app.put('/api/admin/configuracion-cobros/:clave', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { clave } = req.params;
+      const { monto } = req.body;
+      const adminId = req.user.claims.sub;
+      
+      if (clave !== 'cobro_mensual_grupos_chat') {
+        return res.status(400).json({ message: "Clave de configuración no válida" });
+      }
+      
+      if (typeof monto !== 'number' || monto < 0) {
+        return res.status(400).json({ message: "Monto inválido" });
+      }
+      
+      const existente = await db.select()
+        .from(configuracionGruposChat)
+        .limit(1);
+      
+      if (existente.length === 0) {
+        await db.insert(configuracionGruposChat).values({
+          id: crypto.randomUUID(),
+          precioMensual: monto.toFixed(2),
+          moneda: 'PEN',
+          diasGraciaAntesSuspension: 7,
+          activo: true,
+          updatedAt: new Date(),
+          updatedBy: adminId
+        });
+      } else {
+        await db.update(configuracionGruposChat)
+          .set({ 
+            precioMensual: monto.toFixed(2), 
+            updatedAt: new Date(),
+            updatedBy: adminId
+          })
+          .where(eq(configuracionGruposChat.id, existente[0].id));
+      }
+      
+      res.json({ message: "Monto actualizado exitosamente", monto });
+    } catch (error) {
+      console.error("Error al actualizar configuración:", error);
+      res.status(500).json({ message: "Error al actualizar configuración" });
+    }
+  });
+
+  // ============================================================
   // ADMIN: CHAT MONITOR (Monitoreo de grupos CHAT en tiempo real)
   // Solo grupos autorizados por Super Admin (creadoPorRolChat=true)
   // ============================================================
