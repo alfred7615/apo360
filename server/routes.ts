@@ -4038,7 +4038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { grupoId } = req.params;
       const limite = parseInt(req.query.limite as string) || 50;
       
-      const mensajesGrupo = await storage.getMensajes(grupoId, limite);
+      const mensajesGrupo = await storage.getMensajesGrupoConPaginacion(grupoId, limite, 0);
       
       // Enriquecer con información del remitente
       const mensajesEnriquecidos = await Promise.all(
