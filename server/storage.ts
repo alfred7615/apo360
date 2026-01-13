@@ -57,6 +57,7 @@ import {
   itemsCatalogo,
   favoritosProductos,
   interaccionesProductos,
+  documentosSoporteGrupo,
   type Pais,
   type InsertPais,
   type Ciudad,
@@ -1246,6 +1247,101 @@ export class DatabaseStorage implements IStorage {
     await db.delete(miembrosGrupo).where(eq(miembrosGrupo.grupoId, id));
     await db.delete(mensajes).where(eq(mensajes.grupoId, id));
     await db.delete(gruposChat).where(eq(gruposChat.id, id));
+  }
+
+  // ============================================================
+  // SOLICITUDES CHAT (Autorización de grupos organizacionales)
+  // ============================================================
+  
+  async getSolicitudesChatPendientes(): Promise<GrupoChat[]> {
+    return await db
+      .select()
+      .from(gruposChat)
+      .where(eq(gruposChat.estadoAutorizacion, 'pendiente'))
+      .orderBy(gruposChat.fechaSolicitud);
+  }
+
+  async getSolicitudesChatTodas(): Promise<GrupoChat[]> {
+    return await db
+      .select()
+      .from(gruposChat)
+      .where(sql`${gruposChat.creadoPorRolChat} = true`)
+      .orderBy(desc(gruposChat.fechaSolicitud));
+  }
+
+  async getDocumentosSoporteGrupo(grupoId: string): Promise<any[]> {
+    return await db
+      .select()
+      .from(documentosSoporteGrupo)
+      .where(eq(documentosSoporteGrupo.grupoId, grupoId))
+      .orderBy(documentosSoporteGrupo.createdAt);
+  }
+
+  async agregarDocumentoSoporteGrupo(data: {
+    grupoId: string;
+    usuarioId: string;
+    nombreArchivo: string;
+    tipoArchivo: string;
+    urlArchivo: string;
+    tamanio?: number;
+    descripcion?: string;
+  }): Promise<any> {
+    const [documento] = await db
+      .insert(documentosSoporteGrupo)
+      .values(data)
+      .returning();
+    return documento;
+  }
+
+  async eliminarDocumentoSoporteGrupo(id: string): Promise<void> {
+    await db.delete(documentosSoporteGrupo).where(eq(documentosSoporteGrupo.id, id));
+  }
+
+  async actualizarEstadoAutorizacionGrupo(
+    grupoId: string, 
+    estado: 'aprobado' | 'rechazado',
+    reviewerId: string,
+    motivoRechazo?: string
+  ): Promise<GrupoChat | undefined> {
+    const updateData: any = {
+      estadoAutorizacion: estado,
+      reviewerId,
+      fechaAutorizacion: new Date(),
+      updatedAt: new Date()
+    };
+    
+    if (estado === 'rechazado' && motivoRechazo) {
+      updateData.motivoRechazo = motivoRechazo;
+    }
+    
+    if (estado === 'aprobado') {
+      updateData.sincronizadoPanico = true;
+    }
+
+    const [grupo] = await db
+      .update(gruposChat)
+      .set(updateData)
+      .where(eq(gruposChat.id, grupoId))
+      .returning();
+    return grupo;
+  }
+
+  async crearSolicitudChatGrupo(
+    grupoId: string,
+    organizacionNombre: string
+  ): Promise<GrupoChat | undefined> {
+    const [grupo] = await db
+      .update(gruposChat)
+      .set({
+        organizacionNombre,
+        estadoAutorizacion: 'pendiente',
+        fechaSolicitud: new Date(),
+        creadoPorRolChat: true,
+        updatedAt: new Date()
+      })
+      .where(eq(gruposChat.id, grupoId))
+      .returning();
+    return grupo;
   }
 
   // Miembros de grupo
