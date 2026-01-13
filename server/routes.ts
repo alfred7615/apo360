@@ -49,6 +49,12 @@ import {
   usuarios,
   gruposChat,
   documentosSoporteGrupo,
+  configuracionGruposChat,
+  solicitudesGruposChat,
+  membresiasGruposChat,
+  historialCobrosGruposChat,
+  insertSolicitudGrupoChatSchema,
+  insertMembresiaGrupoChatSchema,
 } from "@shared/schema";
 import { paises, departamentosPeru, distritosPorDepartamento, obtenerDepartamentos, obtenerDistritos, buscarDepartamentos, buscarDistritos } from "@shared/ubicaciones-peru";
 import { registerAdminRoutes } from "./routes-admin";
@@ -4027,18 +4033,463 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================
-  // ADMIN: CHAT MONITOR (Monitoreo de grupos CHAT en tiempo real)
+  // CONFIGURACIÓN DE GRUPOS CHAT (Super Admin)
   // ============================================================
 
-  // Obtener grupos CHAT para el monitor (ordenados por pánico y actividad)
+  // Obtener configuración actual de grupos chat
+  app.get('/api/admin/configuracion-grupos-chat', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const config = await db.select().from(configuracionGruposChat).limit(1);
+      if (config.length === 0) {
+        // Crear configuración por defecto
+        const nuevaConfig = await db.insert(configuracionGruposChat).values({
+          precioMensual: "5.00",
+          moneda: "PEN",
+          diasGraciaAntesSuspension: 7,
+          activo: true
+        }).returning();
+        return res.json(nuevaConfig[0]);
+      }
+      res.json(config[0]);
+    } catch (error) {
+      console.error("Error al obtener configuración:", error);
+      res.status(500).json({ message: "Error al obtener configuración de grupos chat" });
+    }
+  });
+
+  // Actualizar configuración de grupos chat
+  app.put('/api/admin/configuracion-grupos-chat', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const { precioMensual, moneda, diasGraciaAntesSuspension, activo } = req.body;
+      
+      // Obtener configuración actual
+      const configActual = await db.select().from(configuracionGruposChat).limit(1);
+      
+      if (configActual.length === 0) {
+        // Crear nueva configuración
+        const nuevaConfig = await db.insert(configuracionGruposChat).values({
+          precioMensual: precioMensual || "5.00",
+          moneda: moneda || "PEN",
+          diasGraciaAntesSuspension: diasGraciaAntesSuspension || 7,
+          activo: activo !== false,
+          updatedBy: adminId
+        }).returning();
+        return res.json(nuevaConfig[0]);
+      }
+      
+      // Actualizar configuración existente
+      const configActualizada = await db.update(configuracionGruposChat)
+        .set({
+          precioMensual: precioMensual !== undefined ? String(precioMensual) : configActual[0].precioMensual,
+          moneda: moneda || configActual[0].moneda,
+          diasGraciaAntesSuspension: diasGraciaAntesSuspension !== undefined ? diasGraciaAntesSuspension : configActual[0].diasGraciaAntesSuspension,
+          activo: activo !== undefined ? activo : configActual[0].activo,
+          updatedAt: new Date(),
+          updatedBy: adminId
+        })
+        .where(eq(configuracionGruposChat.id, configActual[0].id))
+        .returning();
+      
+      res.json(configActualizada[0]);
+    } catch (error) {
+      console.error("Error al actualizar configuración:", error);
+      res.status(500).json({ message: "Error al actualizar configuración" });
+    }
+  });
+
+  // ============================================================
+  // SOLICITUDES DE GRUPOS CHAT (Usuarios con rol CHAT)
+  // ============================================================
+
+  // Obtener solicitudes del usuario actual
+  app.get('/api/chat/mis-solicitudes-grupo', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const solicitudes = await db.select()
+        .from(solicitudesGruposChat)
+        .where(eq(solicitudesGruposChat.solicitanteId, userId))
+        .orderBy(desc(solicitudesGruposChat.createdAt));
+      res.json(solicitudes);
+    } catch (error) {
+      console.error("Error al obtener solicitudes:", error);
+      res.status(500).json({ message: "Error al obtener tus solicitudes" });
+    }
+  });
+
+  // Crear nueva solicitud de grupo (usuario con rol CHAT)
+  app.post('/api/chat/solicitud-grupo', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Verificar que el usuario tiene rol CHAT
+      const rolesUsuario = await storage.getRolesUsuario(userId);
+      const tieneRolChat = rolesUsuario.some((r: any) => r.tipoRol === 'chat' && r.estado === 'aprobado');
+      
+      if (!tieneRolChat) {
+        return res.status(403).json({ message: "Necesitas tener el rol CHAT aprobado para solicitar grupos" });
+      }
+      
+      // Verificar que el usuario tiene saldo suficiente
+      const saldoData = await storage.getSaldoUsuario(userId);
+      const saldoActual = parseFloat(saldoData?.saldoDisponible || '0');
+      
+      // Obtener precio mensual
+      const config = await db.select().from(configuracionGruposChat).limit(1);
+      const precioMensual = config.length > 0 ? parseFloat(config[0].precioMensual || '5') : 5;
+      
+      if (saldoActual < precioMensual) {
+        return res.status(400).json({ 
+          message: `Saldo insuficiente. Necesitas S/ ${precioMensual.toFixed(2)} para crear un grupo. Tu saldo: S/ ${saldoActual.toFixed(2)}` 
+        });
+      }
+      
+      const validacion = insertSolicitudGrupoChatSchema.safeParse({
+        ...req.body,
+        solicitanteId: userId
+      });
+      
+      if (!validacion.success) {
+        return res.status(400).json({ message: "Datos inválidos", errors: validacion.error.errors });
+      }
+      
+      const nuevaSolicitud = await db.insert(solicitudesGruposChat)
+        .values({
+          ...validacion.data,
+          estado: 'pendiente'
+        })
+        .returning();
+      
+      // Notificar a super admins
+      notificarSuperAdmins({
+        tipo: 'emergencia',
+        mensaje: `Nueva solicitud de grupo: ${validacion.data.nombreOrganizacion}`,
+        solicitudId: nuevaSolicitud[0].id
+      } as any);
+      
+      res.json(nuevaSolicitud[0]);
+    } catch (error) {
+      console.error("Error al crear solicitud:", error);
+      res.status(500).json({ message: "Error al crear solicitud de grupo" });
+    }
+  });
+
+  // Obtener todas las solicitudes pendientes (Super Admin)
+  app.get('/api/admin/solicitudes-grupos-chat', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const estado = req.query.estado as string || undefined;
+      
+      let query = db.select().from(solicitudesGruposChat);
+      if (estado) {
+        query = query.where(eq(solicitudesGruposChat.estado, estado)) as any;
+      }
+      
+      const solicitudes = await query.orderBy(desc(solicitudesGruposChat.createdAt));
+      
+      // Enriquecer con datos del solicitante
+      const solicitudesEnriquecidas = await Promise.all(
+        solicitudes.map(async (s: any) => {
+          const solicitante = await storage.getUser(s.solicitanteId);
+          const saldoData = await storage.getSaldoUsuario(s.solicitanteId);
+          return {
+            ...s,
+            solicitante: solicitante ? {
+              id: solicitante.id,
+              nombre: `${solicitante.firstName || ''} ${solicitante.lastName || ''}`.trim(),
+              email: solicitante.email,
+              saldo: saldoData?.saldoDisponible || '0'
+            } : null
+          };
+        })
+      );
+      
+      res.json(solicitudesEnriquecidas);
+    } catch (error) {
+      console.error("Error al obtener solicitudes:", error);
+      res.status(500).json({ message: "Error al obtener solicitudes" });
+    }
+  });
+
+  // Aprobar solicitud de grupo (Super Admin)
+  app.post('/api/admin/solicitudes-grupos-chat/:id/aprobar', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const adminId = req.user.claims.sub;
+      
+      // Obtener solicitud
+      const solicitud = await db.select().from(solicitudesGruposChat).where(eq(solicitudesGruposChat.id, id));
+      if (solicitud.length === 0) {
+        return res.status(404).json({ message: "Solicitud no encontrada" });
+      }
+      
+      if (solicitud[0].estado !== 'pendiente') {
+        return res.status(400).json({ message: "Esta solicitud ya fue procesada" });
+      }
+      
+      // Verificar saldo del solicitante
+      const saldoData = await storage.getSaldoUsuario(solicitud[0].solicitanteId);
+      const saldoActual = parseFloat(saldoData?.saldoDisponible || '0');
+      
+      // Obtener precio mensual
+      const config = await db.select().from(configuracionGruposChat).limit(1);
+      const precioMensual = config.length > 0 ? parseFloat(config[0].precioMensual || '5') : 5;
+      
+      // Verificar si tiene membresía de cortesía activa
+      const membresiaActiva = await db.select()
+        .from(membresiasGruposChat)
+        .where(and(
+          eq(membresiasGruposChat.usuarioId, solicitud[0].solicitanteId),
+          eq(membresiasGruposChat.estado, 'activa'),
+          eq(membresiasGruposChat.esCortesia, true)
+        ))
+        .limit(1);
+      
+      const tieneCortesia = membresiaActiva.length > 0 && new Date(membresiaActiva[0].fechaFin) > new Date();
+      
+      if (!tieneCortesia && saldoActual < precioMensual) {
+        return res.status(400).json({ 
+          message: `El solicitante no tiene saldo suficiente. Saldo: S/ ${saldoActual.toFixed(2)}, Requerido: S/ ${precioMensual.toFixed(2)}` 
+        });
+      }
+      
+      // Crear el grupo
+      const nuevoGrupo = await db.insert(gruposChat).values({
+        nombre: solicitud[0].nombreOrganizacion,
+        descripcion: solicitud[0].descripcion,
+        tipo: 'organizacion',
+        avatarUrl: solicitud[0].avatarUrl,
+        creadorId: solicitud[0].solicitanteId,
+        adminGrupoId: solicitud[0].solicitanteId,
+        estado: 'activo',
+        creadoPorRolChat: true,
+        esPrioridad: true,
+        ciudadId: solicitud[0].ciudadId,
+        estadoAutorizacion: 'aprobado',
+        fechaAutorizacion: new Date(),
+        reviewerId: adminId
+      }).returning();
+      
+      // Agregar al creador como miembro admin
+      await db.insert(miembrosGrupo).values({
+        grupoId: nuevoGrupo[0].id,
+        usuarioId: solicitud[0].solicitanteId,
+        rol: 'creador',
+        estado: 'activo'
+      });
+      
+      // Descontar saldo si no tiene cortesía
+      if (!tieneCortesia) {
+        const nuevoSaldo = saldoActual - precioMensual;
+        await storage.actualizarSaldoUsuario(solicitud[0].solicitanteId, -precioMensual, 'cargo_grupo_chat');
+        
+        // Registrar cobro
+        await db.insert(historialCobrosGruposChat).values({
+          grupoId: nuevoGrupo[0].id,
+          usuarioId: solicitud[0].solicitanteId,
+          monto: String(precioMensual),
+          estado: 'exitoso',
+          saldoAntes: String(saldoActual),
+          saldoDespues: String(nuevoSaldo),
+          periodoInicio: new Date(),
+          periodoFin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // +30 días
+        });
+      }
+      
+      // Actualizar solicitud
+      await db.update(solicitudesGruposChat)
+        .set({
+          estado: 'aprobado',
+          revisadoPor: adminId,
+          fechaRevision: new Date(),
+          grupoCreado: nuevoGrupo[0].id,
+          updatedAt: new Date()
+        })
+        .where(eq(solicitudesGruposChat.id, id));
+      
+      // Notificar al usuario
+      notificarUsuario(solicitud[0].solicitanteId, {
+        tipo: 'general',
+        mensaje: `Tu grupo "${solicitud[0].nombreOrganizacion}" ha sido aprobado`,
+        grupoId: nuevoGrupo[0].id
+      } as any);
+      
+      res.json({ 
+        message: "Solicitud aprobada y grupo creado", 
+        grupo: nuevoGrupo[0],
+        cobroRealizado: !tieneCortesia,
+        montoCobrado: tieneCortesia ? 0 : precioMensual
+      });
+    } catch (error) {
+      console.error("Error al aprobar solicitud:", error);
+      res.status(500).json({ message: "Error al aprobar solicitud" });
+    }
+  });
+
+  // Rechazar solicitud de grupo (Super Admin)
+  app.post('/api/admin/solicitudes-grupos-chat/:id/rechazar', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const adminId = req.user.claims.sub;
+      const { motivoRechazo } = req.body;
+      
+      if (!motivoRechazo) {
+        return res.status(400).json({ message: "Debe indicar el motivo del rechazo" });
+      }
+      
+      const solicitud = await db.select().from(solicitudesGruposChat).where(eq(solicitudesGruposChat.id, id));
+      if (solicitud.length === 0) {
+        return res.status(404).json({ message: "Solicitud no encontrada" });
+      }
+      
+      if (solicitud[0].estado !== 'pendiente') {
+        return res.status(400).json({ message: "Esta solicitud ya fue procesada" });
+      }
+      
+      await db.update(solicitudesGruposChat)
+        .set({
+          estado: 'rechazado',
+          motivoRechazo,
+          revisadoPor: adminId,
+          fechaRevision: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(solicitudesGruposChat.id, id));
+      
+      // Notificar al usuario
+      notificarUsuario(solicitud[0].solicitanteId, {
+        tipo: 'general',
+        mensaje: `Tu solicitud de grupo "${solicitud[0].nombreOrganizacion}" fue rechazada: ${motivoRechazo}`
+      } as any);
+      
+      res.json({ message: "Solicitud rechazada" });
+    } catch (error) {
+      console.error("Error al rechazar solicitud:", error);
+      res.status(500).json({ message: "Error al rechazar solicitud" });
+    }
+  });
+
+  // ============================================================
+  // MEMBRESÍAS DE GRUPOS CHAT (Super Admin)
+  // ============================================================
+
+  // Obtener membresías de grupos chat
+  app.get('/api/admin/membresias-grupos-chat', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const usuarioId = req.query.usuarioId as string || undefined;
+      
+      let query = db.select().from(membresiasGruposChat);
+      if (usuarioId) {
+        query = query.where(eq(membresiasGruposChat.usuarioId, usuarioId)) as any;
+      }
+      
+      const membresias = await query.orderBy(desc(membresiasGruposChat.createdAt));
+      
+      // Enriquecer con datos del usuario
+      const membresiasEnriquecidas = await Promise.all(
+        membresias.map(async (m: any) => {
+          const usuario = await storage.getUser(m.usuarioId);
+          return {
+            ...m,
+            usuario: usuario ? {
+              id: usuario.id,
+              nombre: `${usuario.firstName || ''} ${usuario.lastName || ''}`.trim(),
+              email: usuario.email
+            } : null
+          };
+        })
+      );
+      
+      res.json(membresiasEnriquecidas);
+    } catch (error) {
+      console.error("Error al obtener membresías:", error);
+      res.status(500).json({ message: "Error al obtener membresías" });
+    }
+  });
+
+  // Crear membresía de cortesía (Super Admin)
+  app.post('/api/admin/membresias-grupos-chat', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const { usuarioId, grupoId, meses, motivoCortesia } = req.body;
+      
+      if (!usuarioId || !meses) {
+        return res.status(400).json({ message: "Usuario y meses son requeridos" });
+      }
+      
+      // Verificar que el usuario existe
+      const usuario = await storage.getUser(usuarioId);
+      if (!usuario) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Calcular fecha de fin
+      const fechaFin = new Date();
+      fechaFin.setMonth(fechaFin.getMonth() + parseInt(meses));
+      
+      const nuevaMembresia = await db.insert(membresiasGruposChat).values({
+        usuarioId,
+        grupoId: grupoId || null,
+        fechaInicio: new Date(),
+        fechaFin,
+        estado: 'activa',
+        esCortesia: true,
+        motivoCortesia: motivoCortesia || 'Asignada por administrador',
+        asignadoPor: adminId
+      }).returning();
+      
+      // Notificar al usuario
+      notificarUsuario(usuarioId, {
+        tipo: 'general',
+        mensaje: `Se te ha asignado una membresía de cortesía para grupos de chat por ${meses} mes(es)`
+      } as any);
+      
+      res.json(nuevaMembresia[0]);
+    } catch (error) {
+      console.error("Error al crear membresía:", error);
+      res.status(500).json({ message: "Error al crear membresía" });
+    }
+  });
+
+  // Cancelar membresía (Super Admin)
+  app.delete('/api/admin/membresias-grupos-chat/:id', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      await db.update(membresiasGruposChat)
+        .set({ estado: 'cancelada', updatedAt: new Date() })
+        .where(eq(membresiasGruposChat.id, id));
+      
+      res.json({ message: "Membresía cancelada" });
+    } catch (error) {
+      console.error("Error al cancelar membresía:", error);
+      res.status(500).json({ message: "Error al cancelar membresía" });
+    }
+  });
+
+  // ============================================================
+  // ADMIN: CHAT MONITOR (Monitoreo de grupos CHAT en tiempo real)
+  // Solo grupos autorizados por Super Admin (creadoPorRolChat=true)
+  // ============================================================
+
+  // Obtener grupos CHAT para el monitor (solo grupos autorizados, ordenados por pánico y actividad)
   app.get('/api/admin/chat-monitor', isAuthenticated, requireSuperAdmin, async (req, res) => {
     try {
       const limite = parseInt(req.query.limite as string) || 24;
-      const grupos = await storage.getGruposChatMonitor(limite);
+      
+      // Obtener solo grupos creados por usuarios con rol CHAT y autorizados
+      const grupos = await db.select()
+        .from(gruposChat)
+        .where(and(
+          eq(gruposChat.creadoPorRolChat, true),
+          eq(gruposChat.estado, 'activo'),
+          eq(gruposChat.estadoAutorizacion, 'aprobado')
+        ))
+        .orderBy(desc(gruposChat.ultimoPanicoAt), desc(gruposChat.ultimoMensajeAt))
+        .limit(limite);
       
       // Enriquecer con información del creador y estadísticas
       const gruposEnriquecidos = await Promise.all(
-        grupos.map(async (g) => {
+        grupos.map(async (g: any) => {
           const creador = await storage.getUser(g.creadorId);
           const miembros = await storage.getMiembrosGrupo(g.id);
           return {
@@ -4048,7 +4499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               nombre: `${creador.firstName || ''} ${creador.lastName || ''}`.trim(),
               email: creador.email
             } : null,
-            totalMiembrosActivos: miembros.filter(m => m.estado === 'activo').length
+            totalMiembrosActivos: miembros.filter((m: any) => m.estado === 'activo').length
           };
         })
       );
@@ -4070,14 +4521,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Enriquecer con información del remitente
       const mensajesEnriquecidos = await Promise.all(
-        mensajesGrupo.map(async (m) => {
+        mensajesGrupo.map(async (m: any) => {
           const remitente = await storage.getUser(m.remitenteId);
           return {
             ...m,
             remitente: remitente ? {
               id: remitente.id,
               nombre: `${remitente.firstName || ''} ${remitente.lastName || ''}`.trim(),
-              avatar: remitente.profilePicture
+              avatar: remitente.profileImageUrl
             } : null
           };
         })
