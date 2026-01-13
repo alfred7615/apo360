@@ -678,6 +678,9 @@ export const gruposChat = pgTable("grupos_chat", {
   reviewerId: varchar("reviewer_id").references(() => usuarios.id),
   motivoRechazo: text("motivo_rechazo"),
   sincronizadoPanico: boolean("sincronizado_panico").default(false),
+  // Campos para Chat Monitor
+  ultimoPanicoAt: timestamp("ultimo_panico_at"),
+  prioridadMonitor: integer("prioridad_monitor").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -704,6 +707,51 @@ export const documentosSoporteGrupo = pgTable("documentos_soporte_grupo", {
 export const insertDocumentoSoporteGrupoSchema = createInsertSchema(documentosSoporteGrupo).omit({ id: true, createdAt: true });
 export type InsertDocumentoSoporteGrupo = z.infer<typeof insertDocumentoSoporteGrupoSchema>;
 export type DocumentoSoporteGrupo = typeof documentosSoporteGrupo.$inferSelect;
+
+// ============================================================
+// SERVICIOS DE EMERGENCIA (policía, bomberos, serenazgo, etc.)
+// ============================================================
+export const serviciosEmergencia = pgTable("servicios_emergencia", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ciudadId: varchar("ciudad_id").references(() => ciudades.id),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  tipo: varchar("tipo", { length: 50 }).notNull(), // 'policia', 'bomberos', 'serenazgo', 'ambulancia', 'grua'
+  telefono: varchar("telefono", { length: 50 }),
+  telefonoSecundario: varchar("telefono_secundario", { length: 50 }),
+  direccion: text("direccion"),
+  horarioAtencion: varchar("horario_atencion", { length: 100 }),
+  activo: boolean("activo").default(true),
+  orden: integer("orden").default(0),
+  icono: varchar("icono", { length: 50 }),
+  colorIcono: varchar("color_icono", { length: 20 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertServicioEmergenciaSchema = createInsertSchema(serviciosEmergencia).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertServicioEmergencia = z.infer<typeof insertServicioEmergenciaSchema>;
+export type ServicioEmergencia = typeof serviciosEmergencia.$inferSelect;
+
+// ============================================================
+// ACCIONES DE EMERGENCIA DEL CHAT MONITOR
+// ============================================================
+export const accionesEmergenciaMonitor = pgTable("acciones_emergencia_monitor", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  grupoId: varchar("grupo_id").notNull().references(() => gruposChat.id),
+  alertaId: varchar("alerta_id"), // referencia a alerta de emergencia si aplica
+  adminId: varchar("admin_id").notNull().references(() => usuarios.id),
+  servicioId: varchar("servicio_id").references(() => serviciosEmergencia.id),
+  tipoAccion: varchar("tipo_accion", { length: 50 }).notNull(), // 'llamada', 'mensaje', 'notificacion', 'asignacion'
+  destinatario: varchar("destinatario", { length: 100 }), // nombre del servicio o persona contactada
+  telefono: varchar("telefono", { length: 50 }),
+  notas: text("notas"),
+  resultado: varchar("resultado", { length: 50 }).default("pendiente"), // 'pendiente', 'exitoso', 'fallido', 'en_proceso'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAccionEmergenciaMonitorSchema = createInsertSchema(accionesEmergenciaMonitor).omit({ id: true, createdAt: true });
+export type InsertAccionEmergenciaMonitor = z.infer<typeof insertAccionEmergenciaMonitorSchema>;
+export type AccionEmergenciaMonitor = typeof accionesEmergenciaMonitor.$inferSelect;
 
 // ============================================================
 // MIEMBROS DE GRUPOS
