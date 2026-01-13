@@ -48,6 +48,7 @@ import {
   archivosCompartidosChat,
   usuarios,
   gruposChat,
+  documentosSoporteGrupo,
 } from "@shared/schema";
 import { paises, departamentosPeru, distritosPorDepartamento, obtenerDepartamentos, obtenerDistritos, buscarDepartamentos, buscarDistritos } from "@shared/ubicaciones-peru";
 import { registerAdminRoutes } from "./routes-admin";
@@ -3814,6 +3815,265 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al obtener historial:", error);
       res.status(500).json({ message: "Error al obtener historial" });
+    }
+  });
+
+  // ============================================================
+  // SOLICITUDES CHAT (Autorización grupos organizacionales)
+  // ============================================================
+
+  // Crear solicitud de grupo organizacional CHAT
+  app.post('/api/chat/solicitudes', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { grupoId, organizacionNombre, datosContacto, documentos } = req.body;
+
+      if (!grupoId || !organizacionNombre) {
+        return res.status(400).json({ message: "Grupo y nombre de organización requeridos" });
+      }
+
+      // Verificar que el usuario es admin del grupo
+      const grupo = await storage.getGrupoById(grupoId);
+      if (!grupo) {
+        return res.status(404).json({ message: "Grupo no encontrado" });
+      }
+
+      const miembro = await storage.getMiembroGrupo(grupoId, userId);
+      if (!miembro || (miembro.rol !== 'admin' && miembro.rol !== 'creador')) {
+        return res.status(403).json({ message: "Solo administradores pueden solicitar autorización" });
+      }
+
+      // Actualizar grupo con solicitud
+      const grupoActualizado = await storage.crearSolicitudChatGrupo(grupoId, organizacionNombre);
+
+      // Guardar documentos si existen
+      if (documentos && Array.isArray(documentos)) {
+        for (const doc of documentos) {
+          await storage.agregarDocumentoSoporteGrupo({
+            grupoId,
+            usuarioId: userId,
+            nombreArchivo: doc.nombreArchivo,
+            tipoArchivo: doc.tipoArchivo,
+            urlArchivo: doc.urlArchivo,
+            tamanio: doc.tamanio,
+            descripcion: doc.descripcion
+          });
+        }
+      }
+
+      res.json({ 
+        message: "Solicitud enviada exitosamente",
+        grupo: grupoActualizado
+      });
+    } catch (error) {
+      console.error("Error al crear solicitud CHAT:", error);
+      res.status(500).json({ message: "Error al crear solicitud" });
+    }
+  });
+
+  // Obtener documentos de un grupo (solo admin activo del grupo o super admin)
+  app.get('/api/chat/grupos/:grupoId/documentos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { grupoId } = req.params;
+
+      // Verificar autorización: admin activo del grupo o super admin
+      const miembro = await storage.getMiembroGrupo(grupoId, userId);
+      const usuario = await storage.getUser(userId);
+      const esSuperAdmin = usuario?.rolSistema === 'super_admin';
+      
+      // Verificar que el miembro esté activo y sea admin/creador
+      const esAdminActivo = miembro && 
+        miembro.estado === 'activo' && 
+        (miembro.rol === 'admin' || miembro.rol === 'creador');
+      
+      if (!esSuperAdmin && !esAdminActivo) {
+        return res.status(403).json({ message: "No autorizado para ver documentos de este grupo" });
+      }
+
+      const documentos = await storage.getDocumentosSoporteGrupo(grupoId);
+      res.json(documentos);
+    } catch (error) {
+      console.error("Error al obtener documentos:", error);
+      res.status(500).json({ message: "Error al obtener documentos" });
+    }
+  });
+
+  // Subir documento de soporte (solo admin activo del grupo)
+  app.post('/api/chat/grupos/:grupoId/documentos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { grupoId } = req.params;
+      const { nombreArchivo, tipoArchivo, urlArchivo, tamanio, descripcion } = req.body;
+
+      // Verificar autorización: solo admin activo del grupo puede subir documentos
+      const miembro = await storage.getMiembroGrupo(grupoId, userId);
+      const esAdminActivo = miembro && 
+        miembro.estado === 'activo' && 
+        (miembro.rol === 'admin' || miembro.rol === 'creador');
+        
+      if (!esAdminActivo) {
+        return res.status(403).json({ message: "Solo administradores activos pueden subir documentos" });
+      }
+
+      if (!nombreArchivo || !tipoArchivo || !urlArchivo) {
+        return res.status(400).json({ message: "Datos del documento incompletos" });
+      }
+
+      const documento = await storage.agregarDocumentoSoporteGrupo({
+        grupoId,
+        usuarioId: userId,
+        nombreArchivo,
+        tipoArchivo,
+        urlArchivo,
+        tamanio,
+        descripcion
+      });
+
+      res.json(documento);
+    } catch (error) {
+      console.error("Error al subir documento:", error);
+      res.status(500).json({ message: "Error al subir documento" });
+    }
+  });
+
+  // Eliminar documento de soporte (solo propietario activo, admin activo del grupo, o super admin)
+  app.delete('/api/chat/documentos/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      // Obtener el documento para verificar autorización
+      const documentos = await db.select().from(documentosSoporteGrupo).where(eq(documentosSoporteGrupo.id, id));
+      if (!documentos || documentos.length === 0) {
+        return res.status(404).json({ message: "Documento no encontrado" });
+      }
+      
+      const documento = documentos[0];
+      const usuario = await storage.getUser(userId);
+      const esSuperAdmin = usuario?.rolSistema === 'super_admin';
+      
+      // Verificar autorización: propietario activo, admin activo del grupo, o super admin
+      if (!esSuperAdmin) {
+        const miembro = await storage.getMiembroGrupo(documento.grupoId, userId);
+        
+        // Verificar que el miembro esté activo
+        if (!miembro || miembro.estado !== 'activo') {
+          return res.status(403).json({ message: "No autorizado - membresía inactiva" });
+        }
+        
+        const esAdmin = miembro.rol === 'admin' || miembro.rol === 'creador';
+        const esPropietario = documento.usuarioId === userId;
+        
+        if (!esAdmin && !esPropietario) {
+          return res.status(403).json({ message: "No autorizado para eliminar este documento" });
+        }
+      }
+
+      await storage.eliminarDocumentoSoporteGrupo(id);
+      res.json({ message: "Documento eliminado" });
+    } catch (error) {
+      console.error("Error al eliminar documento:", error);
+      res.status(500).json({ message: "Error al eliminar documento" });
+    }
+  });
+
+  // ============================================================
+  // ADMIN: SOLICITUDES CHAT
+  // ============================================================
+
+  // Obtener todas las solicitudes CHAT pendientes (super admin)
+  app.get('/api/admin/chat/solicitudes', isAuthenticated, requireSuperAdmin, async (req, res) => {
+    try {
+      const estado = req.query.estado as string || 'pendiente';
+      
+      let solicitudes;
+      if (estado === 'todas') {
+        solicitudes = await storage.getSolicitudesChatTodas();
+      } else {
+        solicitudes = await storage.getSolicitudesChatPendientes();
+      }
+
+      // Enriquecer con información del creador
+      const solicitudesConCreador = await Promise.all(
+        solicitudes.map(async (s) => {
+          const creador = await storage.getUser(s.creadorId);
+          const documentos = await storage.getDocumentosSoporteGrupo(s.id);
+          return {
+            ...s,
+            creador: creador ? {
+              id: creador.id,
+              nombre: `${creador.firstName || ''} ${creador.lastName || ''}`.trim(),
+              email: creador.email,
+              telefono: creador.telefono
+            } : null,
+            documentos
+          };
+        })
+      );
+
+      res.json(solicitudesConCreador);
+    } catch (error) {
+      console.error("Error al obtener solicitudes CHAT:", error);
+      res.status(500).json({ message: "Error al obtener solicitudes" });
+    }
+  });
+
+  // Aprobar solicitud CHAT (super admin)
+  app.post('/api/admin/chat/solicitudes/:grupoId/aprobar', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { grupoId } = req.params;
+      const reviewerId = req.user.claims.sub;
+
+      const grupo = await storage.actualizarEstadoAutorizacionGrupo(grupoId, 'aprobado', reviewerId);
+      
+      if (!grupo) {
+        return res.status(404).json({ message: "Grupo no encontrado" });
+      }
+
+      // Activar suscripción de pánico automáticamente para grupo CHAT aprobado
+      try {
+        const { activarSuscripcionPanico } = await import('./services/panicoService');
+        await activarSuscripcionPanico(grupoId, grupo.creadorId);
+        console.log(`✅ Suscripción de pánico activada para grupo CHAT aprobado: ${grupoId}`);
+      } catch (panicoError) {
+        console.error("Error al activar suscripción de pánico:", panicoError);
+      }
+
+      res.json({ 
+        message: "Solicitud aprobada exitosamente",
+        grupo 
+      });
+    } catch (error) {
+      console.error("Error al aprobar solicitud:", error);
+      res.status(500).json({ message: "Error al aprobar solicitud" });
+    }
+  });
+
+  // Rechazar solicitud CHAT (super admin)
+  app.post('/api/admin/chat/solicitudes/:grupoId/rechazar', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { grupoId } = req.params;
+      const { motivoRechazo } = req.body;
+      const reviewerId = req.user.claims.sub;
+
+      if (!motivoRechazo) {
+        return res.status(400).json({ message: "Debe proporcionar un motivo de rechazo" });
+      }
+
+      const grupo = await storage.actualizarEstadoAutorizacionGrupo(grupoId, 'rechazado', reviewerId, motivoRechazo);
+      
+      if (!grupo) {
+        return res.status(404).json({ message: "Grupo no encontrado" });
+      }
+
+      res.json({ 
+        message: "Solicitud rechazada",
+        grupo 
+      });
+    } catch (error) {
+      console.error("Error al rechazar solicitud:", error);
+      res.status(500).json({ message: "Error al rechazar solicitud" });
     }
   });
 

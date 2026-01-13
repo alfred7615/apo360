@@ -1090,7 +1090,24 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(desc(gruposChat.updatedAt));
     
-    return grupos.map(g => g.grupos_chat);
+    const gruposResult = grupos.map((g: any) => g.grupos_chat);
+    
+    // Ordenar: grupos CHAT aprobados primero (alfabéticamente), luego el resto por fecha
+    return gruposResult.sort((a: GrupoChat, b: GrupoChat) => {
+      const aEsChatAprobado = a.creadoPorRolChat && a.estadoAutorizacion === 'aprobado';
+      const bEsChatAprobado = b.creadoPorRolChat && b.estadoAutorizacion === 'aprobado';
+      
+      if (aEsChatAprobado && !bEsChatAprobado) return -1;
+      if (!aEsChatAprobado && bEsChatAprobado) return 1;
+      
+      // Si ambos son CHAT aprobados, ordenar alfabéticamente
+      if (aEsChatAprobado && bEsChatAprobado) {
+        return (a.organizacionNombre || a.nombre).localeCompare(b.organizacionNombre || b.nombre);
+      }
+      
+      // Para el resto, mantener orden por fecha (ya ordenados por updatedAt desc)
+      return 0;
+    });
   }
 
   async getGrupo(id: string): Promise<GrupoChat | undefined> {
