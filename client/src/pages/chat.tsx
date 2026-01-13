@@ -167,6 +167,7 @@ export default function Chat() {
   const [nuevoTituloGrupo, setNuevoTituloGrupo] = useState("");
   const [nuevaDescripcionGrupo, setNuevaDescripcionGrupo] = useState("");
   const mensajesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
   const inputImagenRef = useRef<HTMLInputElement>(null);
 
@@ -801,7 +802,9 @@ export default function Chat() {
   };
 
   useEffect(() => {
-    mensajesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
   }, [mensajes]);
 
   const gruposFiltrados = grupos.filter((grupo) =>
@@ -1633,7 +1636,10 @@ export default function Chat() {
           </div>
 
           {/* Mensajes */}
-          <ScrollArea className="flex-1 min-h-0 bg-muted/30">
+          <div 
+            ref={scrollContainerRef}
+            className="flex-1 min-h-0 bg-muted/30 overflow-y-auto"
+          >
             <div className="p-4">
               {cargandoMensajes ? (
                 <div className="flex items-center justify-center min-h-[200px]">
@@ -1737,7 +1743,7 @@ export default function Chat() {
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Input de mensaje con botones de adjuntar - Fijo en la parte inferior */}
           <div className="p-4 border-t bg-card shrink-0">

@@ -3227,8 +3227,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const grupos = await storage.getGruposPorUsuario(userId);
       
+      // Enriquecer grupos privados con el nombre del otro participante
+      const gruposEnriquecidos = await Promise.all(grupos.map(async (grupo: any) => {
+        if (grupo.tipo === 'privado' && grupo.nombre.startsWith('privado_')) {
+          // Extraer los IDs de los participantes del nombre del grupo
+          const partes = grupo.nombre.split('_');
+          if (partes.length >= 3) {
+            const id1 = partes[1];
+            const id2 = partes[2];
+            // El otro participante es el que NO es el usuario actual
+            const otroUsuarioId = id1 === userId ? id2 : id1;
+            
+            // Obtener datos del otro usuario
+            const otroUsuario = await storage.getUser(otroUsuarioId);
+            if (otroUsuario) {
+              const nombreMostrar = `${otroUsuario.firstName || ''} ${otroUsuario.lastName || ''}`.trim() || 
+                                   otroUsuario.email?.split('@')[0] || 'Usuario';
+              return {
+                ...grupo,
+                nombre: nombreMostrar,
+                avatarUrl: grupo.avatarUrl || otroUsuario.profileImageUrl,
+                nombreOriginal: grupo.nombre,
+              };
+            }
+          }
+        }
+        return grupo;
+      }));
+      
       // Ordenar grupos: primero los creados por usuarios con rol CHAT, luego por última actividad
-      const gruposOrdenados = [...grupos].sort((a: any, b: any) => {
+      const gruposOrdenados = [...gruposEnriquecidos].sort((a: any, b: any) => {
         // Grupos prioritarios (creados por rol CHAT) primero
         if (a.creadoPorRolChat && !b.creadoPorRolChat) return -1;
         if (!a.creadoPorRolChat && b.creadoPorRolChat) return 1;
