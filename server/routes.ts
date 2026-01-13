@@ -54,6 +54,7 @@ import { registerAdminRoutes } from "./routes-admin";
 import { notificarSuperAdmins, notificarUsuario } from "./websocket";
 import { obtenerReporteCartera, generarPDFReporte, generarBackupCartera, generarBackupSistema, generarAmbosBackups, listarBackupsCartera, listarBackupsSistema, listarTodosBackups, obtenerRutaBackup } from "./services/reportesService";
 import { registrarActividad, obtenerRegistrosAuditoria, obtenerEstadisticasAuditoria, extraerInfoUsuario } from "./services/auditoriaService";
+import { procesarCobroMensual, activarSuscripcionPanico, verificarAccesoPanico, getSuscripcionesUsuario, getHistorialCobrosUsuario, getPlanesPanico } from "./services/panicoService";
 import * as cron from "node-cron";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -4564,6 +4565,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notificarGrupoChat = false, 
         contactosFamiliaresIds = [],
         gruposDestino = [],
+        alertarPolicia = false,
+        solicitarGrua = false,
+        imagenBase64 = null,
         ...dataEmergencia 
       } = req.body;
       
@@ -4596,6 +4600,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (notificarGrupoChat && gruposDestino.length > 0) {
         destinatarios.push('grupos_chat');
         console.log(`[Emergencia] Notificando a ${gruposDestino.length} grupos de chat`);
+        
+        // Enviar alerta en tiempo real a los miembros de los grupos
+        const { enviarAlertaEmergencia } = await import('./websocket');
+        
+        // Para cada grupo destino, obtener info del grupo
+        for (const grupoId of gruposDestino) {
+          const grupo = await storage.getGrupoChat(grupoId);
+          if (grupo) {
+            await enviarAlertaEmergencia({
+              id: emergencia.id,
+              tipo: 'panico',
+              emisor: {
+                id: userId,
+                nombre: nombreUsuario,
+                telefono: usuario?.telefono || undefined,
+                foto: usuario?.profileImageUrl || undefined,
+              },
+              grupo: {
+                id: grupo.id,
+                nombre: grupo.nombre,
+                esOrganizacional: !!grupo.organizacionNombre,
+              },
+              ubicacion: dataEmergencia.latitud && dataEmergencia.longitud ? {
+                lat: dataEmergencia.latitud,
+                lng: dataEmergencia.longitud,
+              } : undefined,
+              opciones: {
+                alertarPolicia,
+                solicitarGrua,
+                tieneImagen: !!imagenBase64,
+              },
+              mensaje: dataEmergencia.descripcion,
+              imagenUrl: imagenBase64 || undefined,
+              fechaCreacion: new Date().toISOString(),
+              gruposDestino: [grupoId],
+            });
+          }
+        }
       }
       
       console.log(`[Emergencia] ${nombreUsuario} solicitó ayuda. Destinos: ${destinatarios.join(', ')}`);
@@ -4621,6 +4663,216 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al actualizar emergencia:", error);
       res.status(500).json({ message: "Error al actualizar emergencia" });
+    }
+  });
+
+  // ============================================================
+  // SISTEMA DE PÁNICO - SUSCRIPCIONES Y COBROS
+  // ============================================================
+
+  // Obtener planes de pánico disponibles
+  app.get('/api/panico/planes', async (req, res) => {
+    try {
+      const planes = await getPlanesPanico();
+      res.json(planes);
+    } catch (error: any) {
+      console.error("Error al obtener planes de pánico:", error);
+      res.status(500).json({ message: error.message || "Error al obtener planes" });
+    }
+  });
+
+  // Verificar si el usuario puede usar el botón de pánico
+  app.get('/api/panico/verificar-acceso', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const acceso = await verificarAccesoPanico(userId);
+      res.json(acceso);
+    } catch (error: any) {
+      console.error("Error al verificar acceso al pánico:", error);
+      res.status(500).json({ message: error.message || "Error al verificar acceso" });
+    }
+  });
+
+  // Obtener suscripciones del usuario
+  app.get('/api/panico/mis-suscripciones', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const suscripciones = await getSuscripcionesUsuario(userId);
+      res.json(suscripciones);
+    } catch (error: any) {
+      console.error("Error al obtener suscripciones:", error);
+      res.status(500).json({ message: error.message || "Error al obtener suscripciones" });
+    }
+  });
+
+  // Obtener historial de cobros del usuario
+  app.get('/api/panico/historial-cobros', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const historial = await getHistorialCobrosUsuario(userId);
+      res.json(historial);
+    } catch (error: any) {
+      console.error("Error al obtener historial de cobros:", error);
+      res.status(500).json({ message: error.message || "Error al obtener historial" });
+    }
+  });
+
+  // Activar suscripción de pánico para un grupo
+  app.post('/api/panico/activar-suscripcion', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { grupoId } = req.body;
+      
+      if (!grupoId || typeof grupoId !== 'string') {
+        return res.status(400).json({ message: "Se requiere el ID del grupo" });
+      }
+      
+      // Verificar que el usuario es admin del grupo
+      const grupo = await storage.getGrupoChat(grupoId);
+      if (!grupo) {
+        return res.status(404).json({ message: "Grupo no encontrado" });
+      }
+      
+      const esAdmin = grupo.creadoPorId === userId;
+      if (!esAdmin) {
+        const miembro = await db.select().from(miembrosGrupo)
+          .where(and(eq(miembrosGrupo.grupoId, grupoId), eq(miembrosGrupo.usuarioId, userId)));
+        if (!miembro.length || miembro[0].rol !== 'admin') {
+          return res.status(403).json({ message: "Solo los administradores del grupo pueden activar suscripciones" });
+        }
+      }
+      
+      // IMPORTANTE: El tipo de grupo se determina en el servidor basándose en los datos del grupo
+      // NO se confía en el valor enviado por el cliente para evitar manipulación de precios
+      const tipoGrupoFinal = grupo.organizacionNombre ? 'chat_org' : 'chat_normal';
+      
+      // Solo super admins pueden otorgar cortesías (no se acepta del cliente)
+      const mesesCortesia = 0;
+      
+      const resultado = await activarSuscripcionPanico(userId, grupoId, tipoGrupoFinal, mesesCortesia);
+      
+      if (resultado.exito) {
+        await registrarActividad({
+          tipoAccion: 'crear',
+          entidad: 'suscripcion_panico',
+          usuarioId: userId,
+          descripcion: `Suscripción de pánico activada para grupo ${grupo.nombre}`,
+          datosNuevos: { grupoId, tipoGrupoFinal, mesesCortesia },
+          modulo: 'panico',
+        });
+        res.json(resultado);
+      } else {
+        res.status(400).json(resultado);
+      }
+    } catch (error: any) {
+      console.error("Error al activar suscripción:", error);
+      res.status(500).json({ message: error.message || "Error al activar suscripción" });
+    }
+  });
+
+  // Super admin: Obtener todas las suscripciones de pánico
+  app.get('/api/admin/panico/suscripciones', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { estado, tipoGrupo } = req.query;
+      
+      // Validar valores permitidos para evitar inyección SQL
+      const estadosPermitidos = ['activo', 'cortesia', 'suspendido', 'cancelado'];
+      const tiposPermitidos = ['chat_org', 'chat_normal'];
+      
+      const estadoValidado = estado && estadosPermitidos.includes(estado as string) ? estado : null;
+      const tipoValidado = tipoGrupo && tiposPermitidos.includes(tipoGrupo as string) ? tipoGrupo : null;
+      
+      // Usar consulta parametrizada con sql template literal
+      const suscripciones = await db.execute(sql`
+        SELECT sp.*, 
+               pp.nombre as plan_nombre,
+               gc.nombre as grupo_nombre,
+               u.nombre_completo as usuario_nombre,
+               u.email as usuario_email
+        FROM suscripciones_panico sp
+        LEFT JOIN planes_panico pp ON sp.plan_id = pp.id
+        LEFT JOIN grupos_chat gc ON sp.grupo_id = gc.id
+        LEFT JOIN usuarios u ON sp.usuario_id = u.id
+        WHERE 1=1
+        ${estadoValidado ? sql`AND sp.estado = ${estadoValidado}` : sql``}
+        ${tipoValidado ? sql`AND sp.tipo_grupo = ${tipoValidado}` : sql``}
+        ORDER BY sp.created_at DESC
+      `);
+      
+      res.json(suscripciones.rows);
+    } catch (error: any) {
+      console.error("Error al obtener suscripciones:", error);
+      res.status(500).json({ message: error.message || "Error al obtener suscripciones" });
+    }
+  });
+
+  // Super admin: Otorgar cortesía a una suscripción
+  app.post('/api/admin/panico/otorgar-cortesia', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { suscripcionId, mesesCortesia } = req.body;
+      
+      if (!suscripcionId || !mesesCortesia) {
+        return res.status(400).json({ message: "Se requieren suscripcionId y mesesCortesia" });
+      }
+      
+      await db.execute(sql`
+        UPDATE suscripciones_panico 
+        SET cortesia_meses_restantes = cortesia_meses_restantes + ${mesesCortesia},
+            estado = 'cortesia',
+            updated_at = NOW()
+        WHERE id = ${suscripcionId}
+      `);
+      
+      const adminId = req.user.claims.sub;
+      await registrarActividad({
+        tipoAccion: 'actualizar',
+        entidad: 'suscripcion_panico',
+        usuarioId: adminId,
+        descripcion: `Cortesía otorgada: ${mesesCortesia} meses a suscripción ${suscripcionId}`,
+        datosNuevos: { suscripcionId, mesesCortesia },
+        modulo: 'panico',
+      });
+      
+      res.json({ exito: true, mensaje: `Se otorgaron ${mesesCortesia} meses de cortesía` });
+    } catch (error: any) {
+      console.error("Error al otorgar cortesía:", error);
+      res.status(500).json({ message: error.message || "Error al otorgar cortesía" });
+    }
+  });
+
+  // Super admin: Suspender/reactivar suscripción
+  app.patch('/api/admin/panico/suscripcion/:id', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { estado, motivo } = req.body;
+      
+      if (!['activo', 'suspendido', 'cancelado'].includes(estado)) {
+        return res.status(400).json({ message: "Estado no válido" });
+      }
+      
+      await db.execute(sql`
+        UPDATE suscripciones_panico 
+        SET estado = ${estado},
+            motivo_suspension = ${estado === 'suspendido' ? motivo : null},
+            fecha_suspension = ${estado === 'suspendido' ? sql`NOW()` : null},
+            updated_at = NOW()
+        WHERE id = ${id}
+      `);
+      
+      const adminId = req.user.claims.sub;
+      await registrarActividad({
+        tipoAccion: 'actualizar',
+        entidad: 'suscripcion_panico',
+        usuarioId: adminId,
+        descripcion: `Suscripción ${id} cambiada a estado ${estado}`,
+        datosNuevos: { id, estado, motivo },
+        modulo: 'panico',
+      });
+      
+      res.json({ exito: true, mensaje: `Suscripción actualizada a ${estado}` });
+    } catch (error: any) {
+      console.error("Error al actualizar suscripción:", error);
+      res.status(500).json({ message: error.message || "Error al actualizar suscripción" });
     }
   });
 
@@ -9115,6 +9367,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   console.log('[Cron] Backup automático programado para las 00:55 AM (hora de Lima)');
+
+  // ============================================================
+  // CRON JOB - COBROS MENSUALES DE SUSCRIPCIONES DE PÁNICO
+  // Se ejecuta el día 1 de cada mes a la 1:00 AM
+  // ============================================================
+
+  cron.schedule('0 1 1 * *', async () => {
+    console.log('[Cron-Panico] Iniciando cobros mensuales de suscripciones de pánico...');
+    try {
+      // Obtener todas las suscripciones activas que requieren cobro
+      const suscripciones = await db.execute(sql`
+        SELECT id, usuario_id, tipo_grupo, monto_mensual
+        FROM suscripciones_panico
+        WHERE estado IN ('activo', 'cortesia')
+        AND fecha_proximo_cobro <= NOW()
+      `);
+      
+      const resultados = {
+        total: suscripciones.rows?.length || 0,
+        exitosos: 0,
+        fallidos: 0,
+        cortesias: 0,
+        errores: 0
+      };
+      
+      for (const sub of (suscripciones.rows || []) as any[]) {
+        try {
+          const resultado = await procesarCobroMensual(sub.id);
+          if (resultado.exito) {
+            if (resultado.estadoCobro === 'cortesia') {
+              resultados.cortesias++;
+            } else {
+              resultados.exitosos++;
+            }
+          } else {
+            resultados.fallidos++;
+          }
+        } catch (err) {
+          console.error(`[Cron-Panico] Error procesando suscripción ${sub.id}:`, err);
+          resultados.errores++;
+        }
+      }
+      
+      await registrarActividad({
+        tipoAccion: 'crear',
+        entidad: 'cobro_mensual_panico',
+        descripcion: `Cobros mensuales procesados: ${resultados.exitosos} exitosos, ${resultados.cortesias} cortesías, ${resultados.fallidos} fallidos`,
+        datosNuevos: resultados,
+        modulo: 'panico',
+      });
+      
+      console.log('[Cron-Panico] Cobros completados:', resultados);
+    } catch (error) {
+      console.error('[Cron-Panico] Error en cobros mensuales:', error);
+    }
+  });
+
+  console.log('[Cron-Panico] Cobros mensuales programados para el día 1 de cada mes a la 1:00 AM');
 
   // ============================================================
   // CARTA DIGITAL - Acceso público sin autenticación

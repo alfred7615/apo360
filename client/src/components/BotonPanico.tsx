@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { AlertTriangle, Shield, Phone, Truck, Ambulance, Flame, MapPin, Send, Users, MessageCircle, Check, Navigation, Loader2, Map } from "lucide-react";
+import { AlertTriangle, Shield, Phone, Truck, Ambulance, Flame, MapPin, Send, Users, MessageCircle, Check, Navigation, Loader2, Map, Wallet, Camera, Image, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,12 +9,22 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 import { MapPicker } from "./MapPicker";
+
+interface AccesoPanico {
+  tieneAcceso: boolean;
+  razon: string;
+  diasRestantes?: number;
+  esGratuito?: boolean;
+  requiereRecarga?: boolean;
+  montoRequerido?: number;
+}
 
 const TIPOS_EMERGENCIA = [
   { tipo: "policia", icono: Shield, color: "bg-blue-600", hoverColor: "hover:bg-blue-700" },
@@ -49,24 +59,35 @@ const DRAG_THRESHOLD_PX = 8;
 export default function BotonPanico() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalSinSaldo, setModalSinSaldo] = useState(false);
   const [tiposSeleccionados, setTiposSeleccionados] = useState<string[]>([]);
   const [descripcion, setDescripcion] = useState("");
   const [ubicacion, setUbicacion] = useState<{ lat: number; lng: number } | null>(null);
   const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [alertarPolicia, setAlertarPolicia] = useState(false);
+  const [solicitarGrua, setSolicitarGrua] = useState(false);
+  const [imagenEmergencia, setImagenEmergencia] = useState<string | null>(null);
   
   const [posicion, setPosicion] = useState({ x: 20, y: 20 });
   const [arrastrando, setArrastrando] = useState(false);
   const botonRef = useRef<HTMLButtonElement>(null);
+  const inputImagenRef = useRef<HTMLInputElement>(null);
   
   const isActiveRef = useRef(false);
   const startTimeRef = useRef<number>(0);
   const startPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hasDraggedRef = useRef(false);
   const initialButtonPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const { data: accesoPanico, isLoading: verificandoAcceso } = useQuery<AccesoPanico>({
+    queryKey: ["/api/panico/verificar-acceso"],
+    enabled: !!user,
+  });
 
   const { data: gruposEmergencia = [] } = useQuery<GrupoEmergencia[]>({
     queryKey: ["/api/chat/grupos-emergencia"],
@@ -188,14 +209,46 @@ export default function BotonPanico() {
   });
 
   const abrirModal = () => {
+    // Si está verificando acceso, mostrar toast y esperar
+    if (verificandoAcceso) {
+      toast({
+        title: "Verificando acceso",
+        description: "Por favor espera mientras verificamos tu membresía...",
+      });
+      return;
+    }
+    
+    // Verificar acceso al pánico
+    if (accesoPanico && !accesoPanico.tieneAcceso) {
+      setModalSinSaldo(true);
+      return;
+    }
     setModalAbierto(true);
     obtenerUbicacion();
+  };
+
+  const capturarImagen = () => {
+    inputImagenRef.current?.click();
+  };
+
+  const handleImagenSeleccionada = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImagenEmergencia(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const cerrarModal = () => {
     setModalAbierto(false);
     setTiposSeleccionados([]);
     setDescripcion("");
+    setAlertarPolicia(false);
+    setSolicitarGrua(false);
+    setImagenEmergencia(null);
   };
 
   const toggleTipo = (tipo: string) => {
@@ -219,6 +272,14 @@ export default function BotonPanico() {
     const enviaFamilia = tiposSeleccionados.includes("familia");
     const enviaGrupoChat = tiposSeleccionados.includes("grupo_chat");
     const serviciosSeleccionados = tiposSeleccionados.filter(t => t !== "familia" && t !== "grupo_chat");
+    
+    // Agregar servicios adicionales si están seleccionados
+    if (alertarPolicia && !serviciosSeleccionados.includes("policia")) {
+      serviciosSeleccionados.push("policia");
+    }
+    if (solicitarGrua && !serviciosSeleccionados.includes("grua")) {
+      serviciosSeleccionados.push("grua");
+    }
 
     const datosEmergencia = {
       tipo: serviciosSeleccionados[0] || "emergencia",
@@ -231,6 +292,9 @@ export default function BotonPanico() {
       notificarGrupoChat: enviaGrupoChat,
       gruposDestino: enviaGrupoChat ? gruposEmergencia.map(g => g.id) : [],
       contactosFamiliares: enviaFamilia ? contactosFamiliares.filter(c => c.notificarEmergencias).map(c => c.id) : [],
+      alertarPolicia,
+      solicitarGrua,
+      imagenBase64: imagenEmergencia,
     };
 
     emergenciaMutation.mutate(datosEmergencia);
@@ -468,6 +532,70 @@ export default function BotonPanico() {
               data-testid="input-emergency-description"
             />
 
+            {/* Opciones adicionales */}
+            <div className="space-y-2 p-2 bg-muted/50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="alertar-policia" 
+                  checked={alertarPolicia}
+                  onCheckedChange={(checked) => setAlertarPolicia(checked === true)}
+                  data-testid="checkbox-alertar-policia"
+                />
+                <label htmlFor="alertar-policia" className="text-xs flex items-center gap-1 cursor-pointer">
+                  <Shield className="h-3 w-3 text-blue-600" />
+                  Alertar a la policía
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="solicitar-grua" 
+                  checked={solicitarGrua}
+                  onCheckedChange={(checked) => setSolicitarGrua(checked === true)}
+                  data-testid="checkbox-solicitar-grua"
+                />
+                <label htmlFor="solicitar-grua" className="text-xs flex items-center gap-1 cursor-pointer">
+                  <Truck className="h-3 w-3 text-yellow-600" />
+                  Solicitar grúa
+                </label>
+              </div>
+            </div>
+
+            {/* Captura de imagen */}
+            <input
+              ref={inputImagenRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleImagenSeleccionada}
+              data-testid="input-imagen-emergencia"
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={capturarImagen}
+                className="flex-1"
+                data-testid="button-capturar-imagen"
+              >
+                <Camera className="h-4 w-4 mr-1" />
+                Capturar foto
+              </Button>
+              {imagenEmergencia && (
+                <div className="relative h-10 w-10 rounded border overflow-hidden">
+                  <img src={imagenEmergencia} alt="Captura" className="h-full w-full object-cover" />
+                  <div 
+                    onClick={() => setImagenEmergencia(null)}
+                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 cursor-pointer hover:bg-red-600"
+                    role="button"
+                    aria-label="Eliminar imagen"
+                  >
+                    <X className="h-3 w-3" />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between p-2 bg-muted rounded-lg text-sm">
                 <div className="flex items-center gap-2">
@@ -561,6 +689,58 @@ export default function BotonPanico() {
         initialLat={ubicacion?.lat}
         initialLng={ubicacion?.lng}
       />
+
+      {/* Modal de sin saldo */}
+      <Dialog open={modalSinSaldo} onOpenChange={setModalSinSaldo}>
+        <DialogContent className="max-w-xs p-4" data-testid="dialog-sin-saldo">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center justify-center gap-2 text-lg">
+              <Wallet className="h-5 w-5 text-orange-500" />
+              <span>Servicio no disponible</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-lg bg-orange-50 dark:bg-orange-950 p-3 border border-orange-200 dark:border-orange-800">
+              <p className="text-sm text-orange-700 dark:text-orange-300 text-center">
+                {accesoPanico?.razon || "Para usar el botón de pánico necesitas saldo en tu cartera o una suscripción activa."}
+              </p>
+              {accesoPanico?.montoRequerido && (
+                <p className="text-sm font-medium text-orange-700 dark:text-orange-300 text-center mt-2">
+                  Monto mínimo requerido: S/ {accesoPanico.montoRequerido.toFixed(2)}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Button
+                onClick={() => {
+                  setModalSinSaldo(false);
+                  setLocation("/cartera");
+                }}
+                className="w-full"
+                data-testid="button-ir-cartera"
+              >
+                <Wallet className="h-4 w-4 mr-2" />
+                Recargar cartera
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => setModalSinSaldo(false)}
+                className="w-full"
+                data-testid="button-cerrar-sin-saldo"
+              >
+                Cerrar
+              </Button>
+            </div>
+
+            <p className="text-xs text-center text-muted-foreground">
+              El servicio de alerta de pánico tiene un costo mensual de S/ 1.00 para grupos normales y S/ 5.00 para organizaciones.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

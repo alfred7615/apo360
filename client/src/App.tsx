@@ -33,6 +33,7 @@ import Delivery from "@/pages/delivery";
 import NotFound from "@/pages/not-found";
 import NotificacionesAdmin from "@/components/NotificacionesAdmin";
 import NotificacionesPagoDelegado from "@/components/NotificacionesPagoDelegado";
+import AlertasEmergenciaGlobal from "@/components/AlertasEmergenciaGlobal";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -107,6 +108,7 @@ function App() {
                 <NotificacionesPagoDelegado onAbrirFormularioPago={(pedidoId) => {
                   window.location.href = `/mi-panel?tab=pedidos&pedidoId=${pedidoId}`;
                 }} />
+                <AlertasEmergenciaGlobal />
               </GeoFilterProvider>
             </CartProvider>
           </AudioControllerProvider>

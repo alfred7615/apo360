@@ -2361,3 +2361,144 @@ export const archivosCompartidosChat = pgTable("archivos_compartidos_chat", {
 export const insertArchivoCompartidoChatSchema = createInsertSchema(archivosCompartidosChat).omit({ id: true, createdAt: true });
 export type InsertArchivoCompartidoChat = z.infer<typeof insertArchivoCompartidoChatSchema>;
 export type ArchivoCompartidoChat = typeof archivosCompartidosChat.$inferSelect;
+
+// ============================================================
+// PLANES DE PÁNICO - Tarifas y configuración del botón de pánico
+// ============================================================
+export const planesPanico = pgTable("planes_panico", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  descripcion: text("descripcion"),
+  tipoGrupo: varchar("tipo_grupo", { length: 50 }).notNull(), // 'chat_org' (rol CHAT), 'chat_normal' (familia, deporte, etc.)
+  montoMensual: decimal("monto_mensual", { precision: 10, scale: 2 }).notNull(), // 5.00 para org, 1.00 para normal
+  moneda: varchar("moneda", { length: 10 }).default("PEN"),
+  cortesiaMesesDisponibles: integer("cortesia_meses_disponibles").default(0), // 1, 2, 3 meses gratis
+  activo: boolean("activo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPlanPanicoSchema = createInsertSchema(planesPanico).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPlanPanico = z.infer<typeof insertPlanPanicoSchema>;
+export type PlanPanico = typeof planesPanico.$inferSelect;
+
+// ============================================================
+// SUSCRIPCIONES DE PÁNICO - Relación usuario/grupo con plan activo
+// ============================================================
+export const suscripcionesPanico = pgTable("suscripciones_panico", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  grupoId: varchar("grupo_id").references(() => gruposChat.id),
+  planId: varchar("plan_id").references(() => planesPanico.id),
+  tipoGrupo: varchar("tipo_grupo", { length: 50 }).notNull(), // 'chat_org', 'chat_normal'
+  montoMensual: decimal("monto_mensual", { precision: 10, scale: 2 }).notNull(),
+  // Estado de la suscripción
+  estado: varchar("estado", { length: 50 }).default("pendiente"), // 'pendiente', 'activo', 'suspendido', 'cancelado', 'cortesia'
+  // Cortesía (meses gratis)
+  cortesiaMesesRestantes: integer("cortesia_meses_restantes").default(0),
+  cortesiaMesesTotales: integer("cortesia_meses_totales").default(0),
+  // Fechas de ciclo de facturación
+  fechaInicio: timestamp("fecha_inicio"),
+  fechaFin: timestamp("fecha_fin"),
+  fechaProximoCobro: timestamp("fecha_proximo_cobro"),
+  fechaUltimoCobro: timestamp("fecha_ultimo_cobro"),
+  // Suspensión
+  fechaSuspension: timestamp("fecha_suspension"),
+  motivoSuspension: text("motivo_suspension"),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSuscripcionPanicoSchema = createInsertSchema(suscripcionesPanico).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSuscripcionPanico = z.infer<typeof insertSuscripcionPanicoSchema>;
+export type SuscripcionPanico = typeof suscripcionesPanico.$inferSelect;
+
+// ============================================================
+// HISTORIAL DE COBROS DE PÁNICO - Registro de cobros automáticos
+// ============================================================
+export const historialCobrosPanico = pgTable("historial_cobros_panico", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  suscripcionId: varchar("suscripcion_id").notNull().references(() => suscripcionesPanico.id),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  // Período facturado
+  periodoInicio: timestamp("periodo_inicio").notNull(),
+  periodoFin: timestamp("periodo_fin").notNull(),
+  // Monto y saldo
+  montoCobrado: decimal("monto_cobrado", { precision: 10, scale: 2 }).notNull(),
+  saldoPrevio: decimal("saldo_previo", { precision: 12, scale: 2 }),
+  saldoPosterior: decimal("saldo_posterior", { precision: 12, scale: 2 }),
+  // Estado del cobro
+  estadoCobro: varchar("estado_cobro", { length: 50 }).default("pendiente"), // 'exitoso', 'fallido', 'cortesia', 'pendiente'
+  motivoFallo: text("motivo_fallo"),
+  // Referencia a transacción de cartera
+  transaccionCarteraId: varchar("transaccion_cartera_id"),
+  // Timestamps
+  fechaCobro: timestamp("fecha_cobro").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertHistorialCobroPanicoSchema = createInsertSchema(historialCobrosPanico).omit({ id: true, createdAt: true });
+export type InsertHistorialCobroPanico = z.infer<typeof insertHistorialCobroPanicoSchema>;
+export type HistorialCobroPanico = typeof historialCobrosPanico.$inferSelect;
+
+// ============================================================
+// ALERTAS DE EMERGENCIA - Registro de alertas enviadas por botón de pánico
+// ============================================================
+export const alertasEmergencia = pgTable("alertas_emergencia", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  usuarioId: varchar("usuario_id").notNull().references(() => usuarios.id),
+  ciudadId: varchar("ciudad_id").references(() => ciudades.id),
+  // Ubicación GPS
+  latitud: decimal("latitud", { precision: 10, scale: 8 }),
+  longitud: decimal("longitud", { precision: 11, scale: 8 }),
+  direccion: text("direccion"),
+  // Tipo de alerta y opciones seleccionadas
+  tipoAlerta: varchar("tipo_alerta", { length: 50 }).default("panico"), // 'panico', 'accidente', 'robo', 'medico'
+  alertarPolicia: boolean("alertar_policia").default(false),
+  solicitarGrua: boolean("solicitar_grua").default(false),
+  // Multimedia adjunta
+  imagenUrl: varchar("imagen_url"),
+  audioUrl: varchar("audio_url"),
+  videoUrl: varchar("video_url"),
+  // Mensaje adicional
+  mensaje: text("mensaje"),
+  // Destinos de la alerta
+  gruposDestinatarios: json("grupos_destinatarios").$type<string[]>(), // IDs de grupos
+  contactosFamiliares: json("contactos_familiares").$type<string[]>(), // IDs de contactos
+  // Estado de la alerta
+  estado: varchar("estado", { length: 50 }).default("activo"), // 'activo', 'atendido', 'cancelado', 'resuelto'
+  // Respuesta
+  atendidoPor: varchar("atendido_por").references(() => usuarios.id),
+  fechaAtendido: timestamp("fecha_atendido"),
+  fechaResuelto: timestamp("fecha_resuelto"),
+  notasResolucion: text("notas_resolucion"),
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAlertaEmergenciaSchema = createInsertSchema(alertasEmergencia).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertAlertaEmergencia = z.infer<typeof insertAlertaEmergenciaSchema>;
+export type AlertaEmergencia = typeof alertasEmergencia.$inferSelect;
+
+// ============================================================
+// NOTIFICACIONES DE ALERTA - Registro de quién recibió cada alerta
+// ============================================================
+export const notificacionesAlerta = pgTable("notificaciones_alerta", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  alertaId: varchar("alerta_id").notNull().references(() => alertasEmergencia.id, { onDelete: "cascade" }),
+  usuarioDestinoId: varchar("usuario_destino_id").notNull().references(() => usuarios.id),
+  grupoId: varchar("grupo_id").references(() => gruposChat.id),
+  // Estado de la notificación
+  estado: varchar("estado", { length: 50 }).default("enviado"), // 'enviado', 'visto', 'aceptado', 'rechazado'
+  fechaVisto: timestamp("fecha_visto"),
+  fechaRespuesta: timestamp("fecha_respuesta"),
+  respuesta: varchar("respuesta", { length: 50 }), // 'en_camino', 'no_disponible', 'apoyo_remoto'
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNotificacionAlertaSchema = createInsertSchema(notificacionesAlerta).omit({ id: true, createdAt: true });
+export type InsertNotificacionAlerta = z.infer<typeof insertNotificacionAlertaSchema>;
+export type NotificacionAlerta = typeof notificacionesAlerta.$inferSelect;

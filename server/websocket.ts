@@ -294,16 +294,17 @@ export function setupWebSocket(httpServer: Server) {
               const nombreUsuario = `${usuario?.firstName || ''} ${usuario?.lastName || ''}`.trim() || usuario?.email || 'Usuario';
               
               // Crear registro de emergencia en BD
-              const emergenciaData: InsertEmergencia = {
-                usuarioId: ws.usuarioId,
+              // Nota: usuarioId se añade en el storage, no en el schema de insert
+              const emergenciaData = {
                 tipo: data.tipoEmergencia || 'general',
                 descripcion: data.contenido || 'Alerta de emergencia activada',
                 latitud: data.latitud ?? 0,
                 longitud: data.longitud ?? 0,
                 estado: 'activa',
+                usuarioId: ws.usuarioId,
               };
 
-              const emergencia = await storage.createEmergencia(emergenciaData);
+              const emergencia = await storage.createEmergencia(emergenciaData as any);
               console.log('🚨 Emergencia creada:', emergencia.id, 'tipo:', data.tipoEmergencia);
 
               // Obtener grupos de emergencia para notificar
@@ -491,6 +492,89 @@ export async function notificarSuperAdmins(notificacion: {
     console.log(`🔔 Notificación enviada a ${sent} super admins: ${notificacion.tipo}`);
   } catch (error) {
     console.error('❌ Error enviando notificación a admins:', error);
+  }
+}
+
+/**
+ * Envía una alerta de emergencia a todos los miembros de grupos específicos
+ * Broadcast directo a usuarios conectados sin requerir que estén en una sala específica
+ */
+export async function enviarAlertaEmergencia(alerta: {
+  id: string;
+  tipo: 'panico' | 'emergencia';
+  emisor: {
+    id: string;
+    nombre: string;
+    telefono?: string;
+    foto?: string;
+  };
+  grupo: {
+    id: string;
+    nombre: string;
+    esOrganizacional: boolean;
+  };
+  ubicacion?: {
+    lat: number;
+    lng: number;
+  };
+  opciones: {
+    alertarPolicia: boolean;
+    solicitarGrua: boolean;
+    tieneImagen: boolean;
+  };
+  mensaje?: string;
+  imagenUrl?: string;
+  fechaCreacion: string;
+  gruposDestino: string[];
+}) {
+  const wss = globalWss;
+  if (!wss) {
+    console.log('⚠️ WebSocket no inicializado para alertas de emergencia');
+    return 0;
+  }
+
+  try {
+    // No modificar la imagenUrl - enviarla tal cual viene (ya tiene el prefijo data:image si es base64)
+    const messageStr = JSON.stringify({
+      type: 'nueva_alerta',
+      alerta,
+    });
+
+    let sent = 0;
+    
+    // Obtener miembros de los grupos destino
+    const miembrosNotificados = new Set<string>();
+    
+    for (const grupoId of alerta.gruposDestino) {
+      const miembros = await storage.getMiembrosGrupo(grupoId);
+      miembros.forEach((m: any) => {
+        if (m.usuarioId !== alerta.emisor.id) {
+          miembrosNotificados.add(m.usuarioId);
+        }
+      });
+    }
+
+    console.log(`🚨 Usuarios a notificar: ${miembrosNotificados.size}`);
+    
+    // Enviar a TODOS los usuarios conectados que son miembros de los grupos
+    // NO requiere que estén en una sala específica (ws.grupoId)
+    wss.clients.forEach((client: ExtendedWebSocket) => {
+      if (
+        client.readyState === WebSocket.OPEN &&
+        client.usuarioId &&
+        miembrosNotificados.has(client.usuarioId)
+      ) {
+        client.send(messageStr);
+        sent++;
+        console.log(`🚨 Alerta enviada a usuario: ${client.usuarioId}`);
+      }
+    });
+
+    console.log(`🚨 Alerta de emergencia enviada a ${sent} conexiones de ${miembrosNotificados.size} usuarios`);
+    return sent;
+  } catch (error) {
+    console.error('❌ Error enviando alerta de emergencia:', error);
+    return 0;
   }
 }
 

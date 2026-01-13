@@ -1,0 +1,2270 @@
+{
+  "fechaGeneracion": "2026-01-13T00:55:00.011Z",
+  "version": "1.0",
+  "datos": {
+    "usuarios": {
+      "cantidad": 122,
+      "registros": [
+        {
+          "id": "admin-test-001",
+          "email": "admin@segapo.com",
+          "nombre": "Administrador",
+          "apellido": "Sistema",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "local-test-001",
+          "email": "restaurante@segapo.com",
+          "nombre": "El Buen",
+          "apellido": "Sabor",
+          "rol": "local",
+          "estado": "activo"
+        },
+        {
+          "id": "local-test-002",
+          "email": "farmacia@segapo.com",
+          "nombre": "Farmacia",
+          "apellido": "San José",
+          "rol": "local",
+          "estado": "activo"
+        },
+        {
+          "id": "35ef8b5b-9e09-404d-bc17-478dbe735ad2",
+          "email": "test-chat@tacnafm.com",
+          "nombre": "Usuario",
+          "apellido": "Prueba Chat",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "RV0bbP",
+          "email": "test1dZB-h@ejemplo.com",
+          "nombre": "Usuario",
+          "apellido": "Prueba",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "test-user-123",
+          "email": "test@example.com",
+          "nombre": "Usuario Test",
+          "apellido": "",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "playwright-test-user",
+          "email": "test-playwright@example.com",
+          "nombre": "Test",
+          "apellido": "Playwright",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "test-super-admin-upload",
+          "email": "adminupload@test.com",
+          "nombre": "Super",
+          "apellido": "Admin",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "MM6axm",
+          "email": "MM6axm@example.com",
+          "nombre": "Admin",
+          "apellido": "User",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "test-admin",
+          "email": "admin@test.com",
+          "nombre": null,
+          "apellido": null,
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "50138117",
+          "email": "aapomayta15@gmail.com",
+          "nombre": null,
+          "apellido": null,
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "test-admin-001",
+          "email": "testadmin@example.com",
+          "nombre": "Test",
+          "apellido": "Admin",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "working-test",
+          "email": "admin@tacnafm.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "aJNqoB",
+          "email": "aJNqoB@example.com",
+          "nombre": "Admin",
+          "apellido": "User",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "test-super",
+          "email": "test-super@example.com",
+          "nombre": "Test",
+          "apellido": "Super",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "idV2Ix",
+          "email": "idV2Ix@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "tZKE55",
+          "email": "tZKE55@example.com",
+          "nombre": "Admin",
+          "apellido": "User",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "huhjTh",
+          "email": "adminIBLb9J@example.com",
+          "nombre": "Admin",
+          "apellido": "Test",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "Gnl4r2",
+          "email": "adminJk5AZZ@example.com",
+          "nombre": "Admin",
+          "apellido": "Test",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "CkkiDb",
+          "email": "adminNBh0aG@example.com",
+          "nombre": "Admin",
+          "apellido": "Test",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "mAfEol",
+          "email": "adminyq-FGR@example.com",
+          "nombre": "Admin",
+          "apellido": "Test",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "test-user-Bw5C69",
+          "email": "testuser-O4gPk@example.com",
+          "nombre": "Test",
+          "apellido": "User",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-001",
+          "email": "maria.garcia@gmail.com",
+          "nombre": "María",
+          "apellido": "García Rodríguez",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-002",
+          "email": "juan.perez@gmail.com",
+          "nombre": "Juan Carlos",
+          "apellido": "Pérez Luna",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-003",
+          "email": "ana.martinez@gmail.com",
+          "nombre": "Ana María",
+          "apellido": "Martínez Quispe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-004",
+          "email": "carlos.lopez@gmail.com",
+          "nombre": "Carlos",
+          "apellido": "López Mendoza",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-005",
+          "email": "rosa.fernandez@gmail.com",
+          "nombre": "Rosa Elena",
+          "apellido": "Fernández Ticona",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-006",
+          "email": "pedro.sanchez@gmail.com",
+          "nombre": "Pedro",
+          "apellido": "Sánchez Mamani",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-007",
+          "email": "lucia.morales@gmail.com",
+          "nombre": "Lucía",
+          "apellido": "Morales Choque",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-008",
+          "email": "miguel.torres@gmail.com",
+          "nombre": "Miguel Ángel",
+          "apellido": "Torres Flores",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-009",
+          "email": "carmen.vargas@gmail.com",
+          "nombre": "Carmen",
+          "apellido": "Vargas Condori",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-010",
+          "email": "roberto.ramirez@gmail.com",
+          "nombre": "Roberto",
+          "apellido": "Ramírez Apaza",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-011",
+          "email": "patricia.gomez@gmail.com",
+          "nombre": "Patricia",
+          "apellido": "Gómez Huanca",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-012",
+          "email": "fernando.diaz@gmail.com",
+          "nombre": "Fernando",
+          "apellido": "Díaz Poma",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-013",
+          "email": "elena.ruiz@gmail.com",
+          "nombre": "Elena",
+          "apellido": "Ruiz Chambi",
+          "rol": "conductor",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-014",
+          "email": "jorge.herrera@gmail.com",
+          "nombre": "Jorge Luis",
+          "apellido": "Herrera Ccama",
+          "rol": "conductor",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-015",
+          "email": "sofia.castro@gmail.com",
+          "nombre": "Sofía",
+          "apellido": "Castro Laura",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-016",
+          "email": "antonio.reyes@gmail.com",
+          "nombre": "Antonio",
+          "apellido": "Reyes Calisaya",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-017",
+          "email": "isabel.rivera@gmail.com",
+          "nombre": "Isabel",
+          "apellido": "Rivera Nina",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-018",
+          "email": "david.ortiz@gmail.com",
+          "nombre": "David",
+          "apellido": "Ortiz Quispe",
+          "rol": "local",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-019",
+          "email": "gabriela.jimenez@gmail.com",
+          "nombre": "Gabriela",
+          "apellido": "Jiménez Marca",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-020",
+          "email": "raul.silva@gmail.com",
+          "nombre": "Raúl",
+          "apellido": "Silva Catacora",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-021",
+          "email": "beatriz.mendez@gmail.com",
+          "nombre": "Beatriz",
+          "apellido": "Méndez Chipana",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-022",
+          "email": "oscar.gonzalez@gmail.com",
+          "nombre": "Oscar",
+          "apellido": "González Huayhua",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "user-fake-023",
+          "email": "adriana.vega@gmail.com",
+          "nombre": "Adriana",
+          "apellido": "Vega Ticahuanca",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "nFk6vl",
+          "email": "nFk6vl@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "9JRVlw",
+          "email": "9JRVlw@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "Mi9jLY",
+          "email": "Mi9jLY@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "3NJFNb",
+          "email": "3NJFNb@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "TestUserAWWZ",
+          "email": "test7AjT@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "B-5qEQ",
+          "email": "B-5qEQ@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "dZZBhd",
+          "email": "conductorXQVeoE@example.com",
+          "nombre": "Test",
+          "apellido": "Driver",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-admin-local-001",
+          "email": "maria.torres@tacnafm.com",
+          "nombre": "María Elena",
+          "apellido": "Torres Quispe",
+          "rol": "local",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-admin-local-002",
+          "email": "carlos.mendoza@tacnafm.com",
+          "nombre": "Carlos Alberto",
+          "apellido": "Mendoza Vargas",
+          "rol": "local",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-admin-local-003",
+          "email": "rosa.flores@tacnafm.com",
+          "nombre": "Rosa María",
+          "apellido": "Flores Huanca",
+          "rol": "local",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-taxista-001",
+          "email": "juan.mamani@taxi.tacnafm.com",
+          "nombre": "Juan Pedro",
+          "apellido": "Mamani Condori",
+          "rol": "conductor",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-taxista-002",
+          "email": "roberto.silva@taxi.tacnafm.com",
+          "nombre": "Roberto Carlos",
+          "apellido": "Silva Apaza",
+          "rol": "conductor",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-taxista-003",
+          "email": "miguel.quispe@taxi.tacnafm.com",
+          "nombre": "Miguel Ángel",
+          "apellido": "Quispe Ramos",
+          "rol": "conductor",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-taxista-004",
+          "email": "luis.vargas@taxi.tacnafm.com",
+          "nombre": "Luis Fernando",
+          "apellido": "Vargas Choque",
+          "rol": "conductor",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-mudanza-001",
+          "email": "jorge.caceres@mudanzas.tacnafm.com",
+          "nombre": "Jorge Luis",
+          "apellido": "Cáceres Ticona",
+          "rol": "conductor",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-mudanza-002",
+          "email": "pedro.ramos@mudanzas.tacnafm.com",
+          "nombre": "Pedro Antonio",
+          "apellido": "Ramos Huanca",
+          "rol": "conductor",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-policia-001",
+          "email": "jose.diaz@pnp.tacna.gob.pe",
+          "nombre": "José Manuel",
+          "apellido": "Díaz Huarachi",
+          "rol": "policia",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-policia-002",
+          "email": "carmen.velasquez@pnp.tacna.gob.pe",
+          "nombre": "Carmen Rosa",
+          "apellido": "Velásquez Pari",
+          "rol": "policia",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-bombero-001",
+          "email": "victor.ponce@bomberos.tacna.gob.pe",
+          "nombre": "Víctor Hugo",
+          "apellido": "Ponce Medina",
+          "rol": "bombero",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-bombero-002",
+          "email": "ana.fernandez@bomberos.tacna.gob.pe",
+          "nombre": "Ana Lucía",
+          "apellido": "Fernández Chura",
+          "rol": "bombero",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-serenazgo-001",
+          "email": "marco.castro@munitacna.gob.pe",
+          "nombre": "Marco Antonio",
+          "apellido": "Castro Quispe",
+          "rol": "serenazgo",
+          "estado": "activo"
+        },
+        {
+          "id": "fake-serenazgo-002",
+          "email": "patricia.vargas@munialtoalianza.gob.pe",
+          "nombre": "Patricia Elena",
+          "apellido": "Vargas Cohaila",
+          "rol": "serenazgo",
+          "estado": "activo"
+        },
+        {
+          "id": "admin-bomberos-001",
+          "email": "javier.huanca@bomberos.tacna.pe",
+          "nombre": "Javier",
+          "apellido": "Huanca Quispe",
+          "rol": "bombero",
+          "estado": "activo"
+        },
+        {
+          "id": "admin-policia-001",
+          "email": "roberto.vargas@pnp.tacna.pe",
+          "nombre": "Roberto",
+          "apellido": "Vargas Condori",
+          "rol": "policia",
+          "estado": "activo"
+        },
+        {
+          "id": "admin-taxi-001",
+          "email": "miguel.apaza@taxitacna.com",
+          "nombre": "Miguel Ángel",
+          "apellido": "Apaza Torres",
+          "rol": "conductor",
+          "estado": "activo"
+        },
+        {
+          "id": "usuario-normal-001",
+          "email": "ana.ticona@gmail.com",
+          "nombre": "Ana María",
+          "apellido": "Ticona Flores",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "usuario-normal-002",
+          "email": "pedro.ccama@hotmail.com",
+          "nombre": "Pedro Luis",
+          "apellido": "Ccama Mamani",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "serenazgo-001",
+          "email": "walter.calisaya@serenazgo.tacna.pe",
+          "nombre": "Walter",
+          "apellido": "Calisaya Poma",
+          "rol": "serenazgo",
+          "estado": "activo"
+        },
+        {
+          "id": "serenazgo-002",
+          "email": "luis.ramos@serenazgo.tacna.pe",
+          "nombre": "Luis Fernando",
+          "apellido": "Ramos Choque",
+          "rol": "serenazgo",
+          "estado": "activo"
+        },
+        {
+          "id": "samu-001",
+          "email": "carmen.laura@samu.tacna.pe",
+          "nombre": "Carmen Rosa",
+          "apellido": "Laura Vilca",
+          "rol": "samu",
+          "estado": "activo"
+        },
+        {
+          "id": "samu-002",
+          "email": "jorge.nina@samu.tacna.pe",
+          "nombre": "Jorge Antonio",
+          "apellido": "Nina Ticona",
+          "rol": "samu",
+          "estado": "activo"
+        },
+        {
+          "id": "bombero-002",
+          "email": "maria.quispe@bomberos.tacna.pe",
+          "nombre": "María Eugenia",
+          "apellido": "Quispe Huanca",
+          "rol": "bombero",
+          "estado": "activo"
+        },
+        {
+          "id": "fxm-6N",
+          "email": "adminhapEUH@test.com",
+          "nombre": "Super",
+          "apellido": "Admin",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "test-user-chat-001",
+          "email": "testchat001@example.com",
+          "nombre": "Test",
+          "apellido": "Chat",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "phIk4i",
+          "email": "phIk4i@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "admin-test-cartera",
+          "email": "admin-cartera@test.com",
+          "nombre": null,
+          "apellido": null,
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "test-chat-user",
+          "email": "testchat@example.com",
+          "nombre": "Test",
+          "apellido": "Chat",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "test-user-z0BNxG",
+          "email": "testpanico@example.com",
+          "nombre": "Usuario",
+          "apellido": "Prueba",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "test-panic-XJau2E",
+          "email": "panico-test@example.com",
+          "nombre": "Usuario",
+          "apellido": "Emergencia",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "test-drag-t1QLcq",
+          "email": "drag-test@example.com",
+          "nombre": "Usuario",
+          "apellido": "DragTest",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "test-gps-FauI5o",
+          "email": "gps-test@example.com",
+          "nombre": "Usuario",
+          "apellido": "GPSTest",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "XI8VD-",
+          "email": "XI8VD-@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "a3e950d8-7897-4ca9-ae98-88022f217839",
+          "email": "apomayta1976@gmail.com",
+          "nombre": null,
+          "apellido": null,
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "188883cb-06b1-4d2d-9856-83065451f6ef",
+          "email": "victor201@gmail.com",
+          "nombre": "Carlos Alfredo",
+          "apellido": "Apomayta Onofre",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "3oFLGU",
+          "email": "3oFLGU@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "o92Fr-",
+          "email": "o92Fr-@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "test-admin-mp3",
+          "email": "admin-mp3@test.com",
+          "nombre": "Admin",
+          "apellido": "MP3",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "-SYqQ1",
+          "email": "-SYqQ1@example.com",
+          "nombre": "Admin",
+          "apellido": "User",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "test-contact-chat-999",
+          "email": "testcontact999@example.com",
+          "nombre": "Contacto",
+          "apellido": "Prueba",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "GadglG",
+          "email": "GadglG@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "hQiWzv",
+          "email": "hQiWzv@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "policia-002",
+          "email": "elena.mamani@pnp.tacna.pe",
+          "nombre": "Elena Patricia",
+          "apellido": "Mamani Chura",
+          "rol": "policia",
+          "estado": "activo"
+        },
+        {
+          "id": "conductor-taxi-003",
+          "email": "rosa.gutierrez@hotmail.com",
+          "nombre": "Rosa Elvira",
+          "apellido": "Gutiérrez Paco",
+          "rol": "conductor",
+          "estado": "activo"
+        },
+        {
+          "id": "local-001",
+          "email": "bodega.tacna@gmail.com",
+          "nombre": "José Armando",
+          "apellido": "Pinto Calderón",
+          "rol": "local",
+          "estado": "activo"
+        },
+        {
+          "id": "admin-publicidad-001",
+          "email": "publicidad@apo360.net",
+          "nombre": "Vanessa Patricia",
+          "apellido": "Condori Ramos",
+          "rol": "admin_publicidad",
+          "estado": "activo"
+        },
+        {
+          "id": "admin-radio-001",
+          "email": "radio@apo360.net",
+          "nombre": "Mauricio Andrés",
+          "apellido": "Ticona Vilca",
+          "rol": "admin_radio",
+          "estado": "activo"
+        },
+        {
+          "id": "admin-cartera-001",
+          "email": "cartera@apo360.net",
+          "nombre": "Gloria Esperanza",
+          "apellido": "Huanca Pinto",
+          "rol": "admin_cartera",
+          "estado": "activo"
+        },
+        {
+          "id": "admin-operaciones-001",
+          "email": "operaciones@apo360.net",
+          "nombre": "Hernán Alberto",
+          "apellido": "Ccama Torres",
+          "rol": "admin_operaciones",
+          "estado": "activo"
+        },
+        {
+          "id": "supervisor-001",
+          "email": "supervisor@apo360.net",
+          "nombre": "Patricia Carmen",
+          "apellido": "Vilca Choque",
+          "rol": "supervisor",
+          "estado": "activo"
+        },
+        {
+          "id": "super-admin-001",
+          "email": "admin@apo360.com",
+          "nombre": "Admin",
+          "apellido": "Test",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "local-002",
+          "email": "farmacia.salud@gmail.com",
+          "nombre": "Silvia Beatriz",
+          "apellido": "Ramos Huanca",
+          "rol": "local",
+          "estado": "activo"
+        },
+        {
+          "id": "local-004",
+          "email": "delivery.rapido@gmail.com",
+          "nombre": "Karen Yolanda",
+          "apellido": "Vilca Torres",
+          "rol": "local",
+          "estado": "activo"
+        },
+        {
+          "id": "usuario-pasajero-003",
+          "email": "lucia.mamani@gmail.com",
+          "nombre": "Lucía Esperanza",
+          "apellido": "Mamani Condori",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "cambista-001",
+          "email": "cambio.sol@gmail.com",
+          "nombre": "Eduardo César",
+          "apellido": "Alanoca Mamani",
+          "rol": "cambista",
+          "estado": "activo"
+        },
+        {
+          "id": "test-roles-1765553924401",
+          "email": "testuser1765553924401@test.com",
+          "nombre": "Test",
+          "apellido": "Usuario",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "local-003",
+          "email": "restaurant.sabor@gmail.com",
+          "nombre": "Ricardo Martín",
+          "apellido": "Flores Quispe",
+          "rol": "local",
+          "estado": "activo"
+        },
+        {
+          "id": "80zPhn",
+          "email": "80zPhn@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "cortesia_admin_e2e",
+          "email": "cortesia_admin@example.com",
+          "nombre": null,
+          "apellido": null,
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "test-user-subcategoria-ZwUxZV",
+          "email": "testsubcatiuQLbe@example.com",
+          "nombre": "Test",
+          "apellido": "Subcategoria",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "C5a7S-",
+          "email": "C5a7S-@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "vX395d",
+          "email": "vX395d@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "oSmbaV",
+          "email": "oSmbaV@example.com",
+          "nombre": "John",
+          "apellido": "Doe",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "test-checkout-user-fMiRtC",
+          "email": "checkout-test-PGtsQj@example.com",
+          "nombre": "Test",
+          "apellido": "Checkout",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "test-checkout-final-NMo3Ln",
+          "email": "checkout-final-MRvvKI@example.com",
+          "nombre": "Final",
+          "apellido": "Test",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "EudkoA",
+          "email": "testcityjBsglU@example.com",
+          "nombre": "Test",
+          "apellido": "CityUser",
+          "rol": "usuario",
+          "estado": "activo"
+        },
+        {
+          "id": "superadmin123",
+          "email": "superadmin@test.com",
+          "nombre": "Super",
+          "apellido": "Admin",
+          "rol": "super_admin",
+          "estado": "activo"
+        },
+        {
+          "id": "testuser123",
+          "email": "testuser@test.com",
+          "nombre": "Test",
+          "apellido": "User",
+          "rol": "usuario",
+          "estado": "activo"
+        }
+      ]
+    },
+    "saldos": {
+      "cantidad": 27,
+      "registros": [
+        {
+          "id": "20a50f6f-42d3-4132-b830-2bfb7af44af6",
+          "usuarioId": "35ef8b5b-9e09-404d-bc17-478dbe735ad2",
+          "saldo": "212.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "220.98",
+          "totalEgresos": "8.98",
+          "ultimaActualizacion": "2025-11-26T00:36:23.897Z",
+          "createdAt": "2025-11-26T00:36:23.897Z"
+        },
+        {
+          "id": "f98e3679-a1ac-4f1a-855f-ad8679fce049",
+          "usuarioId": "RV0bbP",
+          "saldo": "185.31",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "264.54",
+          "totalEgresos": "79.23",
+          "ultimaActualizacion": "2025-11-26T00:36:23.974Z",
+          "createdAt": "2025-11-26T00:36:23.974Z"
+        },
+        {
+          "id": "9ecc2143-db1c-413d-81d3-fb93e4a2f1eb",
+          "usuarioId": "test-user-123",
+          "saldo": "193.02",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "242.97",
+          "totalEgresos": "49.95",
+          "ultimaActualizacion": "2025-11-26T00:36:24.050Z",
+          "createdAt": "2025-11-26T00:36:24.050Z"
+        },
+        {
+          "id": "f72b47bb-86ca-42ee-8eea-95e42cfcdf84",
+          "usuarioId": "playwright-test-user",
+          "saldo": "89.76",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "137.12",
+          "totalEgresos": "47.36",
+          "ultimaActualizacion": "2025-11-26T00:36:24.126Z",
+          "createdAt": "2025-11-26T00:36:24.126Z"
+        },
+        {
+          "id": "c5bfa2e5-bb80-4514-b398-4594f9c9125f",
+          "usuarioId": "test-super-admin-upload",
+          "saldo": "130.44",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "140.39",
+          "totalEgresos": "9.95",
+          "ultimaActualizacion": "2025-11-26T00:36:24.201Z",
+          "createdAt": "2025-11-26T00:36:24.201Z"
+        },
+        {
+          "id": "e4838cf0-8c39-48a4-ab17-be290c886ec3",
+          "usuarioId": "MM6axm",
+          "saldo": "79.06",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "116.53",
+          "totalEgresos": "37.47",
+          "ultimaActualizacion": "2025-11-26T00:36:24.276Z",
+          "createdAt": "2025-11-26T00:36:24.276Z"
+        },
+        {
+          "id": "0c7fafa2-34e6-47fe-8ad0-a7747a137155",
+          "usuarioId": "test-admin",
+          "saldo": "114.95",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "195.95",
+          "totalEgresos": "81.00",
+          "ultimaActualizacion": "2025-11-26T00:36:24.352Z",
+          "createdAt": "2025-11-26T00:36:24.352Z"
+        },
+        {
+          "id": "13ff2c3f-3167-43ce-abfd-e3a15f99254c",
+          "usuarioId": "local-test-002",
+          "saldo": "106.69",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "215.06",
+          "totalEgresos": "108.37",
+          "ultimaActualizacion": "2025-12-11T04:07:00.499Z",
+          "createdAt": "2025-11-26T00:36:23.823Z"
+        },
+        {
+          "id": "020fd6af-836e-4c73-b451-c6ebb8defa12",
+          "usuarioId": "admin-policia-001",
+          "saldo": "10.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "10.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-11T04:07:07.539Z",
+          "createdAt": "2025-12-10T17:04:49.055Z"
+        },
+        {
+          "id": "ccaeaa57-c34d-4897-b050-dee17f704b36",
+          "usuarioId": "local-test-001",
+          "saldo": "234.56",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "271.82",
+          "totalEgresos": "37.26",
+          "ultimaActualizacion": "2025-12-11T04:07:22.553Z",
+          "createdAt": "2025-11-26T00:36:23.748Z"
+        },
+        {
+          "id": "bb550ead-92d1-4832-b838-5b350df2630a",
+          "usuarioId": "admin-test-001",
+          "saldo": "284.98",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "331.31",
+          "totalEgresos": "46.33",
+          "ultimaActualizacion": "2025-12-11T04:07:30.454Z",
+          "createdAt": "2025-11-26T00:36:23.668Z"
+        },
+        {
+          "id": "9969a0a1-eaee-4cbd-87e0-44cc106c9b99",
+          "usuarioId": "local-004",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-11T16:36:43.582Z",
+          "createdAt": "2025-12-11T16:36:43.582Z"
+        },
+        {
+          "id": "bce617d6-1596-4213-92dc-38e66fbcc091",
+          "usuarioId": "admin-publicidad-001",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-11T16:54:40.432Z",
+          "createdAt": "2025-12-11T16:54:40.432Z"
+        },
+        {
+          "id": "475ade02-620c-4a19-8828-831817272bab",
+          "usuarioId": "cambista-001",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-12T05:13:09.960Z",
+          "createdAt": "2025-12-12T05:13:09.960Z"
+        },
+        {
+          "id": "d7fcc929-74bd-4550-b873-2c5979badcc4",
+          "usuarioId": "test-roles-1765553924401",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-12T15:39:13.206Z",
+          "createdAt": "2025-12-12T15:39:13.206Z"
+        },
+        {
+          "id": "83ce21ff-4f9f-490b-be8e-858924f6d653",
+          "usuarioId": "test-user-subcategoria-ZwUxZV",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-13T15:46:58.255Z",
+          "createdAt": "2025-12-13T15:46:58.255Z"
+        },
+        {
+          "id": "a759c593-011a-43f5-becc-4dcfc35a46ee",
+          "usuarioId": "80zPhn",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-14T15:19:30.991Z",
+          "createdAt": "2025-12-14T15:19:30.991Z"
+        },
+        {
+          "id": "89901922-6b9f-4c9d-95de-04b95f01692b",
+          "usuarioId": "C5a7S-",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-14T15:52:56.237Z",
+          "createdAt": "2025-12-14T15:52:56.237Z"
+        },
+        {
+          "id": "e08d11a5-5a77-4b33-89e4-1dd0e81fc073",
+          "usuarioId": "local-003",
+          "saldo": "15.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "15.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-20T02:47:46.452Z",
+          "createdAt": "2025-12-12T16:17:14.160Z"
+        },
+        {
+          "id": "373fb98a-7be7-40aa-a5b9-e5512451ba2a",
+          "usuarioId": "50138117",
+          "saldo": "20.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "20.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-20T02:47:51.327Z",
+          "createdAt": "2025-12-11T16:56:20.817Z"
+        },
+        {
+          "id": "baba45a7-dbfe-4121-aedc-4ab4725fe837",
+          "usuarioId": "super-admin-001",
+          "saldo": "35.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "35.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-20T02:47:54.447Z",
+          "createdAt": "2025-12-11T04:04:56.110Z"
+        },
+        {
+          "id": "5db357dc-e96e-4f9b-9ea4-50b6159aef7a",
+          "usuarioId": "vX395d",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-21T01:33:41.321Z",
+          "createdAt": "2025-12-21T01:33:41.321Z"
+        },
+        {
+          "id": "c6bc904a-2093-4742-9358-467ff058f43a",
+          "usuarioId": "oSmbaV",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-21T03:41:45.652Z",
+          "createdAt": "2025-12-21T03:41:45.652Z"
+        },
+        {
+          "id": "64ffc23a-7c71-406c-aa9f-591c16731cc8",
+          "usuarioId": "test-checkout-user-fMiRtC",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-22T03:28:52.436Z",
+          "createdAt": "2025-12-22T03:28:52.436Z"
+        },
+        {
+          "id": "835a0da2-a16a-4053-b2dd-e605ccd88148",
+          "usuarioId": "test-checkout-final-NMo3Ln",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2025-12-22T03:33:13.554Z",
+          "createdAt": "2025-12-22T03:33:13.554Z"
+        },
+        {
+          "id": "a6c4be6c-26ce-4d5b-ab9a-d5b48232da06",
+          "usuarioId": "EudkoA",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2026-01-10T06:27:06.631Z",
+          "createdAt": "2026-01-10T06:27:06.631Z"
+        },
+        {
+          "id": "7e82b8e9-c9e6-4907-9265-d3eb7ed7d2d1",
+          "usuarioId": "superadmin123",
+          "saldo": "0.00",
+          "monedaPreferida": "PEN",
+          "totalIngresos": "0.00",
+          "totalEgresos": "0.00",
+          "ultimaActualizacion": "2026-01-10T06:34:43.963Z",
+          "createdAt": "2026-01-10T06:34:43.963Z"
+        }
+      ]
+    },
+    "transacciones": {
+      "cantidad": 18,
+      "registros": [
+        {
+          "id": "c9e93006-0dd6-4d94-a301-e420dd82c77b",
+          "usuarioId": "super-admin-001",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "5.00",
+          "saldoAnterior": "30.00",
+          "saldoNuevo": "35.00",
+          "referenciaId": "27c9baa4-8cf0-4b52-8f91-d35f36d89235",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-20T02:47:54.629Z"
+        },
+        {
+          "id": "d1598d36-9813-44e0-b1a5-c4dc3c61888b",
+          "usuarioId": "50138117",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "10.00",
+          "saldoAnterior": "10.00",
+          "saldoNuevo": "20.00",
+          "referenciaId": "01123a2e-92a0-4c18-9f38-54a96f5847f3",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-20T02:47:51.507Z"
+        },
+        {
+          "id": "27417ea4-f7b1-4bee-b824-1980799ff9c8",
+          "usuarioId": "local-003",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "10.00",
+          "saldoAnterior": "5.00",
+          "saldoNuevo": "15.00",
+          "referenciaId": "e50964f5-c879-4447-ba37-d60ba08c5277",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-20T02:47:46.776Z"
+        },
+        {
+          "id": "ee30119c-7a57-4236-8100-a78fc0e85eb2",
+          "usuarioId": "local-003",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "5.00",
+          "saldoAnterior": "0.00",
+          "saldoNuevo": "5.00",
+          "referenciaId": "37d5bca1-3519-4ee0-9b6e-c04a036acd2b",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-20T02:37:26.515Z"
+        },
+        {
+          "id": "3ce7fb31-8b74-4ac3-a473-b798b56f70e2",
+          "usuarioId": "50138117",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "10.00",
+          "saldoAnterior": "0.00",
+          "saldoNuevo": "10.00",
+          "referenciaId": "4210f8b8-9236-4339-b8f1-933eaa9a1f03",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-12T15:56:36.141Z"
+        },
+        {
+          "id": "77ac3a0c-a12e-4669-9f88-ffaef4ff02aa",
+          "usuarioId": "super-admin-001",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "5.00",
+          "saldoAnterior": "25.00",
+          "saldoNuevo": "30.00",
+          "referenciaId": "fcc0d68a-54a0-4ec0-8643-85fd836cbc7f",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-11T05:32:07.851Z"
+        },
+        {
+          "id": "c6051b68-6f92-4df3-acb3-7c46e1e8826c",
+          "usuarioId": "super-admin-001",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "5.00",
+          "saldoAnterior": "20.00",
+          "saldoNuevo": "25.00",
+          "referenciaId": "917c990f-15d8-4306-b981-d1450f112b6e",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-11T05:31:59.658Z"
+        },
+        {
+          "id": "7044db59-741b-4ec4-864e-7da4fb420f2e",
+          "usuarioId": "super-admin-001",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "10.00",
+          "saldoAnterior": "10.00",
+          "saldoNuevo": "20.00",
+          "referenciaId": "be2f4b84-cbf2-4f70-885b-e7a9ba837843",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-11T04:10:12.124Z"
+        },
+        {
+          "id": "a86d50fb-0440-4bc2-86b4-670bb017def6",
+          "usuarioId": "admin-test-001",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "100.00",
+          "saldoAnterior": "184.98",
+          "saldoNuevo": "284.98",
+          "referenciaId": "4b821829-700e-4e26-8c04-0178713dad95",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-11T04:07:30.631Z"
+        },
+        {
+          "id": "13a37913-7108-45b7-88b4-1b769010e2e2",
+          "usuarioId": "local-test-001",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "50.00",
+          "saldoAnterior": "184.56",
+          "saldoNuevo": "234.56",
+          "referenciaId": "99c1acf8-c12b-438c-9904-8c1a66e60eeb",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-11T04:07:22.727Z"
+        },
+        {
+          "id": "8fa91c61-2c0e-4f5a-9eb1-9bcafbc24e05",
+          "usuarioId": "super-admin-001",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "10.00",
+          "saldoAnterior": "0.00",
+          "saldoNuevo": "10.00",
+          "referenciaId": "cd652d93-100f-4b16-83f5-c2f92280d724",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-11T04:07:13.137Z"
+        },
+        {
+          "id": "2de1f2db-74e4-4fef-8140-b0abc51522f0",
+          "usuarioId": "admin-policia-001",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo aprobada",
+          "monto": "10.00",
+          "saldoAnterior": "0.00",
+          "saldoNuevo": "10.00",
+          "referenciaId": "a859b513-9d5c-4ed2-acbe-dccae2d06f49",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-11T04:07:07.717Z"
+        },
+        {
+          "id": "bac45abb-c05a-40dc-9acc-e9da3c0d7aa0",
+          "usuarioId": "local-test-002",
+          "tipo": "retiro",
+          "concepto": "Retiro de saldo aprobado",
+          "monto": "30.00",
+          "saldoAnterior": "136.69",
+          "saldoNuevo": "106.69",
+          "referenciaId": "8c9e2261-c2fb-4d4a-ba1c-cefd6400608d",
+          "referenciaTipo": "solicitud_saldo",
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-12-11T04:07:00.675Z"
+        },
+        {
+          "id": "4b7cc6d5-d1fb-4c59-a549-01fbd883fac6",
+          "usuarioId": "RV0bbP",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo via Yape",
+          "monto": "13.70",
+          "saldoAnterior": "18.95",
+          "saldoNuevo": "32.65",
+          "referenciaId": null,
+          "referenciaTipo": null,
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:25.419Z"
+        },
+        {
+          "id": "1ed414a2-6904-4e0b-b786-476c4faeaaa5",
+          "usuarioId": "35ef8b5b-9e09-404d-bc17-478dbe735ad2",
+          "tipo": "retiro",
+          "concepto": "Retiro de saldo a cuenta bancaria",
+          "monto": "42.50",
+          "saldoAnterior": "32.42",
+          "saldoNuevo": "-10.08",
+          "referenciaId": null,
+          "referenciaTipo": null,
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:25.345Z"
+        },
+        {
+          "id": "4c8fdf4d-7b15-44df-8f05-3db603e8a453",
+          "usuarioId": "local-test-002",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo via Yape",
+          "monto": "54.41",
+          "saldoAnterior": "44.87",
+          "saldoNuevo": "99.28",
+          "referenciaId": null,
+          "referenciaTipo": null,
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:25.271Z"
+        },
+        {
+          "id": "ab1f3ce0-6b34-422f-8281-ef54dc7dc2d5",
+          "usuarioId": "local-test-001",
+          "tipo": "retiro",
+          "concepto": "Retiro de saldo a cuenta bancaria",
+          "monto": "45.45",
+          "saldoAnterior": "81.45",
+          "saldoNuevo": "36.00",
+          "referenciaId": null,
+          "referenciaTipo": null,
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:25.197Z"
+        },
+        {
+          "id": "44db37df-bf8d-4fdb-9f03-475fe736968c",
+          "usuarioId": "admin-test-001",
+          "tipo": "recarga",
+          "concepto": "Recarga de saldo via Yape",
+          "monto": "18.29",
+          "saldoAnterior": "38.13",
+          "saldoNuevo": "56.42",
+          "referenciaId": null,
+          "referenciaTipo": null,
+          "estado": "completado",
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:25.119Z"
+        }
+      ]
+    },
+    "solicitudes": {
+      "cantidad": 14,
+      "registros": [
+        {
+          "id": "37d5bca1-3519-4ee0-9b6e-c04a036acd2b",
+          "usuarioId": "local-003",
+          "tipo": "recarga",
+          "monto": "5.00",
+          "moneda": "PEN",
+          "metodoPagoId": "f180280c-0726-4d2b-a41a-9512a0ceeace",
+          "metodoPagoDestino": null,
+          "comprobante": "/assets/comprobantes/firma-alfredo-apomayta-1765594650148-633100720.png",
+          "numeroOperacion": null,
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "50138117",
+          "fechaAprobacion": "2025-12-20T02:37:26.557Z",
+          "notas": null,
+          "createdAt": "2025-12-13T02:57:37.826Z",
+          "updatedAt": "2025-12-20T02:37:26.557Z"
+        },
+        {
+          "id": "e50964f5-c879-4447-ba37-d60ba08c5277",
+          "usuarioId": "local-003",
+          "tipo": "recarga",
+          "monto": "10.00",
+          "moneda": "PEN",
+          "metodoPagoId": "f180280c-0726-4d2b-a41a-9512a0ceeace",
+          "metodoPagoDestino": null,
+          "comprobante": "/assets/comprobantes/firma-alfredo-apomayta-1765556634402-371825771.png",
+          "numeroOperacion": null,
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "50138117",
+          "fechaAprobacion": "2025-12-20T02:47:46.841Z",
+          "notas": null,
+          "createdAt": "2025-12-12T16:23:57.936Z",
+          "updatedAt": "2025-12-20T02:47:46.841Z"
+        },
+        {
+          "id": "4210f8b8-9236-4339-b8f1-933eaa9a1f03",
+          "usuarioId": "50138117",
+          "tipo": "recarga",
+          "monto": "10.00",
+          "moneda": "PEN",
+          "metodoPagoId": "f180280c-0726-4d2b-a41a-9512a0ceeace",
+          "metodoPagoDestino": null,
+          "comprobante": "/assets/comprobantes/firma-alfredo-apomayta-1765554967429-898775937.png",
+          "numeroOperacion": null,
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "50138117",
+          "fechaAprobacion": "2025-12-12T15:56:36.189Z",
+          "notas": null,
+          "createdAt": "2025-12-12T15:56:10.440Z",
+          "updatedAt": "2025-12-12T15:56:36.189Z"
+        },
+        {
+          "id": "01123a2e-92a0-4c18-9f38-54a96f5847f3",
+          "usuarioId": "50138117",
+          "tipo": "recarga",
+          "monto": "10.00",
+          "moneda": "PEN",
+          "metodoPagoId": "f180280c-0726-4d2b-a41a-9512a0ceeace",
+          "metodoPagoDestino": null,
+          "comprobante": "/assets/comprobantes/firma-alfredo-apomayta-1765554917593-12284475.png",
+          "numeroOperacion": null,
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "50138117",
+          "fechaAprobacion": "2025-12-20T02:47:51.551Z",
+          "notas": null,
+          "createdAt": "2025-12-12T15:55:24.268Z",
+          "updatedAt": "2025-12-20T02:47:51.551Z"
+        },
+        {
+          "id": "27c9baa4-8cf0-4b52-8f91-d35f36d89235",
+          "usuarioId": "super-admin-001",
+          "tipo": "recarga",
+          "monto": "5.00",
+          "moneda": "PEN",
+          "metodoPagoId": "f180280c-0726-4d2b-a41a-9512a0ceeace",
+          "metodoPagoDestino": null,
+          "comprobante": "/assets/comprobantes/firma-alfredo-apomayta-1765431239157-407075025.png",
+          "numeroOperacion": null,
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "50138117",
+          "fechaAprobacion": "2025-12-20T02:47:54.675Z",
+          "notas": null,
+          "createdAt": "2025-12-11T05:34:05.868Z",
+          "updatedAt": "2025-12-20T02:47:54.675Z"
+        },
+        {
+          "id": "917c990f-15d8-4306-b981-d1450f112b6e",
+          "usuarioId": "super-admin-001",
+          "tipo": "recarga",
+          "monto": "5.00",
+          "moneda": "PEN",
+          "metodoPagoId": "f180280c-0726-4d2b-a41a-9512a0ceeace",
+          "metodoPagoDestino": null,
+          "comprobante": "/assets/comprobantes/firma-alfredo-apomayta-1765430422417-694745034.png",
+          "numeroOperacion": null,
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "super-admin-001",
+          "fechaAprobacion": "2025-12-11T05:31:59.702Z",
+          "notas": null,
+          "createdAt": "2025-12-11T05:20:29.535Z",
+          "updatedAt": "2025-12-11T05:31:59.702Z"
+        },
+        {
+          "id": "fcc0d68a-54a0-4ec0-8643-85fd836cbc7f",
+          "usuarioId": "super-admin-001",
+          "tipo": "recarga",
+          "monto": "5.00",
+          "moneda": "PEN",
+          "metodoPagoId": "f180280c-0726-4d2b-a41a-9512a0ceeace",
+          "metodoPagoDestino": null,
+          "comprobante": "/assets/comprobantes/la-hora-del-taxista-2025-1-1765430308302-598869801.png",
+          "numeroOperacion": null,
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "super-admin-001",
+          "fechaAprobacion": "2025-12-11T05:32:07.894Z",
+          "notas": null,
+          "createdAt": "2025-12-11T05:18:44.806Z",
+          "updatedAt": "2025-12-11T05:32:07.894Z"
+        },
+        {
+          "id": "be2f4b84-cbf2-4f70-885b-e7a9ba837843",
+          "usuarioId": "super-admin-001",
+          "tipo": "recarga",
+          "monto": "10.00",
+          "moneda": "PEN",
+          "metodoPagoId": "f180280c-0726-4d2b-a41a-9512a0ceeace",
+          "metodoPagoDestino": null,
+          "comprobante": "/assets/comprobantes/logo-panico2-1765426176559-232820262.png",
+          "numeroOperacion": null,
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "super-admin-001",
+          "fechaAprobacion": "2025-12-11T04:10:12.168Z",
+          "notas": null,
+          "createdAt": "2025-12-11T04:09:45.345Z",
+          "updatedAt": "2025-12-11T04:10:12.168Z"
+        },
+        {
+          "id": "cd652d93-100f-4b16-83f5-c2f92280d724",
+          "usuarioId": "super-admin-001",
+          "tipo": "recarga",
+          "monto": "10.00",
+          "moneda": "PEN",
+          "metodoPagoId": "f180280c-0726-4d2b-a41a-9512a0ceeace",
+          "metodoPagoDestino": null,
+          "comprobante": "/assets/comprobantes/firma-alfredo-apomayta-1765425992924-388132039.png",
+          "numeroOperacion": null,
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "super-admin-001",
+          "fechaAprobacion": "2025-12-11T04:07:13.181Z",
+          "notas": null,
+          "createdAt": "2025-12-11T04:06:40.463Z",
+          "updatedAt": "2025-12-11T04:07:13.181Z"
+        },
+        {
+          "id": "a859b513-9d5c-4ed2-acbe-dccae2d06f49",
+          "usuarioId": "admin-policia-001",
+          "tipo": "recarga",
+          "monto": "10.00",
+          "moneda": "PEN",
+          "metodoPagoId": "f180280c-0726-4d2b-a41a-9512a0ceeace",
+          "metodoPagoDestino": null,
+          "comprobante": "/assets/comprobantes/firma-alfredo-apomayta-1765423048690-520726647.png",
+          "numeroOperacion": null,
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "super-admin-001",
+          "fechaAprobacion": "2025-12-11T04:07:07.761Z",
+          "notas": null,
+          "createdAt": "2025-12-11T03:21:23.760Z",
+          "updatedAt": "2025-12-11T04:07:07.761Z"
+        },
+        {
+          "id": "e9d64710-5c2f-4009-bc00-4864942253fc",
+          "usuarioId": "local-test-001",
+          "tipo": "retiro",
+          "monto": "25.00",
+          "moneda": "PEN",
+          "metodoPagoId": null,
+          "metodoPagoDestino": null,
+          "comprobante": null,
+          "numeroOperacion": null,
+          "estado": "rechazado",
+          "motivoRechazo": "Saldo insuficiente en el momento de la solicitud",
+          "aprobadoPor": null,
+          "fechaAprobacion": null,
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:25.039Z",
+          "updatedAt": "2025-11-26T00:36:25.039Z"
+        },
+        {
+          "id": "8c9e2261-c2fb-4d4a-ba1c-cefd6400608d",
+          "usuarioId": "local-test-002",
+          "tipo": "retiro",
+          "monto": "30.00",
+          "moneda": "PEN",
+          "metodoPagoId": "359fb7ba-c94c-4fa6-8280-d4c267ec8f3b",
+          "metodoPagoDestino": null,
+          "comprobante": null,
+          "numeroOperacion": null,
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "super-admin-001",
+          "fechaAprobacion": "2025-12-11T04:07:00.719Z",
+          "notas": "Retiro a cuenta BCP",
+          "createdAt": "2025-11-26T00:36:24.655Z",
+          "updatedAt": "2025-12-11T04:07:00.719Z"
+        },
+        {
+          "id": "99c1acf8-c12b-438c-9904-8c1a66e60eeb",
+          "usuarioId": "local-test-001",
+          "tipo": "recarga",
+          "monto": "50.00",
+          "moneda": "PEN",
+          "metodoPagoId": "df24b969-371b-4a99-99a1-60a2c9890579",
+          "metodoPagoDestino": null,
+          "comprobante": null,
+          "numeroOperacion": "OP-2025-002",
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "super-admin-001",
+          "fechaAprobacion": "2025-12-11T04:07:22.766Z",
+          "notas": "Yape",
+          "createdAt": "2025-11-26T00:36:24.580Z",
+          "updatedAt": "2025-12-11T04:07:22.766Z"
+        },
+        {
+          "id": "4b821829-700e-4e26-8c04-0178713dad95",
+          "usuarioId": "admin-test-001",
+          "tipo": "recarga",
+          "monto": "100.00",
+          "moneda": "PEN",
+          "metodoPagoId": "359fb7ba-c94c-4fa6-8280-d4c267ec8f3b",
+          "metodoPagoDestino": null,
+          "comprobante": null,
+          "numeroOperacion": "OP-2025-001",
+          "estado": "aprobado",
+          "motivoRechazo": null,
+          "aprobadoPor": "super-admin-001",
+          "fechaAprobacion": "2025-12-11T04:07:30.671Z",
+          "notas": "Deposito BCP",
+          "createdAt": "2025-11-26T00:36:24.502Z",
+          "updatedAt": "2025-12-11T04:07:30.671Z"
+        }
+      ]
+    },
+    "metodosPago": {
+      "cantidad": 7,
+      "registros": [
+        {
+          "id": "359fb7ba-c94c-4fa6-8280-d4c267ec8f3b",
+          "usuarioId": null,
+          "tipo": "cuenta_bancaria",
+          "nombre": "BCP Soles",
+          "numeroCuenta": "191-1234567-0-01",
+          "cci": "00219100123456700101",
+          "email": null,
+          "telefono": null,
+          "titular": "SEG-APO SAC",
+          "moneda": "PEN",
+          "esPlataforma": true,
+          "activo": true,
+          "verificado": false,
+          "orden": 1,
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:23.216Z",
+          "updatedAt": "2025-11-26T00:36:23.216Z"
+        },
+        {
+          "id": "df24b969-371b-4a99-99a1-60a2c9890579",
+          "usuarioId": null,
+          "tipo": "cuenta_bancaria",
+          "nombre": "BBVA Soles",
+          "numeroCuenta": "0011-0123-45-6789012345",
+          "cci": "00111100123456789012",
+          "email": null,
+          "telefono": null,
+          "titular": "SEG-APO SAC",
+          "moneda": "PEN",
+          "esPlataforma": true,
+          "activo": true,
+          "verificado": false,
+          "orden": 2,
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:23.294Z",
+          "updatedAt": "2025-11-26T00:36:23.294Z"
+        },
+        {
+          "id": "6e60bf90-6718-4a90-9e8d-c1ae57879762",
+          "usuarioId": null,
+          "tipo": "interbancaria",
+          "nombre": "BCP CCI",
+          "numeroCuenta": "191-9876543-0-99",
+          "cci": "00219109876543009999",
+          "email": null,
+          "telefono": null,
+          "titular": "SEG-APO SAC",
+          "moneda": "PEN",
+          "esPlataforma": true,
+          "activo": true,
+          "verificado": false,
+          "orden": 3,
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:23.368Z",
+          "updatedAt": "2025-11-26T00:36:23.368Z"
+        },
+        {
+          "id": "336d4daa-3bd0-47a1-9647-a10e0fe43748",
+          "usuarioId": null,
+          "tipo": "yape",
+          "nombre": "Yape Corporativo",
+          "numeroCuenta": null,
+          "cci": null,
+          "email": null,
+          "telefono": "999888777",
+          "titular": "SEG-APO",
+          "moneda": "PEN",
+          "esPlataforma": true,
+          "activo": true,
+          "verificado": false,
+          "orden": 4,
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:23.442Z",
+          "updatedAt": "2025-11-26T00:36:23.442Z"
+        },
+        {
+          "id": "6e8fe489-b2fd-480c-9d2c-575139ea3929",
+          "usuarioId": null,
+          "tipo": "plin",
+          "nombre": "Plin Corporativo",
+          "numeroCuenta": null,
+          "cci": null,
+          "email": null,
+          "telefono": "999777888",
+          "titular": "SEG-APO",
+          "moneda": "PEN",
+          "esPlataforma": true,
+          "activo": true,
+          "verificado": false,
+          "orden": 5,
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:23.518Z",
+          "updatedAt": "2025-11-26T00:36:23.518Z"
+        },
+        {
+          "id": "95da9160-1cad-4b2c-b5e2-06fe1778715d",
+          "usuarioId": null,
+          "tipo": "paypal",
+          "nombre": "PayPal",
+          "numeroCuenta": null,
+          "cci": null,
+          "email": "pagos@apo360.net",
+          "telefono": null,
+          "titular": "SEG-APO SAC",
+          "moneda": "USD",
+          "esPlataforma": true,
+          "activo": true,
+          "verificado": false,
+          "orden": 6,
+          "notas": null,
+          "createdAt": "2025-11-26T00:36:23.593Z",
+          "updatedAt": "2025-11-26T00:36:23.593Z"
+        },
+        {
+          "id": "f180280c-0726-4d2b-a41a-9512a0ceeace",
+          "usuarioId": null,
+          "tipo": "yape",
+          "nombre": "Test Yape",
+          "numeroCuenta": null,
+          "cci": null,
+          "email": null,
+          "telefono": "987654321",
+          "titular": "Test User",
+          "moneda": "PEN",
+          "esPlataforma": true,
+          "activo": true,
+          "verificado": false,
+          "orden": 1,
+          "notas": null,
+          "createdAt": "2025-11-26T00:51:09.245Z",
+          "updatedAt": "2025-11-26T00:51:09.245Z"
+        }
+      ]
+    },
+    "monedas": {
+      "cantidad": 3,
+      "registros": [
+        {
+          "id": "2a566862-344c-4ae2-a3b5-c9eeeb4c971a",
+          "codigo": "PEN",
+          "nombre": "Sol Peruano",
+          "simbolo": "S/",
+          "tasaCambioAPEN": "1.0000",
+          "activo": true,
+          "esPrincipal": false,
+          "orden": 1,
+          "createdAt": "2025-11-26T00:36:22.983Z",
+          "updatedAt": "2025-11-26T00:36:22.983Z"
+        },
+        {
+          "id": "e8892bfd-158b-4583-8b90-23cd02e40fb3",
+          "codigo": "USD",
+          "nombre": "Dolar Americano",
+          "simbolo": "$",
+          "tasaCambioAPEN": "1.0000",
+          "activo": true,
+          "esPrincipal": false,
+          "orden": 2,
+          "createdAt": "2025-11-26T00:36:23.065Z",
+          "updatedAt": "2025-11-26T00:36:23.065Z"
+        },
+        {
+          "id": "c51dfd70-1e7c-49e7-b93e-7050917d9a6d",
+          "codigo": "EUR",
+          "nombre": "Euro",
+          "simbolo": "€",
+          "tasaCambioAPEN": "1.0000",
+          "activo": true,
+          "esPrincipal": false,
+          "orden": 3,
+          "createdAt": "2025-11-26T00:36:23.140Z",
+          "updatedAt": "2025-11-26T00:36:23.140Z"
+        }
+      ]
+    },
+    "planes": {
+      "cantidad": 5,
+      "registros": [
+        {
+          "id": "9ca9aa1e-e600-4ae1-a55a-f5125158f696",
+          "nombre": "Plan Mensual",
+          "descripcion": "Plan básico de 1 mes para comercios y vendedores",
+          "duracionMeses": 1,
+          "precioNormal": "29.90",
+          "precioDescuento": null,
+          "porcentajeDescuento": null,
+          "beneficios": [
+            "Publicar hasta 10 productos",
+            "Visibilidad en el marketplace",
+            "Estadísticas básicas"
+          ],
+          "productosIncluidos": 10,
+          "destacado": false,
+          "orden": 1,
+          "activo": true,
+          "createdAt": "2025-12-06T14:37:47.123Z",
+          "updatedAt": "2025-12-06T14:37:47.123Z"
+        },
+        {
+          "id": "9ebe5149-93b2-4fce-9ea9-5c866c5430fa",
+          "nombre": "Plan Trimestral",
+          "descripcion": "Plan de 3 meses con descuento del 10%",
+          "duracionMeses": 3,
+          "precioNormal": "89.70",
+          "precioDescuento": "80.73",
+          "porcentajeDescuento": 10,
+          "beneficios": [
+            "Publicar hasta 30 productos",
+            "Visibilidad destacada",
+            "Estadísticas avanzadas",
+            "Soporte prioritario"
+          ],
+          "productosIncluidos": 30,
+          "destacado": false,
+          "orden": 2,
+          "activo": true,
+          "createdAt": "2025-12-06T14:37:47.123Z",
+          "updatedAt": "2025-12-06T14:37:47.123Z"
+        },
+        {
+          "id": "56491fa8-8c5a-45cc-9929-ad6aac5e7ee4",
+          "nombre": "Plan Semestral",
+          "descripcion": "Plan de 6 meses con descuento del 15%",
+          "duracionMeses": 6,
+          "precioNormal": "179.40",
+          "precioDescuento": "152.49",
+          "porcentajeDescuento": 15,
+          "beneficios": [
+            "Publicar hasta 60 productos",
+            "Máxima visibilidad",
+            "Estadísticas completas",
+            "Soporte prioritario",
+            "Promociones destacadas"
+          ],
+          "productosIncluidos": 60,
+          "destacado": true,
+          "orden": 3,
+          "activo": true,
+          "createdAt": "2025-12-06T14:37:47.123Z",
+          "updatedAt": "2025-12-06T14:37:47.123Z"
+        },
+        {
+          "id": "ee510877-09e7-4e8b-b1c5-2ca16a758daf",
+          "nombre": "Plan Anual",
+          "descripcion": "Plan de 12 meses con el mejor precio",
+          "duracionMeses": 12,
+          "precioNormal": "358.80",
+          "precioDescuento": "287.04",
+          "porcentajeDescuento": 20,
+          "beneficios": [
+            "Productos ilimitados",
+            "Máxima visibilidad",
+            "Estadísticas premium",
+            "Soporte VIP 24/7",
+            "Promociones destacadas",
+            "Badge Premium"
+          ],
+          "productosIncluidos": 9999,
+          "destacado": false,
+          "orden": 4,
+          "activo": true,
+          "createdAt": "2025-12-06T14:37:47.123Z",
+          "updatedAt": "2025-12-06T14:37:47.123Z"
+        },
+        {
+          "id": "252aa9cf-7231-448f-b35b-53b9d1458231",
+          "nombre": "Cortesía 3 meses",
+          "descripcion": "Plan de cortesía asignado por administrador - 3 meses",
+          "duracionMeses": 3,
+          "precioNormal": "0.00",
+          "precioDescuento": "0.00",
+          "porcentajeDescuento": null,
+          "beneficios": [
+            "Acceso completo",
+            "Calculadora Científica",
+            "Sin restricciones"
+          ],
+          "productosIncluidos": 100,
+          "destacado": false,
+          "orden": 0,
+          "activo": true,
+          "createdAt": "2025-12-13T14:44:09.665Z",
+          "updatedAt": "2025-12-13T14:44:09.665Z"
+        }
+      ]
+    },
+    "membresias": {
+      "cantidad": 3,
+      "registros": [
+        {
+          "id": "467e288f-606f-46fd-8f26-6b81b5dedf58",
+          "usuarioId": "local-003",
+          "planId": "9ca9aa1e-e600-4ae1-a55a-f5125158f696",
+          "fechaInicio": "2025-12-13T02:59:53.148Z",
+          "fechaFin": "2026-01-13T02:59:53.148Z",
+          "estado": "pendiente",
+          "productosCreados": 0,
+          "montoTotal": "29.90",
+          "metodoPago": "pendiente",
+          "transaccionId": null,
+          "renovacionAutomatica": false,
+          "esCortesia": false,
+          "asignadoPor": null,
+          "motivoCortesia": null,
+          "createdAt": "2025-12-13T02:59:53.188Z",
+          "updatedAt": "2025-12-13T02:59:53.188Z"
+        },
+        {
+          "id": "5c1dd721-e45e-464f-be00-6d8e14cba7b4",
+          "usuarioId": "50138117",
+          "planId": "252aa9cf-7231-448f-b35b-53b9d1458231",
+          "fechaInicio": "2025-12-13T14:47:54.455Z",
+          "fechaFin": "2026-03-13T14:47:54.455Z",
+          "estado": "activa",
+          "productosCreados": 0,
+          "montoTotal": "0.00",
+          "metodoPago": "cortesia",
+          "transaccionId": null,
+          "renovacionAutomatica": false,
+          "esCortesia": true,
+          "asignadoPor": null,
+          "motivoCortesia": "Asignado por administrador",
+          "createdAt": "2025-12-13T14:47:54.488Z",
+          "updatedAt": "2025-12-13T14:47:54.488Z"
+        },
+        {
+          "id": "f3fa524d-8359-4e4c-b5e1-8f8cd8e44aa6",
+          "usuarioId": "50138117",
+          "planId": "252aa9cf-7231-448f-b35b-53b9d1458231",
+          "fechaInicio": "2025-12-13T15:23:37.589Z",
+          "fechaFin": "2026-03-13T15:23:37.589Z",
+          "estado": "activa",
+          "productosCreados": 0,
+          "montoTotal": "0.00",
+          "metodoPago": "cortesia",
+          "transaccionId": null,
+          "renovacionAutomatica": false,
+          "esCortesia": true,
+          "asignadoPor": "50138117",
+          "motivoCortesia": "af",
+          "createdAt": "2025-12-13T15:23:37.623Z",
+          "updatedAt": "2025-12-13T15:23:37.623Z"
+        }
+      ]
+    },
+    "configuracionCostos": {
+      "cantidad": 5,
+      "registros": [
+        {
+          "id": "ee847b2b-dc14-4b54-bc7b-8ab41f0955af",
+          "tipoServicio": "llamada_taxi",
+          "nombre": "Solicitud de Taxi",
+          "descripcion": "Costo por recibir una llamada de servicio de taxi",
+          "montoFijo": "0.50",
+          "porcentaje": "0.00",
+          "usarMontoFijo": true,
+          "saldoMinimo": "0.50",
+          "activo": true,
+          "createdAt": "2025-12-06T14:37:47.123Z",
+          "updatedAt": "2025-12-06T14:37:47.123Z"
+        },
+        {
+          "id": "9787df3d-df51-42a1-a781-375d0286ee73",
+          "tipoServicio": "publicidad",
+          "nombre": "Publicación de Anuncio",
+          "descripcion": "Costo por publicar un anuncio o promoción",
+          "montoFijo": "2.00",
+          "porcentaje": "0.00",
+          "usarMontoFijo": true,
+          "saldoMinimo": "0.50",
+          "activo": true,
+          "createdAt": "2025-12-06T14:37:47.123Z",
+          "updatedAt": "2025-12-06T14:37:47.123Z"
+        },
+        {
+          "id": "162d2400-f172-4098-aeba-95a468381cca",
+          "tipoServicio": "delivery",
+          "nombre": "Comisión Delivery",
+          "descripcion": "Porcentaje de comisión por venta de delivery",
+          "montoFijo": "0.00",
+          "porcentaje": "10.00",
+          "usarMontoFijo": false,
+          "saldoMinimo": "0.50",
+          "activo": true,
+          "createdAt": "2025-12-06T14:37:47.123Z",
+          "updatedAt": "2025-12-06T14:37:47.123Z"
+        },
+        {
+          "id": "0c012fd9-e5bc-487b-9cb4-82b7a314b145",
+          "tipoServicio": "destacar_producto",
+          "nombre": "Destacar Producto",
+          "descripcion": "Costo por destacar un producto",
+          "montoFijo": "3.00",
+          "porcentaje": "0.00",
+          "usarMontoFijo": true,
+          "saldoMinimo": "0.50",
+          "activo": true,
+          "createdAt": "2025-12-06T14:37:47.123Z",
+          "updatedAt": "2025-12-06T14:37:47.123Z"
+        },
+        {
+          "id": "2834b534-7b06-4358-92a0-2c0c76c5e8b8",
+          "tipoServicio": "crear_producto",
+          "nombre": "Costo por crear producto",
+          "descripcion": "Costo fijo que se descuenta del saldo del usuario al crear un nuevo producto en su catálogo",
+          "montoFijo": "0.20",
+          "porcentaje": "5.00",
+          "usarMontoFijo": true,
+          "saldoMinimo": "0.20",
+          "activo": true,
+          "createdAt": "2025-12-06T14:37:47.123Z",
+          "updatedAt": "2025-12-06T14:37:47.123Z"
+        }
+      ]
+    },
+    "auditoria": {
+      "cantidad": 4,
+      "registros": [
+        {
+          "id": 4,
+          "usuarioId": null,
+          "usuarioNombre": "Sistema",
+          "usuarioRol": "sistema",
+          "tipoAccion": "crear",
+          "entidad": "backup_automatico",
+          "entidadId": null,
+          "descripcion": "Backup automático diario generado por cron job",
+          "datosAnteriores": null,
+          "datosNuevos": "{\"cartera\":\"/home/runner/workspace/backups/cartera/2026/01/backup_cartera_20260112_0055.pdf\",\"sistema\":\"/home/runner/workspace/backups/sistema/2026/01/backup_sistema_20260112_0055.json\"}",
+          "ip": null,
+          "userAgent": null,
+          "modulo": "sistema",
+          "createdAt": "2026-01-12T00:55:00.444Z"
+        },
+        {
+          "id": 3,
+          "usuarioId": null,
+          "usuarioNombre": "Sistema",
+          "usuarioRol": "sistema",
+          "tipoAccion": "crear",
+          "entidad": "backup_automatico",
+          "entidadId": null,
+          "descripcion": "Backup automático diario generado por cron job",
+          "datosAnteriores": null,
+          "datosNuevos": "{\"cartera\":\"/home/runner/workspace/backups/cartera/2026/01/backup_cartera_20260111_0055.pdf\",\"sistema\":\"/home/runner/workspace/backups/sistema/2026/01/backup_sistema_20260111_0055.json\"}",
+          "ip": null,
+          "userAgent": null,
+          "modulo": "sistema",
+          "createdAt": "2026-01-11T00:55:01.659Z"
+        },
+        {
+          "id": 2,
+          "usuarioId": null,
+          "usuarioNombre": "Sistema",
+          "usuarioRol": "sistema",
+          "tipoAccion": "crear",
+          "entidad": "backup_automatico",
+          "entidadId": null,
+          "descripcion": "Backup automático diario generado por cron job",
+          "datosAnteriores": null,
+          "datosNuevos": "{\"cartera\":\"/home/runner/workspace/backups/cartera/2025/12/backup_cartera_20251222_0055.pdf\",\"sistema\":\"/home/runner/workspace/backups/sistema/2025/12/backup_sistema_20251222_0055.json\"}",
+          "ip": null,
+          "userAgent": null,
+          "modulo": "sistema",
+          "createdAt": "2025-12-22T00:55:00.662Z"
+        },
+        {
+          "id": 1,
+          "usuarioId": null,
+          "usuarioNombre": "Sistema",
+          "usuarioRol": "sistema",
+          "tipoAccion": "crear",
+          "entidad": "backup_automatico",
+          "entidadId": null,
+          "descripcion": "Backup automático diario generado por cron job",
+          "datosAnteriores": null,
+          "datosNuevos": "{\"cartera\":\"/home/runner/workspace/backups/cartera/2025/12/backup_cartera_20251221_0055.pdf\",\"sistema\":\"/home/runner/workspace/backups/sistema/2025/12/backup_sistema_20251221_0055.json\"}",
+          "ip": null,
+          "userAgent": null,
+          "modulo": "sistema",
+          "createdAt": "2025-12-21T00:55:00.551Z"
+        }
+      ]
+    }
+  },
+  "resumen": {
+    "totalUsuarios": 122,
+    "totalTransacciones": 18,
+    "totalSaldos": 1710.77,
+    "totalAuditoria": 4
+  }
+}
