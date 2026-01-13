@@ -28,7 +28,7 @@ APO-360 is a comprehensive community security platform designed to enhance safet
 
 ### Feature Specifications
 - **Emergency System**: Floating panic button with drag functionality, multi-destination notifications, automatic GPS, and family contacts management. Supports subscription plans and real-time alerts.
-- **Community Chat**: Real-time messaging, multimedia attachments, invitation system, and advanced contact management (manual, Gmail sync). Includes authorization for organizational groups.
+- **Community Chat**: Real-time messaging with full multimedia support (images, files, audio recording via MediaRecorder API, GPS location sharing). Features invitation system via email/WhatsApp, advanced contact management (manual, Gmail sync), and organizational groups CHAT with formal approval workflow. Includes monthly payment configuration for ROL CHAT users and courtesy memberships managed by super admin.
 - **Taxi System**: Driver/passenger modes, ride requests, real-time geolocation, and tracking.
 - **Delivery System**: Order listing, local integration, automated notifications, and driver assignment.
 - **Local Advertising**: Carousels, event listings, service galleries, timed displays, pop-up information, GPS linking, social media integration, and image upload.
