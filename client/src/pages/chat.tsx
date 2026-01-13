@@ -483,6 +483,15 @@ export default function Chat() {
         if (existe) return old;
         return [nuevoGrupo, ...old];
       });
+      
+      // Invalidar cache de mensajes del grupo anterior si existe
+      if (grupoSeleccionado && grupoSeleccionado !== data.id) {
+        queryClient.removeQueries({ queryKey: ["/api/chat/grupos", grupoSeleccionado, "mensajes"] });
+      }
+      
+      // Invalidar y forzar recarga de mensajes del nuevo grupo
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/grupos", data.id, "mensajes"] });
+      
       setGrupoSeleccionado(data.id);
       setGrupoInfo({
         id: data.id,
@@ -815,6 +824,14 @@ export default function Chat() {
   const grupoActual = grupoFromList || grupoInfo;
 
   const seleccionarGrupo = (grupo: GrupoChat) => {
+    // Invalidar cache de mensajes del grupo anterior si es diferente
+    if (grupoSeleccionado && grupoSeleccionado !== grupo.id) {
+      queryClient.removeQueries({ queryKey: ["/api/chat/grupos", grupoSeleccionado, "mensajes"] });
+    }
+    
+    // Forzar recarga de mensajes del nuevo grupo
+    queryClient.invalidateQueries({ queryKey: ["/api/chat/grupos", grupo.id, "mensajes"] });
+    
     setGrupoSeleccionado(grupo.id);
     setGrupoInfo({
       id: grupo.id,

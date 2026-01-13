@@ -28,6 +28,7 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
   const onUserTypingRef = useRef(onUserTyping);
   const onErrorRef = useRef(onError);
   const grupoIdRef = useRef(grupoId);
+  const prevGrupoIdRef = useRef<string | null>(null);
   
   // Actualizar refs cuando cambien los valores
   useEffect(() => {
@@ -41,20 +42,37 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
   useEffect(() => {
     onErrorRef.current = onError;
   }, [onError]);
-  
-  useEffect(() => {
-    grupoIdRef.current = grupoId;
-  }, [grupoId]);
 
+  // Función para unirse a un grupo
+  const joinGroup = useCallback((newGrupoId: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      return false;
+    }
+    
+    console.log('🔄 Cambiando de grupo a:', newGrupoId);
+    wsRef.current.send(JSON.stringify({
+      type: 'join',
+      grupoId: newGrupoId,
+    }));
+    return true;
+  }, []);
+
+  // Función para conectar
   const connect = useCallback(() => {
     // No conectar si no hay grupoId
-    if (!grupoIdRef.current) {
+    const currentGrupoId = grupoIdRef.current;
+    if (!currentGrupoId) {
       return;
     }
 
-    // Si ya hay conexión abierta o conectando, no crear otra
-    if (wsRef.current?.readyState === WebSocket.OPEN || 
-        wsRef.current?.readyState === WebSocket.CONNECTING) {
+    // Si ya hay conexión abierta, solo unirse al nuevo grupo
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      joinGroup(currentGrupoId);
+      return;
+    }
+    
+    // Si está conectando, esperar
+    if (wsRef.current?.readyState === WebSocket.CONNECTING) {
       return;
     }
 
@@ -68,7 +86,7 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
       console.log('✅ WebSocket conectado');
       setIsConnected(true);
 
-      // Unirse al grupo
+      // Unirse al grupo actual
       ws.send(JSON.stringify({
         type: 'join',
         grupoId: grupoIdRef.current,
@@ -83,7 +101,6 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
         switch (data.type) {
           case 'new_message':
             if (data.mensaje) {
-              // Llamar al callback para que el componente actualice la UI
               onMessageRef.current?.(data);
             }
             break;
@@ -122,15 +139,17 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
       setIsConnected(false);
       wsRef.current = null;
 
-      // Intentar reconectar después de 3 segundos
-      reconnectTimeoutRef.current = setTimeout(() => {
-        console.log('🔄 Intentando reconectar...');
-        connect();
-      }, 3000);
+      // Intentar reconectar después de 3 segundos si hay un grupo activo
+      if (grupoIdRef.current) {
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log('🔄 Intentando reconectar...');
+          connect();
+        }, 3000);
+      }
     };
 
     wsRef.current = ws;
-  }, [queryClient]);
+  }, [joinGroup]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -170,18 +189,31 @@ export function useWebSocket({ grupoId, onMessage, onUserTyping, onError }: UseW
     }));
   }, []);
 
-  // Efecto principal para conectar/desconectar
+  // Efecto para manejar cambios de grupo sin reconectar
   useEffect(() => {
-    if (grupoId) {
-      connect();
-    } else {
-      disconnect();
+    // Actualizar la ref inmediatamente
+    grupoIdRef.current = grupoId;
+    
+    // Si cambiamos de grupo y el socket está abierto, solo enviar join
+    if (grupoId && prevGrupoIdRef.current !== grupoId) {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        joinGroup(grupoId);
+      } else if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+        // Si no hay conexión, conectar
+        connect();
+      }
     }
     
+    // Si no hay grupo, no hacer nada (mantener la conexión para cuando vuelva a haber grupo)
+    prevGrupoIdRef.current = grupoId;
+  }, [grupoId, joinGroup, connect]);
+
+  // Efecto separado solo para el desmontaje
+  useEffect(() => {
     return () => {
       disconnect();
     };
-  }, [grupoId, connect, disconnect]);
+  }, [disconnect]);
 
   return {
     isConnected,

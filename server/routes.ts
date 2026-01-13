@@ -3341,6 +3341,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rolesUsuario = await storage.getRolesUsuario(userId);
       const tieneRolChat = rolesUsuario?.some((r: any) => r.rolTipo === 'chat') || false;
       
+      // Si tiene rol CHAT, limitar a 7 grupos máximo
+      if (tieneRolChat) {
+        const gruposDelUsuario = await db
+          .select({ id: gruposChat.id })
+          .from(gruposChat)
+          .where(
+            and(
+              eq(gruposChat.creadorId, userId),
+              eq(gruposChat.creadoPorRolChat, true),
+              eq(gruposChat.estado, 'activo')
+            )
+          );
+        
+        if (gruposDelUsuario.length >= 7) {
+          return res.status(400).json({ 
+            message: "Has alcanzado el límite máximo de 7 grupos. Elimina un grupo existente para crear uno nuevo." 
+          });
+        }
+      }
+      
       const grupo = await storage.createGrupo({
         ...data,
         creadorId: userId,
