@@ -1,0 +1,179 @@
+
+ System information as of Tue Feb 10 15:59:56 UTC 2026
+
+  System load:  0.04               Processes:             114
+  Usage of /:   19.1% of 47.39GB   Users logged in:       0
+  Memory usage: 20%                IPv4 address for eth0: 72.61.221.16
+  Swap usage:   0%                 IPv6 address for eth0: 2a02:4780:66:9796::1
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+61 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+1 updates could not be installed automatically. For more details,
+see /var/log/unattended-upgrades/unattended-upgrades.log
+
+*** System restart required ***
+Last login: Mon Dec 22 21:38:15 2025 from 200.106.124.56
+root@srv1170282:~#  cd /var/www/apo360.net
+root@srv1170282:/var/www/apo360.net# git pull origin main
+remote: Enumerating objects: 628, done.
+remote: Counting objects: 100% (628/628), done.
+remote: Compressing objects: 100% (99/99), done.
+remote: Total 575 (delta 473), reused 570 (delta 468), pack-reused 0 (from 0)
+Receiving objects: 100% (575/575), 2.06 MiB | 3.59 MiB/s, done.
+Resolving deltas: 100% (473/473), completed with 45 local objects.
+From https://github.com/alfred7615/apo360
+ * branch            main       -> FETCH_HEAD
+   5311a24..019051f  main       -> origin/main
+error: The following untracked working tree files would be overwritten by merge:
+        backups/cartera/2026/01/backup_cartera_20260111_0055.pdf
+        backups/cartera/2026/01/backup_cartera_20260112_0055.pdf
+        backups/cartera/2026/01/backup_cartera_20260113_0055.pdf
+        backups/cartera/2026/01/backup_cartera_20260114_0055.pdf
+        backups/sistema/2026/01/backup_sistema_20260111_0055.json
+        backups/sistema/2026/01/backup_sistema_20260112_0055.json
+        backups/sistema/2026/01/backup_sistema_20260113_0055.json
+        backups/sistema/2026/01/backup_sistema_20260114_0055.json
+Please move or remove them before you merge.
+Aborting
+Merge with strategy ort failed.
+root@srv1170282:/var/www/apo360.net# npm install
+
+up to date, audited 567 packages in 6s
+
+72 packages are looking for funding
+  run `npm fund` for details
+
+14 vulnerabilities (3 low, 6 moderate, 5 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.9.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.9.0
+npm notice To update run: npm install -g npm@11.9.0
+npm notice
+root@srv1170282:/var/www/apo360.net# npm run build
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js
+
+vite v5.4.20 building for production...
+transforming (20) ../node_modules/wouter/esm/use-browser-location.js
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 3877 modules transformed.
+../dist/public/index.html                     1.53 kB │ gzip:   0.67 kB
+../dist/public/assets/index-BNh8HZqd.css    162.12 kB │ gzip:  29.38 kB
+../dist/public/assets/index-CksOQEs3.js   3,031.69 kB │ gzip: 790.43 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 39.89s
+▲ [WARNING] Duplicate member "updateServicio" in class body [duplicate-class-member]
+
+    server/storage.ts:1961:8:
+      1961 │   async updateServicio(id: string, data: any): Promise<any> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "updateServicio" is here:
+
+    server/storage.ts:903:8:
+      903 │   async updateServicio(id: string, data: Partial<InsertServicio>): Promise<Servicio | undefined> {
+          ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getFavoritosUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2526:8:
+      2526 │   async getFavoritosUsuario(usuarioId: string, tipo?: string): Promise<any[]> {
+           ╵         ~~~~~~~~~~~~~~~~~~~
+
+  The original member "getFavoritosUsuario" is here:
+
+    server/storage.ts:871:8:
+      871 │   async getFavoritosUsuario(usuarioId: string): Promise<any[]> {
+          ╵         ~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getInteraccionesUsuario" in class body [duplicate-class-member]
+
+    server/storage.ts:2770:8:
+      2770 │   async getInteraccionesUsuario(
+           ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "getInteraccionesUsuario" is here:
+
+    server/storage.ts:647:8:
+      647 │   async getInteraccionesUsuario(publicidadId: string, usuarioId: string): Promise<{ hasLike: boolean; has...
+          ╵         ~~~~~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "getComentarios" in class body [duplicate-class-member]
+
+    server/storage.ts:2794:8:
+      2794 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+  The original member "getComentarios" is here:
+
+    server/storage.ts:1930:8:
+      1930 │   async getComentarios(tipoContenido: string, contenidoId: string): Promise<Comentario[]> {
+           ╵         ~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "createComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2810:8:
+      2810 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "createComentario" is here:
+
+    server/storage.ts:1943:8:
+      1943 │   async createComentario(data: InsertComentario): Promise<Comentario> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "deleteComentario" in class body [duplicate-class-member]
+
+    server/storage.ts:2824:8:
+      2824 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+  The original member "deleteComentario" is here:
+
+    server/storage.ts:1951:8:
+      1951 │   async deleteComentario(id: string): Promise<void> {
+           ╵         ~~~~~~~~~~~~~~~~
+
+6 of 9 warnings shown (disable the message limit with --log-limit=0)
+
+  dist/index.js  623.9kb
+
+⚡ Done in 102ms
+root@srv1170282:/var/www/apo360.net# pm2 restart all
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [all](ids: [ 0 ])
+[PM2] [apo360](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ apo360             │ cluster  │ 1    │ online    │ 0%       │ 40.6mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1170282:/var/www/apo360.net#
