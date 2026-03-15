@@ -41,6 +41,9 @@ vite.config.ts.*
 *.bak
 *.backup
 
+# Carpeta de backups del servidor (no subir a GitHub)
+backups/
+
 # Archivos de Replit
 .replit
 replit.nix
